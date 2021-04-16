@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	trdl "github.com/flant/vault-plugin-trdl"
+	trdl "github.com/flant/vault-plugin-secrets-trdl"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/plugin"

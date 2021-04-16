@@ -1,1 +1,1 @@
-# vault-plugin-trdl
+# vault-plugin-secrets-trdl

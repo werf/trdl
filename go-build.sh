@@ -8,6 +8,6 @@ SOURCE=`dirname ${BASH_SOURCE[0]}`
 cd $SOURCE
 
 export GO111MODULE=on
-go install github.com/flant/vault-plugin-trdl/cmd/vault-plugin-trdl
+go install github.com/flant/vault-plugin-secrets-trdl/cmd/vault-plugin-secrets-trdl
 
 cd $CWD
