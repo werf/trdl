@@ -42,8 +42,8 @@ func newBackend() (*backend, error) {
 	b.providerCtx, b.providerCtxCancel = context.WithCancel(context.Background())
 
 	b.Backend = &framework.Backend{
-		Help:        backendHelp,
 		BackendType: logical.TypeLogical,
+		Help:        backendHelp,
 		Paths: framework.PathAppend(
 			[]*framework.Path{
 				pathRelease(b),

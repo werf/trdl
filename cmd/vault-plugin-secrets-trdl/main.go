@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	trdl "github.com/flant/vault-plugin-trdl"
+	trdl "github.com/flant/vault-plugin-secrets-trdl"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/api"
