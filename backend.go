@@ -30,7 +30,7 @@ func backend() *trdlBackend {
 	b.providerCtx, b.providerCtxCancel = context.WithCancel(context.Background())
 
 	b.Backend = &framework.Backend{
-		BackendType: logical.TypeUnknown,
+		BackendType: logical.TypeLogical,
 		Help:        backendHelp,
 		Paths: framework.PathAppend(
 			[]*framework.Path{
