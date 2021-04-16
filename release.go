@@ -23,7 +23,7 @@ func pathRelease(b *trdlBackend) *framework.Path {
 		},
 
 		Operations: map[logical.Operation]framework.OperationHandler{
-			logical.CreateOperation: &framework.PathOperation{
+			logical.UpdateOperation: &framework.PathOperation{
 				Callback: b.pathRelease,
 				Summary:  pathReleaseHelpSyn,
 			},
