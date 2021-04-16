@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
-func pathRelease(b *trdlBackend) *framework.Path {
+func pathRelease(b *backend) *framework.Path {
 	return &framework.Path{
 		Pattern: `release$`,
 		Fields: map[string]*framework.FieldSchema{
@@ -27,6 +27,10 @@ func pathRelease(b *trdlBackend) *framework.Path {
 				Callback: b.pathRelease,
 				Summary:  pathReleaseHelpSyn,
 			},
+			logical.UpdateOperation: &framework.PathOperation{
+				Callback: b.pathRelease,
+				Summary:  pathReleaseHelpSyn,
+			},
 		},
 
 		HelpSynopsis:    pathReleaseHelpSyn,
@@ -34,7 +38,7 @@ func pathRelease(b *trdlBackend) *framework.Path {
 	}
 }
 
-func (b *trdlBackend) pathRelease(ctx context.Context, req *logical.Request, d *framework.FieldData) (*logical.Response, error) {
+func (b *backend) pathRelease(_ context.Context, _ *logical.Request, d *framework.FieldData) (*logical.Response, error) {
 	gitTag := d.Get("git-tag").(string)
 	if gitTag == "" {
 		return logical.ErrorResponse("missing git-tag"), nil
