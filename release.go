@@ -27,10 +27,6 @@ func pathRelease(b *backend) *framework.Path {
 				Callback: b.pathRelease,
 				Summary:  pathReleaseHelpSyn,
 			},
-			logical.UpdateOperation: &framework.PathOperation{
-				Callback: b.pathRelease,
-				Summary:  pathReleaseHelpSyn,
-			},
 		},
 
 		HelpSynopsis:    pathReleaseHelpSyn,
