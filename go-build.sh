@@ -10,6 +10,6 @@ cd $SOURCE
 export GO111MODULE=on
 
 mkdir -p vault/plugins
-go build -o vault/plugins/vault-plugin-secrets-trdl github.com/flant/vault-plugin-secrets-trdl/cmd/vault-plugin-secrets-trdl
+go build -o vault/plugins/vault-plugin-secrets-trdl github.com/werf/vault-plugin-secrets-trdl/cmd/vault-plugin-secrets-trdl
 
 cd $CWD

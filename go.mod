@@ -1,4 +1,4 @@
-module github.com/flant/vault-plugin-secrets-trdl
+module github.com/werf/vault-plugin-secrets-trdl
 
 go 1.16
 
