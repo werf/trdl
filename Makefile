@@ -15,16 +15,16 @@ endif
 all: fmt build start
 
 build:
-	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o vault/plugins/vault-plugin-trdl cmd/vault-plugin-trdl/main.go
+	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
 
 start:
 	vault server -dev -dev-root-token-id=root -dev-plugin-dir=./vault/plugins
 
 enable:
-	vault secrets enable -path=trdl vault-plugin-trdl
+	VAULT_ADDR='http://127.0.0.1:8200' vault secrets enable -path=trdl vault-plugin-secrets-trdl
 
 clean:
-	rm -f ./vault/plugins/vault-plugin-trdl
+	rm -f ./vault/plugins/vault-plugin-secrets-trdl
 
 fmt:
 	go fmt $$(go list ./...)
