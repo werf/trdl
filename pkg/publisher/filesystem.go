@@ -41,6 +41,7 @@ func (fs *S3Filesystem) IsFileExist(ctx context.Context, path string) (bool, err
 		Bucket: &fs.BucketName,
 		Key:    &path,
 	})
+	fmt.Printf("-- S3Filesystem.IsFileExist %q err=%v\n", path, err)
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			if awsErr.Code() == "NotFound" {
@@ -50,7 +51,7 @@ func (fs *S3Filesystem) IsFileExist(ctx context.Context, path string) (bool, err
 		return false, fmt.Errorf("error heading s3 object by key %q: %s", path, err)
 	}
 
-	return false, nil
+	return true, nil
 }
 
 func (fs *S3Filesystem) ReadFile(ctx context.Context, path string) ([]byte, error) {

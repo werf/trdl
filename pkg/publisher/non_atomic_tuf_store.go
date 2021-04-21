@@ -35,6 +35,7 @@ type NonAtomicTufStore struct {
 
 func NewNonAtomicTufStore(privKeys TufRepoPrivKeys, Filesystem Filesystem) *NonAtomicTufStore {
 	return &NonAtomicTufStore{
+		PrivKeys:   privKeys,
 		Filesystem: Filesystem,
 		stagedMeta: make(map[string]json.RawMessage),
 	}
@@ -58,23 +59,25 @@ func (store *NonAtomicTufStore) GetMeta() (map[string]json.RawMessage, error) {
 			meta[name] = stagedData
 			continue
 		}
+		fmt.Printf("%q not staged!\n", name)
 
 		exists, err := store.Filesystem.IsFileExist(ctx, name)
 		if err != nil {
 			return nil, fmt.Errorf("error checking existance of %q: %s", name, err)
 		}
 
-		if !exists {
-			continue
+		if exists {
+			data, err := store.Filesystem.ReadFile(ctx, name)
+			if err != nil {
+				return nil, fmt.Errorf("error reading %q: %s", name, err)
+			}
+			meta[name] = data
+		} else {
+			fmt.Printf("%q not found in the store filesystem!\n", name)
 		}
-
-		data, err := store.Filesystem.ReadFile(ctx, name)
-		if err != nil {
-			return nil, fmt.Errorf("error reading %q: %s", name, err)
-		}
-
-		meta[name] = data
 	}
+
+	fmt.Printf("-- NonAtomicTufStore.GetMeta -> meta[targets]: %s\n", meta["targets.json"])
 
 	return meta, nil
 }
@@ -159,6 +162,8 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 }
 
 func (store *NonAtomicTufStore) GetSigningKeys(role string) ([]sign.Signer, error) {
+	fmt.Printf("-- NonAtomicTufStore.GetSigningKeys(%q)\n", role)
+
 	switch role {
 	case "root":
 		return store.PrivKeys.Root, nil

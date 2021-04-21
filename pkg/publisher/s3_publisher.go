@@ -29,9 +29,7 @@ func PublishSnapshotIntoS3(ctx context.Context, files SnapshotFilesIterator, tuf
 	}
 
 	// TODO: detect empty tuf repo, perform proper initialization of root.json and other's roles metadata files
-	if err := tufRepo.Init(false); err != nil {
-		return fmt.Errorf("unable to init repo: %s", err)
-	}
+	// TODO: generate root keys and store in the vault automatically
 
 	for {
 		pathInsideTargets, data, err := files.Next()
