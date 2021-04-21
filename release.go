@@ -1,11 +1,35 @@
 package trdl
 
 import (
+	"archive/tar"
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/go-git/go-git/v5"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+
+	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
+)
+
+const (
+	containerSourceDir    = "/git"
+	containerArtifactsDir = "/result"
+
+	serviceDirInContextTar        = ".trdl"
+	serviceDockerfileInContextTar = ".trdl/Dockerfile"
+
+	artifactsTarStartReadCode = "1EA01F53E0277546E1B17267F29A60B3CD4DC12744C2FA2BF0897065DC3749F3"
+	artifactsTarStopReadCode  = "A2F00DB0DEE3540E246B75B872D64773DF67BC51C5D36D50FA6978E2FFDA7D43"
 )
 
 func pathRelease(b *backend) *framework.Path {
@@ -34,7 +58,7 @@ func pathRelease(b *backend) *framework.Path {
 	}
 }
 
-func (b *backend) pathRelease(_ context.Context, _ *logical.Request, d *framework.FieldData) (*logical.Response, error) {
+func (b *backend) pathRelease(ctx context.Context, _ *logical.Request, d *framework.FieldData) (*logical.Response, error) {
 	gitTag := d.Get("git-tag").(string)
 	if gitTag == "" {
 		return logical.ErrorResponse("missing git-tag"), nil
@@ -45,11 +69,278 @@ func (b *backend) pathRelease(_ context.Context, _ *logical.Request, d *framewor
 		return logical.ErrorResponse("missing command"), nil
 	}
 
-	fmt.Printf("PERFORMING THE RELEASE! git-tag=%q command=%q\n", gitTag, command)
+	url := "https://github.com/alexey-igrychev/test-trdl.git" // TODO: get url from vault storage
+	tag := "v1.0.1"                                           // TODO: use gitTag instead
+	gitRepo, err := cloneGitRepository(url, tag)
+	if err != nil {
+		return nil, fmt.Errorf("unable to clone git repository: %s", err)
+	}
+
+	// TODO: verify head commit
+
+	fromImage := "alpine"                             // TODO: get fromImage from vault storage
+	runCommands := []string{"mv artifacts/* /result"} // TODO: get commands from vault storage or trdl config from git repository
+
+	tarReader, tarWriter := io.Pipe()
+	if err := buildReleaseArtifacts(ctx, tarWriter, gitRepo, fromImage, runCommands); err != nil {
+		return nil, fmt.Errorf("unable to build release artifacts: %s", err)
+	}
+
+	var fileNames []string
+	{ // TODO: publisher code here
+		twArtifacts := tar.NewReader(tarReader)
+		for {
+			hdr, err := twArtifacts.Next()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+
+				panic(err)
+			}
+
+			if hdr.Typeflag != tar.TypeDir {
+				fileNames = append(fileNames, hdr.Name)
+			}
+		}
+	}
 
 	return &logical.Response{
-		Warnings: []string{"NOT IMPLEMENTED YET"},
+		Warnings: fileNames,
 	}, nil
+}
+
+func cloneGitRepository(url string, gitTag string) (*git.Repository, error) {
+	cloneGitOptions := trdlGit.CloneOptions{
+		TagName:           gitTag,
+		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+	}
+
+	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return gitRepo, nil
+}
+
+func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRepo *git.Repository, fromImage string, runCommands []string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return fmt.Errorf("unable to create docker client: %s", err)
+	}
+
+	contextReader, contextWriter := io.Pipe()
+	go func() {
+		if err := writeContextTar(contextWriter, gitRepo, fromImage, runCommands); err != nil {
+			if closeErr := contextWriter.CloseWithError(err); closeErr != nil {
+				panic(closeErr)
+			}
+			return
+		}
+
+		if err := contextWriter.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	response, err := cli.ImageBuild(ctx, contextReader, types.ImageBuildOptions{
+		Dockerfile:  serviceDockerfileInContextTar,
+		PullParent:  true,
+		NoCache:     true,
+		Remove:      true,
+		ForceRemove: true,
+		Version:     types.BuilderV1,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to run docker image build: %s", err)
+	}
+
+	go func() {
+		if err := readTarFromImageBuildResponse(response, tarWriter); err != nil {
+			if closeErr := tarWriter.CloseWithError(err); closeErr != nil {
+				panic(closeErr)
+			}
+			return
+		}
+
+		if err := tarWriter.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	return nil
+}
+
+func writeContextTar(contextWriter io.Writer, gitRepo *git.Repository, fromImage string, runCommands []string) error {
+	tw := tar.NewWriter(contextWriter)
+	writeHeaderFunc := func(entryName string, header *tar.Header) error {
+		if err := tw.WriteHeader(header); err != nil {
+			return fmt.Errorf("unable to write tar entry %q header: %s", entryName, err)
+		}
+
+		return nil
+	}
+
+	if err := trdlGit.ForEachWorktreeFile(gitRepo, func(path, link string, fileReader io.Reader, info os.FileInfo) error {
+		if err := writeHeaderFunc(path, &tar.Header{
+			Name:     path,
+			Size:     info.Size(),
+			Mode:     int64(info.Mode()),
+			Linkname: link,
+		}); err != nil {
+			return err
+		}
+
+		if link == "" {
+			_, err := io.Copy(tw, fileReader)
+			if err != nil {
+				return fmt.Errorf("unable to write tar entry %q data: %s", path, err)
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	dockerfileData := generateServiceDockerfile(fromImage, runCommands)
+	if err := writeHeaderFunc(serviceDockerfileInContextTar, &tar.Header{
+		Name: serviceDockerfileInContextTar,
+		Size: int64(len(dockerfileData)),
+		Mode: int64(os.ModePerm),
+	}); err != nil {
+		return err
+	}
+
+	if _, err := tw.Write(dockerfileData); err != nil {
+		return fmt.Errorf("unable to write tar entry %q data: %s", serviceDockerfileInContextTar, err)
+	}
+
+	if err := tw.Close(); err != nil {
+		return fmt.Errorf("unable to close tar writer: %s", err)
+	}
+
+	return nil
+}
+
+func generateServiceDockerfile(fromImage string, runCommands []string) []byte {
+	var data []byte
+	addLineFunc := func(line string) {
+		data = append(data, []byte(line+"\n")...)
+	}
+
+	addLineFunc(fmt.Sprintf("FROM %s", fromImage))
+
+	// copy source code and set workdir for the following docker instructions
+	addLineFunc(fmt.Sprintf("COPY . %s", containerSourceDir))
+	addLineFunc(fmt.Sprintf("WORKDIR %s", containerSourceDir))
+
+	// remove service data from user's context
+	addLineFunc(fmt.Sprintf("RUN %s", fmt.Sprintf("rm -rf %s", serviceDirInContextTar)))
+
+	// create empty dir for release artifacts
+	addLineFunc(fmt.Sprintf("RUN %s", fmt.Sprintf("mkdir %s", containerArtifactsDir)))
+
+	// run user's build commands
+	for _, command := range runCommands {
+		addLineFunc(fmt.Sprintf("RUN %s", command))
+	}
+
+	// tar result files to stdout (with control messages for a receiver)
+	serviceRunCommands := []string{
+		fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString([]byte(artifactsTarStartReadCode))),
+		fmt.Sprintf("tar c -C %s .", containerArtifactsDir),
+		fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString([]byte(artifactsTarStopReadCode))),
+	}
+	addLineFunc("RUN " + strings.Join(serviceRunCommands, " && "))
+
+	return data
+}
+
+func readTarFromImageBuildResponse(response types.ImageBuildResponse, tarWriter io.Writer) error {
+	dec := json.NewDecoder(response.Body)
+
+	const (
+		checkingStartCode = iota
+		processingStartCode
+		processingDataAndCheckingStopCode
+		processingStopCode
+	)
+	currentState := processingStartCode
+	var codeCursor int
+	var bufferedMsg string
+
+	for {
+		var jm jsonmessage.JSONMessage
+		if err := dec.Decode(&jm); err != nil {
+			if err == io.EOF {
+				return nil
+			}
+
+			return fmt.Errorf("unable to decode message from docker daemon: %s", err)
+		}
+
+		if jm.Error != nil {
+			return jm.Error
+		}
+
+		msg := jm.Stream
+		if msg != "" {
+			for _, r := range msg {
+				switch currentState {
+				case checkingStartCode:
+					if r == []rune(artifactsTarStartReadCode)[0] {
+						currentState = processingStartCode
+						codeCursor++
+					}
+				case processingStartCode:
+					if r == []rune(artifactsTarStartReadCode)[codeCursor] {
+						if len(artifactsTarStartReadCode) > codeCursor+1 {
+							codeCursor++
+						} else {
+							currentState = processingDataAndCheckingStopCode
+						}
+					} else {
+						currentState = 0
+						codeCursor = 0
+					}
+				case processingDataAndCheckingStopCode:
+					if r == []rune(artifactsTarStopReadCode)[0] {
+						currentState = 3
+						codeCursor = 1
+						bufferedMsg += string(r)
+						continue
+					}
+
+					if bufferedMsg != "" {
+						if _, err := tarWriter.Write([]byte(bufferedMsg)); err != nil {
+							return err
+						}
+
+						bufferedMsg = ""
+					}
+
+					if _, err := tarWriter.Write([]byte(string(r))); err != nil {
+						return err
+					}
+				case processingStopCode:
+					bufferedMsg += string(r)
+
+					if r == []rune(artifactsTarStopReadCode)[codeCursor] {
+						if len(artifactsTarStopReadCode) > codeCursor+1 {
+							codeCursor++
+						} else {
+							return nil
+						}
+					} else {
+						currentState = processingDataAndCheckingStopCode
+						codeCursor = 0
+					}
+				}
+			}
+		}
+	}
 }
 
 const (
