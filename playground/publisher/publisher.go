@@ -114,13 +114,13 @@ func doMain() error {
 		Data: []byte("not much\n"),
 	})
 
-	if err := publisher.StageInMemoryFiles(ctx, repository, files); err != nil {
+	if err := publisher.PublishInMemoryFiles(ctx, repository, files); err != nil {
 		return fmt.Errorf("unable to stage files %#v: %s", files, err)
 	}
 
 	releaseFile := "bin/arbuz"
-	if err := publisher.StageReleaseFile(ctx, repository, "v1.1.10+fix2", releaseFile, base64.NewDecoder(base64.StdEncoding, bytes.NewReader([]byte(binArbuzBase64)))); err != nil {
-		return fmt.Errorf("unable to stage release file %q: %s", releaseFile, err)
+	if err := publisher.PublishReleaseTarget(ctx, repository, "v1.1.10+fix2", releaseFile, base64.NewDecoder(base64.StdEncoding, bytes.NewReader([]byte(binArbuzBase64)))); err != nil {
+		return fmt.Errorf("unable to publish release target %q: %s", releaseFile, err)
 	}
 
 	r, w := io.Pipe()
@@ -144,7 +144,7 @@ func doMain() error {
 	}()
 
 	releaseFile2 := "lib/info.txt"
-	if err := publisher.StageReleaseFile(ctx, repository, "v1.1.10+fix2", releaseFile2, r); err != nil {
+	if err := publisher.PublishReleaseTarget(ctx, repository, "v1.1.10+fix2", releaseFile2, r); err != nil {
 		return fmt.Errorf("unable to stage release file %q: %s", releaseFile2, err)
 	}
 
