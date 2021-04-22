@@ -30,9 +30,11 @@ const (
 
 	serviceDirInContextTar        = ".trdl"
 	serviceDockerfileInContextTar = ".trdl/Dockerfile"
+)
 
-	artifactsTarStartReadCode = "1EA01F53E0277546E1B17267F29A60B3CD4DC12744C2FA2BF0897065DC3749F3"
-	artifactsTarStopReadCode  = "A2F00DB0DEE3540E246B75B872D64773DF67BC51C5D36D50FA6978E2FFDA7D43"
+var (
+	artifactsTarStartReadCode = []byte("1EA01F53E0277546E1B17267F29A60B3CD4DC12744C2FA2BF0897065DC3749F3")
+	artifactsTarStopReadCode  = []byte("A2F00DB0DEE3540E246B75B872D64773DF67BC51C5D36D50FA6978E2FFDA7D43")
 )
 
 func pathRelease(b *backend) *framework.Path {
@@ -300,9 +302,9 @@ func generateServiceDockerfile(fromImage string, runCommands []string) []byte {
 
 	// tar result files to stdout (with control messages for a receiver)
 	serviceRunCommands := []string{
-		fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString([]byte(artifactsTarStartReadCode))),
+		fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString(artifactsTarStartReadCode)),
 		fmt.Sprintf("tar c -C %s .", containerArtifactsDir),
-		fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString([]byte(artifactsTarStopReadCode))),
+		fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString(artifactsTarStopReadCode)),
 	}
 	addLineFunc("RUN " + strings.Join(serviceRunCommands, " && "))
 
@@ -318,9 +320,9 @@ func readTarFromImageBuildResponse(response types.ImageBuildResponse, tarWriter 
 		processingDataAndCheckingStopCode
 		processingStopCode
 	)
-	currentState := processingStartCode
+	currentState := checkingStartCode
 	var codeCursor int
-	var bufferedMsg string
+	var bufferedData []byte
 
 	for {
 		var jm jsonmessage.JSONMessage
@@ -338,47 +340,43 @@ func readTarFromImageBuildResponse(response types.ImageBuildResponse, tarWriter 
 
 		msg := jm.Stream
 		if msg != "" {
-			for _, r := range msg {
+			for _, b := range []byte(msg) {
 				switch currentState {
 				case checkingStartCode:
-					if r == []rune(artifactsTarStartReadCode)[0] {
+					if b == artifactsTarStartReadCode[0] {
 						currentState = processingStartCode
 						codeCursor++
 					}
 				case processingStartCode:
-					if r == []rune(artifactsTarStartReadCode)[codeCursor] {
+					if b == artifactsTarStartReadCode[codeCursor] {
 						if len(artifactsTarStartReadCode) > codeCursor+1 {
 							codeCursor++
 						} else {
 							currentState = processingDataAndCheckingStopCode
+							codeCursor = 0
 						}
 					} else {
-						currentState = 0
+						currentState = checkingStartCode
 						codeCursor = 0
 					}
 				case processingDataAndCheckingStopCode:
-					if r == []rune(artifactsTarStopReadCode)[0] {
-						currentState = 3
-						codeCursor = 1
-						bufferedMsg += string(r)
+					bufferedData = append(bufferedData, b)
+
+					if b == artifactsTarStopReadCode[0] {
+						currentState = processingStopCode
+						codeCursor++
 						continue
 					}
 
-					if bufferedMsg != "" {
-						if _, err := tarWriter.Write([]byte(bufferedMsg)); err != nil {
-							return err
-						}
-
-						bufferedMsg = ""
-					}
-
-					if _, err := tarWriter.Write([]byte(string(r))); err != nil {
+					if _, err := tarWriter.Write(bufferedData); err != nil {
 						return err
 					}
-				case processingStopCode:
-					bufferedMsg += string(r)
 
-					if r == []rune(artifactsTarStopReadCode)[codeCursor] {
+					bufferedData = nil
+				case processingStopCode:
+					bufferedData = append(bufferedData, b)
+
+					if b == artifactsTarStopReadCode[codeCursor] {
 						if len(artifactsTarStopReadCode) > codeCursor+1 {
 							codeCursor++
 						} else {
