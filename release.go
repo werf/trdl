@@ -70,7 +70,7 @@ func (b *backend) pathRelease(ctx context.Context, _ *logical.Request, d *framew
 	}
 
 	url := "https://github.com/alexey-igrychev/test-trdl.git" // TODO: get url from vault storage
-	tag := "v1.0.1"                                           // TODO: use gitTag instead
+	tag := "v1.0.3"                                           // TODO: use gitTag instead
 	gitRepo, err := cloneGitRepository(url, tag)
 	if err != nil {
 		return nil, fmt.Errorf("unable to clone git repository: %s", err)
@@ -183,9 +183,16 @@ func writeContextTar(contextWriter io.Writer, gitRepo *git.Repository, fromImage
 	}
 
 	if err := trdlGit.ForEachWorktreeFile(gitRepo, func(path, link string, fileReader io.Reader, info os.FileInfo) error {
+		size := info.Size()
+
+		// The size field is the size of the file in bytes; linked files are archived with this field specified as zero
+		if link != "" {
+			size = 0
+		}
+
 		if err := writeHeaderFunc(path, &tar.Header{
 			Name:     path,
-			Size:     info.Size(),
+			Size:     size,
 			Mode:     int64(info.Mode()),
 			Linkname: link,
 		}); err != nil {
