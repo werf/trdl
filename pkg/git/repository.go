@@ -63,17 +63,14 @@ func ForEachWorktreeFile(gitRepo *git.Repository, fileFunc func(path string, lin
 			}
 
 			if fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink {
-				// TODO: support for symlinks
-				//link, err := fs.Readlink(absPath)
-				//if err != nil {
-				//	return fmt.Errorf("unable to read link %q: %s", absPath, err)
-				//}
-				//
-				//if err := fileFunc(absPath, link, nil, fileInfo); err != nil {
-				//	return err
-				//}
+				link, err := fs.Readlink(absPath)
+				if err != nil {
+					return fmt.Errorf("unable to read link %q: %s", absPath, err)
+				}
 
-				continue
+				if err := fileFunc(absPath, link, nil, fileInfo); err != nil {
+					return err
+				}
 			} else {
 				billyFile, err := fs.Open(absPath)
 				if err != nil {
