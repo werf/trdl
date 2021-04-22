@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -19,6 +21,7 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 )
 
 const (
@@ -71,6 +74,39 @@ func (b *backend) pathRelease(ctx context.Context, _ *logical.Request, d *framew
 
 	url := "https://github.com/alexey-igrychev/test-trdl.git" // TODO: get url from vault storage
 	tag := "v1.0.3"                                           // TODO: use gitTag instead
+
+	awsAccessKeyID, err := GetAwsAccessKeyID() // TODO: get from vault storage, should be configured by the user
+	if err != nil {
+		return nil, fmt.Errorf("unable to get aws access key ID: %s", err)
+	}
+
+	awsSecretAccessKey, err := GetAwsSecretAccessKey() // TODO: get from vault storage, should be configured by the user
+	if err != nil {
+		return nil, fmt.Errorf("unable to get aws secret access key: %s", err)
+	}
+
+	// TODO: get from vault storage, should be configured by the user
+	awsConfig := &aws.Config{
+		Endpoint:    aws.String("https://storage.yandexcloud.net"),
+		Region:      aws.String("ru-central1"),
+		Credentials: credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, ""),
+	}
+
+	// TODO: get from vault storage, should be generated automatically by the plugin, user never has an access to these private keys
+	publisherKeys, err := LoadFixturePublisherKeys()
+	if err != nil {
+		return nil, fmt.Errorf("error loading publisher fixture keys")
+	}
+
+	// Initialize repository before any operations, to ensure everything is setup correctly before building artifact
+	publisherRepository, err := publisher.NewRepositoryWithOptions(
+		publisher.S3Options{AwsConfig: awsConfig, BucketName: "trdl-test-project"}, // TODO: get from vault storage, should be configured by the user
+		publisher.TufRepoOptions{PrivKeys: publisherKeys},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing publisher repository: %s", err)
+	}
+
 	gitRepo, err := cloneGitRepository(url, tag)
 	if err != nil {
 		return nil, fmt.Errorf("unable to clone git repository: %s", err)
@@ -91,17 +127,26 @@ func (b *backend) pathRelease(ctx context.Context, _ *logical.Request, d *framew
 		twArtifacts := tar.NewReader(tarReader)
 		for {
 			hdr, err := twArtifacts.Next()
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
 
-				panic(err)
+			if err == io.EOF {
+				break
+			}
+
+			if err != nil {
+				return nil, fmt.Errorf("error reading next tar artifact header: %s", err)
 			}
 
 			if hdr.Typeflag != tar.TypeDir {
+				if err := publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
+					return nil, fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
+				}
+
 				fileNames = append(fileNames, hdr.Name)
 			}
+		}
+
+		if err := publisherRepository.Commit(ctx); err != nil {
+			return nil, fmt.Errorf("unable to commit new tuf repository state: %s", err)
 		}
 	}
 
@@ -357,6 +402,6 @@ const (
 
 	pathReleaseHelpDesc = `
 	Performs release of project by the specified git tag.
-	Provided command should prepare release artifacts to be published into the /TODO directory.
+	Provided command should prepare release artifacts in the /result directory, which will be published into the TUF repository.
 	`
 )
