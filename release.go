@@ -72,8 +72,7 @@ func (b *backend) pathRelease(ctx context.Context, _ *logical.Request, d *framew
 		return logical.ErrorResponse("missing command"), nil
 	}
 
-	url := "https://github.com/alexey-igrychev/test-trdl.git" // TODO: get url from vault storage
-	tag := "v1.0.3"                                           // TODO: use gitTag instead
+	url := "https://github.com/werf/trdl-test-project.git" // TODO: get url from vault storage
 
 	awsAccessKeyID, err := GetAwsAccessKeyID() // TODO: get from vault storage, should be configured by the user
 	if err != nil {
@@ -107,15 +106,15 @@ func (b *backend) pathRelease(ctx context.Context, _ *logical.Request, d *framew
 		return nil, fmt.Errorf("error initializing publisher repository: %s", err)
 	}
 
-	gitRepo, err := cloneGitRepository(url, tag)
+	gitRepo, err := cloneGitRepository(url, gitTag)
 	if err != nil {
 		return nil, fmt.Errorf("unable to clone git repository: %s", err)
 	}
 
 	// TODO: verify head commit
 
-	fromImage := "alpine"                             // TODO: get fromImage from vault storage
-	runCommands := []string{"mv artifacts/* /result"} // TODO: get commands from vault storage or trdl config from git repository
+	fromImage := "golang:latest"     // TODO: get fromImage from vault storage
+	runCommands := []string{command} // TODO: get commands from vault storage or trdl config from git repository=
 
 	tarReader, tarWriter := io.Pipe()
 	if err := buildReleaseArtifacts(ctx, tarWriter, gitRepo, fromImage, runCommands); err != nil {
