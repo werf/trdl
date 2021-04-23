@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/theupdateframework/go-tuf"
@@ -45,15 +44,13 @@ func NewRepository(s3Filesystem *S3Filesystem, tufStore *NonAtomicTufStore, tufR
 	}
 }
 
-func (repository *S3Repository) PublishTarget(ctx context.Context, targetPath string, data io.Reader) error {
-	path := filepath.Join("targets", targetPath)
-
-	if err := repository.TufStore.StageTargetFile(ctx, path, data); err != nil {
-		return fmt.Errorf("unable to add staged file %q: %s", path, err)
+func (repository *S3Repository) PublishTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error {
+	if err := repository.TufStore.StageTargetFile(ctx, pathInsideTargets, data); err != nil {
+		return fmt.Errorf("unable to add staged file %q: %s", pathInsideTargets, err)
 	}
 
-	if err := repository.TufRepo.AddTarget(path, json.RawMessage("")); err != nil {
-		return fmt.Errorf("unable to register target file %q in the tuf repo: %s", path, err)
+	if err := repository.TufRepo.AddTarget(pathInsideTargets, json.RawMessage("")); err != nil {
+		return fmt.Errorf("unable to register target file %q in the tuf repo: %s", pathInsideTargets, err)
 	}
 
 	return nil
