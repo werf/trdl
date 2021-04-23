@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -237,10 +238,14 @@ func writeContextTar(contextWriter io.Writer, gitRepo *git.Repository, fromImage
 		}
 
 		if err := writeHeaderFunc(path, &tar.Header{
-			Name:     path,
-			Size:     size,
-			Mode:     int64(info.Mode()),
-			Linkname: link,
+			Format:     tar.FormatGNU,
+			Name:       path,
+			Linkname:   link,
+			Size:       size,
+			Mode:       int64(info.Mode()),
+			ModTime:    time.Now(),
+			AccessTime: time.Now(),
+			ChangeTime: time.Now(),
 		}); err != nil {
 			return err
 		}
@@ -259,9 +264,13 @@ func writeContextTar(contextWriter io.Writer, gitRepo *git.Repository, fromImage
 
 	dockerfileData := generateServiceDockerfile(fromImage, runCommands)
 	if err := writeHeaderFunc(serviceDockerfileInContextTar, &tar.Header{
-		Name: serviceDockerfileInContextTar,
-		Size: int64(len(dockerfileData)),
-		Mode: int64(os.ModePerm),
+		Format:     tar.FormatGNU,
+		Name:       serviceDockerfileInContextTar,
+		Size:       int64(len(dockerfileData)),
+		Mode:       int64(os.ModePerm),
+		ModTime:    time.Now(),
+		AccessTime: time.Now(),
+		ChangeTime: time.Now(),
 	}); err != nil {
 		return err
 	}
