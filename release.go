@@ -203,18 +203,7 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 		return fmt.Errorf("unable to run docker image build: %s", err)
 	}
 
-	go func() {
-		if err := readTarFromImageBuildResponse(response, tarWriter); err != nil {
-			if closeErr := tarWriter.CloseWithError(err); closeErr != nil {
-				panic(closeErr)
-			}
-			return
-		}
-
-		if err := tarWriter.Close(); err != nil {
-			panic(err)
-		}
-	}()
+	processFromImageBuildResponse(response, tarWriter)
 
 	return nil
 }
@@ -312,7 +301,7 @@ func generateServiceDockerfile(fromImage string, runCommands []string) []byte {
 	// tar result files to stdout (with control messages for a receiver)
 	serviceRunCommands := []string{
 		fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString(artifactsTarStartReadCode)),
-		fmt.Sprintf("tar c -C %s .", containerArtifactsDir),
+		fmt.Sprintf("tar c -C %s . | base64", containerArtifactsDir),
 		fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString(artifactsTarStopReadCode)),
 	}
 	addLineFunc("RUN " + strings.Join(serviceRunCommands, " && "))
@@ -320,7 +309,38 @@ func generateServiceDockerfile(fromImage string, runCommands []string) []byte {
 	return data
 }
 
-func readTarFromImageBuildResponse(response types.ImageBuildResponse, tarWriter io.Writer) error {
+func processFromImageBuildResponse(response types.ImageBuildResponse, tarWriter *io.PipeWriter) {
+	r, w := io.Pipe()
+
+	go func() {
+		if err := readTarFromImageBuildResponse(response, w); err != nil {
+			if closeErr := w.CloseWithError(err); closeErr != nil {
+				panic(closeErr)
+			}
+			return
+		}
+
+		if err := w.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	go func() {
+		decoder := base64.NewDecoder(base64.StdEncoding, r)
+		if _, err := io.Copy(tarWriter, decoder); err != nil {
+			if closeErr := tarWriter.CloseWithError(err); closeErr != nil {
+				panic(closeErr)
+			}
+			return
+		}
+
+		if err := w.Close(); err != nil {
+			panic(err)
+		}
+	}()
+}
+
+func readTarFromImageBuildResponse(response types.ImageBuildResponse, writer io.Writer) error {
 	dec := json.NewDecoder(response.Body)
 
 	const (
@@ -377,7 +397,7 @@ func readTarFromImageBuildResponse(response types.ImageBuildResponse, tarWriter 
 						continue
 					}
 
-					if _, err := tarWriter.Write(bufferedData); err != nil {
+					if _, err := writer.Write(bufferedData); err != nil {
 						return err
 					}
 
