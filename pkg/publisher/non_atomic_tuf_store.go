@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/theupdateframework/go-tuf"
 	"github.com/theupdateframework/go-tuf/data"
@@ -112,7 +113,7 @@ func (store *NonAtomicTufStore) WalkStagedTargets(paths []string, targetsFn tuf.
 
 	if len(paths) == 0 {
 		for _, path := range store.stagedFiles {
-			if err := targetsFn(path, runPipedFileReader(path)); err != nil {
+			if err := targetsFn(path, runPipedFileReader(filepath.Join("targets", path))); err != nil {
 				return err
 			}
 		}
@@ -124,7 +125,7 @@ FilterStagedPaths:
 	for _, path := range paths {
 		for _, stagedPath := range store.stagedFiles {
 			if stagedPath == path {
-				if err := targetsFn(path, runPipedFileReader(path)); err != nil {
+				if err := targetsFn(path, runPipedFileReader(filepath.Join("targets", path))); err != nil {
 					return err
 				}
 
@@ -143,7 +144,7 @@ func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, path string
 
 	// NOTE: consistenSnapshot cannot be supported when adding staged files before commit stage
 
-	if err := store.Filesystem.WriteFileStream(ctx, path, data); err != nil {
+	if err := store.Filesystem.WriteFileStream(ctx, filepath.Join("targets", path), data); err != nil {
 		return fmt.Errorf("error writing %q into the store filesystem: %s", path, err)
 	}
 
