@@ -10,6 +10,7 @@ require (
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/vault/api v1.1.0
 	github.com/hashicorp/vault/sdk v0.2.0
+	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/theupdateframework/go-tuf v0.0.0-20201230183259-aee6270feb55
 )
 

@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -109,51 +110,71 @@ func (b *backend) pathRelease(ctx context.Context, _ *logical.Request, d *framew
 		return nil, fmt.Errorf("error initializing publisher repository: %s", err)
 	}
 
-	gitRepo, err := cloneGitRepository(url, gitTag)
-	if err != nil {
-		return nil, fmt.Errorf("unable to clone git repository: %s", err)
-	}
+	taskID := b.releaseTasks.RunTask(func(ctx context.Context) error {
+		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 
-	// TODO: verify head commit
+		fmt.Fprintf(stderr, "Started task\n")
 
-	fromImage := "golang:latest"     // TODO: get fromImage from vault storage
-	runCommands := []string{command} // TODO: get commands from vault storage or trdl config from git repository=
+		gitRepo, err := cloneGitRepository(url, gitTag)
+		if err != nil {
+			return fmt.Errorf("unable to clone git repository: %s", err)
+		}
 
-	tarReader, tarWriter := io.Pipe()
-	if err := buildReleaseArtifacts(ctx, tarWriter, gitRepo, fromImage, runCommands); err != nil {
-		return nil, fmt.Errorf("unable to build release artifacts: %s", err)
-	}
+		fmt.Fprintf(stderr, "Cloned git repo\n")
 
-	var fileNames []string
-	{ // TODO: publisher code here
-		twArtifacts := tar.NewReader(tarReader)
-		for {
-			hdr, err := twArtifacts.Next()
+		// TODO: verify head commit
 
-			if err == io.EOF {
-				break
-			}
+		fromImage := "golang:latest"     // TODO: get fromImage from vault storage
+		runCommands := []string{command} // TODO: get commands from vault storage or trdl config from git repository=
 
-			if err != nil {
-				return nil, fmt.Errorf("error reading next tar artifact header: %s", err)
-			}
+		tarReader, tarWriter := io.Pipe()
+		if err := buildReleaseArtifacts(ctx, tarWriter, gitRepo, fromImage, runCommands); err != nil {
+			return fmt.Errorf("unable to build release artifacts: %s", err)
+		}
 
-			if hdr.Typeflag != tar.TypeDir {
-				if err := publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
-					return nil, fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
+		fmt.Fprintf(stderr, "Created tar\n")
+
+		var fileNames []string
+		{ // TODO: publisher code here
+			twArtifacts := tar.NewReader(tarReader)
+			for {
+				hdr, err := twArtifacts.Next()
+
+				if err == io.EOF {
+					break
 				}
 
-				fileNames = append(fileNames, hdr.Name)
+				if err != nil {
+					return fmt.Errorf("error reading next tar artifact header: %s", err)
+				}
+
+				if hdr.Typeflag != tar.TypeDir {
+					fmt.Fprintf(stderr, "Publishing %q into the tuf repo ...\n", hdr.Name)
+
+					if err := publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
+						return fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
+					}
+
+					fmt.Fprintf(stderr, "Published %q into the tuf repo\n", hdr.Name)
+
+					fileNames = append(fileNames, hdr.Name)
+				}
 			}
+
+			if err := publisherRepository.Commit(ctx); err != nil {
+				return fmt.Errorf("unable to commit new tuf repository state: %s", err)
+			}
+
+			fmt.Fprintf(stderr, "Tuf repo commit done\n")
 		}
 
-		if err := publisherRepository.Commit(ctx); err != nil {
-			return nil, fmt.Errorf("unable to commit new tuf repository state: %s", err)
-		}
-	}
+		return nil
+	})
 
 	return &logical.Response{
-		Warnings: fileNames,
+		Data: map[string]interface{}{
+			"TaskID": taskID,
+		},
 	}, nil
 }
 
