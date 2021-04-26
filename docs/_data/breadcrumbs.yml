@@ -1,0 +1,14 @@
+en:
+  /documentation: &documentation
+    title: Documentation
+    url: /documentation/index.html
+  /reference/cli: &documentation-reference-cli
+    title: Command line interface
+    url: /reference/cli/overview.html
+ru:
+  /documentation:
+    << : *documentation
+    title: Документация
+  /reference/cli:
+    << : *documentation-reference-cli
+    title: Интерфейс командной строки

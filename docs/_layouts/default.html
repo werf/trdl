@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="{% if page.lang == "ru" %}ru{% else %}en{% endif %}">
+<head>
+  {%- include head.html %}
+  <script>
+    $(document).ready(function() {
+      // Initialize navgoco with default options
+      $("#mysidebar").navgoco({
+        caretHtml: '',
+        accordion: true,
+        openClass: 'active', // open
+        save: false, // leave false or nav highlighting doesn't work right
+        cookie: {
+          name: 'navgoco',
+          expires: false,
+          path: '/'
+        },
+        slide: {
+          duration: 400,
+          easing: 'swing'
+        }
+      });
+
+      $("#collapseAll").click(function(e) {
+        e.preventDefault();
+        $("#mysidebar").navgoco('toggle', false);
+      });
+
+      $("#expandAll").click(function(e) {
+        e.preventDefault();
+        $("#mysidebar").navgoco('toggle', true);
+      });
+
+    });
+
+  </script>
+  <script>
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+  {%- if page.datatable == true %}
+  <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.5/css/jquery.dataTables.css">
+  <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.5/js/jquery.dataTables.js"></script>
+  <script>
+    $(document).ready(function(){
+
+      $('table.datatable').DataTable({
+          paging: false,
+          stateSave: true
+        });
+    });
+  </script>
+  {%- endif %}
+
+</head>
+<body>
+  <div class="page">
+    <div class="page__content">
+      {%- include topnav.html %}
+      <!-- Page Content -->
+      {{ content }}
+    </div>
+
+{%- include footer.html %}
+  </div>
+</body>
+</html>

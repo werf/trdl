@@ -1,0 +1,9 @@
+host:
+  production: trdl.dev
+  _default: trdl.test.flant.com
+
+resources:
+  requests:
+    memory:
+      _default: 20M
+      production: 50M
