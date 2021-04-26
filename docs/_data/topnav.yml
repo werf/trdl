@@ -1,0 +1,19 @@
+topnav:
+  en:
+     - title: Installation
+       url: /installation.html
+     - title: Documentation
+       url: /documentation/
+     - title: Use Cases
+       url: /usecases.html
+     - title: Security
+       url: /security.html
+  ru:
+     - title: Установка
+       url: /installation.html
+     - title: Документация
+       url: /documentation/
+     - title: Сценарии использования
+       url: /usecases.html
+     - title: Безопасность
+       url: /security.html
