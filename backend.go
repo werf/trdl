@@ -3,19 +3,20 @@ package trdl
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks"
 )
 
 type backend struct {
 	*framework.Backend
 
-	l sync.RWMutex
-
 	providerCtx       context.Context
 	providerCtxCancel context.CancelFunc
+
+	releaseTasks         *tasks.Queue
+	releaseChannelsTasks *tasks.Queue
 }
 
 var _ logical.Factory = Factory
@@ -38,8 +39,14 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 }
 
 func newBackend() (*backend, error) {
-	b := new(backend)
-	b.providerCtx, b.providerCtxCancel = context.WithCancel(context.Background())
+	providerCtx, providerCtxCancel := context.WithCancel(context.Background())
+
+	b := &backend{
+		providerCtx:          providerCtx,
+		providerCtxCancel:    providerCtxCancel,
+		releaseTasks:         tasks.NewQueue(providerCtx),
+		releaseChannelsTasks: tasks.NewQueue(providerCtx),
+	}
 
 	b.Backend = &framework.Backend{
 		BackendType: logical.TypeLogical,
