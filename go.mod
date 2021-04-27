@@ -12,6 +12,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.2.0
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/theupdateframework/go-tuf v0.0.0-20201230183259-aee6270feb55
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 )
 
 replace github.com/theupdateframework/go-tuf => github.com/werf/third-party-go-tuf v0.0.0-20210420212757-8e2932fb01f2

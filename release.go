@@ -122,7 +122,14 @@ func (b *backend) pathRelease(ctx context.Context, _ *logical.Request, d *framew
 
 		fmt.Fprintf(stderr, "Cloned git repo\n")
 
-		// TODO: verify head commit
+		// TODO: get pgp public keys from vault storage, should be configured by the user
+		var pgpPublicKeys []string
+		// TODO: get requiredNumberOfVerifiedSignatures (required number of signatures made with different keys) from vault storage, should be configured by the user
+		var requiredNumberOfVerifiedSignatures int
+
+		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, pgpPublicKeys, requiredNumberOfVerifiedSignatures); err != nil {
+			return fmt.Errorf("signature verification failed: %s", err)
+		}
 
 		fromImage := "golang:latest"     // TODO: get fromImage from vault storage
 		runCommands := []string{command} // TODO: get commands from vault storage or trdl config from git repository=

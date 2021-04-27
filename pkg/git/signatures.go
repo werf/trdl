@@ -1,0 +1,193 @@
+package git
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"strings"
+
+	"golang.org/x/crypto/openpgp"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+)
+
+func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string, requiredNumberOfVerifiedSignatures int) error {
+	tr, err := repo.Tag(tagName)
+	if err != nil {
+		return fmt.Errorf("unable to get tag: %s", err)
+	}
+
+	to, err := repo.TagObject(tr.Hash())
+	if err != nil {
+		return fmt.Errorf("unable to get tag object: %s", err)
+	}
+
+	if to.PGPSignature != "" {
+		encoded := &plumbing.MemoryObject{}
+		if err := to.EncodeWithoutSignature(encoded); err != nil {
+			return fmt.Errorf("unable to encode tag object: %s", err)
+		}
+
+		pgpKeys, requiredNumberOfVerifiedSignatures, err = verifyPgpSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
+		if err != nil {
+			return err
+		}
+	}
+
+	if requiredNumberOfVerifiedSignatures == 0 {
+		return nil
+	}
+
+	return verifyObjectSignatures(repo, to.Hash.String(), pgpKeys, requiredNumberOfVerifiedSignatures)
+}
+
+func VerifyCommitSignatures(repo *git.Repository, commit string, pgpKeys []string, requiredNumberOfVerifiedSignatures int) error {
+	co, err := repo.CommitObject(plumbing.NewHash(commit))
+	if err != nil {
+		return fmt.Errorf("unable to get commit %q: %s", commit, err)
+	}
+
+	if co.PGPSignature != "" {
+		encoded := &plumbing.MemoryObject{}
+		if err := co.EncodeWithoutSignature(encoded); err != nil {
+			return err
+		}
+
+		pgpKeys, requiredNumberOfVerifiedSignatures, err = verifyPgpSignatures([]string{co.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
+		if err != nil {
+			return err
+		}
+	}
+
+	if requiredNumberOfVerifiedSignatures == 0 {
+		return nil
+	}
+
+	return verifyObjectSignatures(repo, commit, pgpKeys, requiredNumberOfVerifiedSignatures)
+}
+
+func verifyObjectSignatures(repo *git.Repository, objectID string, pgpKeys []string, requiredNumberOfVerifiedSignatures int) error {
+	signatures, err := objectSignaturesFromNotes(repo, objectID)
+	if err != nil {
+		return err
+	}
+
+	if len(signatures) == 0 {
+		return fmt.Errorf("not enough pgp signatures")
+	}
+
+	pgpKeys, requiredNumberOfVerifiedSignatures, err = verifyPgpSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, pgpKeys, requiredNumberOfVerifiedSignatures)
+	if err != nil {
+		return err
+	}
+
+	if requiredNumberOfVerifiedSignatures != 0 {
+		return fmt.Errorf("not enough verified pgp signatures: %d verified signature(s) required", requiredNumberOfVerifiedSignatures)
+	}
+
+	return nil
+}
+
+func verifyPgpSignatures(pgpSignatures []string, signedReaderFunc func() (io.Reader, error), pgpKeys []string, requiredNumberOfVerifiedSignatures int) ([]string, int, error) {
+	for _, pgpSignature := range pgpSignatures {
+		i := 0
+		l := len(pgpKeys)
+		for i < l {
+			keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pgpKeys[i]))
+			if err != nil {
+				return nil, 0, err
+			}
+
+			signedReader, err := signedReaderFunc()
+			if err != nil {
+				return nil, 0, err
+			}
+
+			if _, err = openpgp.CheckArmoredDetachedSignature(keyring, signedReader, strings.NewReader(pgpSignature)); err != nil {
+				i++
+				continue
+			}
+
+			requiredNumberOfVerifiedSignatures--
+			if requiredNumberOfVerifiedSignatures == 0 {
+				return nil, 0, nil
+			}
+
+			pgpKeys = append(pgpKeys[:i], pgpKeys[i+1:]...)
+			break
+		}
+	}
+
+	return pgpKeys, requiredNumberOfVerifiedSignatures, nil
+}
+
+const notesReferenceName = "refs/tags/latest-signature"
+
+func objectSignaturesFromNotes(repo *git.Repository, objectID string) ([]string, error) {
+	ref, err := repo.Reference(notesReferenceName, true)
+	if err != nil {
+		if err == plumbing.ErrReferenceNotFound {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("unable to check existance of reference %q: %s", notesReferenceName, err)
+	}
+
+	refHeadCommit := ref.Hash()
+	refCommitObj, err := repo.CommitObject(refHeadCommit)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get objectID %q: %s", refHeadCommit, err)
+	}
+
+	tree, err := refCommitObj.Tree()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get objectID %q tree: %s", refHeadCommit, err)
+	}
+
+	file, err := tree.File(objectID)
+	if err != nil {
+		if err == object.ErrFileNotFound {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("unable to get objectID %q tree file %s: %s", refHeadCommit, objectID, err)
+	}
+
+	r, err := file.Reader()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get objectID %q tree file %s reader: %s", refHeadCommit, objectID, err)
+	}
+
+	var signatures []string
+	s := bufio.NewScanner(r)
+	for s.Scan() {
+		line := s.Text()
+		if line != "" {
+			signatures = append(signatures, fmt.Sprintf(`-----BEGIN PGP SIGNATURE-----
+
+%s
+-----END PGP SIGNATURE-----`, base64LineToMultiline(line)))
+		}
+	}
+
+	return signatures, nil
+}
+
+func base64LineToMultiline(base64Line string) string {
+	var lines []string
+	var lineRunes = []rune(base64Line)
+	for len(lineRunes) != 0 {
+		var chunk []rune
+		if len(lineRunes) >= 76 {
+			chunk, lineRunes = lineRunes[:76], lineRunes[76:]
+		} else {
+			chunk, lineRunes = lineRunes, []rune{}
+		}
+
+		lines = append(lines, string(chunk))
+	}
+
+	return strings.Join(lines, "\n")
+}
