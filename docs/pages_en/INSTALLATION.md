@@ -1,6 +1,7 @@
 ---
 title: Installation
 permalink: installation.html
+sidebar: none
 ---
 
 ## installation

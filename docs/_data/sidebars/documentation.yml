@@ -17,10 +17,10 @@ entries:
   en:
     f:
       - title: Overview
-        url: /index.html
+        url: /documentation/index.html
 
       - title: Quickstart
-        url: /quickstart.html
+        url: /documentation/quickstart.html
 
       - title: Reference
         f:
@@ -31,10 +31,10 @@ entries:
   ru:
     f:
       - title: Обзор
-        url: /index.html
+        url: /documentation/index.html
 
       - title: Быстрый старт
-        url: /quickstart.html
+        url: /documentation/quickstart.html
 
       - title: Справочник
         f:

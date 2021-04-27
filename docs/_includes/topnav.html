@@ -22,13 +22,9 @@
                         <li class="header__menu-item submenu-parent
                             {%- if folder.folderitems %} header__menu-item_parent{% endif %}
                             {%- if folder.url.size>1 and page.url == folder.url %} header__menu-item_active{% endif %}
-                            {%- if folder.url.size>1 and page.url != folder.url and page.url contains folder.url
-                            and page.url != '/installation.html' %} header__menu-item_active{% endif %}
-                            {%- if folder.url.size>1 and page.url == '/publications_ru.html'
-                            and folder.url == '/publications.html' %} header__menu-item_active{% endif %}
-                            {%- if folder.url.size<2 and page.url.size<2 %} header__menu-item_active{% endif %}
-                            {%- if folder.title == 'Документация' or folder.title == 'Documentation'  %} header__menu-item_active{% endif %}">
-                            <a href="{{ folder.url | true_relative_url }}">{{ folder.title }}</a>
+                            {%- if folder.url.size>1 and page.url != folder.url and page.url contains folder.url %} header__menu-item_active{% endif %}
+                            {%- if folder.url.size<2 and page.url.size<2 %} header__menu-item_active{% endif %}">
+                            <a href="{{ folder.url | relative_url }}">{{ folder.title }}</a>
                             {%- if folder.folderitems %}
                             <div class="submenu-container">
                                 <ul class="submenu">
@@ -36,7 +32,7 @@
                                         {%- if folderitem.external_url %}
                                             <li class="submenu-item"><a href="{{ folderitem.external_url }}" target="_blank" class="submenu-item-link">{{folderitem.title}}</a></li>
                                         {%- else %}
-                                            <li class="submenu-item"><a href="{{ folderitem.url | true_relative_url }}" class="submenu-item-link">{{folderitem.title}}</a></li>
+                                            <li class="submenu-item"><a href="{{ folderitem.url | relative_url }}" class="submenu-item-link">{{folderitem.title}}</a></li>
                                         {%- endif %}
                                     {%- endfor %}
                                 </ul>
@@ -55,9 +51,9 @@
                         {%- if folderitem.external_url %}
                         <li><a href="{{ folderitem.external_url }}" target="_blank">{{folderitem.title}}</a></li>
                         {%- elsif page.url contains folderitem.url %}
-                        <li class="dropdownActive"><a href="{{ folderitem.url | true_relative_url }}">{{folderitem.title}}</a></li>
+                        <li class="dropdownActive"><a href="{{ folderitem.url | relative_url }}">{{folderitem.title}}</a></li>
                         {%- else %}
-                        <li><a href="{{ folderitem.url | true_relative_url }}">{{folderitem.title}}</a></li>
+                        <li><a href="{{ folderitem.url | relative_url }}">{{folderitem.title}}</a></li>
                         {%- endif %}
                         {%- endfor %}
                     </ul>
