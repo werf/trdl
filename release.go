@@ -95,7 +95,7 @@ func (b *backend) pathRelease(_ context.Context, _ *logical.Request, d *framewor
 		return nil, fmt.Errorf("error initializing publisher repository: %s", err)
 	}
 
-	taskID := b.releaseTasks.RunTask(func(ctx context.Context) error {
+	taskID := b.releaseTasks.RunQueuedTask(func(ctx context.Context) error {
 		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 
 		fmt.Fprintf(stderr, "Started task\n")
