@@ -1,12 +1,14 @@
 package tasks
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sync"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
+	"github.com/werf/logboek"
 )
 
 type TaskStatus string
@@ -23,8 +25,19 @@ type Task struct {
 	Status    TaskStatus
 	RunnerErr error
 	Runner    func(ctx context.Context) error
-	// TODO RunnerLog bytes.Buffer + autocreate logboek context
 	CreatedAt time.Time
+
+	LogBuffer *bytes.Buffer
+}
+
+func NewTask(runner func(ctx context.Context) error) *Task {
+	return &Task{
+		ID:        uuid.NewV4().String(),
+		Runner:    runner,
+		CreatedAt: time.Now(),
+		Status:    TaskPending,
+		LogBuffer: bytes.NewBuffer([]byte{}),
+	}
 }
 
 type Queue struct {
@@ -42,16 +55,34 @@ func NewQueue(runnerCtx context.Context) *Queue {
 	}
 }
 
-func (q *Queue) RunTask(runner func(ctx context.Context) error) string {
-	task := &Task{
-		ID:        uuid.NewV4().String(),
-		Runner:    runner,
-		CreatedAt: time.Now(),
-		Status:    TaskPending,
-	}
-
+// RunScheduledTask used to add a new task to the queue only if there are no tasks already queued or running
+func (q *Queue) RunScheduledTask(runner func(ctx context.Context) error) string {
 	q.mu.Lock()
 	defer q.mu.Unlock()
+
+	for _, task := range q.Tasks {
+		switch task.Status {
+		case TaskRunning, TaskPending:
+			return ""
+		}
+	}
+
+	task := NewTask(runner)
+
+	q.Tasks[task.ID] = task
+	q.TasksQueue = append(q.TasksQueue, task.ID)
+
+	go q.runNextTask()
+
+	return task.ID
+}
+
+// RunQueuedTask used to add a new task to the queue
+func (q *Queue) RunQueuedTask(runner func(ctx context.Context) error) string {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	task := NewTask(runner)
 
 	q.Tasks[task.ID] = task
 	q.TasksQueue = append(q.TasksQueue, task.ID)
@@ -69,16 +100,16 @@ func (q *Queue) HasTask(id string) bool {
 	return hasTask
 }
 
-func (q *Queue) GetTaskStatus(id string) (taskStatus TaskStatus, taskErr error) {
+func (q *Queue) GetTaskData(id string) (taskStatus TaskStatus, logs []byte, taskErr error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	task, hasTask := q.Tasks[id]
 	if !hasTask {
-		return "", fmt.Errorf("no such task %q", id)
+		return "", nil, fmt.Errorf("no such task %q", id)
 	}
 
-	return task.Status, task.RunnerErr
+	return task.Status, task.LogBuffer.Bytes(), task.RunnerErr
 }
 
 func (q *Queue) runNextTask() {
@@ -88,7 +119,7 @@ func (q *Queue) runNextTask() {
 		q.mu.Lock()
 		defer q.mu.Unlock()
 
-		if len(q.Tasks) == 0 {
+		if len(q.TasksQueue) == 0 {
 			return
 		}
 
@@ -108,7 +139,9 @@ func (q *Queue) runNextTask() {
 		return
 	}
 
-	if err := nextTask.Runner(q.RunnerCtx); err != nil {
+	loggerCtx := logboek.NewContext(q.RunnerCtx, logboek.DefaultLogger().NewSubLogger(nextTask.LogBuffer, nextTask.LogBuffer))
+
+	if err := nextTask.Runner(loggerCtx); err != nil {
 		func() {
 			q.mu.Lock()
 			defer q.mu.Unlock()
