@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/aws/aws-sdk-go v1.30.27
 	github.com/docker/docker v1.4.2-0.20200319182547-c7ad2b866182
+	github.com/fatih/structs v1.1.0 // indirect
 	github.com/go-git/go-billy/v5 v5.1.0
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/hashicorp/go-hclog v0.14.1

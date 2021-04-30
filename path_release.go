@@ -28,7 +28,7 @@ func pathRelease(b *backend) *framework.Path {
 	return &framework.Path{
 		Pattern: `release$`,
 		Fields: map[string]*framework.FieldSchema{
-			"git-tag": {
+			"git_tag": {
 				Type:        framework.TypeString,
 				Description: "Project git repository tag which should be released (required)",
 			},
@@ -50,8 +50,8 @@ func pathRelease(b *backend) *framework.Path {
 	}
 }
 
-func (b *backend) pathRelease(_ context.Context, _ *logical.Request, d *framework.FieldData) (*logical.Response, error) {
-	gitTag := d.Get("git-tag").(string)
+func (b *backend) pathRelease(_ context.Context, req *logical.Request, d *framework.FieldData) (*logical.Response, error) {
+	gitTag := d.Get("git_tag").(string)
 	if gitTag == "" {
 		return logical.ErrorResponse("missing git-tag"), nil
 	}
@@ -61,44 +61,44 @@ func (b *backend) pathRelease(_ context.Context, _ *logical.Request, d *framewor
 		return logical.ErrorResponse("missing command"), nil
 	}
 
-	url := "https://github.com/werf/trdl-test-project.git" // TODO: get url from vault storage
-
-	awsAccessKeyID, err := GetAwsAccessKeyID() // TODO: get from vault storage, should be configured by the user
-	if err != nil {
-		return nil, fmt.Errorf("unable to get aws access key ID: %s", err)
-	}
-
-	awsSecretAccessKey, err := GetAwsSecretAccessKey() // TODO: get from vault storage, should be configured by the user
-	if err != nil {
-		return nil, fmt.Errorf("unable to get aws secret access key: %s", err)
-	}
-
-	// TODO: get from vault storage, should be configured by the user
-	awsConfig := &aws.Config{
-		Endpoint:    aws.String("https://storage.yandexcloud.net"),
-		Region:      aws.String("ru-central1"),
-		Credentials: credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, ""),
-	}
-
-	// TODO: get from vault storage, should be generated automatically by the plugin, user never has an access to these private keys
-	publisherKeys, err := LoadFixturePublisherKeys()
-	if err != nil {
-		return nil, fmt.Errorf("error loading publisher fixture keys")
-	}
-
-	// Initialize repository before any operations, to ensure everything is setup correctly before building artifact
-	publisherRepository, err := publisher.NewRepositoryWithOptions(
-		publisher.S3Options{AwsConfig: awsConfig, BucketName: "trdl-test-project"}, // TODO: get from vault storage, should be configured by the user
-		publisher.TufRepoOptions{PrivKeys: publisherKeys},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing publisher repository: %s", err)
-	}
-
-	taskID := b.releaseTasks.RunQueuedTask(func(ctx context.Context) error {
+	b.TaskQueueBackend.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 
 		fmt.Fprintf(stderr, "Started task\n")
+
+		url := "https://github.com/werf/trdl-test-project.git" // TODO: get url from vault storage
+
+		awsAccessKeyID, err := GetAwsAccessKeyID() // TODO: get from vault storage, should be configured by the user
+		if err != nil {
+			return fmt.Errorf("unable to get aws access key ID: %s", err)
+		}
+
+		awsSecretAccessKey, err := GetAwsSecretAccessKey() // TODO: get from vault storage, should be configured by the user
+		if err != nil {
+			return fmt.Errorf("unable to get aws secret access key: %s", err)
+		}
+
+		// TODO: get from vault storage, should be configured by the user
+		awsConfig := &aws.Config{
+			Endpoint:    aws.String("https://storage.yandexcloud.net"),
+			Region:      aws.String("ru-central1"),
+			Credentials: credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, ""),
+		}
+
+		// TODO: get from vault storage, should be generated automatically by the plugin, user never has an access to these private keys
+		publisherKeys, err := LoadFixturePublisherKeys()
+		if err != nil {
+			return fmt.Errorf("error loading publisher fixture keys")
+		}
+
+		// Initialize repository before any operations, to ensure everything is setup correctly before building artifact
+		publisherRepository, err := publisher.NewRepositoryWithOptions(
+			publisher.S3Options{AwsConfig: awsConfig, BucketName: "trdl-test-project"}, // TODO: get from vault storage, should be configured by the user
+			publisher.TufRepoOptions{PrivKeys: publisherKeys},
+		)
+		if err != nil {
+			return fmt.Errorf("error initializing publisher repository: %s", err)
+		}
 
 		gitRepo, err := cloneGitRepository(url, gitTag)
 		if err != nil {
@@ -163,11 +163,7 @@ func (b *backend) pathRelease(_ context.Context, _ *logical.Request, d *framewor
 		return nil
 	})
 
-	return &logical.Response{
-		Data: map[string]interface{}{
-			"TaskID": taskID,
-		},
-	}, nil
+	return nil, nil
 }
 
 func cloneGitRepository(url string, gitTag string) (*git.Repository, error) {
