@@ -11,12 +11,7 @@ import (
 
 type backend struct {
 	*framework.Backend
-
-	providerCtx       context.Context
-	providerCtxCancel context.CancelFunc
-
-	releaseTasks         *tasks.Queue
-	releaseChannelsTasks *tasks.Queue
+	TaskQueueBackend *tasks.Backend
 }
 
 var _ logical.Factory = Factory
@@ -39,13 +34,8 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 }
 
 func newBackend() (*backend, error) {
-	providerCtx, providerCtxCancel := context.WithCancel(context.Background())
-
 	b := &backend{
-		providerCtx:          providerCtx,
-		providerCtxCancel:    providerCtxCancel,
-		releaseTasks:         tasks.NewQueue(providerCtx),
-		releaseChannelsTasks: tasks.NewQueue(providerCtx),
+		TaskQueueBackend: tasks.NewBackend(),
 	}
 
 	b.Backend = &framework.Backend{
@@ -55,6 +45,7 @@ func newBackend() (*backend, error) {
 			[]*framework.Path{
 				pathRelease(b),
 			},
+			b.TaskQueueBackend.Paths(),
 		),
 	}
 
