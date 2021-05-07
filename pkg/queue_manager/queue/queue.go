@@ -56,24 +56,9 @@ func (q *Queue) Start() {
 	}()
 }
 
-func (q *Queue) AddOptionalTask(ctx context.Context, taskFunc func(ctx context.Context) error) bool {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-
-	if q.currentTask != nil {
-		return false
-	}
-
+func (q *Queue) AddTask(ctx context.Context, uuid string, taskFunc func(ctx context.Context) error) {
 	go func() {
-		q.queueChan <- newTask(ctx, taskFunc)
-	}()
-
-	return true
-}
-
-func (q *Queue) AddTask(ctx context.Context, taskFunc func(ctx context.Context) error) {
-	go func() {
-		q.queueChan <- newTask(ctx, taskFunc)
+		q.queueChan <- newTask(ctx, uuid, taskFunc)
 	}()
 }
 
@@ -86,6 +71,13 @@ func (q *Queue) GetTaskLog(uuid string) []byte {
 	}
 
 	return q.currentTask.buff.Bytes()
+}
+
+func (q *Queue) IsEmpty() bool {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	return q.currentTask == nil
 }
 
 func (q *Queue) HasRunningTaskByUUID(uuid string) bool {

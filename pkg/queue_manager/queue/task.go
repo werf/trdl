@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/satori/go.uuid"
-
 	"github.com/werf/logboek"
 )
 
@@ -17,7 +15,7 @@ type task struct {
 	buff          *bytes.Buffer
 }
 
-func newTask(taskContext context.Context, action func(ctx context.Context) error) *task {
+func newTask(taskContext context.Context, uuid string, action func(ctx context.Context) error) *task {
 	buff := bytes.NewBuffer([]byte{})
 	loggerCtx := logboek.NewContext(taskContext, logboek.DefaultLogger().NewSubLogger(buff, buff))
 	taskContext, taskCtxCancelFunc := context.WithCancel(loggerCtx)
@@ -25,7 +23,7 @@ func newTask(taskContext context.Context, action func(ctx context.Context) error
 	return &task{
 		ctx:           taskContext,
 		ctxCancelFunc: taskCtxCancelFunc,
-		uuid:          uuid.NewV4().String(),
+		uuid:          uuid,
 		action: func() error {
 			return action(taskContext)
 		},

@@ -11,8 +11,9 @@ import (
 )
 
 const (
+	taskStatusQueued    = "QUEUED"
 	taskStatusRunning   = "RUNNING"
-	taskStatusSucceeded = "SUCCEEDED"
+	taskStatusCompleted = "COMPLETED"
 	taskStatusFailed    = "FAILED"
 	taskStatusCanceled  = "CANCELED"
 )
@@ -41,14 +42,17 @@ func (m *Manager) taskStartedCallback(ctx context.Context, uuid string) error {
 		return err
 	}
 
-	task := &Task{}
-	task.UUID = uuid
+	task, err := getTaskFromStorage(ctx, m.Storage, uuid)
+	if err != nil {
+		return err
+	}
+
+	if task == nil {
+		panic(fmt.Sprintf("unexpected error: task %q not found in storage", uuid))
+	}
+
 	task.Status = taskStatusRunning
-
-	tNow := time.Now()
-	task.Created = tNow
-	task.Modified = tNow
-
+	task.Modified = time.Now()
 	if err := putTaskIntoStorage(ctx, m.Storage, task); err != nil {
 		return err
 	}
@@ -69,7 +73,7 @@ func (m *Manager) taskCompletedCallback(ctx context.Context, uuid string, log []
 		panic(fmt.Sprintf("unexpected error: task %q not found in storage", uuid))
 	}
 
-	task.Status = taskStatusSucceeded
+	task.Status = taskStatusCompleted
 	task.Modified = time.Now()
 	if err := putTaskIntoStorage(ctx, m.Storage, task); err != nil {
 		return err

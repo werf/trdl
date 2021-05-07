@@ -2,6 +2,7 @@ package queue_manager
 
 import (
 	"encoding/json"
+	uuid "github.com/satori/go.uuid"
 	"time"
 
 	"github.com/hashicorp/vault/sdk/logical"
@@ -13,6 +14,18 @@ type Task struct {
 	Reason   string
 	Created  time.Time
 	Modified time.Time
+}
+
+func newTask() *Task {
+	task := &Task{}
+	task.UUID = uuid.NewV4().String()
+	task.Status = taskStatusQueued
+
+	tNow := time.Now()
+	task.Created = tNow
+	task.Modified = tNow
+
+	return task
 }
 
 func taskToStorageEntry(task *Task) (*logical.StorageEntry, error) {
