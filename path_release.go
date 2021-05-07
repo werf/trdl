@@ -61,7 +61,7 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, d *framew
 		return logical.ErrorResponse("missing command"), nil
 	}
 
-	b.TaskQueueBackend.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
+	b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 
 		fmt.Fprintf(stderr, "Started task\n")

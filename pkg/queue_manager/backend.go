@@ -1,9 +1,8 @@
-package tasks
+package queue_manager
 
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/fatih/structs"
 
@@ -17,30 +16,14 @@ const (
 	fieldNameOffset = "offset"
 )
 
-type Backend struct {
-	*Manager
-	mu sync.Mutex
-}
-
-func NewBackend() *Backend {
-	return &Backend{Manager: newManager()}
-}
-
-func (b *Backend) PeriodicFunc(periodicTaskFunc func(ctx context.Context, storage logical.Storage) error) func(ctx context.Context, req *logical.Request) error {
-	return func(_ context.Context, req *logical.Request) error {
-		_ = b.RunOptionalTask(context.Background(), req.Storage, periodicTaskFunc)
-		return nil
-	}
-}
-
-func (b *Backend) Paths() []*framework.Path {
+func (m *Manager) Paths() []*framework.Path {
 	return []*framework.Path{
 		{
 			Pattern: "task/?",
 			Fields:  map[string]*framework.FieldSchema{},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
-					Callback: b.pathTaskList,
+					Callback: m.pathTaskList,
 				},
 			},
 		},
@@ -54,7 +37,7 @@ func (b *Backend) Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
-					Callback: b.pathTaskStatus,
+					Callback: m.pathTaskStatus,
 				},
 			},
 		},
@@ -68,7 +51,7 @@ func (b *Backend) Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.UpdateOperation: &framework.PathOperation{
-					Callback: b.pathTaskCancel,
+					Callback: m.pathTaskCancel,
 				},
 			},
 		},
@@ -90,14 +73,14 @@ func (b *Backend) Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
-					Callback: b.pathTaskLogRead,
+					Callback: m.pathTaskLogRead,
 				},
 			},
 		},
 	}
 }
 
-func (b *Backend) pathTaskList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
+func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	list, err := req.Storage.List(ctx, storageKeyPrefixTask)
 	if err != nil {
 		return nil, err
@@ -110,7 +93,7 @@ func (b *Backend) pathTaskList(ctx context.Context, req *logical.Request, _ *fra
 	}, nil
 }
 
-func (b *Backend) pathTaskStatus(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func (m *Manager) pathTaskStatus(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	uuid := fields.Get(fieldNameUUID).(string)
 
 	task, err := getTaskFromStorage(ctx, req.Storage, uuid)
@@ -129,9 +112,16 @@ func (b *Backend) pathTaskStatus(ctx context.Context, req *logical.Request, fiel
 	}, nil
 }
 
-func (b *Backend) pathTaskCancel(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func (m *Manager) pathTaskCancel(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	uuid := fields.Get(fieldNameUUID).(string)
-	if !b.Manager.HasRunningTask(uuid) {
+	return m.cancelTask(ctx, req.Storage, uuid)
+}
+
+func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uuid string) (*logical.Response, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.Queue == nil || !m.Queue.HasRunningTaskByUUID(uuid) {
 		return &logical.Response{
 			Warnings: []string{
 				fmt.Sprintf("task %q not running", uuid),
@@ -139,45 +129,28 @@ func (b *Backend) pathTaskCancel(ctx context.Context, req *logical.Request, fiel
 		}, nil
 	}
 
-	b.Manager.CancelRunningTask(uuid)
-	if err := markTaskAsCanceled(ctx, req.Storage, uuid); err != nil {
+	// cancel task queue
+	{
+		m.Queue.Stop()
+		m.initQueue()
+	}
+
+	if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {
 		return nil, err
 	}
 
 	return nil, nil
 }
 
-func (b *Backend) pathTaskLogRead(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	offset := fields.Get(fieldNameOffset).(int)
 	limit := fields.Get(fieldNameLimit).(int)
 	uuid := fields.Get(fieldNameUUID).(string)
 
-	data, resp, err := func() ([]byte, *logical.Response, error) {
-		if b.Manager.HasRunningTask(uuid) {
-			data := b.Manager.GetTaskLog(uuid)
-			if data == nil {
-				return nil, nil, nil
-			}
-
-			return data, nil, nil
-		}
-
-		data, err := getTaskLogFromStorage(ctx, req.Storage, uuid)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		if data == nil {
-			return nil, logical.ErrorResponse(fmt.Sprintf("task log %q not found", uuid)), nil
-		}
-
-		return data, nil, nil
-	}()
+	data, resp, err := m.readTaskLog(ctx, req.Storage, uuid)
 	if err != nil {
 		return nil, err
-	}
-
-	if resp != nil {
+	} else if resp != nil {
 		return resp, nil
 	}
 
@@ -194,6 +167,37 @@ func (b *Backend) pathTaskLogRead(ctx context.Context, req *logical.Request, fie
 			"log": string(data),
 		},
 	}, nil
+}
+
+func (m *Manager) readTaskLog(ctx context.Context, reqStorage logical.Storage, uuid string) ([]byte, *logical.Response, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// check task existence
+	{
+		task, err := getTaskFromStorage(ctx, reqStorage, uuid)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unable to get task %q from storage: %s", uuid, err)
+		}
+
+		if task == nil {
+			return nil, logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
+		}
+	}
+
+	// try to get running task log
+	if m.Queue != nil && m.Queue.HasRunningTaskByUUID(uuid) {
+		data := m.Queue.GetTaskLog(uuid)
+		return data, nil, nil
+	}
+
+	// get task log from storage
+	data, err := getTaskLogFromStorage(ctx, reqStorage, uuid)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to get task log %q from storage: %s", uuid, err)
+	}
+
+	return data, nil, nil
 }
 
 const uuidPatternRegexp = "(?i:[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12})"

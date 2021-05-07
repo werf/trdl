@@ -1,4 +1,4 @@
-package tasks
+package queue_manager
 
 import (
 	"encoding/json"

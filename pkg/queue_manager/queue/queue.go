@@ -51,8 +51,6 @@ func (q *Queue) Start() {
 			case <-q.stopChan:
 				close(q.queueChan)
 				return
-				//case <-time.After(5 * time.Second):
-				//	TODO: add waiting for task log message
 			}
 		}
 	}()
@@ -90,7 +88,7 @@ func (q *Queue) GetTaskLog(uuid string) []byte {
 	return q.currentTask.buff.Bytes()
 }
 
-func (q *Queue) HasRunningTask(uuid string) bool {
+func (q *Queue) HasRunningTaskByUUID(uuid string) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
