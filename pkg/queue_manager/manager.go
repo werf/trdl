@@ -17,11 +17,14 @@ type Manager struct {
 	Storage logical.Storage
 	Queue   *queue.Queue
 
-	mu sync.Mutex
+	queueChan chan *queue.Task
+	mu        sync.Mutex
 }
 
 func NewManager() Interface {
-	return &Manager{}
+	m := &Manager{queueChan: make(chan *queue.Task)}
+	m.startNewQueue()
+	return m
 }
 
 func (m *Manager) initManager(storage logical.Storage) {
@@ -30,7 +33,7 @@ func (m *Manager) initManager(storage logical.Storage) {
 	}
 
 	m.Storage = storage
-	m.initQueue()
+	m.startNewQueue()
 }
 
 func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
@@ -100,7 +103,7 @@ func (m *Manager) addQueueTask(ctx context.Context, queueTaskFunc func(context.C
 		return "", fmt.Errorf("unable to put task %q into storage: %s", task.UUID, err)
 	}
 
-	m.Queue.AddTask(ctx, task.UUID, queueTaskFunc)
+	go func() { m.queueChan <- queue.NewTask(ctx, task.UUID, queueTaskFunc) }()
 
 	return task.UUID, nil
 }

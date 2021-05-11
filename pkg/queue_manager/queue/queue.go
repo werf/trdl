@@ -7,8 +7,8 @@ import (
 )
 
 type Queue struct {
-	currentTask *task
-	queueChan   chan *task
+	currentTask *Task
+	queueChan   chan *Task
 	stopChan    chan bool
 	callbacks   Callbacks
 
@@ -21,45 +21,37 @@ type Callbacks struct {
 	TaskCompletedCallback func(ctx context.Context, uuid string, log []byte) error
 }
 
-func NewQueue(callbacks Callbacks) *Queue {
-	return &Queue{callbacks: callbacks, queueChan: make(chan *task), stopChan: make(chan bool)}
+func NewQueue(queueChan chan *Task, callbacks Callbacks) *Queue {
+	return &Queue{callbacks: callbacks, queueChan: queueChan, stopChan: make(chan bool)}
 }
 
 func (q *Queue) Start() {
-	go func() {
-		for {
-			select {
-			case task := <-q.queueChan:
-				func() {
-					q.setCurrentTask(task)
-					defer q.resetCurrentTask()
+	for {
+		select {
+		case task := <-q.queueChan:
+			func() {
+				q.setCurrentTask(task)
+				defer q.resetCurrentTask()
 
-					if callbackErr := q.callbacks.TaskStartedCallback(task.ctx, task.uuid); callbackErr != nil {
+				if callbackErr := q.callbacks.TaskStartedCallback(task.ctx, task.uuid); callbackErr != nil {
+					panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
+				}
+
+				if err := task.action(); err != nil {
+					if callbackErr := q.callbacks.TaskFailedCallback(task.ctx, task.uuid, task.buff.Bytes(), err); callbackErr != nil {
 						panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
 					}
-
-					if err := task.action(); err != nil {
-						if callbackErr := q.callbacks.TaskFailedCallback(task.ctx, task.uuid, task.buff.Bytes(), err); callbackErr != nil {
-							panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
-						}
-					} else {
-						if callbackErr := q.callbacks.TaskCompletedCallback(task.ctx, task.uuid, task.buff.Bytes()); callbackErr != nil {
-							panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
-						}
+				} else {
+					if callbackErr := q.callbacks.TaskCompletedCallback(task.ctx, task.uuid, task.buff.Bytes()); callbackErr != nil {
+						panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
 					}
-				}()
-			case <-q.stopChan:
-				close(q.queueChan)
-				return
-			}
+				}
+			}()
+		case <-q.stopChan:
+			close(q.queueChan)
+			return
 		}
-	}()
-}
-
-func (q *Queue) AddTask(ctx context.Context, uuid string, taskFunc func(ctx context.Context) error) {
-	go func() {
-		q.queueChan <- newTask(ctx, uuid, taskFunc)
-	}()
+	}
 }
 
 func (q *Queue) GetTaskLog(uuid string) []byte {
@@ -95,12 +87,10 @@ func (q *Queue) Stop() {
 		q.currentTask.ctxCancelFunc()
 	}
 
-	go func() {
-		q.stopChan <- true
-	}()
+	q.stopChan <- true
 }
 
-func (q *Queue) setCurrentTask(task *task) {
+func (q *Queue) setCurrentTask(task *Task) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 

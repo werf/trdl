@@ -18,13 +18,17 @@ const (
 	taskStatusCanceled  = "CANCELED"
 )
 
-func (m *Manager) initQueue() {
-	m.Queue = queue.NewQueue(queue.Callbacks{
+func (m *Manager) startNewQueue() {
+	m.Queue = queue.NewQueue(m.queueChan, queue.Callbacks{
 		TaskStartedCallback:   m.taskStartedCallback,
 		TaskFailedCallback:    m.taskFailedCallback,
 		TaskCompletedCallback: m.taskCompletedCallback,
 	})
-	m.Queue.Start()
+	go m.Queue.Start()
+}
+
+func (m *Manager) stopCurrentQueue() {
+	go m.Queue.Stop()
 }
 
 func (m *Manager) taskStartedCallback(ctx context.Context, uuid string) error {

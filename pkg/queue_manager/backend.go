@@ -131,8 +131,8 @@ func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uu
 
 	// cancel task queue
 	{
-		m.Queue.Stop()
-		m.initQueue()
+		m.stopCurrentQueue()
+		m.startNewQueue()
 	}
 
 	if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {
