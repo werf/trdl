@@ -2,10 +2,10 @@ package queue_manager
 
 import (
 	"encoding/json"
-	uuid "github.com/satori/go.uuid"
 	"time"
 
 	"github.com/hashicorp/vault/sdk/logical"
+	uuid "github.com/satori/go.uuid"
 )
 
 type Task struct {

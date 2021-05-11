@@ -1,4 +1,4 @@
-package queue
+package worker
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"sync"
 )
 
-type Queue struct {
+type Worker struct {
 	currentTask *Task
-	queueChan   chan *Task
+	taskChan    chan *Task
 	stopChan    chan bool
 	callbacks   Callbacks
 
@@ -21,14 +21,14 @@ type Callbacks struct {
 	TaskCompletedCallback func(ctx context.Context, uuid string, log []byte) error
 }
 
-func NewQueue(queueChan chan *Task, callbacks Callbacks) *Queue {
-	return &Queue{callbacks: callbacks, queueChan: queueChan, stopChan: make(chan bool)}
+func NewWorker(taskChan chan *Task, callbacks Callbacks) *Worker {
+	return &Worker{callbacks: callbacks, taskChan: taskChan, stopChan: make(chan bool)}
 }
 
-func (q *Queue) Start() {
+func (q *Worker) Start() {
 	for {
 		select {
-		case task := <-q.queueChan:
+		case task := <-q.taskChan:
 			func() {
 				q.setCurrentTask(task)
 				defer q.resetCurrentTask()
@@ -48,13 +48,13 @@ func (q *Queue) Start() {
 				}
 			}()
 		case <-q.stopChan:
-			close(q.queueChan)
+			close(q.taskChan)
 			return
 		}
 	}
 }
 
-func (q *Queue) GetTaskLog(uuid string) []byte {
+func (q *Worker) GetTaskLog(uuid string) []byte {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -65,21 +65,21 @@ func (q *Queue) GetTaskLog(uuid string) []byte {
 	return q.currentTask.buff.Bytes()
 }
 
-func (q *Queue) IsEmpty() bool {
+func (q *Worker) IsEmpty() bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	return q.currentTask == nil
 }
 
-func (q *Queue) HasRunningTaskByUUID(uuid string) bool {
+func (q *Worker) HasRunningTaskByUUID(uuid string) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	return q.currentTask != nil && q.currentTask.uuid != uuid
 }
 
-func (q *Queue) Stop() {
+func (q *Worker) Stop() {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -90,14 +90,14 @@ func (q *Queue) Stop() {
 	q.stopChan <- true
 }
 
-func (q *Queue) setCurrentTask(task *Task) {
+func (q *Worker) setCurrentTask(task *Task) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	q.currentTask = task
 }
 
-func (q *Queue) resetCurrentTask() {
+func (q *Worker) resetCurrentTask() {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 

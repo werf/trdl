@@ -3,130 +3,79 @@ package queue_manager
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/hashicorp/vault/sdk/logical"
-
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager/queue"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager/worker"
 )
 
-const (
-	taskStatusQueued    = "QUEUED"
-	taskStatusRunning   = "RUNNING"
-	taskStatusCompleted = "COMPLETED"
-	taskStatusFailed    = "FAILED"
-	taskStatusCanceled  = "CANCELED"
-)
+func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
+	var taskUUID string
+	var isTaskAdded bool
+	err := m.doTaskWrap(reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
+		if !m.Worker.IsEmpty() {
+			return QueueBusyError
+		}
 
-func (m *Manager) startNewQueue() {
-	m.Queue = queue.NewQueue(m.queueChan, queue.Callbacks{
-		TaskStartedCallback:   m.taskStartedCallback,
-		TaskFailedCallback:    m.taskFailedCallback,
-		TaskCompletedCallback: m.taskCompletedCallback,
+		var err error
+		taskUUID, err = m.addWorkerTask(ctx, newTaskFunc)
+		isTaskAdded = true
+
+		return err
 	})
-	go m.Queue.Start()
+
+	return taskUUID, err
 }
 
-func (m *Manager) stopCurrentQueue() {
-	go m.Queue.Stop()
+func (m *Manager) AddOptionalTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, bool, error) {
+	var taskUUID string
+	var isTaskAdded bool
+	err := m.doTaskWrap(reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
+		if !m.Worker.IsEmpty() {
+			return nil
+		}
+
+		var err error
+		taskUUID, err = m.addWorkerTask(ctx, newTaskFunc)
+		isTaskAdded = true
+
+		return err
+	})
+
+	return taskUUID, isTaskAdded, err
 }
 
-func (m *Manager) taskStartedCallback(ctx context.Context, uuid string) error {
+func (m *Manager) AddTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
+	var taskUUID string
+	err := m.doTaskWrap(reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
+		var err error
+		taskUUID, err = m.addWorkerTask(ctx, newTaskFunc)
+
+		return err
+	})
+
+	return taskUUID, err
+}
+
+func (m *Manager) doTaskWrap(reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error, f func(func(ctx context.Context) error) error) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if err := markStaleTaskAsFailed(ctx, m.Storage); err != nil {
-		return err
+	m.initManager(reqStorage) // initialize on first call
+
+	workerTaskFunc := func(ctx context.Context) error {
+		return taskFunc(ctx, m.Storage)
 	}
 
-	if err := m.Storage.Put(ctx, &logical.StorageEntry{
-		Key:   storageKeyCurrentRunningTask,
-		Value: []byte(uuid),
-	}); err != nil {
-		return err
-	}
-
-	task, err := getTaskFromStorage(ctx, m.Storage, uuid)
-	if err != nil {
-		return err
-	}
-
-	if task == nil {
-		panic(fmt.Sprintf("unexpected error: task %q not found in storage", uuid))
-	}
-
-	task.Status = taskStatusRunning
-	task.Modified = time.Now()
-	if err := putTaskIntoStorage(ctx, m.Storage, task); err != nil {
-		return err
-	}
-
-	return nil
+	return f(workerTaskFunc)
 }
 
-func (m *Manager) taskCompletedCallback(ctx context.Context, uuid string, log []byte) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	task, err := getTaskFromStorage(ctx, m.Storage, uuid)
-	if err != nil {
-		return err
-	}
-
-	if task == nil {
-		panic(fmt.Sprintf("unexpected error: task %q not found in storage", uuid))
-	}
-
-	task.Status = taskStatusCompleted
-	task.Modified = time.Now()
+func (m *Manager) addWorkerTask(ctx context.Context, workerTaskFunc func(context.Context) error) (string, error) {
+	task := newTask()
 	if err := putTaskIntoStorage(ctx, m.Storage, task); err != nil {
-		return err
+		return "", fmt.Errorf("unable to put task %q into storage: %s", task.UUID, err)
 	}
 
-	if err := m.Storage.Put(ctx, &logical.StorageEntry{
-		Key:   taskLogStorageKey(uuid),
-		Value: log,
-	}); err != nil {
-		return err
-	}
+	go func() { m.taskChan <- worker.NewTask(ctx, task.UUID, workerTaskFunc) }()
 
-	if err := m.Storage.Delete(ctx, storageKeyCurrentRunningTask); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *Manager) taskFailedCallback(ctx context.Context, uuid string, log []byte, taskErr error) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	task, err := getTaskFromStorage(ctx, m.Storage, uuid)
-	if err != nil {
-		return err
-	}
-
-	if task == nil {
-		panic(fmt.Sprintf("unexpected error: task %q not found in storage", uuid))
-	}
-
-	task.Status = taskStatusFailed
-	task.Modified = time.Now()
-	task.Reason = taskErr.Error()
-	if err := putTaskIntoStorage(ctx, m.Storage, task); err != nil {
-		return err
-	}
-
-	if err := m.Storage.Put(ctx, &logical.StorageEntry{
-		Key:   taskLogStorageKey(uuid),
-		Value: log,
-	}); err != nil {
-		return err
-	}
-
-	if err := m.Storage.Delete(ctx, storageKeyCurrentRunningTask); err != nil {
-		return err
-	}
-
-	return nil
+	return task.UUID, nil
 }

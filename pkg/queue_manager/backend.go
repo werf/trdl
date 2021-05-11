@@ -121,7 +121,7 @@ func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uu
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.Queue == nil || !m.Queue.HasRunningTaskByUUID(uuid) {
+	if m.Worker == nil || !m.Worker.HasRunningTaskByUUID(uuid) {
 		return &logical.Response{
 			Warnings: []string{
 				fmt.Sprintf("task %q not running", uuid),
@@ -129,10 +129,9 @@ func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uu
 		}, nil
 	}
 
-	// cancel task queue
 	{
-		m.stopCurrentQueue()
-		m.startNewQueue()
+		m.cancelWorker()
+		m.startWorker()
 	}
 
 	if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {
@@ -186,8 +185,8 @@ func (m *Manager) readTaskLog(ctx context.Context, reqStorage logical.Storage, u
 	}
 
 	// try to get running task log
-	if m.Queue != nil && m.Queue.HasRunningTaskByUUID(uuid) {
-		data := m.Queue.GetTaskLog(uuid)
+	if m.Worker != nil && m.Worker.HasRunningTaskByUUID(uuid) {
+		data := m.Worker.GetTaskLog(uuid)
 		return data, nil, nil
 	}
 
