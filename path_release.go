@@ -22,6 +22,7 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/docker"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager"
 )
 
 func pathRelease(b *backend) *framework.Path {
@@ -61,7 +62,7 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, d *framew
 		return logical.ErrorResponse("missing command"), nil
 	}
 
-	b.TaskQueueBackend.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
+	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 
 		fmt.Fprintf(stderr, "Started task\n")
@@ -163,7 +164,19 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, d *framew
 		return nil
 	})
 
-	return nil, nil
+	if err != nil {
+		if err == queue_manager.QueueBusyError {
+			return logical.ErrorResponse(err.Error()), nil
+		}
+
+		return nil, err
+	}
+
+	return &logical.Response{
+		Data: map[string]interface{}{
+			"task_uuid": taskUUID,
+		},
+	}, nil
 }
 
 func cloneGitRepository(url string, gitTag string) (*git.Repository, error) {

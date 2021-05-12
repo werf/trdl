@@ -1,15 +1,13 @@
-package queue
+package worker
 
 import (
 	"bytes"
 	"context"
 
-	"github.com/satori/go.uuid"
-
 	"github.com/werf/logboek"
 )
 
-type task struct {
+type Task struct {
 	ctx           context.Context
 	ctxCancelFunc context.CancelFunc
 	uuid          string
@@ -17,15 +15,15 @@ type task struct {
 	buff          *bytes.Buffer
 }
 
-func newTask(taskContext context.Context, action func(ctx context.Context) error) *task {
+func NewTask(taskContext context.Context, uuid string, action func(ctx context.Context) error) *Task {
 	buff := bytes.NewBuffer([]byte{})
 	loggerCtx := logboek.NewContext(taskContext, logboek.DefaultLogger().NewSubLogger(buff, buff))
 	taskContext, taskCtxCancelFunc := context.WithCancel(loggerCtx)
 
-	return &task{
+	return &Task{
 		ctx:           taskContext,
 		ctxCancelFunc: taskCtxCancelFunc,
-		uuid:          uuid.NewV4().String(),
+		uuid:          uuid,
 		action: func() error {
 			return action(taskContext)
 		},
