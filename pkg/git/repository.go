@@ -139,3 +139,24 @@ func ForEachWorktreeFile(gitRepo *git.Repository, fileFunc func(path string, lin
 
 	return processFilesFunc(rootDirectory, files)
 }
+
+func ReadWorktreeFile(gitRepo *git.Repository, path string) ([]byte, error) {
+	w, err := gitRepo.Worktree()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get git repository worktree: %s", err)
+	}
+
+	fs := w.Filesystem
+
+	f, err := fs.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to open git repository worktree file %q: %s", path, err)
+	}
+
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read git repository worktree file %q: %s", path, err)
+	}
+
+	return data, nil
+}
