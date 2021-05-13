@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v5"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -23,9 +23,10 @@ import (
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
-func pathRelease(b *backend) *framework.Path {
+func releasePath(b *backend) *framework.Path {
 	return &framework.Path{
 		Pattern: `release$`,
 		Fields: map[string]*framework.FieldSchema{
@@ -51,16 +52,14 @@ func pathRelease(b *backend) *framework.Path {
 	}
 }
 
-func (b *backend) pathRelease(_ context.Context, req *logical.Request, d *framework.FieldData) (*logical.Response, error) {
-	gitTag := d.Get("git_tag").(string)
-	if gitTag == "" {
-		return logical.ErrorResponse("missing git-tag"), nil
+func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+	resp, err := util.ValidateRequestFields(req, fields)
+	if resp != nil || err != nil {
+		return resp, err
 	}
 
-	command := d.Get("command").(string)
-	if command == "" {
-		return logical.ErrorResponse("missing command"), nil
-	}
+	gitTag := fields.Get("git_tag").(string)
+	command := fields.Get("command").(string)
 
 	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
