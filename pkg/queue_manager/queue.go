@@ -3,6 +3,8 @@ package queue_manager
 import (
 	"context"
 	"fmt"
+	"os"
+	"syscall"
 
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager/worker"
@@ -55,7 +57,15 @@ func (m *Manager) doTaskWrap(reqStorage logical.Storage, taskFunc func(context.C
 	m.initManager(reqStorage) // initialize on first call
 
 	workerTaskFunc := func(ctx context.Context) error {
-		return taskFunc(ctx, m.Storage)
+		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
+
+		if err := taskFunc(ctx, m.Storage); err != nil {
+			fmt.Fprintf(stderr, "task failed: %s\n", err) // Remove this debug when tasks log debugged
+			return err
+		}
+
+		fmt.Fprintf(stderr, "task succeeded\n") // Remove this debug when tasks log debugged
+		return nil
 	}
 
 	return f(workerTaskFunc)

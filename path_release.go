@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
+	"github.com/werf/logboek"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/docker"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
@@ -64,7 +65,8 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 
-		fmt.Fprintf(stderr, "Started task\n")
+		logboek.Context(ctx).Default().LogF("Started task\n")
+		fmt.Fprintf(stderr, "Started task\n") // Remove this debug when tasks log debugged
 
 		url := "https://github.com/werf/trdl-test-project.git" // TODO: get url from vault storage
 
@@ -105,7 +107,8 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}
 
-		fmt.Fprintf(stderr, "Cloned git repo\n")
+		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
+		fmt.Fprintf(stderr, "Cloned git repo\n") // Remove this debug when tasks log debugged
 
 		// TODO: get pgp public keys from vault storage, should be configured by the user
 		var pgpPublicKeys []string
@@ -124,13 +127,17 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 			return fmt.Errorf("unable to build release artifacts: %s", err)
 		}
 
-		fmt.Fprintf(stderr, "Created tar\n")
+		logboek.Context(ctx).Default().LogF("Built release artifacts tar archive\n")
+		fmt.Fprintf(stderr, "Built release artifacts tar archive\n") // Remove this debug when tasks log debugged
 
 		var fileNames []string
-		{ // TODO: publisher code here
+		{
 			twArtifacts := tar.NewReader(tarReader)
 			for {
 				hdr, err := twArtifacts.Next()
+
+				logboek.Context(ctx).Default().LogF("Next tar entry hdr=%#v err=%v\n", hdr, err)
+				fmt.Fprintf(stderr, "Next tar entry hdr=%#v err=%v\n", hdr, err) // Remove this debug when tasks log debugged
 
 				if err == io.EOF {
 					break
@@ -141,13 +148,15 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 				}
 
 				if hdr.Typeflag != tar.TypeDir {
-					fmt.Fprintf(stderr, "Publishing %q into the tuf repo ...\n", hdr.Name)
+					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", hdr.Name)
+					fmt.Fprintf(stderr, "Publishing %q into the tuf repo ...\n", hdr.Name) // Remove this debug when tasks log debugged
 
 					if err := publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
 						return fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
 					}
 
-					fmt.Fprintf(stderr, "Published %q into the tuf repo\n", hdr.Name)
+					logboek.Context(ctx).Default().LogF("Published %q into the tuf repo\n", hdr.Name)
+					fmt.Fprintf(stderr, "Published %q into the tuf repo\n", hdr.Name) // Remove this debug when tasks log debugged
 
 					fileNames = append(fileNames, hdr.Name)
 				}
@@ -157,12 +166,12 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 				return fmt.Errorf("unable to commit new tuf repository state: %s", err)
 			}
 
-			fmt.Fprintf(stderr, "Tuf repo commit done\n")
+			logboek.Context(ctx).Default().LogF("Tuf repo commit done\n")
+			fmt.Fprintf(stderr, "Tuf repo commit done\n") // Remove this debug when tasks log debugged
 		}
 
 		return nil
 	})
-
 	if err != nil {
 		if err == queue_manager.QueueBusyError {
 			return logical.ErrorResponse(err.Error()), nil
