@@ -6,9 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"os"
 	"path"
-	"syscall"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -16,6 +14,8 @@ import (
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+
+	log "github.com/hashicorp/go-hclog"
 
 	"github.com/werf/logboek"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
@@ -96,10 +96,8 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 	}
 
 	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
-		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
-
 		logboek.Context(ctx).Default().LogF("Started task\n")
-		fmt.Fprintf(stderr, "Started task\n") // Remove this debug when tasks log debugged
+		log.L().Debug("Started task\n") // Remove this debug when tasks log debugged
 
 		gitRepo, err := cloneGitRepositoryTag(c.GitRepoUrl, gitTag, gitUsername, gitPassword)
 		if err != nil {
@@ -107,14 +105,14 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
-		fmt.Fprintf(stderr, "Cloned git repo\n") // Remove this debug when tasks log debugged
+		log.L().Debug("Cloned git repo\n") // Remove this debug when tasks log debugged
 
 		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, c.TrustedGPGPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Verified tag signatures\n")
-		fmt.Fprintf(stderr, "Verified tag signatures\n") // Remove this debug when tasks log debugged
+		log.L().Debug("Verified tag signatures\n") // Remove this debug when tasks log debugged
 
 		trdlCfg, err := getTrdlConfig(gitRepo, gitTag)
 		if err != nil {
@@ -129,7 +127,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Built release artifacts tar archive\n")
-		fmt.Fprintf(stderr, "Built release artifacts tar archive\n") // Remove this debug when tasks log debugged
+		log.L().Debug("Built release artifacts tar archive\n") // Remove this debug when tasks log debugged
 
 		var fileNames []string
 		{
@@ -138,7 +136,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 				hdr, err := twArtifacts.Next()
 
 				logboek.Context(ctx).Default().LogF("Next tar entry hdr=%#v err=%v\n", hdr, err)
-				fmt.Fprintf(stderr, "Next tar entry hdr=%#v err=%v\n", hdr, err) // Remove this debug when tasks log debugged
+				log.L().Debug("Next tar entry hdr=%#v err=%v\n", hdr, err) // Remove this debug when tasks log debugged
 
 				if err == io.EOF {
 					break
@@ -150,14 +148,14 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 				if hdr.Typeflag != tar.TypeDir {
 					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", hdr.Name)
-					fmt.Fprintf(stderr, "Publishing %q into the tuf repo ...\n", hdr.Name) // Remove this debug when tasks log debugged
+					log.L().Debug("Publishing %q into the tuf repo ...\n", hdr.Name) // Remove this debug when tasks log debugged
 
 					if err := publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
 						return fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
 					}
 
 					logboek.Context(ctx).Default().LogF("Published %q into the tuf repo\n", hdr.Name)
-					fmt.Fprintf(stderr, "Published %q into the tuf repo\n", hdr.Name) // Remove this debug when tasks log debugged
+					log.L().Debug("Published %q into the tuf repo\n", hdr.Name) // Remove this debug when tasks log debugged
 
 					fileNames = append(fileNames, hdr.Name)
 				}
@@ -168,7 +166,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			}
 
 			logboek.Context(ctx).Default().LogF("Tuf repo commit done\n")
-			fmt.Fprintf(stderr, "Tuf repo commit done\n") // Remove this debug when tasks log debugged
+			log.L().Debug("Tuf repo commit done\n") // Remove this debug when tasks log debugged
 		}
 
 		return nil
