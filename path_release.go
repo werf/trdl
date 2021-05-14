@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 
 	"github.com/werf/logboek"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/docker"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
@@ -46,11 +47,6 @@ func releasePath(b *backend) *framework.Path {
 				Type:        framework.TypeString,
 				Description: "Git password",
 			},
-			// TODO: use command from trdl.yaml
-			"command": {
-				Type:        framework.TypeString,
-				Description: "Run specified command in the root of project git repository tag (required)",
-			},
 		},
 
 		Operations: map[logical.Operation]framework.OperationHandler{
@@ -77,7 +73,6 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 	}
 
 	gitTag := fields.Get(fieldNameGitTag).(string)
-	command := fields.Get("command").(string)
 
 	var gitUsername string
 	val, ok := fields.GetOk(fieldNameGitCredentialUsername)
@@ -100,9 +95,6 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
 
-	fromImage := "golang:latest"     // TODO: get fromImage from vault storage
-	runCommands := []string{command} // TODO: get commands from vault storage or trdl config from git repository=
-
 	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 
@@ -124,8 +116,15 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Verified tag signatures\n")
 		fmt.Fprintf(stderr, "Verified tag signatures\n") // Remove this debug when tasks log debugged
 
+		trdlCfg, err := getTrdlConfig(gitRepo, gitTag)
+		if err != nil {
+			return fmt.Errorf("unable to get trdl configuration: %s", err)
+		}
+
+		logboek.Context(ctx).Default().LogF("Got trdl.yaml configuration\n")
+
 		tarReader, tarWriter := io.Pipe()
-		if err := buildReleaseArtifacts(ctx, tarWriter, gitRepo, fromImage, runCommands); err != nil {
+		if err := buildReleaseArtifacts(ctx, tarWriter, gitRepo, trdlCfg.DockerImage, trdlCfg.Commands); err != nil {
 			return fmt.Errorf("unable to build release artifacts: %s", err)
 		}
 
@@ -187,6 +186,28 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			"task_uuid": taskUUID,
 		},
 	}, nil
+}
+
+func getTrdlConfig(gitRepo *git.Repository, gitTag string) (*config.Trdl, error) {
+	data, err := trdlGit.ReadWorktreeFile(gitRepo, config.TrdlFileName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read worktree file %q: %s", config.TrdlFileName, err)
+	}
+
+	values := map[string]interface{}{
+		"Tag": gitTag,
+	}
+
+	cfg, err := config.ParseTrdl(data, values)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing %q configuration file: %s", config.TrdlFileName, err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("error validation %q configuration file: %s", config.TrdlFileName, err)
+	}
+
+	return cfg, nil
 }
 
 func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRepo *git.Repository, fromImage string, runCommands []string) error {
