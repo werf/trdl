@@ -7,6 +7,10 @@ import (
 	"github.com/werf/logboek"
 )
 
+type TaskInterface interface {
+	Log() []byte
+}
+
 type Task struct {
 	ctx           context.Context
 	ctxCancelFunc context.CancelFunc
@@ -29,4 +33,8 @@ func NewTask(taskContext context.Context, uuid string, action func(ctx context.C
 		},
 		buff: buff,
 	}
+}
+
+func (t *Task) Log() []byte {
+	return t.buff.Bytes()
 }

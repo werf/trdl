@@ -10,9 +10,13 @@ import (
 
 var QueueBusyError = errors.New("busy")
 
+const (
+	numberOfWorkers = 1
+)
+
 type Manager struct {
 	Storage logical.Storage
-	Worker  *worker.Worker
+	Workers []*worker.Worker
 
 	taskChan chan *worker.Task
 	mu       sync.Mutex
@@ -23,10 +27,15 @@ func NewManager() Interface {
 }
 
 func (m *Manager) initManager(storage logical.Storage) {
+	if len(m.Workers) < numberOfWorkers {
+		for i := 0; i < numberOfWorkers-len(m.Workers); i++ {
+			m.startWorker()
+		}
+	}
+
 	if m.Storage != nil {
 		return
 	}
 
 	m.Storage = storage
-	m.startWorker()
 }

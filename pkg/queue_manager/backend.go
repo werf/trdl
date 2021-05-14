@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager/worker"
 )
 
 const (
@@ -124,24 +125,25 @@ func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uu
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.Worker == nil || !m.Worker.HasRunningTaskByUUID(uuid) {
-		return &logical.Response{
-			Warnings: []string{
-				fmt.Sprintf("task %q not running", uuid),
-			},
-		}, nil
+	for ind, w := range m.Workers {
+		if w.HasRunningTaskByUUID(uuid) {
+			go w.Stop()
+
+			m.Workers = append(m.Workers[:ind], m.Workers[ind+1:]...)
+
+			if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {
+				return nil, err
+			}
+
+			return nil, nil
+		}
 	}
 
-	{
-		m.cancelWorker()
-		m.startWorker()
-	}
-
-	if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {
-		return nil, err
-	}
-
-	return nil, nil
+	return &logical.Response{
+		Warnings: []string{
+			fmt.Sprintf("task %q not running", uuid),
+		},
+	}, nil
 }
 
 func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
@@ -188,9 +190,15 @@ func (m *Manager) readTaskLog(ctx context.Context, reqStorage logical.Storage, u
 	}
 
 	// try to get running task log
-	if m.Worker != nil && m.Worker.HasRunningTaskByUUID(uuid) {
-		data := m.Worker.GetTaskLog(uuid)
-		return data, nil, nil
+	for _, w := range m.Workers {
+		var data []byte
+		withHold := w.HoldRunningTask(uuid, func(task worker.TaskInterface) {
+			data = task.Log()
+		})
+
+		if withHold {
+			return data, nil, nil
+		}
 	}
 
 	// get task log from storage

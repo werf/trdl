@@ -13,7 +13,15 @@ import (
 func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
 	var taskUUID string
 	err := m.doTaskWrap(reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
-		if m.Worker.IsBusy() {
+		allWorkersBusy := true
+		for _, w := range m.Workers {
+			if !w.IsBusy() {
+				allWorkersBusy = false
+				break
+			}
+		}
+
+		if allWorkersBusy {
 			return QueueBusyError
 		}
 

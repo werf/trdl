@@ -54,6 +54,7 @@ func markTaskAsCanceled(ctx context.Context, storage logical.Storage, uuid strin
 	}
 
 	task.Status = taskStatusCanceled
+	task.Reason = "the task was canceled"
 	task.Modified = time.Now()
 	if err := putTaskIntoStorage(ctx, storage, task); err != nil {
 		return err
