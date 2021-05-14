@@ -32,6 +32,14 @@ func pathPublish(b *backend) *framework.Path {
 				Type:        framework.TypeBool,
 				Description: "Reset previously published commit even if current commit is not descendant of previous (optional)",
 			},
+			fieldNameGitCredentialUsername: {
+				Type:        framework.TypeString,
+				Description: "Git username",
+			},
+			fieldNameGitCredentialPassword: {
+				Type:        framework.TypeString,
+				Description: "Git password",
+			},
 		},
 
 		Operations: map[logical.Operation]framework.OperationHandler{
@@ -54,6 +62,22 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		return resp, err
 	}
 
+	var gitUsername string
+	val, ok := fields.GetOk(fieldNameGitCredentialUsername)
+	if ok {
+		gitUsername = val.(string)
+	} else {
+		gitUsername = c.GitCredential.Username
+	}
+
+	var gitPassword string
+	val, ok = fields.GetOk(fieldNameGitCredentialPassword)
+	if ok {
+		gitPassword = val.(string)
+	} else {
+		gitPassword = c.GitCredential.Password
+	}
+
 	gitBranch := "trdl" // TODO: get branch from vault storage
 
 	publisherRepository, err := GetPublisherRepository(req.Storage)
@@ -67,7 +91,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		fmt.Fprintf(stderr, "Started task\n") // Remove this debug when tasks log debugged
 
-		gitRepo, err := cloneGitRepositoryBranch(c.GitRepoUrl, gitBranch)
+		gitRepo, err := cloneGitRepositoryBranch(c.GitRepoUrl, gitBranch, gitUsername, gitPassword)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}

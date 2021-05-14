@@ -38,6 +38,14 @@ func releasePath(b *backend) *framework.Path {
 				Description: "Project git repository tag which should be released",
 				Required:    true,
 			},
+			fieldNameGitCredentialUsername: {
+				Type:        framework.TypeString,
+				Description: "Git username",
+			},
+			fieldNameGitCredentialPassword: {
+				Type:        framework.TypeString,
+				Description: "Git password",
+			},
 			// TODO: use command from trdl.yaml
 			"command": {
 				Type:        framework.TypeString,
@@ -71,6 +79,22 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 	gitTag := fields.Get(fieldNameGitTag).(string)
 	command := fields.Get("command").(string)
 
+	var gitUsername string
+	val, ok := fields.GetOk(fieldNameGitCredentialUsername)
+	if ok {
+		gitUsername = val.(string)
+	} else {
+		gitUsername = c.GitCredential.Username
+	}
+
+	var gitPassword string
+	val, ok = fields.GetOk(fieldNameGitCredentialPassword)
+	if ok {
+		gitPassword = val.(string)
+	} else {
+		gitPassword = c.GitCredential.Password
+	}
+
 	publisherRepository, err := GetPublisherRepository(req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
@@ -85,7 +109,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		fmt.Fprintf(stderr, "Started task\n") // Remove this debug when tasks log debugged
 
-		gitRepo, err := cloneGitRepositoryTag(c.GitRepoUrl, gitTag)
+		gitRepo, err := cloneGitRepositoryTag(c.GitRepoUrl, gitTag, gitUsername, gitPassword)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}
