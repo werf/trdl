@@ -6,7 +6,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"gopkg.in/yaml.v2"
 
@@ -46,21 +46,20 @@ func pathPublish(b *backend) *framework.Path {
 	}
 }
 
-func (b *backend) pathPublish(_ context.Context, req *logical.Request, d *framework.FieldData) (*logical.Response, error) {
-	resetCommit := d.Get("reset_commit").(bool)
+func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+	resetCommit := fields.Get("reset_commit").(bool)
 
-	gitBranch := "trdl"                                    // TODO: get branch from vault storage
-	url := "https://github.com/werf/trdl-test-project.git" // TODO: get url from vault storage
+	c, resp, err := GetAndValidateConfiguration(ctx, req.Storage)
+	if resp != nil || err != nil {
+		return resp, err
+	}
+
+	gitBranch := "trdl" // TODO: get branch from vault storage
 
 	publisherRepository, err := GetPublisherRepository(req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
-
-	// TODO: get pgp public keys from vault storage, should be configured by the user
-	var pgpPublicKeys []string
-	// TODO: get requiredNumberOfVerifiedSignatures (required number of signatures made with different keys) from vault storage, should be configured by the user
-	var requiredNumberOfVerifiedSignatures int
 
 	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
@@ -68,7 +67,7 @@ func (b *backend) pathPublish(_ context.Context, req *logical.Request, d *framew
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		fmt.Fprintf(stderr, "Started task\n") // Remove this debug when tasks log debugged
 
-		gitRepo, err := cloneGitRepositoryBranch(url, gitBranch)
+		gitRepo, err := cloneGitRepositoryBranch(c.GitRepoUrl, gitBranch)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}
@@ -114,7 +113,7 @@ func (b *backend) pathPublish(_ context.Context, req *logical.Request, d *framew
 			}
 		}
 
-		if err := trdlGit.VerifyCommitSignatures(gitRepo, headRef.Hash().String(), pgpPublicKeys, requiredNumberOfVerifiedSignatures); err != nil {
+		if err := trdlGit.VerifyCommitSignatures(gitRepo, headRef.Hash().String(), c.TrustedGPGPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
