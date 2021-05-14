@@ -43,7 +43,7 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: "task/" + uuidPattern(fieldNameUUID) + "/cancel",
+			Pattern: "task/" + uuidPattern(fieldNameUUID) + "/cancel$",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:     framework.TypeNameString,
@@ -60,7 +60,7 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: "task/" + uuidPattern(fieldNameUUID) + "/logs",
+			Pattern: "task/" + uuidPattern(fieldNameUUID) + "/logs$",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:     framework.TypeNameString,
