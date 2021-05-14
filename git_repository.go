@@ -1,14 +1,23 @@
 package trdl
 
 import (
-	"github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 )
 
-func cloneGitRepositoryBranch(url string, gitBranch string) (*git.Repository, error) {
+func cloneGitRepositoryBranch(url, gitBranch, username, password string) (*git.Repository, error) {
 	cloneGitOptions := trdlGit.CloneOptions{
 		BranchName:        gitBranch,
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+	}
+
+	if username != "" && password != "" {
+		cloneGitOptions.Auth = &http.BasicAuth{
+			Username: username,
+			Password: password,
+		}
 	}
 
 	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)
@@ -19,10 +28,17 @@ func cloneGitRepositoryBranch(url string, gitBranch string) (*git.Repository, er
 	return gitRepo, nil
 }
 
-func cloneGitRepositoryTag(url string, gitTag string) (*git.Repository, error) {
+func cloneGitRepositoryTag(url, gitTag, username, password string) (*git.Repository, error) {
 	cloneGitOptions := trdlGit.CloneOptions{
 		TagName:           gitTag,
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+	}
+
+	if username != "" && password != "" {
+		cloneGitOptions.Auth = &http.BasicAuth{
+			Username: username,
+			Password: password,
+		}
 	}
 
 	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)

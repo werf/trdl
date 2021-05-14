@@ -9,8 +9,9 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v5/memfs"
-	"github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
 )
 
@@ -19,6 +20,7 @@ type CloneOptions struct {
 	BranchName        string
 	ReferenceName     string
 	RecurseSubmodules git.SubmoduleRescursivity
+	Auth              transport.AuthMethod
 }
 
 func CloneInMemory(url string, opts CloneOptions) (*git.Repository, error) {
@@ -39,6 +41,10 @@ func CloneInMemory(url string, opts CloneOptions) (*git.Repository, error) {
 
 		if opts.RecurseSubmodules != 0 {
 			cloneOptions.RecurseSubmodules = opts.RecurseSubmodules
+		}
+
+		if opts.Auth != nil {
+			cloneOptions.Auth = opts.Auth
 		}
 	}
 
