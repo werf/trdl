@@ -65,11 +65,11 @@ func (q *Worker) GetTaskLog(uuid string) []byte {
 	return q.currentTask.buff.Bytes()
 }
 
-func (q *Worker) IsEmpty() bool {
+func (q *Worker) IsBusy() bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	return q.currentTask == nil
+	return q.currentTask != nil
 }
 
 func (q *Worker) HasRunningTaskByUUID(uuid string) bool {
