@@ -25,14 +25,20 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
+const (
+	fieldNameGitTag = "git_tag"
+)
+
 func releasePath(b *backend) *framework.Path {
 	return &framework.Path{
 		Pattern: `release$`,
 		Fields: map[string]*framework.FieldSchema{
-			"git_tag": {
+			fieldNameGitTag: {
 				Type:        framework.TypeString,
-				Description: "Project git repository tag which should be released (required)",
+				Description: "Project git repository tag which should be released",
+				Required:    true,
 			},
+			// TODO: use command from trdl.yaml
 			"command": {
 				Type:        framework.TypeString,
 				Description: "Run specified command in the root of project git repository tag (required)",
@@ -51,26 +57,24 @@ func releasePath(b *backend) *framework.Path {
 	}
 }
 
-func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	resp, err := util.ValidateRequestFields(req, fields)
 	if resp != nil || err != nil {
 		return resp, err
 	}
 
-	gitTag := fields.Get("git_tag").(string)
-	command := fields.Get("command").(string)
+	c, resp, err := GetAndValidateConfiguration(ctx, req.Storage)
+	if resp != nil || err != nil {
+		return resp, err
+	}
 
-	url := "https://github.com/werf/trdl-test-project.git" // TODO: get url from vault storage
+	gitTag := fields.Get(fieldNameGitTag).(string)
+	command := fields.Get("command").(string)
 
 	publisherRepository, err := GetPublisherRepository(req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
-
-	// TODO: get pgp public keys from vault storage, should be configured by the user
-	var pgpPublicKeys []string
-	// TODO: get requiredNumberOfVerifiedSignatures (required number of signatures made with different keys) from vault storage, should be configured by the user
-	var requiredNumberOfVerifiedSignatures int
 
 	fromImage := "golang:latest"     // TODO: get fromImage from vault storage
 	runCommands := []string{command} // TODO: get commands from vault storage or trdl config from git repository=
@@ -81,7 +85,7 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		fmt.Fprintf(stderr, "Started task\n") // Remove this debug when tasks log debugged
 
-		gitRepo, err := cloneGitRepositoryTag(url, gitTag)
+		gitRepo, err := cloneGitRepositoryTag(c.GitRepoUrl, gitTag)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}
@@ -89,7 +93,7 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
 		fmt.Fprintf(stderr, "Cloned git repo\n") // Remove this debug when tasks log debugged
 
-		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, pgpPublicKeys, requiredNumberOfVerifiedSignatures); err != nil {
+		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, c.TrustedGPGPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
