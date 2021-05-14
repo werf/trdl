@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	log "github.com/hashicorp/go-hclog"
 )
 
 type S3Filesystem struct {
@@ -36,7 +37,7 @@ func (fs *S3Filesystem) IsFileExist(ctx context.Context, path string) (bool, err
 		Bucket: &fs.BucketName,
 		Key:    &path,
 	})
-	fmt.Printf("-- S3Filesystem.IsFileExist %q err=%v\n", path, err)
+	log.L().Debug("-- S3Filesystem.IsFileExist %q err=%v\n", path, err)
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			if awsErr.Code() == "NotFound" {
@@ -81,7 +82,7 @@ func (fw fakeWriterAt) WriteAt(p []byte, offset int64) (int, error) {
 	n, err := fw.Writer.Write(p)
 
 	// DEBUG
-	// fmt.Printf("-- fakeWriterAt.WriteAt(%p, %d) -> %d, %v\n", p, offset, n, err)
+	// log.L().Debug("-- fakeWriterAt.WriteAt(%p, %d) -> %d, %v\n", p, offset, n, err)
 
 	return n, err
 }
@@ -167,7 +168,7 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 		return fmt.Errorf("error uploading %q: %s", path, err)
 	}
 
-	fmt.Printf("Uploaded %q\n", result.Location)
+	log.L().Debug("Uploaded %q\n", result.Location)
 
 	return nil
 }
@@ -179,7 +180,7 @@ type debugReader struct {
 func (o *debugReader) Read(p []byte) (int, error) {
 	n, err := o.origReader.Read(p)
 
-	fmt.Printf("-- debugReader Read(%p) -> %d, %v\n", p, n, err)
+	log.L().Debug("-- debugReader Read(%p) -> %d, %v\n", p, n, err)
 
 	return n, err
 }

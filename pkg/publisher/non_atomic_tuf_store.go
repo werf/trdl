@@ -7,6 +7,8 @@ import (
 	"io"
 	"path/filepath"
 
+	log "github.com/hashicorp/go-hclog"
+
 	"github.com/theupdateframework/go-tuf"
 	"github.com/theupdateframework/go-tuf/data"
 	"github.com/theupdateframework/go-tuf/sign"
@@ -59,7 +61,7 @@ func (store *NonAtomicTufStore) GetMeta() (map[string]json.RawMessage, error) {
 			meta[name] = stagedData
 			continue
 		}
-		fmt.Printf("-- NonAtomicTufStore.GetMeta %q not found in staged meta!\n", name)
+		log.L().Debug("-- NonAtomicTufStore.GetMeta %q not found in staged meta!\n", name)
 
 		exists, err := store.Filesystem.IsFileExist(ctx, name)
 		if err != nil {
@@ -73,23 +75,23 @@ func (store *NonAtomicTufStore) GetMeta() (map[string]json.RawMessage, error) {
 			}
 			meta[name] = data
 		} else {
-			fmt.Printf("-- NonAtomicTufStore.GetMeta %q not found in the store filesystem!\n", name)
+			log.L().Debug("-- NonAtomicTufStore.GetMeta %q not found in the store filesystem!\n", name)
 		}
 	}
 
-	fmt.Printf("-- NonAtomicTufStore.GetMeta -> meta[targets]: %s\n", meta["targets.json"])
+	log.L().Debug("-- NonAtomicTufStore.GetMeta -> meta[targets]: %s\n", meta["targets.json"])
 
 	return meta, nil
 }
 
 func (store *NonAtomicTufStore) SetMeta(name string, meta json.RawMessage) error {
-	fmt.Printf("-- NonAtomicTufStore.SetMeta %q\n", name)
+	log.L().Debug("-- NonAtomicTufStore.SetMeta %q\n", name)
 	store.stagedMeta[name] = meta
 	return nil
 }
 
 func (store *NonAtomicTufStore) WalkStagedTargets(paths []string, targetsFn tuf.TargetsWalkFunc) error {
-	fmt.Printf("-- NonAtomicTufStore.WalkStagedTargets %v\n", paths)
+	log.L().Debug("-- NonAtomicTufStore.WalkStagedTargets %v\n", paths)
 
 	ctx := context.Background()
 
@@ -140,7 +142,7 @@ FilterStagedPaths:
 }
 
 func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, path string, data io.Reader) error {
-	fmt.Printf("-- NonAtomicTufStore.StageTargetFile %q\n", path)
+	log.L().Debug("-- NonAtomicTufStore.StageTargetFile %q\n", path)
 
 	// NOTE: consistenSnapshot cannot be supported when adding staged files before commit stage
 
@@ -154,7 +156,7 @@ func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, path string
 }
 
 func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[string]int, hashes map[string]data.Hashes) error {
-	fmt.Printf("-- NonAtomicTufStore.Commit\n")
+	log.L().Debug("-- NonAtomicTufStore.Commit\n")
 	if consistentSnapshot {
 		panic("not supported")
 	}
@@ -165,7 +167,7 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 		// TODO: perms 0644
 
 		for _, path := range computeMetadataPaths(consistentSnapshot, name, versions) {
-			fmt.Printf("-- NonAtomicTufStore.Commit storing metadata path %q into the filesystem\n", path)
+			log.L().Debug("-- NonAtomicTufStore.Commit storing metadata path %q into the filesystem\n", path)
 
 			if err := store.Filesystem.WriteFileBytes(ctx, path, data); err != nil {
 				return fmt.Errorf("error writing metadata path %q into the filesystem: %s", path, err)
@@ -180,7 +182,7 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 }
 
 func (store *NonAtomicTufStore) GetSigningKeys(role string) ([]sign.Signer, error) {
-	fmt.Printf("-- NonAtomicTufStore.GetSigningKeys(%q)\n", role)
+	log.L().Debug("-- NonAtomicTufStore.GetSigningKeys(%q)\n", role)
 
 	switch role {
 	case "root":

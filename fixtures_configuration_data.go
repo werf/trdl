@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/hashicorp/go-hclog"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/keyhelper"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 )
@@ -66,7 +68,7 @@ func LoadFixturePublisherKeys() (publisher.TufRepoPrivKeys, error) {
 		}
 	}
 
-	fmt.Printf("privKeys: %#v\n", privKeys)
+	log.L().Debug("privKeys: %#v\n", privKeys)
 
 	return privKeys, nil
 }
