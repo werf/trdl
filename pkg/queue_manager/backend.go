@@ -60,7 +60,7 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: "task/" + uuidPattern(fieldNameUUID) + "/logs$",
+			Pattern: "task/" + uuidPattern(fieldNameUUID) + "/log$",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:     framework.TypeNameString,
@@ -76,7 +76,10 @@ func (m *Manager) Paths() []*framework.Path {
 				},
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
-				logical.ReadOperation: &framework.PathOperation{
+				logical.CreateOperation: &framework.PathOperation{
+					Callback: m.pathTaskLogRead,
+				},
+				logical.UpdateOperation: &framework.PathOperation{
 					Callback: m.pathTaskLogRead,
 				},
 			},
@@ -151,6 +154,14 @@ func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fie
 	limit := fields.Get(fieldNameLimit).(int)
 	uuid := fields.Get(fieldNameUUID).(string)
 
+	if offset < 0 {
+		return logical.ErrorResponse("field %q cannot be negative", fieldNameOffset), nil
+	}
+
+	if limit < 0 {
+		return logical.ErrorResponse("field %q cannot be negative", fieldNameLimit), nil
+	}
+
 	data, resp, err := m.readTaskLog(ctx, req.Storage, uuid)
 	if err != nil {
 		return nil, err
@@ -160,7 +171,7 @@ func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fie
 
 	if len(data) < offset {
 		data = nil
-	} else if len(data[offset:]) < limit {
+	} else if len(data[offset:]) < limit || limit == 0 {
 		data = data[offset:]
 	} else {
 		data = data[offset : offset+limit]
