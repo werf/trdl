@@ -48,21 +48,9 @@ func (q *Worker) Start() {
 				}
 			}()
 		case <-q.stopChan:
-			close(q.taskChan)
 			return
 		}
 	}
-}
-
-func (q *Worker) GetTaskLog(uuid string) []byte {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-
-	if q.currentTask == nil || q.currentTask.uuid != uuid {
-		return nil
-	}
-
-	return q.currentTask.buff.Bytes()
 }
 
 func (q *Worker) IsBusy() bool {
@@ -72,11 +60,24 @@ func (q *Worker) IsBusy() bool {
 	return q.currentTask != nil
 }
 
+func (q *Worker) HoldRunningTask(uuid string, do func(task TaskInterface)) bool {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if q.currentTask == nil || q.currentTask.uuid != uuid {
+		return false
+	}
+
+	do(q.currentTask)
+
+	return true
+}
+
 func (q *Worker) HasRunningTaskByUUID(uuid string) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	return q.currentTask != nil && q.currentTask.uuid != uuid
+	return q.currentTask != nil && q.currentTask.uuid == uuid
 }
 
 func (q *Worker) Stop() {

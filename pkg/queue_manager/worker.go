@@ -18,20 +18,14 @@ const (
 )
 
 func (m *Manager) startWorker() {
-	m.Worker = worker.NewWorker(m.taskChan, worker.Callbacks{
+	newWorker := worker.NewWorker(m.taskChan, worker.Callbacks{
 		TaskStartedCallback:   m.taskStartedCallback,
 		TaskFailedCallback:    m.taskFailedCallback,
 		TaskCompletedCallback: m.taskCompletedCallback,
 	})
-	go m.Worker.Start()
-}
+	go newWorker.Start()
 
-func (m *Manager) cancelWorker() {
-	if m.Worker == nil {
-		return
-	}
-
-	go m.Worker.Stop()
+	m.Workers = append(m.Workers, newWorker)
 }
 
 func (m *Manager) taskStartedCallback(ctx context.Context, uuid string) error {
