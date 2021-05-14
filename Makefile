@@ -24,7 +24,7 @@ enable:
 	VAULT_ADDR='http://127.0.0.1:8200' vault secrets enable -path=trdl vault-plugin-secrets-trdl
 
 fixtures:
-	curl -X POST "http://127.0.0.1:8200/v1/trdl/configure" -H  "accept: */*" -H  "Content-Type: application/json" -H  "X-Vault-Token: root" -d "{\"git_repo_url\":\"https://github.com/werf/trdl-test-project.git\"}"
+	curl -X POST "http://127.0.0.1:8200/v1/trdl/configure" -H  "accept: */*" -H  "Content-Type: application/json" -H  "X-Vault-Token: root" -d "{\"git_repo_url\":\"https://github.com/werf/trdl-test-project.git\",\"required_number_of_verified_signatures_on_commit\":0}"
 
 clean:
 	rm -f ./vault/plugins/vault-plugin-secrets-trdl
