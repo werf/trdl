@@ -13,7 +13,8 @@ import (
 const (
 	fieldNameGitRepoUrl                                 = "git_repo_url"
 	fieldNameRequiredNumberOfVerifiedSignaturesOnCommit = "required_number_of_verified_signatures_on_commit"
-	fieldNameLastPublishSuccessfulCommit                = "last_successful_commit"
+	// TODO
+	//fieldNameLastPublishSuccessfulCommit                = "last_successful_commit"
 	// TODO
 	//fieldNameTaskTimeout                                = "task_timeout"
 	//fieldNameTaskHistoryLimit                           = "task_history_limit"
@@ -42,10 +43,11 @@ func configurePaths(b *backend) []*framework.Path {
 					Description: "Required number of verified signatures on commit",
 					Required:    true,
 				},
-				fieldNameLastPublishSuccessfulCommit: {
-					Type:        framework.TypeString,
-					Description: "The commit on which the publication was successfully completed",
-				},
+				// TODO
+				//fieldNameLastPublishSuccessfulCommit: {
+				//	Type:        framework.TypeString,
+				//	Description: "The commit on which the publication was successfully completed",
+				//},
 				// TODO
 				//fieldNameTaskTimeout: {
 				//	Type:        framework.TypeDurationSecond,
