@@ -43,8 +43,9 @@ func newBackend() (*backend, error) {
 		Help:        backendHelp,
 		Paths: framework.PathAppend(
 			[]*framework.Path{
-				pathRelease(b),
+				releasePath(b),
 			},
+			configurePaths(b),
 			b.TaskQueueManager.Paths(),
 		),
 	}
