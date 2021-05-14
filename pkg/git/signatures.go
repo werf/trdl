@@ -21,6 +21,15 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string,
 
 	to, err := repo.TagObject(tr.Hash())
 	if err != nil {
+		if err == plumbing.ErrObjectNotFound { // lightweight tag
+			revHash, err := repo.ResolveRevision(plumbing.Revision(tr.Hash().String()))
+			if err != nil {
+				return fmt.Errorf("resolve revision %s failed: %s", tr.Hash(), err)
+			}
+
+			return VerifyCommitSignatures(repo, revHash.String(), pgpKeys, requiredNumberOfVerifiedSignatures)
+		}
+
 		return fmt.Errorf("unable to get tag object: %s", err)
 	}
 
