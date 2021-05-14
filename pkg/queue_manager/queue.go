@@ -10,16 +10,13 @@ import (
 
 func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
 	var taskUUID string
-	var isTaskAdded bool
 	err := m.doTaskWrap(reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
-		if !m.Worker.IsEmpty() {
+		if m.Worker.IsBusy() {
 			return QueueBusyError
 		}
 
 		var err error
 		taskUUID, err = m.addWorkerTask(ctx, newTaskFunc)
-		isTaskAdded = true
-
 		return err
 	})
 
@@ -27,21 +24,16 @@ func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskF
 }
 
 func (m *Manager) AddOptionalTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, bool, error) {
-	var taskUUID string
-	var isTaskAdded bool
-	err := m.doTaskWrap(reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
-		if !m.Worker.IsEmpty() {
-			return nil
+	taskUUID, err := m.RunTask(ctx, reqStorage, taskFunc)
+	if err != nil {
+		if err == QueueBusyError {
+			return taskUUID, false, nil
 		}
 
-		var err error
-		taskUUID, err = m.addWorkerTask(ctx, newTaskFunc)
-		isTaskAdded = true
+		return "", false, err
+	}
 
-		return err
-	})
-
-	return taskUUID, isTaskAdded, err
+	return taskUUID, true, nil
 }
 
 func (m *Manager) AddTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
