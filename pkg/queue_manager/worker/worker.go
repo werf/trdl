@@ -48,7 +48,6 @@ func (q *Worker) Start() {
 				}
 			}()
 		case <-q.stopChan:
-			close(q.taskChan)
 			return
 		}
 	}
