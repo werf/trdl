@@ -10,8 +10,6 @@ import (
 	"path"
 	"syscall"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	git "github.com/go-git/go-git/v5"
@@ -62,47 +60,28 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 	gitTag := fields.Get("git_tag").(string)
 	command := fields.Get("command").(string)
 
+	url := "https://github.com/werf/trdl-test-project.git" // TODO: get url from vault storage
+
+	publisherRepository, err := GetPublisherRepository(req.Storage)
+	if err != nil {
+		return nil, fmt.Errorf("error getting publisher repository: %s", err)
+	}
+
+	// TODO: get pgp public keys from vault storage, should be configured by the user
+	var pgpPublicKeys []string
+	// TODO: get requiredNumberOfVerifiedSignatures (required number of signatures made with different keys) from vault storage, should be configured by the user
+	var requiredNumberOfVerifiedSignatures int
+
+	fromImage := "golang:latest"     // TODO: get fromImage from vault storage
+	runCommands := []string{command} // TODO: get commands from vault storage or trdl config from git repository=
+
 	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		stderr := os.NewFile(uintptr(syscall.Stderr), "/dev/stderr")
 
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		fmt.Fprintf(stderr, "Started task\n") // Remove this debug when tasks log debugged
 
-		url := "https://github.com/werf/trdl-test-project.git" // TODO: get url from vault storage
-
-		awsAccessKeyID, err := GetAwsAccessKeyID() // TODO: get from vault storage, should be configured by the user
-		if err != nil {
-			return fmt.Errorf("unable to get aws access key ID: %s", err)
-		}
-
-		awsSecretAccessKey, err := GetAwsSecretAccessKey() // TODO: get from vault storage, should be configured by the user
-		if err != nil {
-			return fmt.Errorf("unable to get aws secret access key: %s", err)
-		}
-
-		// TODO: get from vault storage, should be configured by the user
-		awsConfig := &aws.Config{
-			Endpoint:    aws.String("https://storage.yandexcloud.net"),
-			Region:      aws.String("ru-central1"),
-			Credentials: credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, ""),
-		}
-
-		// TODO: get from vault storage, should be generated automatically by the plugin, user never has an access to these private keys
-		publisherKeys, err := LoadFixturePublisherKeys()
-		if err != nil {
-			return fmt.Errorf("error loading publisher fixture keys")
-		}
-
-		// Initialize repository before any operations, to ensure everything is setup correctly before building artifact
-		publisherRepository, err := publisher.NewRepositoryWithOptions(
-			publisher.S3Options{AwsConfig: awsConfig, BucketName: "trdl-test-project"}, // TODO: get from vault storage, should be configured by the user
-			publisher.TufRepoOptions{PrivKeys: publisherKeys},
-		)
-		if err != nil {
-			return fmt.Errorf("error initializing publisher repository: %s", err)
-		}
-
-		gitRepo, err := cloneGitRepository(url, gitTag)
+		gitRepo, err := cloneGitRepositoryTag(url, gitTag)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}
@@ -110,17 +89,12 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
 		fmt.Fprintf(stderr, "Cloned git repo\n") // Remove this debug when tasks log debugged
 
-		// TODO: get pgp public keys from vault storage, should be configured by the user
-		var pgpPublicKeys []string
-		// TODO: get requiredNumberOfVerifiedSignatures (required number of signatures made with different keys) from vault storage, should be configured by the user
-		var requiredNumberOfVerifiedSignatures int
-
 		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, pgpPublicKeys, requiredNumberOfVerifiedSignatures); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
-		fromImage := "golang:latest"     // TODO: get fromImage from vault storage
-		runCommands := []string{command} // TODO: get commands from vault storage or trdl config from git repository=
+		logboek.Context(ctx).Default().LogF("Verified tag signatures\n")
+		fmt.Fprintf(stderr, "Verified tag signatures\n") // Remove this debug when tasks log debugged
 
 		tarReader, tarWriter := io.Pipe()
 		if err := buildReleaseArtifacts(ctx, tarWriter, gitRepo, fromImage, runCommands); err != nil {
@@ -185,20 +159,6 @@ func (b *backend) pathRelease(_ context.Context, req *logical.Request, fields *f
 			"task_uuid": taskUUID,
 		},
 	}, nil
-}
-
-func cloneGitRepository(url string, gitTag string) (*git.Repository, error) {
-	cloneGitOptions := trdlGit.CloneOptions{
-		TagName:           gitTag,
-		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
-	}
-
-	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	return gitRepo, nil
 }
 
 func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRepo *git.Repository, fromImage string, runCommands []string) error {

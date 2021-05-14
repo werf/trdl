@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/Masterminds/semver"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
 )
 
 type InMemoryFile struct {
@@ -20,6 +21,10 @@ type InMemoryFile struct {
 
 func NewErrIncorrectTargetPath(path string) error {
 	return fmt.Errorf(`got incorrect target path %q: expected path in format <os>-<arch>/... where os can be either "any", "linux", "darwin" or "windows", and arch can be either "any", "amd64" or "arm64"`, path)
+}
+
+func NewErrIncorrectChannelName(chnl string) error {
+	return fmt.Errorf(`got incorrect channel name %q: expected "alpha", "beta", "ea", "stable" or "rock-solid"`, chnl)
 }
 
 func PublishReleaseTarget(ctx context.Context, repository *S3Repository, releaseName, path string, data io.Reader) error {
@@ -50,9 +55,39 @@ func PublishReleaseTarget(ctx context.Context, repository *S3Repository, release
 	return repository.PublishTarget(ctx, filepath.Join("releases", releaseName, path), data)
 }
 
-// func PublishChannelsTarget(ctx context.Context, repository *S3Repository, releaseName, path string, data io.Reader) error {
-// 	return fmt.Errorf("not implemented")
-// }
+func PublishChannelsConfig(ctx context.Context, repository *S3Repository, trdlChannelsConfig *config.TrdlChannels) error {
+	// validate
+	for _, grp := range trdlChannelsConfig.Groups {
+		if _, err := semver.NewVersion(grp.Name); err != nil {
+			return fmt.Errorf("expected semver group got %q: %s", grp.Name, err)
+		}
+
+		for _, chnl := range grp.Channels {
+			switch chnl.Name {
+			case "alpha", "beta", "ea", "stable", "rock-solid":
+			default:
+				return NewErrIncorrectChannelName(chnl.Name)
+			}
+
+			if _, err := semver.NewVersion(chnl.Version); err != nil {
+				return fmt.Errorf("expected semver version map for group %q channel %q, got %q: %s", grp.Name, chnl.Name, chnl.Version, err)
+			}
+		}
+	}
+
+	// publish /channels/GROUP/CHANNEL -> VERSION
+	for _, grp := range trdlChannelsConfig.Groups {
+		for _, chnl := range grp.Channels {
+			publishPath := filepath.Join("channels", grp.Name, chnl.Name)
+
+			if err := repository.PublishTarget(ctx, publishPath, bytes.NewBuffer([]byte(chnl.Version+"\n"))); err != nil {
+				return fmt.Errorf("error publishing %q: %s", publishPath, err)
+			}
+		}
+	}
+
+	return nil
+}
 
 func PublishInMemoryFiles(ctx context.Context, repository *S3Repository, files []*InMemoryFile) error {
 	for _, file := range files {
@@ -60,6 +95,7 @@ func PublishInMemoryFiles(ctx context.Context, repository *S3Repository, files [
 			return fmt.Errorf("error publishing %q: %s", file.Name, err)
 		}
 	}
+
 	return nil
 }
 
