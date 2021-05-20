@@ -16,6 +16,12 @@ type Configuration struct {
 		Password string `json:"password"`
 	}
 	TrustedGPGPublicKeys []string
+
+	S3Endpoint        string `json:"s3_endpoint"`
+	S3Region          string `json:"s3_region"`
+	S3AccessKeyID     string `json:"s3_access_key_id"`
+	S3SecretAccessKey string `json:"s3_secret_access_key"`
+	S3BucketName      string `json:"s3_bucket_name"`
 }
 
 func GetAndValidateConfiguration(ctx context.Context, storage logical.Storage) (*Configuration, *logical.Response, error) {
@@ -33,7 +39,7 @@ func GetAndValidateConfiguration(ctx context.Context, storage logical.Storage) (
 		}
 
 		if err := json.Unmarshal(e.Value, &c); err != nil {
-			return nil, nil, fmt.Errorf("unable to unmarshal configuration: %s", err)
+			return nil, nil, fmt.Errorf("unable to unmarshal configuration json:\n%s\n---\n%s", e.Value, err)
 		}
 
 		if c.GitRepoUrl == "" {

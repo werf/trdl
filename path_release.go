@@ -12,10 +12,9 @@ import (
 	"github.com/docker/docker/client"
 	git "github.com/go-git/go-git/v5"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-
-	log "github.com/hashicorp/go-hclog"
 
 	"github.com/werf/logboek"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
@@ -90,14 +89,14 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		gitPassword = c.GitCredential.Password
 	}
 
-	publisherRepository, err := GetPublisherRepository(req.Storage)
+	publisherRepository, err := GetPublisherRepository(ctx, c, req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
 
 	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		logboek.Context(ctx).Default().LogF("Started task\n")
-		log.L().Debug("Started task\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Started task"))
 
 		gitRepo, err := cloneGitRepositoryTag(c.GitRepoUrl, gitTag, gitUsername, gitPassword)
 		if err != nil {
@@ -105,14 +104,14 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
-		log.L().Debug("Cloned git repo\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Cloned git repo"))
 
 		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, c.TrustedGPGPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Verified tag signatures\n")
-		log.L().Debug("Verified tag signatures\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Verified tag signatures"))
 
 		trdlCfg, err := getTrdlConfig(gitRepo, gitTag)
 		if err != nil {
@@ -127,16 +126,15 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Built release artifacts tar archive\n")
-		log.L().Debug("Built release artifacts tar archive\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Built release artifacts tar archive"))
 
-		var fileNames []string
 		{
 			twArtifacts := tar.NewReader(tarReader)
 			for {
 				hdr, err := twArtifacts.Next()
 
 				logboek.Context(ctx).Default().LogF("Next tar entry hdr=%#v err=%v\n", hdr, err)
-				log.L().Debug("Next tar entry hdr=%#v err=%v\n", hdr, err) // Remove this debug when tasks log debugged
+				hclog.L().Debug(fmt.Sprintf("Next tar entry hdr=%#v err=%v", hdr, err))
 
 				if err == io.EOF {
 					break
@@ -148,16 +146,14 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 				if hdr.Typeflag != tar.TypeDir {
 					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", hdr.Name)
-					log.L().Debug("Publishing %q into the tuf repo ...\n", hdr.Name) // Remove this debug when tasks log debugged
+					hclog.L().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", hdr.Name))
 
 					if err := publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
 						return fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
 					}
 
 					logboek.Context(ctx).Default().LogF("Published %q into the tuf repo\n", hdr.Name)
-					log.L().Debug("Published %q into the tuf repo\n", hdr.Name) // Remove this debug when tasks log debugged
-
-					fileNames = append(fileNames, hdr.Name)
+					hclog.L().Debug(fmt.Sprintf("Published %q into the tuf repo", hdr.Name))
 				}
 			}
 
@@ -166,7 +162,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			}
 
 			logboek.Context(ctx).Default().LogF("Tuf repo commit done\n")
-			log.L().Debug("Tuf repo commit done\n") // Remove this debug when tasks log debugged
+			hclog.L().Debug(fmt.Sprintf("Tuf repo commit done"))
 		}
 
 		return nil

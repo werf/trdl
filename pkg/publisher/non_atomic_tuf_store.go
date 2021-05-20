@@ -7,8 +7,7 @@ import (
 	"io"
 	"path/filepath"
 
-	log "github.com/hashicorp/go-hclog"
-
+	"github.com/hashicorp/go-hclog"
 	"github.com/theupdateframework/go-tuf"
 	"github.com/theupdateframework/go-tuf/data"
 	"github.com/theupdateframework/go-tuf/sign"
@@ -16,10 +15,10 @@ import (
 )
 
 type TufRepoPrivKeys struct {
-	Root      []sign.Signer
-	Snapshot  []sign.Signer
-	Targets   []sign.Signer
-	Timestamp []sign.Signer
+	Root      *sign.PrivateKey
+	Snapshot  *sign.PrivateKey
+	Targets   *sign.PrivateKey
+	Timestamp *sign.PrivateKey
 }
 
 type stagedFileDesc struct {
@@ -61,7 +60,7 @@ func (store *NonAtomicTufStore) GetMeta() (map[string]json.RawMessage, error) {
 			meta[name] = stagedData
 			continue
 		}
-		log.L().Debug("-- NonAtomicTufStore.GetMeta %q not found in staged meta!\n", name)
+		hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.GetMeta %q not found in staged meta!", name))
 
 		exists, err := store.Filesystem.IsFileExist(ctx, name)
 		if err != nil {
@@ -75,23 +74,23 @@ func (store *NonAtomicTufStore) GetMeta() (map[string]json.RawMessage, error) {
 			}
 			meta[name] = data
 		} else {
-			log.L().Debug("-- NonAtomicTufStore.GetMeta %q not found in the store filesystem!\n", name)
+			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.GetMeta %q not found in the store filesystem!", name))
 		}
 	}
 
-	log.L().Debug("-- NonAtomicTufStore.GetMeta -> meta[targets]: %s\n", meta["targets.json"])
+	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.GetMeta -> meta[targets]: %s", meta["targets.json"]))
 
 	return meta, nil
 }
 
 func (store *NonAtomicTufStore) SetMeta(name string, meta json.RawMessage) error {
-	log.L().Debug("-- NonAtomicTufStore.SetMeta %q\n", name)
+	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.SetMeta %q", name))
 	store.stagedMeta[name] = meta
 	return nil
 }
 
 func (store *NonAtomicTufStore) WalkStagedTargets(paths []string, targetsFn tuf.TargetsWalkFunc) error {
-	log.L().Debug("-- NonAtomicTufStore.WalkStagedTargets %v\n", paths)
+	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets %v", paths))
 
 	ctx := context.Background()
 
@@ -142,7 +141,7 @@ FilterStagedPaths:
 }
 
 func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, path string, data io.Reader) error {
-	log.L().Debug("-- NonAtomicTufStore.StageTargetFile %q\n", path)
+	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.StageTargetFile %q", path))
 
 	// NOTE: consistenSnapshot cannot be supported when adding staged files before commit stage
 
@@ -156,7 +155,7 @@ func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, path string
 }
 
 func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[string]int, hashes map[string]data.Hashes) error {
-	log.L().Debug("-- NonAtomicTufStore.Commit\n")
+	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.Commit"))
 	if consistentSnapshot {
 		panic("not supported")
 	}
@@ -167,7 +166,7 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 		// TODO: perms 0644
 
 		for _, path := range computeMetadataPaths(consistentSnapshot, name, versions) {
-			log.L().Debug("-- NonAtomicTufStore.Commit storing metadata path %q into the filesystem\n", path)
+			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.Commit storing metadata path %q into the filesystem", path))
 
 			if err := store.Filesystem.WriteFileBytes(ctx, path, data); err != nil {
 				return fmt.Errorf("error writing metadata path %q into the filesystem: %s", path, err)
@@ -182,20 +181,27 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 }
 
 func (store *NonAtomicTufStore) GetSigningKeys(role string) ([]sign.Signer, error) {
-	log.L().Debug("-- NonAtomicTufStore.GetSigningKeys(%q)\n", role)
+	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.GetSigningKeys(%q) store.PrivKeys=%#v", role, store.PrivKeys))
+
+	toSigners := func(key *sign.PrivateKey) []sign.Signer {
+		if key != nil {
+			return []sign.Signer{key.Signer()}
+		}
+		return nil
+	}
 
 	switch role {
 	case "root":
-		return store.PrivKeys.Root, nil
-
-	case "snapshot":
-		return store.PrivKeys.Snapshot, nil
+		return toSigners(store.PrivKeys.Root), nil
 
 	case "targets":
-		return store.PrivKeys.Targets, nil
+		return toSigners(store.PrivKeys.Targets), nil
+
+	case "snapshot":
+		return toSigners(store.PrivKeys.Snapshot), nil
 
 	case "timestamp":
-		return store.PrivKeys.Timestamp, nil
+		return toSigners(store.PrivKeys.Timestamp), nil
 
 	default:
 		panic(fmt.Sprintf("unknown role %q", role))
@@ -203,7 +209,24 @@ func (store *NonAtomicTufStore) GetSigningKeys(role string) ([]sign.Signer, erro
 }
 
 func (store *NonAtomicTufStore) SavePrivateKey(role string, key *sign.PrivateKey) error {
-	panic("not supported")
+	switch role {
+	case "root":
+		store.PrivKeys.Root = key
+
+	case "targets":
+		store.PrivKeys.Targets = key
+
+	case "snapshot":
+		store.PrivKeys.Snapshot = key
+
+	case "timestamp":
+		store.PrivKeys.Timestamp = key
+
+	default:
+		panic(fmt.Sprintf("unknown role %q", role))
+	}
+
+	return nil
 }
 
 func (m *NonAtomicTufStore) Clean() error {

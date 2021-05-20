@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	trdl "github.com/werf/vault-plugin-secrets-trdl"
@@ -11,6 +12,17 @@ import (
 )
 
 func main() {
+	logFile, err := os.OpenFile("trdl.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		panic(fmt.Sprintf("failed to open trdl.log file: %s", err))
+	}
+
+	hclog.DefaultOptions = &hclog.LoggerOptions{
+		Level:           hclog.Trace,
+		IncludeLocation: true,
+		Output:          logFile,
+	}
+
 	apiClientMeta := &api.PluginAPIClientMeta{}
 	flags := apiClientMeta.FlagSet()
 	flags.Parse(os.Args[1:]) // Ignore command, strictly parse flags
@@ -18,16 +30,11 @@ func main() {
 	tlsConfig := apiClientMeta.GetTLSConfig()
 	tlsProviderFunc := api.VaultPluginTLSProvider(tlsConfig)
 
-	err := plugin.Serve(&plugin.ServeOpts{
+	if err := plugin.Serve(&plugin.ServeOpts{
 		BackendFactoryFunc: trdl.Factory,
 		TLSProviderFunc:    tlsProviderFunc,
-	})
-	if err != nil {
-		logger := hclog.New(&hclog.LoggerOptions{})
-
-		logger.Error("plugin shutting down", "error", err)
+	}); err != nil {
+		hclog.L().Error("plugin shutting down", "error", err)
 		os.Exit(1)
 	}
-
-	os.Exit(0)
 }

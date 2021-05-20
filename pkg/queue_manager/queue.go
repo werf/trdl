@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	log "github.com/hashicorp/go-hclog"
-
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager/worker"
 )
@@ -66,11 +65,11 @@ func (m *Manager) doTaskWrap(reqStorage logical.Storage, taskFunc func(context.C
 
 	workerTaskFunc := func(ctx context.Context) error {
 		if err := taskFunc(ctx, m.Storage); err != nil {
-			log.L().Debug("task failed: %s\n", err) // Remove this debug when tasks log debugged
+			hclog.L().Debug(fmt.Sprintf("task failed: %s", err))
 			return err
 		}
 
-		log.L().Debug("task succeeded\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("task succeeded"))
 		return nil
 	}
 

@@ -8,8 +8,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"gopkg.in/yaml.v2"
 
-	log "github.com/hashicorp/go-hclog"
-
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
@@ -80,14 +79,14 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 	gitBranch := "trdl" // TODO: get branch from vault storage
 
-	publisherRepository, err := GetPublisherRepository(req.Storage)
+	publisherRepository, err := GetPublisherRepository(ctx, c, req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
 
 	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		logboek.Context(ctx).Default().LogF("Started task\n")
-		log.L().Debug("Started task\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Started task"))
 
 		gitRepo, err := cloneGitRepositoryBranch(c.GitRepoUrl, gitBranch, gitUsername, gitPassword)
 		if err != nil {
@@ -95,7 +94,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
-		log.L().Debug("Cloned git repo\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Cloned git repo"))
 
 		headRef, err := gitRepo.Head()
 		if err != nil {
@@ -117,7 +116,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 				prevCommit := string(prevCommitEntry.Value)
 
 				logboek.Context(ctx).Default().LogF("Got previously published commit record %q\n", prevCommit)
-				log.L().Debug("Got previously published commit record %q\n", prevCommit) // Remove this debug when tasks log debugged
+				hclog.L().Debug(fmt.Sprintf("Got previously published commit record %q", prevCommit))
 
 				prevCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(prevCommit))
 				if err != nil {
@@ -140,7 +139,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Verified commit signatures\n")
-		log.L().Debug("Verified commit signatures\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Verified commit signatures"))
 
 		cfg, err := GetTrdlChannelsConfig(gitRepo)
 		if err != nil {
@@ -149,28 +148,28 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 		cfgDump, _ := yaml.Marshal(cfg)
 		logboek.Context(ctx).Default().LogF("Got trdl channels config:\n%s\n---\n", cfgDump)
-		log.L().Debug("Got trdl channels config:\n%s\n---\n", cfgDump) // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Got trdl channels config:\n%s\n---", cfgDump))
 
 		if err := publisher.PublishChannelsConfig(ctx, publisherRepository, cfg); err != nil {
 			return fmt.Errorf("error publishing trdl channels into the repository: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Published trdl channels config into the repository\n")
-		log.L().Debug("Published trdl channels config into the repository\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Published trdl channels config into the repository"))
 
 		if err := publisherRepository.Commit(ctx); err != nil {
 			return fmt.Errorf("unable to commit new tuf repository state: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Tuf repo commit done\n")
-		log.L().Debug("Tuf repo commit done\n") // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Tuf repo commit done"))
 
 		if err := storage.Put(ctx, &logical.StorageEntry{Key: PublishedCommitKey, Value: []byte(headRef.Hash().String())}); err != nil {
 			return fmt.Errorf("error putting published commit record by key %q: %s", PublishedCommitKey, err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Put published commit record %q\n", headRef.Hash().String())
-		log.L().Debug("Put published commit record %q\n", headRef.Hash().String()) // Remove this debug when tasks log debugged
+		hclog.L().Debug(fmt.Sprintf("Put published commit record %q", headRef.Hash().String()))
 
 		return nil
 	})
