@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/theupdateframework/go-tuf"
+	"github.com/theupdateframework/go-tuf/sign"
 )
 
 type S3Options struct {
@@ -42,6 +43,26 @@ func NewRepository(s3Filesystem *S3Filesystem, tufStore *NonAtomicTufStore, tufR
 		TufStore:     tufStore,
 		TufRepo:      tufRepo,
 	}
+}
+
+func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
+	repository.TufStore.PrivKeys = privKeys
+
+	for _, desc := range []struct {
+		role string
+		key  *sign.PrivateKey
+	}{
+		{"root", privKeys.Root},
+		{"targets", privKeys.Targets},
+		{"snapshot", privKeys.Snapshot},
+		{"timestamp", privKeys.Timestamp},
+	} {
+		if err := repository.TufRepo.AddPrivateKey(desc.role, desc.key); err != nil {
+			return fmt.Errorf("unable to add tuf repository private key for role %s: %s", desc.role, err)
+		}
+	}
+
+	return nil
 }
 
 func (repository *S3Repository) PublishTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error {

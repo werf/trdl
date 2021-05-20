@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/containerd/containerd/log"
 
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/keyhelper"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
@@ -86,7 +87,7 @@ func doMain() error {
 		}
 	}
 
-	log.L().Debug("privKeys: %#v\n", privKeys)
+	hclog.L().Debug(fmt.Sprintf("privKeys: %#v", privKeys))
 
 	awsConfig := &aws.Config{
 		Endpoint:    aws.String("https://storage.yandexcloud.net"),
@@ -129,7 +130,7 @@ func doMain() error {
 			time.Sleep(1 * time.Second)
 
 			line := fmt.Sprintf("Hello %d\n", i)
-			log.L().Debug("send line %q\n", line)
+			hclog.L().Debug(fmt.Sprintf("send line %q", line))
 
 			if _, err := io.Copy(w, strings.NewReader(line)); err != nil {
 				if err := w.CloseWithError(err); err != nil {
