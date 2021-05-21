@@ -99,6 +99,15 @@ func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootS
 	})
 }
 
+func (c Client) UpdateProjectChannel(projectName, group, channel string) error {
+	projectClient, err := c.ProjectClient(projectName)
+	if err != nil {
+		return err
+	}
+
+	return projectClient.UpdateChannel(group, channel)
+}
+
 func (c Client) ListProjects() []*ProjectConfiguration {
 	return c.configuration.GetProjectConfigurations()
 }
