@@ -6,12 +6,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/theupdateframework/go-tuf"
-	"github.com/theupdateframework/go-tuf/client"
-
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
 
+	"github.com/werf/trdl/pkg/project"
 	"github.com/werf/trdl/pkg/util"
 )
 
@@ -89,30 +87,8 @@ func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootS
 			return err
 		}
 
-		var rootBasename string
-		if rootVersion == 0 {
-			rootBasename = "root.json"
-		} else {
-			rootBasename = fmt.Sprintf("%d.root.json", rootVersion)
-		}
-
-		data, err := projectClient.TufClient().DownloadMetaUnsafe(rootBasename, client.DefaultRootDownloadLimit)
-		if err != nil {
-			return fmt.Errorf("unable to download %q: %s", rootBasename, err)
-		}
-
-		rootFileChecksum := util.Sha512Checksum(data)
-		if rootFileChecksum != rootSha512 {
-			return fmt.Errorf("expected hash sum of the root file not matched (%q != %q)", rootSha512, rootFileChecksum)
-		}
-
-		rootKeys, err := tuf.ParseRootKeys(data)
-		if err != nil {
-			return fmt.Errorf("unable to parse root keys: %s", err)
-		}
-
-		if err := projectClient.TufClient().Init(rootKeys, len(rootKeys)); err != nil {
-			return fmt.Errorf("unable to init tuf client: %s", err)
+		if err := projectClient.Init(rootVersion, rootSha512); err != nil {
+			return fmt.Errorf("unable to init project %q client: %s", projectName, err)
 		}
 
 		if err := c.configuration.Save(c.configurationPath()); err != nil {
@@ -142,7 +118,7 @@ func (c Client) projectClient(projectName string) (ProjectInterface, error) {
 		return nil, err
 	}
 
-	return newAppClient(projectName, projectDirectory, repoUrl)
+	return project.NewClient(projectName, projectDirectory, repoUrl)
 }
 
 func (c *Client) projectDirectory(projectName string) string {

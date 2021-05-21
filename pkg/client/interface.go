@@ -1,9 +1,5 @@
 package client
 
-import (
-	"github.com/theupdateframework/go-tuf/client"
-)
-
 type Interface interface {
 	AddProject(projectName, repoUrl string, rootVersion int64, rootSha512 string) error
 	ListProjects() []*ProjectConfiguration
@@ -11,7 +7,7 @@ type Interface interface {
 }
 
 type ProjectInterface interface {
-	TufClient() *client.Client
+	Init(rootVersion int64, rootSha512 string) error
 }
 
 type configurationInterface interface {
