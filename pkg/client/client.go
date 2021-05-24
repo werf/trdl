@@ -79,6 +79,10 @@ func (c *Client) initConfiguration() error {
 
 func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootSha512 string) error {
 	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+		if err := c.configuration.Reload(); err != nil {
+			return err
+		}
+
 		c.configuration.StageProjectConfiguration(projectName, repoUrl)
 
 		projectClient, err := c.ProjectClient(projectName)

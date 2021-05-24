@@ -13,27 +13,14 @@ const configurationFileBasename = "config.yaml"
 
 type configuration struct {
 	Projects []*ProjectConfiguration `yaml:"projects"`
+
+	configPath string
 }
 
 func newConfiguration(configPath string) (configuration, error) {
 	c := configuration{}
-
-	if exist, err := util.IsRegularFileExist(configPath); err != nil {
-		return c, fmt.Errorf("unable to check existence of file %q: %s", configPath, err)
-	} else if !exist {
-		return c, nil
-	}
-
-	data, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		return c, fmt.Errorf("unable to read file %q: %s", configPath, err)
-	}
-
-	if err := yaml.Unmarshal(data, &c); err != nil {
-		return c, fmt.Errorf("yaml unmarshalling failed: %s", err)
-	}
-
-	return c, nil
+	c.configPath = configPath
+	return c, c.load()
 }
 
 type ProjectConfiguration struct {
@@ -68,6 +55,29 @@ func (c *configuration) StageProjectConfiguration(projectName, repoUrl string) {
 	}
 
 	project.RepoUrl = repoUrl
+}
+
+func (c *configuration) Reload() error {
+	return c.load()
+}
+
+func (c *configuration) load() error {
+	if exist, err := util.IsRegularFileExist(c.configPath); err != nil {
+		return fmt.Errorf("unable to check existence of file %q: %s", c.configPath, err)
+	} else if !exist {
+		return nil
+	}
+
+	data, err := ioutil.ReadFile(c.configPath)
+	if err != nil {
+		return fmt.Errorf("unable to read file %q: %s", c.configPath, err)
+	}
+
+	if err := yaml.Unmarshal(data, &c); err != nil {
+		return fmt.Errorf("yaml unmarshalling failed: %s", err)
+	}
+
+	return nil
 }
 
 func (c configuration) Save(configPath string) error {
