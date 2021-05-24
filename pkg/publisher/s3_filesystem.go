@@ -107,7 +107,7 @@ func (fs *S3Filesystem) ReadFileStream(ctx context.Context, path string, writer 
 		return fmt.Errorf("unable to download item %q: %s", path, err)
 	}
 
-	fmt.Println("Downloaded", path, numBytes, "bytes")
+	hclog.L().Debug(fmt.Sprintf("-- S3Filesystem.ReadFileStream downloaded %q %d bytes", path, numBytes))
 
 	return nil
 }
@@ -131,7 +131,7 @@ func (fs *S3Filesystem) ReadFileBytes(ctx context.Context, path string) ([]byte,
 		return nil, fmt.Errorf("unable to download item %q: %s", path, err)
 	}
 
-	fmt.Println("Downloaded", path, numBytes, "bytes")
+	hclog.L().Debug(fmt.Sprintf("-- S3Filesystem.ReadFileBytes downloaded %q %d bytes", path, numBytes))
 
 	return buf.Bytes(), nil
 }

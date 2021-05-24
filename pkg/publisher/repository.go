@@ -7,7 +7,9 @@ import (
 	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/hashicorp/go-hclog"
 	"github.com/theupdateframework/go-tuf"
+	"github.com/theupdateframework/go-tuf/data"
 	"github.com/theupdateframework/go-tuf/sign"
 )
 
@@ -46,6 +48,8 @@ func NewRepository(s3Filesystem *S3Filesystem, tufStore *NonAtomicTufStore, tufR
 }
 
 func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
+	hclog.L().Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys"))
+
 	repository.TufStore.PrivKeys = privKeys
 
 	for _, desc := range []struct {
@@ -57,7 +61,7 @@ func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
 		{"snapshot", privKeys.Snapshot},
 		{"timestamp", privKeys.Timestamp},
 	} {
-		if err := repository.TufRepo.AddPrivateKey(desc.role, desc.key); err != nil {
+		if err := repository.TufRepo.AddPrivateKeyWithExpires(desc.role, desc.key, data.DefaultExpires("root")); err != nil {
 			return fmt.Errorf("unable to add tuf repository private key for role %s: %s", desc.role, err)
 		}
 	}
