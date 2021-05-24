@@ -98,12 +98,15 @@ func (store *NonAtomicTufStore) WalkStagedTargets(paths []string, targetsFn tuf.
 		reader, writer := io.Pipe()
 
 		go func() {
+			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets before ReadFileStream %q", path))
+
 			if err := store.Filesystem.ReadFileStream(ctx, path, writer); err != nil {
 				if err := writer.CloseWithError(fmt.Errorf("error reading file %q stream: %s", path, err)); err != nil {
 					panic(fmt.Sprintf("ERROR: failed to close pipe writer while reading file %q stream: %s\n", path, err))
 				}
 			}
 
+			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets after ReadFileStream %q", path))
 			if err := writer.Close(); err != nil {
 				panic(fmt.Sprintf("ERROR: failed to close pipe writer while reading file %q stream: %s\n", path, err))
 			}
