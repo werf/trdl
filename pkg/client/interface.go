@@ -22,5 +22,6 @@ type configurationInterface interface {
 	GetProjectConfiguration(projectName string) *ProjectConfiguration
 	GetProjectConfigurations() []*ProjectConfiguration
 	StageProjectConfiguration(projectName, repoUrl string)
+	Reload() error
 	Save(configPath string) error
 }
