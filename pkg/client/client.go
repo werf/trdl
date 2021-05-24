@@ -90,7 +90,7 @@ func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootS
 			return err
 		}
 
-		if err := projectClient.Init(rootVersion, rootSha512); err != nil {
+		if err := projectClient.Init(repoUrl, rootVersion, rootSha512); err != nil {
 			return fmt.Errorf("unable to init project %q client: %s", projectName, err)
 		}
 

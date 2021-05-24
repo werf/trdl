@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/theupdateframework/go-tuf"
 	"github.com/theupdateframework/go-tuf/client"
@@ -9,7 +10,11 @@ import (
 	"github.com/werf/trdl/pkg/util"
 )
 
-func (c Client) Init(rootVersion int64, rootSha512 string) error {
+func (c Client) Init(repoUrl string, rootVersion int64, rootSha512 string) error {
+	if err := c.resetTufClient(repoUrl); err != nil {
+		return err
+	}
+
 	var rootBasename string
 	if rootVersion == 0 {
 		rootBasename = "root.json"
@@ -24,7 +29,7 @@ func (c Client) Init(rootVersion int64, rootSha512 string) error {
 
 	rootFileChecksum := util.Sha512Checksum(jsonData)
 	if rootFileChecksum != rootSha512 {
-		return fmt.Errorf("expected hash sum of the root file not matched (%q != %q)", rootSha512, rootFileChecksum)
+		return fmt.Errorf("expected hash sum of the root file %q not matched", rootFileChecksum)
 	}
 
 	rootKeys, err := tuf.ParseRootKeys(jsonData)
@@ -37,4 +42,12 @@ func (c Client) Init(rootVersion int64, rootSha512 string) error {
 	}
 
 	return nil
+}
+
+func (c *Client) resetTufClient(repoUrl string) error {
+	if err := os.RemoveAll(c.metaLocalStoreDir()); err != nil {
+		return err
+	}
+
+	return c.initTufClient(repoUrl)
 }
