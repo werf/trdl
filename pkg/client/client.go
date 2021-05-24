@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
 
 	"github.com/werf/trdl/pkg/project"
+	"github.com/werf/trdl/pkg/trdl"
 	"github.com/werf/trdl/pkg/util"
 )
-
-var defaultLockerTimeout = 30 * time.Second
 
 type Client struct {
 	dir           string
@@ -66,7 +64,7 @@ func (c *Client) initFileLocker() error {
 }
 
 func (c *Client) initConfiguration() error {
-	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: true, Timeout: defaultLockerTimeout}, func(_ bool) error {
+	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: true, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
 		configuration, err := newConfiguration(c.configurationPath())
 		if err != nil {
 			return err
@@ -79,7 +77,7 @@ func (c *Client) initConfiguration() error {
 }
 
 func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootSha512 string) error {
-	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: false, Timeout: defaultLockerTimeout}, func(_ bool) error {
+	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
 		c.configuration.StageProjectConfiguration(projectName, repoUrl)
 
 		projectClient, err := c.ProjectClient(projectName)
@@ -127,7 +125,7 @@ func (c Client) projectClient(projectName string) (ProjectInterface, error) {
 		return nil, err
 	}
 
-	return project.NewClient(projectName, projectDirectory, repoUrl)
+	return project.NewClient(projectName, projectDirectory, repoUrl, c.projectLocksPath(projectName))
 }
 
 func (c *Client) projectDirectory(projectName string) string {
@@ -145,6 +143,10 @@ func (c *Client) projectRemoteUrl(projectName string) (string, error) {
 
 func (c *Client) configurationPath() string {
 	return filepath.Join(c.dir, configurationFileBasename)
+}
+
+func (c *Client) projectLocksPath(projectName string) string {
+	return filepath.Join(c.locksPath(), projectName)
 }
 
 func (c *Client) locksPath() string {

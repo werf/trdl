@@ -10,6 +10,9 @@ import (
 	"github.com/theupdateframework/go-tuf/client"
 	leveldbstore "github.com/theupdateframework/go-tuf/client/leveldbstore"
 
+	"github.com/werf/lockgate"
+	"github.com/werf/lockgate/pkg/file_locker"
+
 	"github.com/werf/trdl/pkg/util"
 )
 
@@ -25,22 +28,35 @@ type Client struct {
 	projectName string
 	directory   string
 	tufClient   *client.Client
+	locker      lockgate.Locker
 }
 
-func NewClient(projectName, directory, repoUrl string) (Client, error) {
+func NewClient(projectName, directory, repoUrl, locksPath string) (Client, error) {
 	c := Client{
 		projectName: projectName,
 		directory:   directory,
 	}
 
-	if err := c.init(repoUrl); err != nil {
+	if err := c.init(repoUrl, locksPath); err != nil {
 		return c, err
 	}
 
 	return c, nil
 }
 
-func (c *Client) init(repoUrl string) error {
+func (c *Client) init(repoUrl string, locksPath string) error {
+	if err := c.initFileLocker(locksPath); err != nil {
+		return err
+	}
+
+	if err := c.initTufClient(repoUrl); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) initTufClient(repoUrl string) error {
 	local, err := leveldbstore.FileLocalStore(c.metaLocalStorePath())
 	if err != nil {
 		return err
@@ -52,6 +68,17 @@ func (c *Client) init(repoUrl string) error {
 	}
 
 	c.tufClient = client.NewClient(local, remote)
+
+	return nil
+}
+
+func (c *Client) initFileLocker(locksPath string) error {
+	locker, err := file_locker.NewFileLocker(locksPath)
+	if err != nil {
+		return err
+	}
+
+	c.locker = locker
 
 	return nil
 }
@@ -94,4 +121,8 @@ func (c Client) channelRelease(group, channel string) (string, error) {
 
 func (c Client) metaLocalStorePath() string {
 	return filepath.Join(c.directory, ".meta")
+}
+
+func (c Client) groupChannelLockName(group, channel string) string {
+	return fmt.Sprintf("%s-%s", group, channel)
 }

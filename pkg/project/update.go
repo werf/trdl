@@ -10,23 +10,28 @@ import (
 	"github.com/theupdateframework/go-tuf/data"
 	util2 "github.com/theupdateframework/go-tuf/util"
 
+	"github.com/werf/lockgate"
+
+	"github.com/werf/trdl/pkg/trdl"
 	"github.com/werf/trdl/pkg/util"
 )
 
 func (c Client) UpdateChannel(group, channel string) error {
-	if err := c.syncMeta(); err != nil {
-		return err
-	}
+	return lockgate.WithAcquire(c.locker, c.groupChannelLockName(group, channel), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+		if err := c.syncMeta(); err != nil {
+			return err
+		}
 
-	if err := c.syncChannel(group, channel); err != nil {
-		return err
-	}
+		if err := c.syncChannel(group, channel); err != nil {
+			return err
+		}
 
-	if err := c.syncChannelRelease(group, channel); err != nil {
-		return err
-	}
+		if err := c.syncChannelRelease(group, channel); err != nil {
+			return err
+		}
 
-	return nil
+		return nil
+	})
 }
 
 func (c Client) syncChannel(group, channel string) error {

@@ -1,5 +1,7 @@
 package trdl
 
+import "time"
+
 const (
 	ChannelAlpha     = "alpha"
 	ChannelBeta      = "beta"
@@ -15,3 +17,5 @@ var Channels = []string{
 	ChannelStable,
 	ChannelRockSolid,
 }
+
+var DefaultLockerTimeout = 30 * time.Second
