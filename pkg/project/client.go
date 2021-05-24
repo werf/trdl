@@ -99,6 +99,25 @@ func (c Client) channelPath(group, channel string) string {
 	return filepath.Join(c.directory, channelsDir, group, channel)
 }
 
+func (c Client) channelReleaseBinPath(group, channel string) (string, error) {
+	releaseDir, err := c.channelReleaseDirPath(group, channel)
+	if err != nil {
+		return "", err
+	}
+
+	binDir := filepath.Join(releaseDir, "bin")
+	exist, err := util.IsDirExist(binDir)
+	if err != nil {
+		return "", fmt.Errorf("unable to check existence of directory %q: %s", binDir, err)
+	}
+
+	if !exist {
+		return "", fmt.Errorf("bin directory not found in release directory (group: %q, channel: %q)", group, channel)
+	}
+
+	return binDir, nil
+}
+
 func (c Client) channelReleaseDirPath(group, channel string) (string, error) {
 	release, err := c.channelRelease(group, channel)
 	if err != nil {

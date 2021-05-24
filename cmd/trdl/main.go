@@ -29,6 +29,7 @@ func rootCmd() *cobra.Command {
 		addCmd(),
 		updateCmd(),
 		dirPathCmd(),
+		binPathCmd(),
 		listCmd(),
 		versionCmd(),
 	)
