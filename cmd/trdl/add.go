@@ -14,8 +14,12 @@ func addCmd() *cobra.Command {
 		Use:                   "add PROJECT_NAME REPO_URL ROOT_VERSION ROOT_SHA512",
 		Short:                 "Initialize the project",
 		DisableFlagsInUseLine: true,
-		Args:                  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.ExactArgs(4)(cmd, args); err != nil {
+				PrintHelp(cmd)
+				return err
+			}
+
 			projectName := args[0]
 			url := args[1]
 			rootVersionArg := args[2]
@@ -23,6 +27,7 @@ func addCmd() *cobra.Command {
 
 			rootVersion, err := parseRootVersionArgument(rootVersionArg)
 			if err != nil {
+				PrintHelp(cmd)
 				return fmt.Errorf("unable to parse required argument \"ROOT_VERSION\": %s", err)
 			}
 

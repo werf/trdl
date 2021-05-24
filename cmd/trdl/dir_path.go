@@ -13,8 +13,12 @@ func dirPathCmd() *cobra.Command {
 		Use:                   "dir-path PROJECT_NAME GROUP [CHANNEL]",
 		Short:                 "Get path to channel release directory",
 		DisableFlagsInUseLine: true,
-		Args:                  cobra.RangeArgs(2, 3),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
+				PrintHelp(cmd)
+				return err
+			}
+
 			projectName := args[0]
 			group := args[1]
 
@@ -25,6 +29,7 @@ func dirPathCmd() *cobra.Command {
 
 			channel, err := ParseOptionalChannelValue(optionalChannelValue)
 			if err != nil {
+				PrintHelp(cmd)
 				return err
 			}
 

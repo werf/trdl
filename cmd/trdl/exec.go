@@ -22,10 +22,15 @@ func execCmd() *cobra.Command {
 		Use:                   "exec PROJECT_NAME GROUP [CHANNEL] [BINARY_NAME] [--] [ARGS]",
 		Short:                 "Exec channel release binary",
 		DisableFlagsInUseLine: true,
-		Args:                  cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.MinimumNArgs(2)(cmd, args); err != nil {
+				PrintHelp(cmd)
+				return err
+			}
+
 			cmdData, err := processExecArgs(cmd, args)
 			if err != nil {
+				PrintHelp(cmd)
 				return err
 			}
 

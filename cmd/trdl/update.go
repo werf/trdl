@@ -13,8 +13,12 @@ func updateCmd() *cobra.Command {
 		Use:                   "update PROJECT_NAME GROUP [CHANNEL]",
 		Short:                 "Update the project channel files",
 		DisableFlagsInUseLine: true,
-		Args:                  cobra.RangeArgs(2, 3),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
+				PrintHelp(cmd)
+				return err
+			}
+
 			projectName := args[0]
 			group := args[1]
 
@@ -25,6 +29,7 @@ func updateCmd() *cobra.Command {
 
 			channel, err := ParseOptionalChannelValue(optionalChannelValue)
 			if err != nil {
+				PrintHelp(cmd)
 				return err
 			}
 
