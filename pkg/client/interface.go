@@ -11,7 +11,7 @@ type Interface interface {
 }
 
 type ProjectInterface interface {
-	Init(rootVersion int64, rootSha512 string) error
+	Init(repoUrl string, rootVersion int64, rootSha512 string) error
 	UpdateChannel(group, channel string) error
 	ExecChannelReleaseBin(group, channel string, optionalBinName string, args []string) error
 	ChannelReleaseDir(group, channel string) (string, error)
