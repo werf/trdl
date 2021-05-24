@@ -106,6 +106,15 @@ func (c Client) UpdateProjectChannel(projectName, group, channel string) error {
 	return projectClient.UpdateChannel(group, channel)
 }
 
+func (c Client) ExecProjectChannelReleaseBin(projectName, group, channel string, optionalBinName string, args []string) error {
+	projectClient, err := c.ProjectClient(projectName)
+	if err != nil {
+		return err
+	}
+
+	return projectClient.ExecChannelReleaseBin(group, channel, optionalBinName, args)
+}
+
 func (c Client) ProjectChannelReleaseDir(projectName, group, channel string) (string, error) {
 	projectClient, err := c.ProjectClient(projectName)
 	if err != nil {
