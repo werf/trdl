@@ -53,7 +53,7 @@ func (c *Client) init() error {
 }
 
 func (c *Client) initFileLocker() error {
-	locker, err := file_locker.NewFileLocker(c.locksPath())
+	locker, err := file_locker.NewFileLocker(c.locksDir())
 	if err != nil {
 		return err
 	}
@@ -106,22 +106,22 @@ func (c Client) UpdateProjectChannel(projectName, group, channel string) error {
 	return projectClient.UpdateChannel(group, channel)
 }
 
-func (c Client) ProjectChannelReleasePath(projectName, group, channel string) (string, error) {
+func (c Client) ProjectChannelReleaseDir(projectName, group, channel string) (string, error) {
 	projectClient, err := c.ProjectClient(projectName)
 	if err != nil {
 		return "", err
 	}
 
-	return projectClient.ChannelReleasePath(group, channel)
+	return projectClient.ChannelReleaseDir(group, channel)
 }
 
-func (c Client) ProjectChannelReleaseBinPath(projectName, group, channel string) (string, error) {
+func (c Client) ProjectChannelReleaseBinDir(projectName, group, channel string) (string, error) {
 	projectClient, err := c.ProjectClient(projectName)
 	if err != nil {
 		return "", err
 	}
 
-	return projectClient.ChannelReleaseBinPath(group, channel)
+	return projectClient.ChannelReleaseBinDir(group, channel)
 }
 
 func (c Client) ListProjects() []*ProjectConfiguration {
@@ -133,8 +133,8 @@ func (c Client) ProjectClient(projectName string) (ProjectInterface, error) {
 }
 
 func (c Client) projectClient(projectName string) (ProjectInterface, error) {
-	projectDirectory := c.projectDirectory(projectName)
-	if err := os.MkdirAll(projectDirectory, os.ModePerm); err != nil {
+	projectDir := c.projectDir(projectName)
+	if err := os.MkdirAll(projectDir, os.ModePerm); err != nil {
 		return nil, err
 	}
 
@@ -143,10 +143,10 @@ func (c Client) projectClient(projectName string) (ProjectInterface, error) {
 		return nil, err
 	}
 
-	return project.NewClient(projectName, projectDirectory, repoUrl, c.projectLocksPath(projectName))
+	return project.NewClient(projectName, projectDir, repoUrl, c.projectLocksDir(projectName))
 }
 
-func (c *Client) projectDirectory(projectName string) string {
+func (c *Client) projectDir(projectName string) string {
 	return filepath.Join(c.dir, "projects", projectName)
 }
 
@@ -163,10 +163,10 @@ func (c *Client) configurationPath() string {
 	return filepath.Join(c.dir, configurationFileBasename)
 }
 
-func (c *Client) projectLocksPath(projectName string) string {
-	return filepath.Join(c.locksPath(), projectName)
+func (c *Client) projectLocksDir(projectName string) string {
+	return filepath.Join(c.locksDir(), projectName)
 }
 
-func (c *Client) locksPath() string {
+func (c *Client) locksDir() string {
 	return filepath.Join(c.dir, ".locks")
 }

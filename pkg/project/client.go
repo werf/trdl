@@ -57,7 +57,7 @@ func (c *Client) init(repoUrl string, locksPath string) error {
 }
 
 func (c *Client) initTufClient(repoUrl string) error {
-	local, err := leveldbstore.FileLocalStore(c.metaLocalStorePath())
+	local, err := leveldbstore.FileLocalStore(c.metaLocalStoreDir())
 	if err != nil {
 		return err
 	}
@@ -99,8 +99,8 @@ func (c Client) channelPath(group, channel string) string {
 	return filepath.Join(c.directory, channelsDir, group, channel)
 }
 
-func (c Client) channelReleaseBinPath(group, channel string) (string, error) {
-	releaseDir, err := c.channelReleaseDirPath(group, channel)
+func (c Client) channelReleaseBinDir(group, channel string) (string, error) {
+	releaseDir, err := c.channelReleaseDir(group, channel)
 	if err != nil {
 		return "", err
 	}
@@ -118,7 +118,7 @@ func (c Client) channelReleaseBinPath(group, channel string) (string, error) {
 	return binDir, nil
 }
 
-func (c Client) channelReleaseDirPath(group, channel string) (string, error) {
+func (c Client) channelReleaseDir(group, channel string) (string, error) {
 	release, err := c.channelRelease(group, channel)
 	if err != nil {
 		return "", err
@@ -160,7 +160,7 @@ func (c Client) channelRelease(group, channel string) (string, error) {
 	return releaseName, nil
 }
 
-func (c Client) metaLocalStorePath() string {
+func (c Client) metaLocalStoreDir() string {
 	return filepath.Join(c.directory, ".meta")
 }
 
