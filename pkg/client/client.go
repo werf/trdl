@@ -106,6 +106,15 @@ func (c Client) UpdateProjectChannel(projectName, group, channel string) error {
 	return projectClient.UpdateChannel(group, channel)
 }
 
+func (c Client) ProjectChannelReleasePath(projectName, group, channel string) (string, error) {
+	projectClient, err := c.ProjectClient(projectName)
+	if err != nil {
+		return "", err
+	}
+
+	return projectClient.ChannelReleasePath(group, channel)
+}
+
 func (c Client) ListProjects() []*ProjectConfiguration {
 	return c.configuration.GetProjectConfigurations()
 }
