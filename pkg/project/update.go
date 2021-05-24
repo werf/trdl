@@ -3,6 +3,7 @@ package project
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -14,6 +15,11 @@ import (
 
 	"github.com/werf/trdl/pkg/trdl"
 	"github.com/werf/trdl/pkg/util"
+)
+
+var (
+	fileModeExecutable os.FileMode = 0o755
+	fileModeRegular    os.FileMode = 0o655
 )
 
 func (c Client) UpdateChannel(group, channel string) error {
@@ -46,8 +52,8 @@ func (c Client) syncChannel(group, channel string) error {
 		return fmt.Errorf("channel not found in the repo (group: %q, channel: %q)", group, channel)
 	}
 
-	path := c.channelPath(group, channel)
-	return c.syncFile(targetName, targetMeta, path)
+	destPath := c.channelPath(group, channel)
+	return c.syncFile(targetName, targetMeta, destPath, fileModeRegular)
 }
 
 func (c Client) syncChannelRelease(group, channel string) error {
@@ -57,12 +63,13 @@ func (c Client) syncChannelRelease(group, channel string) error {
 	}
 
 	var targets data.TargetFiles
-	releaseTargetPrefix := filepath.Join(targetsReleases, releaseName)
+	var releaseTargetPrefix string
+	releaseTargetPrefixBase := filepath.Join(targetsReleases, releaseName)
 	for _, prefix := range []string{
-		filepath.Join(releaseTargetPrefix, fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)),
-		filepath.Join(releaseTargetPrefix, fmt.Sprintf("%s-any", runtime.GOOS)),
-		filepath.Join(releaseTargetPrefix, fmt.Sprintf("any-%s", runtime.GOARCH)),
-		filepath.Join(releaseTargetPrefix, "any-any"),
+		filepath.Join(releaseTargetPrefixBase, fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)),
+		filepath.Join(releaseTargetPrefixBase, fmt.Sprintf("%s-any", runtime.GOOS)),
+		filepath.Join(releaseTargetPrefixBase, fmt.Sprintf("any-%s", runtime.GOARCH)),
+		filepath.Join(releaseTargetPrefixBase, "any-any"),
 	} {
 		targets, err = c.filterTargets(prefix + "/")
 		if err != nil {
@@ -70,6 +77,7 @@ func (c Client) syncChannelRelease(group, channel string) error {
 		}
 
 		if len(targets) != 0 {
+			releaseTargetPrefix = prefix
 			break
 		}
 	}
@@ -82,8 +90,16 @@ func (c Client) syncChannelRelease(group, channel string) error {
 	}
 
 	for name, meta := range targets {
+		isBinTarget := strings.HasPrefix(name, path.Join(releaseTargetPrefix, "bin")+"/")
+		var fileMode os.FileMode
+		if isBinTarget {
+			fileMode = fileModeExecutable
+		} else {
+			fileMode = fileModeRegular
+		}
+
 		filePath := filepath.Join(c.directory, name)
-		if err := c.syncFile(name, meta, filePath); err != nil {
+		if err := c.syncFile(name, meta, filePath, fileMode); err != nil {
 			return err
 		}
 	}
@@ -91,7 +107,7 @@ func (c Client) syncChannelRelease(group, channel string) error {
 	return nil
 }
 
-func (c Client) syncFile(targetName string, targetMeta data.TargetFileMeta, dest string) error {
+func (c Client) syncFile(targetName string, targetMeta data.TargetFileMeta, dest string, destMode os.FileMode) error {
 	exist, err := util.IsRegularFileExist(dest)
 	if err != nil {
 		return fmt.Errorf("unable to check existence of file %q: %s", dest, err)
@@ -117,19 +133,23 @@ func (c Client) syncFile(targetName string, targetMeta data.TargetFileMeta, dest
 
 		// file is up-to-date
 		if err == nil {
+			if err := os.Chmod(dest, destMode); err != nil {
+				return fmt.Errorf("unable to chmod file %q: %s", dest, err)
+			}
+
 			return nil
 		}
 	}
 
-	return c.downloadFile(targetName, dest)
+	return c.downloadFile(targetName, dest, destMode)
 }
 
-func (c Client) downloadFile(targetName string, dest string) error {
+func (c Client) downloadFile(targetName string, dest string, destMode os.FileMode) error {
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE, 0655)
+	f, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE, destMode)
 	if err != nil {
 		return err
 	}
