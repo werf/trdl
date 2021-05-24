@@ -4,18 +4,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
-
-	"github.com/theupdateframework/go-tuf"
-	"github.com/theupdateframework/go-tuf/client"
 
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
 
+	"github.com/werf/trdl/pkg/project"
+	"github.com/werf/trdl/pkg/trdl"
 	"github.com/werf/trdl/pkg/util"
 )
-
-var defaultLockerTimeout = 30 * time.Second
 
 type Client struct {
 	dir           string
@@ -68,7 +64,7 @@ func (c *Client) initFileLocker() error {
 }
 
 func (c *Client) initConfiguration() error {
-	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: true, Timeout: defaultLockerTimeout}, func(_ bool) error {
+	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: true, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
 		configuration, err := newConfiguration(c.configurationPath())
 		if err != nil {
 			return err
@@ -81,7 +77,7 @@ func (c *Client) initConfiguration() error {
 }
 
 func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootSha512 string) error {
-	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: false, Timeout: defaultLockerTimeout}, func(_ bool) error {
+	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
 		c.configuration.StageProjectConfiguration(projectName, repoUrl)
 
 		projectClient, err := c.ProjectClient(projectName)
@@ -89,30 +85,8 @@ func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootS
 			return err
 		}
 
-		var rootBasename string
-		if rootVersion == 0 {
-			rootBasename = "root.json"
-		} else {
-			rootBasename = fmt.Sprintf("%d.root.json", rootVersion)
-		}
-
-		data, err := projectClient.TufClient().DownloadMetaUnsafe(rootBasename, client.DefaultRootDownloadLimit)
-		if err != nil {
-			return fmt.Errorf("unable to download %q: %s", rootBasename, err)
-		}
-
-		rootFileChecksum := util.Sha512Checksum(data)
-		if rootFileChecksum != rootSha512 {
-			return fmt.Errorf("expected hash sum of the root file not matched (%q != %q)", rootSha512, rootFileChecksum)
-		}
-
-		rootKeys, err := tuf.ParseRootKeys(data)
-		if err != nil {
-			return fmt.Errorf("unable to parse root keys: %s", err)
-		}
-
-		if err := projectClient.TufClient().Init(rootKeys, len(rootKeys)); err != nil {
-			return fmt.Errorf("unable to init tuf client: %s", err)
+		if err := projectClient.Init(rootVersion, rootSha512); err != nil {
+			return fmt.Errorf("unable to init project %q client: %s", projectName, err)
 		}
 
 		if err := c.configuration.Save(c.configurationPath()); err != nil {
@@ -121,6 +95,15 @@ func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootS
 
 		return nil
 	})
+}
+
+func (c Client) UpdateProjectChannel(projectName, group, channel string) error {
+	projectClient, err := c.ProjectClient(projectName)
+	if err != nil {
+		return err
+	}
+
+	return projectClient.UpdateChannel(group, channel)
 }
 
 func (c Client) ListProjects() []*ProjectConfiguration {
@@ -142,7 +125,7 @@ func (c Client) projectClient(projectName string) (ProjectInterface, error) {
 		return nil, err
 	}
 
-	return newAppClient(projectName, projectDirectory, repoUrl)
+	return project.NewClient(projectName, projectDirectory, repoUrl, c.projectLocksPath(projectName))
 }
 
 func (c *Client) projectDirectory(projectName string) string {
@@ -160,6 +143,10 @@ func (c *Client) projectRemoteUrl(projectName string) (string, error) {
 
 func (c *Client) configurationPath() string {
 	return filepath.Join(c.dir, configurationFileBasename)
+}
+
+func (c *Client) projectLocksPath(projectName string) string {
+	return filepath.Join(c.locksPath(), projectName)
 }
 
 func (c *Client) locksPath() string {

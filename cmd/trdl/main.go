@@ -27,6 +27,7 @@ func rootCmd() *cobra.Command {
 
 	rootCmd.AddCommand(
 		addCmd(),
+		updateCmd(),
 		listCmd(),
 		versionCmd(),
 	)
