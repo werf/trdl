@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
@@ -112,7 +113,20 @@ func (c Client) ExecProjectChannelReleaseBin(projectName, group, channel string,
 		return err
 	}
 
-	return projectClient.ExecChannelReleaseBin(group, channel, optionalBinName, args)
+	if err := projectClient.ExecChannelReleaseBin(group, channel, optionalBinName, args); err != nil {
+		switch e := err.(type) {
+		case project.ErrChannelNotFoundLocally:
+			return prepareChannelNotFoundLocallyError(e)
+		case project.ErrChannelReleaseNotFoundLocally:
+			return prepareChannelReleaseNotFoundLocallyError(e)
+		case project.ErrChannelReleaseBinSeveralFilesFound:
+			return prepareChannelReleaseBinSeveralFilesFoundError(e)
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func (c Client) ProjectChannelReleaseDir(projectName, group, channel string) (string, error) {
@@ -121,7 +135,19 @@ func (c Client) ProjectChannelReleaseDir(projectName, group, channel string) (st
 		return "", err
 	}
 
-	return projectClient.ChannelReleaseDir(group, channel)
+	dir, err := projectClient.ChannelReleaseDir(group, channel)
+	if err != nil {
+		switch e := err.(type) {
+		case project.ErrChannelNotFoundLocally:
+			return "", prepareChannelNotFoundLocallyError(e)
+		case project.ErrChannelReleaseNotFoundLocally:
+			return "", prepareChannelReleaseNotFoundLocallyError(e)
+		}
+
+		return "", err
+	}
+
+	return dir, nil
 }
 
 func (c Client) ProjectChannelReleaseBinDir(projectName, group, channel string) (string, error) {
@@ -130,7 +156,47 @@ func (c Client) ProjectChannelReleaseBinDir(projectName, group, channel string) 
 		return "", err
 	}
 
-	return projectClient.ChannelReleaseBinDir(group, channel)
+	dir, err := projectClient.ChannelReleaseBinDir(group, channel)
+	if err != nil {
+		switch e := err.(type) {
+		case project.ErrChannelNotFoundLocally:
+			return "", prepareChannelNotFoundLocallyError(e)
+		case project.ErrChannelReleaseNotFoundLocally:
+			return "", prepareChannelReleaseNotFoundLocallyError(e)
+		}
+
+		return "", err
+	}
+
+	return dir, nil
+}
+
+func prepareChannelNotFoundLocallyError(e project.ErrChannelNotFoundLocally) error {
+	return fmt.Errorf(
+		"%s, update channel with \"trdl update %s %s %s\" command",
+		e.Error(),
+		e.ProjectName,
+		e.Group,
+		e.Channel,
+	)
+}
+
+func prepareChannelReleaseNotFoundLocallyError(e project.ErrChannelReleaseNotFoundLocally) error {
+	return fmt.Errorf(
+		"%s, update channel with \"trdl update %s %s %s\" command",
+		e.Error(),
+		e.ProjectName,
+		e.Group,
+		e.Channel,
+	)
+}
+
+func prepareChannelReleaseBinSeveralFilesFoundError(e project.ErrChannelReleaseBinSeveralFilesFound) error {
+	return fmt.Errorf(
+		"%s: it is necessary to specify the certain name:\n - %s",
+		e.Error(),
+		strings.Join(e.Names, "\n - "),
+	)
 }
 
 func (c Client) ListProjects() []*ProjectConfiguration {

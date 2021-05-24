@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/gookit/color v1.4.2
 	github.com/rodaine/table v1.0.1
 	github.com/spf13/cobra v1.1.3
 	github.com/theupdateframework/go-tuf v0.0.0-20201230183259-aee6270feb55

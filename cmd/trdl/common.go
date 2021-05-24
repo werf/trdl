@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/spf13/cobra"
 
 	"github.com/werf/trdl/pkg/trdl"
 )
@@ -21,4 +22,9 @@ func ParseOptionalChannelValue(value string) (string, error) {
 	} else {
 		return trdl.ChannelStable, nil
 	}
+}
+
+func PrintHelp(cmd *cobra.Command) {
+	_ = cmd.Help()
+	fmt.Println()
 }
