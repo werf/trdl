@@ -5,6 +5,19 @@ import (
 	"strings"
 )
 
+func IsDirExist(path string) (bool, error) {
+	fileInfo, err := os.Lstat(path)
+	if err != nil {
+		if isNotExistError(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return fileInfo.IsDir(), nil
+}
+
 func IsRegularFileExist(path string) (bool, error) {
 	fileInfo, err := os.Lstat(path)
 	if err != nil {

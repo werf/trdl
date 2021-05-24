@@ -99,6 +99,47 @@ func (c Client) channelPath(group, channel string) string {
 	return filepath.Join(c.directory, channelsDir, group, channel)
 }
 
+func (c Client) channelReleaseBinPath(group, channel string) (string, error) {
+	releaseDir, err := c.channelReleaseDirPath(group, channel)
+	if err != nil {
+		return "", err
+	}
+
+	binDir := filepath.Join(releaseDir, "bin")
+	exist, err := util.IsDirExist(binDir)
+	if err != nil {
+		return "", fmt.Errorf("unable to check existence of directory %q: %s", binDir, err)
+	}
+
+	if !exist {
+		return "", fmt.Errorf("bin directory not found in release directory (group: %q, channel: %q)", group, channel)
+	}
+
+	return binDir, nil
+}
+
+func (c Client) channelReleaseDirPath(group, channel string) (string, error) {
+	release, err := c.channelRelease(group, channel)
+	if err != nil {
+		return "", err
+	}
+
+	dirGlob := filepath.Join(c.directory, releasesDir, release, "*")
+
+	matches, err := filepath.Glob(dirGlob)
+	if err != nil {
+		return "", fmt.Errorf("unable to glob files: %s", err)
+	}
+
+	if len(matches) > 1 {
+		return "", fmt.Errorf("unexpected files in release directory:\n - %s\n", strings.Join(matches, "\n - "))
+	} else if len(matches) == 0 {
+		return "", NewErrChannelReleaseNotFoundLocally(group, channel, release)
+	}
+
+	return matches[0], nil
+}
+
 func (c Client) channelRelease(group, channel string) (string, error) {
 	channelFilePath := c.channelPath(group, channel)
 	exist, err := util.IsRegularFileExist(channelFilePath)
@@ -107,7 +148,7 @@ func (c Client) channelRelease(group, channel string) (string, error) {
 	}
 
 	if !exist {
-		return "", fmt.Errorf("chanel not found locally (group: %q, channel: %q)", group, channel)
+		return "", NewErrChannelNotFoundLocally(group, channel)
 	}
 
 	channelData, err := ioutil.ReadFile(channelFilePath)

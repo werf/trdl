@@ -8,10 +8,10 @@ import (
 	trdlClient "github.com/werf/trdl/pkg/client"
 )
 
-func updateCmd() *cobra.Command {
+func binPathCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "update PROJECT_NAME GROUP [CHANNEL]",
-		Short:                 "Update the project channel files",
+		Use:                   "bin-path PROJECT_NAME GROUP [CHANNEL]",
+		Short:                 "Get path to channel release bin directory",
 		DisableFlagsInUseLine: true,
 		Args:                  cobra.RangeArgs(2, 3),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -33,9 +33,12 @@ func updateCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			if err := c.UpdateProjectChannel(projectName, group, channel); err != nil {
-				return fmt.Errorf("unable to update channel: %s", err)
+			dir, err := c.ProjectChannelReleaseBinPath(projectName, group, channel)
+			if err != nil {
+				return fmt.Errorf("unable to get channel release bin directory: %s", err)
 			}
+
+			fmt.Println(dir)
 
 			return nil
 		},
