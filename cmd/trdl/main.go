@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +12,8 @@ const trdlHomeDirectory = "~/.trdl"
 
 func main() {
 	if err := rootCmd().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err.Error())
+		msg := fmt.Sprintf("Error: %s", err.Error())
+		_, _ = fmt.Fprintln(os.Stderr, color.Red.Sprint(msg))
 		os.Exit(1)
 	}
 }
