@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	trdlClient "github.com/werf/trdl/pkg/client"
+	"github.com/werf/trdl/pkg/trdl"
 )
 
 func updateCmd() *cobra.Command {
@@ -23,15 +24,15 @@ func updateCmd() *cobra.Command {
 			var channel string
 			if len(args) == 3 {
 				value := args[2]
-				if !govalidator.IsIn(value, channels...) {
+				if !govalidator.IsIn(value, trdl.Channels...) {
 					return fmt.Errorf(
 						"unable to parse argument \"CHANNEL\": unsupported channel specified (%q), use one of the following: \"%s\"",
-						value, strings.Join(channels, `", "`))
+						value, strings.Join(trdl.Channels, `", "`))
 				}
 
 				channel = value
 			} else {
-				channel = channelStable
+				channel = trdl.ChannelStable
 			}
 
 			c, err := trdlClient.NewClient(trdlHomeDirectory)
