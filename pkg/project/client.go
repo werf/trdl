@@ -3,6 +3,7 @@ package project
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -57,7 +58,7 @@ func (c *Client) init(repoUrl string, locksPath string) error {
 }
 
 func (c *Client) initTufClient(repoUrl string) error {
-	local, err := leveldbstore.FileLocalStore(c.metaLocalStorePath())
+	local, err := leveldbstore.FileLocalStore(c.metaLocalStoreDir())
 	if err != nil {
 		return err
 	}
@@ -99,8 +100,44 @@ func (c Client) channelPath(group, channel string) string {
 	return filepath.Join(c.directory, channelsDir, group, channel)
 }
 
-func (c Client) channelReleaseBinPath(group, channel string) (string, error) {
-	releaseDir, err := c.channelReleaseDirPath(group, channel)
+func (c Client) channelReleaseBinPath(group, channel string, optionalBinName string) (string, error) {
+	dir, err := c.channelReleaseBinDir(group, channel)
+	if err != nil {
+		return "", err
+	}
+
+	var glob string
+	if optionalBinName == "" {
+		glob = filepath.Join(dir, "*")
+	} else {
+		glob = filepath.Join(dir, optionalBinName)
+	}
+
+	matches, err := filepath.Glob(glob)
+	if err != nil {
+		return "", fmt.Errorf("unable to glob files: %s", err)
+	}
+
+	if len(matches) > 1 {
+		var names []string
+		for _, m := range matches {
+			names = append(names, strings.TrimLeft(m, dir+string(os.PathSeparator)))
+		}
+
+		return "", NewErrChannelReleaseSeveralFilesFound(group, channel, names)
+	} else if len(matches) == 0 {
+		if optionalBinName == "" {
+			return "", fmt.Errorf("binary file not found in release")
+		} else {
+			return "", fmt.Errorf("binary file %q not found in release", optionalBinName)
+		}
+	}
+
+	return matches[0], nil
+}
+
+func (c Client) channelReleaseBinDir(group, channel string) (string, error) {
+	releaseDir, err := c.channelReleaseDir(group, channel)
 	if err != nil {
 		return "", err
 	}
@@ -118,7 +155,7 @@ func (c Client) channelReleaseBinPath(group, channel string) (string, error) {
 	return binDir, nil
 }
 
-func (c Client) channelReleaseDirPath(group, channel string) (string, error) {
+func (c Client) channelReleaseDir(group, channel string) (string, error) {
 	release, err := c.channelRelease(group, channel)
 	if err != nil {
 		return "", err
@@ -132,7 +169,7 @@ func (c Client) channelReleaseDirPath(group, channel string) (string, error) {
 	}
 
 	if len(matches) > 1 {
-		return "", fmt.Errorf("unexpected files in release directory:\n - %s\n", strings.Join(matches, "\n - "))
+		return "", fmt.Errorf("unexpected files in release directory:\n - %s", strings.Join(matches, "\n - "))
 	} else if len(matches) == 0 {
 		return "", NewErrChannelReleaseNotFoundLocally(group, channel, release)
 	}
@@ -160,7 +197,7 @@ func (c Client) channelRelease(group, channel string) (string, error) {
 	return releaseName, nil
 }
 
-func (c Client) metaLocalStorePath() string {
+func (c Client) metaLocalStoreDir() string {
 	return filepath.Join(c.directory, ".meta")
 }
 

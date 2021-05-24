@@ -33,7 +33,7 @@ func dirPathCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			dir, err := c.ProjectChannelReleasePath(projectName, group, channel)
+			dir, err := c.ProjectChannelReleaseDir(projectName, group, channel)
 			if err != nil {
 				return fmt.Errorf("unable to get channel release directory: %s", err)
 			}
