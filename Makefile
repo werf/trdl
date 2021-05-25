@@ -29,10 +29,10 @@ ifndef TRDL_S3_ACCESS_KEY_ID
 endif
 
 	VAULT_ADDR='http://127.0.0.1:8200' vault secrets enable -path=trdl-test-project vault-plugin-secrets-trdl
-	vault write trdl-test-project/configure s3_secret_access_key="${TRDL_S3_SECRET_ACCESS_KEY}" s3_access_key_id="${TRDL_S3_ACCESS_KEY_ID}" s3_region=ru-central1 s3_bucket_name=trdl-test-project s3_endpoint=https://storage.yandexcloud.net required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project
+	VAULT_ADDR='http://127.0.0.1:8200' vault write trdl-test-project/configure s3_secret_access_key="${TRDL_S3_SECRET_ACCESS_KEY}" s3_access_key_id="${TRDL_S3_ACCESS_KEY_ID}" s3_region=ru-central1 s3_bucket_name=trdl-test-project s3_endpoint=https://storage.yandexcloud.net required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project
 
 	VAULT_ADDR='http://127.0.0.1:8200' vault secrets enable -path=trdl-test-werf vault-plugin-secrets-trdl
-	vault write trdl-test-werf/configure s3_secret_access_key="${TRDL_S3_SECRET_ACCESS_KEY}" s3_access_key_id="${TRDL_S3_ACCESS_KEY_ID}" s3_region=ru-central1 s3_bucket_name=trdl-test-werf s3_endpoint=https://storage.yandexcloud.net required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf
+	VAULT_ADDR='http://127.0.0.1:8200' vault write trdl-test-werf/configure s3_secret_access_key="${TRDL_S3_SECRET_ACCESS_KEY}" s3_access_key_id="${TRDL_S3_ACCESS_KEY_ID}" s3_region=ru-central1 s3_bucket_name=trdl-test-werf s3_endpoint=https://storage.yandexcloud.net required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf
 
 	tail -f trdl.log
 

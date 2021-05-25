@@ -20,10 +20,9 @@ import (
 
 const (
 	fieldNameGitRepoUrl                                 = "git_repo_url"
+	fieldNameGitTrdlChannelsBranch                      = "git_trdl_channels_branch"
+	fieldNameLastPublishedGitCommit                     = "last_published_git_commit"
 	fieldNameRequiredNumberOfVerifiedSignaturesOnCommit = "required_number_of_verified_signatures_on_commit"
-	// TODO
-	// fieldNameLastPublishSuccessfulCommit                = "last_successful_commit"
-	// TODO
 	// fieldNameTaskTimeout                                = "task_timeout"
 	// fieldNameTaskHistoryLimit                           = "task_history_limit"
 	fieldNameGitCredentialUsername   = "username"
@@ -56,6 +55,16 @@ func configurePaths(b *backend) []*framework.Path {
 					Type:        framework.TypeString,
 					Description: "Git repository url",
 					Required:    true,
+				},
+				fieldNameGitTrdlChannelsBranch: {
+					Type:        framework.TypeString,
+					Description: `Set branch of the configured git repository which contains trdl_channels.yaml configuration (will use "trdl" branch by default)`,
+					Required:    false,
+				},
+				fieldNameLastPublishedGitCommit: {
+					Type:        framework.TypeString,
+					Description: "Set or override last published git commit which contains trdl channels",
+					Required:    false,
 				},
 				fieldNameRequiredNumberOfVerifiedSignaturesOnCommit: {
 					Type:        framework.TypeInt,
@@ -201,6 +210,18 @@ func (b *backend) pathConfigure(ctx context.Context, req *logical.Request, field
 		}
 
 		convertedFields[k] = v
+	}
+
+	var lastPublishedGitCommit string
+	if v, hasKey := convertedFields[fieldNameLastPublishedGitCommit]; hasKey {
+		lastPublishedGitCommit = v.(string)
+		delete(convertedFields, fieldNameLastPublishedGitCommit)
+	}
+
+	if lastPublishedGitCommit != "" {
+		if err := req.Storage.Put(ctx, &logical.StorageEntry{Key: LastPublishedGitCommitKey, Value: []byte(lastPublishedGitCommit)}); err != nil {
+			return nil, fmt.Errorf("error putting last published git commit record by key %q: %s", LastPublishedGitCommitKey, err)
+		}
 	}
 
 	entry, err := logical.StorageEntryJSON(storageKeyConfigurationBase, convertedFields)

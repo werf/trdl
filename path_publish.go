@@ -20,17 +20,14 @@ import (
 )
 
 const (
-	PublishedCommitKey = "published_commit"
+	DefaultGitTrdlChannelsBranch = "trdl"
+	LastPublishedGitCommitKey    = "last_published_git_commit"
 )
 
 func pathPublish(b *backend) *framework.Path {
 	return &framework.Path{
 		Pattern: `publish$`,
 		Fields: map[string]*framework.FieldSchema{
-			"reset_commit": {
-				Type:        framework.TypeBool,
-				Description: "Reset previously published commit even if current commit is not descendant of previous (optional)",
-			},
 			fieldNameGitCredentialUsername: {
 				Type:        framework.TypeString,
 				Description: "Git username",
@@ -53,9 +50,14 @@ func pathPublish(b *backend) *framework.Path {
 	}
 }
 
-func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	resetCommit := fields.Get("reset_commit").(bool)
+func GetGitTrdlChannelsBranch(cfg *Configuration) string {
+	if cfg.GitTrdlChannelsBranch != "" {
+		return cfg.GitTrdlChannelsBranch
+	}
+	return DefaultGitTrdlChannelsBranch
+}
 
+func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	c, resp, err := GetAndValidateConfiguration(ctx, req.Storage)
 	if resp != nil || err != nil {
 		return resp, err
@@ -77,7 +79,14 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		gitPassword = c.GitCredential.Password
 	}
 
-	gitBranch := "trdl" // TODO: get branch from vault storage
+	gitBranch := GetGitTrdlChannelsBranch(c)
+
+	var lastPublishedGitCommit string
+	if lastCommitEntry, err := req.Storage.Get(ctx, LastPublishedGitCommitKey); err != nil {
+		return nil, fmt.Errorf("error getting last published git commit by key %q from storage: %s", LastPublishedGitCommitKey, err)
+	} else if lastCommitEntry != nil {
+		lastPublishedGitCommit = string(lastCommitEntry.Value)
+	}
 
 	publisherRepository, err := GetPublisherRepository(ctx, c, req.Storage)
 	if err != nil {
@@ -106,31 +115,22 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 			return fmt.Errorf("error getting git repo commit object by hash %q: %s", headRef.Hash().String(), err)
 		}
 
-		if !resetCommit {
-			prevCommitEntry, err := storage.Get(ctx, PublishedCommitKey)
+		if lastPublishedGitCommit != "" {
+			logboek.Context(ctx).Default().LogF("Got previously published commit record %q\n", lastPublishedGitCommit)
+			hclog.L().Debug(fmt.Sprintf("Got previously published commit record %q", lastPublishedGitCommit))
+
+			lastCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(lastPublishedGitCommit))
 			if err != nil {
-				return fmt.Errorf("error getting published commit by key %q from storage: %s", PublishedCommitKey, err)
+				return fmt.Errorf("error getting git repo commit object by hash %q: %s", lastPublishedGitCommit, err)
 			}
 
-			if prevCommitEntry != nil {
-				prevCommit := string(prevCommitEntry.Value)
+			isAncestor, err := lastCommitObj.IsAncestor(headCommitObj)
+			if err != nil {
+				return fmt.Errorf("error checking ancestry of git commit %q to git commit %q: %s", lastPublishedGitCommit, headRef.Hash().String(), err)
+			}
 
-				logboek.Context(ctx).Default().LogF("Got previously published commit record %q\n", prevCommit)
-				hclog.L().Debug(fmt.Sprintf("Got previously published commit record %q", prevCommit))
-
-				prevCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(prevCommit))
-				if err != nil {
-					return fmt.Errorf("error getting git repo commit object by hash %q: %s", prevCommit, err)
-				}
-
-				isAncestor, err := prevCommitObj.IsAncestor(headCommitObj)
-				if err != nil {
-					return fmt.Errorf("error checking ancestry of commit %q to commit %q: %s", prevCommit, headRef.Hash().String(), err)
-				}
-
-				if !isAncestor {
-					return fmt.Errorf("cannot publish commit %q which is not desdendant of previously published commit %q", headRef.Hash().String(), prevCommit)
-				}
+			if !isAncestor {
+				return fmt.Errorf("cannot publish git commit %q which is not desdendant of previously published git commit %q", headRef.Hash().String(), lastPublishedGitCommit)
 			}
 		}
 
@@ -164,8 +164,8 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Tuf repo commit done\n")
 		hclog.L().Debug(fmt.Sprintf("Tuf repo commit done"))
 
-		if err := storage.Put(ctx, &logical.StorageEntry{Key: PublishedCommitKey, Value: []byte(headRef.Hash().String())}); err != nil {
-			return fmt.Errorf("error putting published commit record by key %q: %s", PublishedCommitKey, err)
+		if err := storage.Put(ctx, &logical.StorageEntry{Key: LastPublishedGitCommitKey, Value: []byte(headRef.Hash().String())}); err != nil {
+			return fmt.Errorf("error putting published commit record by key %q: %s", LastPublishedGitCommitKey, err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Put published commit record %q\n", headRef.Hash().String())
