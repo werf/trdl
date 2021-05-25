@@ -243,8 +243,8 @@ github.com/tent/canonical-json-go v0.0.0-20130607151641-96e4ba3a7613/go.mod h1:g
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/werf/lockgate v0.0.0-20210423043214-fd4df31c9ab0 h1:ldIhKpFGehs8st/vNFeHyaufEopwED9j4/EPrGtfK8U=
 github.com/werf/lockgate v0.0.0-20210423043214-fd4df31c9ab0/go.mod h1:/CeY6KDiBSCU9PUmjt7zGhqpzp8FAPg/wNVfLZHQGWI=
-github.com/werf/third-party-go-tuf v0.0.0-20210521115409-7cfe1d24222d h1:auUbJP1TL2bufQpBxXzHQe083geouswB/ZcKiS5U7i0=
-github.com/werf/third-party-go-tuf v0.0.0-20210521115409-7cfe1d24222d/go.mod h1:L+uU/NRFK/7h0NYAnsmvsX9EghDB5QVCcHCIrK2h5nw=
+github.com/werf/third-party-go-tuf v0.0.0-20210525162201-8477edc65450 h1:KwL3Rh2G8GJiKugYVNGnPzDe5HQLCvYHV2ram8nvymI=
+github.com/werf/third-party-go-tuf v0.0.0-20210525162201-8477edc65450/go.mod h1:L+uU/NRFK/7h0NYAnsmvsX9EghDB5QVCcHCIrK2h5nw=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 h1:QldyIu/L63oPpyvQmHgvgickp1Yw510KJOqX7H24mg8=
 github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778/go.mod h1:2MuV+tbUrU1zIOPMxZ5EncGwgmMJsa+9ucAQZXxsObs=

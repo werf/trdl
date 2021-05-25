@@ -12,4 +12,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
 
-replace github.com/theupdateframework/go-tuf => github.com/werf/third-party-go-tuf v0.0.0-20210521115409-7cfe1d24222d
+replace github.com/theupdateframework/go-tuf => github.com/werf/third-party-go-tuf v0.0.0-20210525162201-8477edc65450
