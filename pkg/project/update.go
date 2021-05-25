@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/theupdateframework/go-tuf/data"
 	util2 "github.com/theupdateframework/go-tuf/util"
@@ -23,7 +24,7 @@ var (
 )
 
 func (c Client) UpdateChannel(group, channel string) error {
-	return lockgate.WithAcquire(c.locker, c.groupChannelLockName(group, channel), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+	return lockgate.WithAcquire(c.locker, c.updateChannelLockName(group, channel), lockgate.AcquireOptions{Shared: false, Timeout: time.Minute * 5}, func(_ bool) error {
 		if err := c.syncMeta(); err != nil {
 			return err
 		}
@@ -74,23 +75,33 @@ func (c Client) UpdateChannel(group, channel string) error {
 			}
 		}
 
-		if deferErr = c.syncChannelRelease(release); deferErr != nil {
+		if deferErr = c.syncChannelReleaseWithLock(release); deferErr != nil {
 			return deferErr
 		}
 
 		{ // rename tmp channel to channel (optional)
 			if !channelUpToDate {
-				if deferErr = os.MkdirAll(filepath.Dir(channelPath), os.ModePerm); deferErr != nil {
-					return fmt.Errorf("unable to mkdir all %q: %s", channelPath, deferErr)
-				}
+				return lockgate.WithAcquire(c.locker, c.channelLockName(group, channel), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+					if deferErr = os.MkdirAll(filepath.Dir(channelPath), os.ModePerm); deferErr != nil {
+						return fmt.Errorf("unable to mkdir all %q: %s", channelPath, deferErr)
+					}
 
-				if deferErr = os.Rename(channelTmpPath, channelPath); deferErr != nil {
-					return fmt.Errorf("unable to rename file %q to %q: %s", channelTmpPath, channelPath, deferErr)
-				}
+					if deferErr = os.Rename(channelTmpPath, channelPath); deferErr != nil {
+						return fmt.Errorf("unable to rename file %q to %q: %s", channelTmpPath, channelPath, deferErr)
+					}
+
+					return nil
+				})
 			}
 		}
 
 		return nil
+	})
+}
+
+func (c Client) syncChannelReleaseWithLock(release string) error {
+	return lockgate.WithAcquire(c.locker, c.updateReleaseLockName(release), lockgate.AcquireOptions{Shared: false, Timeout: time.Minute * 5}, func(_ bool) error {
+		return c.syncChannelRelease(release)
 	})
 }
 

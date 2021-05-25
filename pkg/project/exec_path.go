@@ -8,7 +8,7 @@ import (
 )
 
 func (c Client) ExecChannelReleaseBin(group, channel string, optionalBinName string, args []string) error {
-	return lockgate.WithAcquire(c.locker, c.groupChannelLockName(group, channel), lockgate.AcquireOptions{Shared: true, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+	return lockgate.WithAcquire(c.locker, c.channelLockName(group, channel), lockgate.AcquireOptions{Shared: true, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
 		path, err := c.channelReleaseBinPath(group, channel, optionalBinName)
 		if err != nil {
 			return err

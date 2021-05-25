@@ -219,6 +219,14 @@ func (c Client) metaLocalStoreDir() string {
 	return filepath.Join(c.dir, ".meta")
 }
 
-func (c Client) groupChannelLockName(group, channel string) string {
+func (c Client) channelLockName(group, channel string) string {
 	return fmt.Sprintf("%s-%s", group, channel)
+}
+
+func (c Client) updateChannelLockName(group, channel string) string {
+	return fmt.Sprintf("update-channel-%s-%s", group, channel)
+}
+
+func (c Client) updateReleaseLockName(release string) string {
+	return fmt.Sprintf("update-release-%s", release)
 }
