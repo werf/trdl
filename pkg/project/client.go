@@ -27,15 +27,17 @@ const (
 
 type Client struct {
 	projectName string
-	directory   string
+	dir         string
+	tpmDir      string
 	tufClient   *client.Client
 	locker      lockgate.Locker
 }
 
-func NewClient(projectName, directory, repoUrl, locksPath string) (Client, error) {
+func NewClient(projectName, dir, repoUrl, locksPath, tmpDir string) (Client, error) {
 	c := Client{
 		projectName: projectName,
-		directory:   directory,
+		dir:         dir,
+		tpmDir:      tmpDir,
 	}
 
 	if err := c.init(repoUrl, locksPath); err != nil {
@@ -96,8 +98,20 @@ func (c Client) channelTargetName(group, channel string) string {
 	return path.Join(targetsChannels, group, channel)
 }
 
+func (c Client) releaseTargetNamePrefix(release string) string {
+	return path.Join(targetsReleases, release)
+}
+
 func (c Client) channelPath(group, channel string) string {
-	return filepath.Join(c.directory, channelsDir, group, channel)
+	return filepath.Join(c.dir, channelsDir, group, channel)
+}
+
+func (c Client) channelTmpPath(group, channel string) string {
+	return filepath.Join(c.tpmDir, channelsDir, group, channel)
+}
+
+func (c Client) channelReleaseTmpDir(releaseName string) string {
+	return filepath.Join(c.tpmDir, releasesDir, releaseName)
 }
 
 func (c Client) channelReleaseBinPath(group, channel string, optionalBinName string) (string, error) {
@@ -161,7 +175,7 @@ func (c Client) channelReleaseDir(group, channel string) (dir string, release st
 		return "", "", err
 	}
 
-	dirGlob := filepath.Join(c.directory, releasesDir, release, "*")
+	dirGlob := filepath.Join(c.dir, releasesDir, release, "*")
 
 	matches, err := filepath.Glob(dirGlob)
 	if err != nil {
@@ -188,9 +202,13 @@ func (c Client) channelRelease(group, channel string) (string, error) {
 		return "", NewErrChannelNotFoundLocally(c.projectName, group, channel)
 	}
 
-	channelData, err := ioutil.ReadFile(channelFilePath)
+	return readChannelRelease(channelFilePath)
+}
+
+func readChannelRelease(path string) (string, error) {
+	channelData, err := ioutil.ReadFile(path)
 	if err != nil {
-		return "", fmt.Errorf("unable to read file %q: %s", channelFilePath, err)
+		return "", fmt.Errorf("unable to read file %q: %s", path, err)
 	}
 
 	releaseName := strings.TrimSpace(string(channelData))
@@ -198,7 +216,7 @@ func (c Client) channelRelease(group, channel string) (string, error) {
 }
 
 func (c Client) metaLocalStoreDir() string {
-	return filepath.Join(c.directory, ".meta")
+	return filepath.Join(c.dir, ".meta")
 }
 
 func (c Client) groupChannelLockName(group, channel string) string {
