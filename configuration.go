@@ -10,6 +10,7 @@ import (
 
 type Configuration struct {
 	GitRepoUrl                                 string `json:"git_repo_url"`
+	GitTrdlChannelsBranch                      string `json:"git_trdl_channels_branch"`
 	RequiredNumberOfVerifiedSignaturesOnCommit int    `json:"required_number_of_verified_signatures_on_commit"`
 	GitCredential                              struct {
 		Username string `json:"username"`
