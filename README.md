@@ -7,6 +7,11 @@
 .
 ├── config.yaml
 ├── .locks
+│   ├── ...
+│   └── <PROJECT_NAME>
+├── .tmp
+│   ├── ...
+│   └── <PROJECT_NAME>
 └── projects
     ├── ...
     └── <PROJECT_NAME>
@@ -15,7 +20,6 @@
         │   └── <GROUP_NAME>
         │       ├── ...
         │       └── <alpha | beta | ea | stable | rc>
-        ├── channels.yaml
         ├── .meta
         └── releases
             ├── ...
