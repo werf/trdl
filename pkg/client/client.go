@@ -222,7 +222,7 @@ func (c Client) projectClient(projectName string) (ProjectInterface, error) {
 		return nil, err
 	}
 
-	return project.NewClient(projectName, projectDir, repoUrl, c.projectLocksDir(projectName))
+	return project.NewClient(projectName, projectDir, repoUrl, c.projectLocksDir(projectName), c.projectTmpDir(projectName))
 }
 
 func (c *Client) projectDir(projectName string) string {
@@ -243,9 +243,17 @@ func (c *Client) configurationPath() string {
 }
 
 func (c *Client) projectLocksDir(projectName string) string {
-	return filepath.Join(c.locksDir(), projectName)
+	return filepath.Join(c.locksDir(), "projects", projectName)
 }
 
 func (c *Client) locksDir() string {
 	return filepath.Join(c.dir, ".locks")
+}
+
+func (c *Client) projectTmpDir(projectName string) string {
+	return filepath.Join(c.tmpDir(), "projects", projectName)
+}
+
+func (c *Client) tmpDir() string {
+	return filepath.Join(c.dir, ".tmp")
 }

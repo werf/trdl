@@ -7,7 +7,7 @@ import (
 )
 
 func (c Client) ChannelReleaseBinDir(group, channel string) (dir string, err error) {
-	err = lockgate.WithAcquire(c.locker, c.groupChannelLockName(group, channel), lockgate.AcquireOptions{Shared: true, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+	err = lockgate.WithAcquire(c.locker, c.channelLockName(group, channel), lockgate.AcquireOptions{Shared: true, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
 		dir, _, err = c.channelReleaseBinDir(group, channel)
 		return err
 	})
