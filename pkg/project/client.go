@@ -7,13 +7,12 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/theupdateframework/go-tuf/client"
-	leveldbstore "github.com/theupdateframework/go-tuf/client/leveldbstore"
+	"time"
 
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
 
+	"github.com/werf/trdl/pkg/tuf"
 	"github.com/werf/trdl/pkg/util"
 )
 
@@ -29,7 +28,7 @@ type Client struct {
 	projectName string
 	dir         string
 	tpmDir      string
-	tufClient   *client.Client
+	tufClient   tuf.Client
 	locker      lockgate.Locker
 }
 
@@ -53,26 +52,17 @@ func (c *Client) init(repoUrl string, locksPath string) error {
 	}
 
 	if err := c.initTufClient(repoUrl); err != nil {
-		return err
+		return fmt.Errorf("unable to init tuf client: %s", err)
 	}
 
 	return nil
 }
 
-func (c *Client) initTufClient(repoUrl string) error {
-	local, err := leveldbstore.FileLocalStore(c.metaLocalStoreDir())
-	if err != nil {
+func (c *Client) initTufClient(repoUrl string) (err error) {
+	return lockgate.WithAcquire(c.locker, c.tufClientLockName(), lockgate.AcquireOptions{Shared: false, Timeout: time.Minute * 2}, func(_ bool) error {
+		c.tufClient, err = tuf.NewClient(c.metaLocalStoreDir(), repoUrl)
 		return err
-	}
-
-	remote, err := client.HTTPRemoteStore(repoUrl, nil, nil)
-	if err != nil {
-		return err
-	}
-
-	c.tufClient = client.NewClient(local, remote)
-
-	return nil
+	})
 }
 
 func (c *Client) initFileLocker(locksPath string) error {
@@ -87,11 +77,9 @@ func (c *Client) initFileLocker(locksPath string) error {
 }
 
 func (c Client) syncMeta() error {
-	if _, err := c.tufClient.Update(); err != nil && !client.IsLatestSnapshot(err) {
-		return err
-	}
-
-	return nil
+	return lockgate.WithAcquire(c.locker, c.tufClientLockName(), lockgate.AcquireOptions{Shared: false, Timeout: time.Minute * 2}, func(acquired bool) error {
+		return c.tufClient.Update()
+	})
 }
 
 func (c Client) channelTargetName(group, channel string) string {
@@ -229,4 +217,8 @@ func (c Client) updateChannelLockName(group, channel string) string {
 
 func (c Client) updateReleaseLockName(release string) string {
 	return fmt.Sprintf("update-release-%s", release)
+}
+
+func (c Client) tufClientLockName() string {
+	return "tuf-client"
 }
