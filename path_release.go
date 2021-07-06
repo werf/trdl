@@ -106,7 +106,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
 		hclog.L().Debug(fmt.Sprintf("Cloned git repo"))
 
-		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, c.TrustedGPGPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
+		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, c.TrustedPGPPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
