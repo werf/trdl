@@ -3,6 +3,7 @@ package queue_manager
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/fatih/structs"
 	"github.com/hashicorp/vault/sdk/framework"
@@ -17,6 +18,10 @@ const (
 	fieldNameUUID             = "uuid"
 	fieldNameLimit            = "limit"
 	fieldNameOffset           = "offset"
+
+	defaultTaskTimeoutValue    = "10m"
+	defaultTaskTimeoutDuration = 10 * time.Minute
+	defaultTaskHistoryLimit    = 10
 )
 
 func (m *Manager) Paths() []*framework.Path {
@@ -26,11 +31,11 @@ func (m *Manager) Paths() []*framework.Path {
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameTaskTimeout: {
 					Type:    framework.TypeDurationSecond,
-					Default: "10m",
+					Default: defaultTaskTimeoutValue,
 				},
 				fieldNameTaskHistoryLimit: {
 					Type:    framework.TypeInt,
-					Default: "10",
+					Default: defaultTaskHistoryLimit,
 				},
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
