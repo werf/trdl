@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	git "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"gopkg.in/yaml.v2"
 
 	"github.com/hashicorp/go-hclog"
@@ -110,23 +109,13 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 			return fmt.Errorf("error getting git repo branch %q head reference: %s", gitBranch, err)
 		}
 
-		headCommitObj, err := gitRepo.CommitObject(headRef.Hash())
-		if err != nil {
-			return fmt.Errorf("error getting git repo commit object by hash %q: %s", headRef.Hash().String(), err)
-		}
-
 		if lastPublishedGitCommit != "" {
 			logboek.Context(ctx).Default().LogF("Got previously published commit record %q\n", lastPublishedGitCommit)
 			hclog.L().Debug(fmt.Sprintf("Got previously published commit record %q", lastPublishedGitCommit))
 
-			lastCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(lastPublishedGitCommit))
+			isAncestor, err := trdlGit.IsAncestor(gitRepo, lastPublishedGitCommit, headRef.Hash().String())
 			if err != nil {
-				return fmt.Errorf("error getting git repo commit object by hash %q: %s", lastPublishedGitCommit, err)
-			}
-
-			isAncestor, err := lastCommitObj.IsAncestor(headCommitObj)
-			if err != nil {
-				return fmt.Errorf("error checking ancestry of git commit %q to git commit %q: %s", lastPublishedGitCommit, headRef.Hash().String(), err)
+				return err
 			}
 
 			if !isAncestor {
