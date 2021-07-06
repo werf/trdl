@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -159,10 +160,29 @@ func ReadWorktreeFile(gitRepo *git.Repository, path string) ([]byte, error) {
 		return nil, fmt.Errorf("unable to open git repository worktree file %q: %s", path, err)
 	}
 
-	data, err := io.ReadAll(f)
+	data, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read git repository worktree file %q: %s", path, err)
 	}
 
 	return data, nil
+}
+
+func IsAncestor(gitRepo *git.Repository, ancestorCommit, descendantCommit string) (bool, error) {
+	ancestorCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(ancestorCommit))
+	if err != nil {
+		return false, fmt.Errorf("unable to get commit %q object: %s", ancestorCommit, err)
+	}
+
+	descendantCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(descendantCommit))
+	if err != nil {
+		return false, fmt.Errorf("unable to get commit %q object: %s", descendantCommitObj, err)
+	}
+
+	isAncestor, err := ancestorCommitObj.IsAncestor(descendantCommitObj)
+	if err != nil {
+		return false, fmt.Errorf("unable to check ancestry of git commit %q to %q: %s", ancestorCommit, descendantCommit, err)
+	}
+
+	return isAncestor, nil
 }
