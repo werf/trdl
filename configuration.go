@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
 )
 
 type Configuration struct {
@@ -16,7 +17,7 @@ type Configuration struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	TrustedGPGPublicKeys []string
+	TrustedPGPPublicKeys []string
 
 	S3Endpoint        string `json:"s3_endpoint"`
 	S3Region          string `json:"s3_region"`
@@ -67,26 +68,17 @@ func GetAndValidateConfiguration(ctx context.Context, storage logical.Storage) (
 		}
 	}
 
-	// parse gpg public keys
 	{
-		list, err := storage.List(ctx, storageKeyPrefixTrustedGPGPublicKey)
+		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, storage)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("unable to get trusted public keys: %s", err)
 		}
 
-		for _, postfix := range list {
-			storageEntryKey := storageKeyPrefixTrustedGPGPublicKey + postfix
-			e, err := storage.Get(ctx, storageEntryKey)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			c.TrustedGPGPublicKeys = append(c.TrustedGPGPublicKeys, string(e.Value))
+		if len(trustedPGPPublicKeys) < c.RequiredNumberOfVerifiedSignaturesOnCommit {
+			return nil, logical.ErrorResponse("not enough trusted PGP public keys defined (%d): must be equal or more than %q (%d)", len(trustedPGPPublicKeys), fieldNameRequiredNumberOfVerifiedSignaturesOnCommit, c.RequiredNumberOfVerifiedSignaturesOnCommit), nil
 		}
 
-		if len(c.TrustedGPGPublicKeys) < c.RequiredNumberOfVerifiedSignaturesOnCommit {
-			return nil, logical.ErrorResponse("not enough trusted GPG public keys defined (%d): must be equal or more than %q (%d)", len(c.TrustedGPGPublicKeys), fieldNameRequiredNumberOfVerifiedSignaturesOnCommit, c.RequiredNumberOfVerifiedSignaturesOnCommit), nil
-		}
+		c.TrustedPGPPublicKeys = trustedPGPPublicKeys
 	}
 
 	return &c, nil, nil

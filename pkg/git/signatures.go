@@ -6,11 +6,11 @@ import (
 	"io"
 	"strings"
 
-	"golang.org/x/crypto/openpgp"
-
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
 )
 
 func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string, requiredNumberOfVerifiedSignatures int) error {
@@ -39,7 +39,7 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string,
 			return fmt.Errorf("unable to encode tag object: %s", err)
 		}
 
-		pgpKeys, requiredNumberOfVerifiedSignatures, err = verifyPgpSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
+		pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPgpSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func VerifyCommitSignatures(repo *git.Repository, commit string, pgpKeys []strin
 			return err
 		}
 
-		pgpKeys, requiredNumberOfVerifiedSignatures, err = verifyPgpSignatures([]string{co.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
+		pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPgpSignatures([]string{co.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
 		if err != nil {
 			return err
 		}
@@ -87,7 +87,7 @@ func verifyObjectSignatures(repo *git.Repository, objectID string, pgpKeys []str
 		return fmt.Errorf("not enough pgp signatures")
 	}
 
-	pgpKeys, requiredNumberOfVerifiedSignatures, err = verifyPgpSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, pgpKeys, requiredNumberOfVerifiedSignatures)
+	pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPgpSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, pgpKeys, requiredNumberOfVerifiedSignatures)
 	if err != nil {
 		return err
 	}
@@ -97,39 +97,6 @@ func verifyObjectSignatures(repo *git.Repository, objectID string, pgpKeys []str
 	}
 
 	return nil
-}
-
-func verifyPgpSignatures(pgpSignatures []string, signedReaderFunc func() (io.Reader, error), pgpKeys []string, requiredNumberOfVerifiedSignatures int) ([]string, int, error) {
-	for _, pgpSignature := range pgpSignatures {
-		i := 0
-		l := len(pgpKeys)
-		for i < l {
-			keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pgpKeys[i]))
-			if err != nil {
-				return nil, 0, err
-			}
-
-			signedReader, err := signedReaderFunc()
-			if err != nil {
-				return nil, 0, err
-			}
-
-			if _, err = openpgp.CheckArmoredDetachedSignature(keyring, signedReader, strings.NewReader(pgpSignature)); err != nil {
-				i++
-				continue
-			}
-
-			requiredNumberOfVerifiedSignatures--
-			if requiredNumberOfVerifiedSignatures == 0 {
-				return nil, 0, nil
-			}
-
-			pgpKeys = append(pgpKeys[:i], pgpKeys[i+1:]...)
-			break
-		}
-	}
-
-	return pgpKeys, requiredNumberOfVerifiedSignatures, nil
 }
 
 const notesReferenceName = "refs/tags/latest-signature"

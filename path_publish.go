@@ -134,7 +134,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 			}
 		}
 
-		if err := trdlGit.VerifyCommitSignatures(gitRepo, headRef.Hash().String(), c.TrustedGPGPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
+		if err := trdlGit.VerifyCommitSignatures(gitRepo, headRef.Hash().String(), c.TrustedPGPPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
