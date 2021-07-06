@@ -19,9 +19,9 @@ const (
 	fieldNameLimit            = "limit"
 	fieldNameOffset           = "offset"
 
-	defaultTaskTimeoutValue    = "10m"
-	defaultTaskTimeoutDuration = 10 * time.Minute
-	defaultTaskHistoryLimit    = 10
+	defaultTaskTimeoutValue          = "10m"
+	defaultTaskTimeoutDuration       = 10 * time.Minute
+	defaultTaskHistoryLimit    int64 = 10
 )
 
 func (m *Manager) Paths() []*framework.Path {
