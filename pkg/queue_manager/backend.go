@@ -5,20 +5,46 @@ import (
 	"fmt"
 
 	"github.com/fatih/structs"
-
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager/worker"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
 const (
-	fieldNameUUID   = "uuid"
-	fieldNameLimit  = "limit"
-	fieldNameOffset = "offset"
+	fieldNameTaskTimeout      = "task_timeout"
+	fieldNameTaskHistoryLimit = "task_history_limit"
+	fieldNameUUID             = "uuid"
+	fieldNameLimit            = "limit"
+	fieldNameOffset           = "offset"
 )
 
 func (m *Manager) Paths() []*framework.Path {
 	return []*framework.Path{
+		{
+			Pattern: "task/configure/?",
+			Fields: map[string]*framework.FieldSchema{
+				fieldNameTaskTimeout: {
+					Type:    framework.TypeDurationSecond,
+					Default: "10m",
+				},
+				fieldNameTaskHistoryLimit: {
+					Type:    framework.TypeInt,
+					Default: "10",
+				},
+			},
+			Operations: map[logical.Operation]framework.OperationHandler{
+				logical.CreateOperation: &framework.PathOperation{
+					Callback: m.pathConfigureCreateOrUpdate,
+				},
+				logical.UpdateOperation: &framework.PathOperation{
+					Callback: m.pathConfigureCreateOrUpdate,
+				},
+				logical.ReadOperation: &framework.PathOperation{
+					Callback: m.pathConfigureRead,
+				},
+			},
+		},
 		{
 			Pattern: "task/?",
 			Fields:  map[string]*framework.FieldSchema{},
@@ -85,6 +111,32 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 	}
+}
+
+func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+	resp, err := util.ValidateRequestFields(req, fields)
+	if resp != nil || err != nil {
+		return resp, err
+	}
+
+	if err := putConfiguration(ctx, req.Storage, fields.Raw); err != nil {
+		return logical.ErrorResponse(fmt.Sprintf("unable to save configuration: %s", err)), nil
+	}
+
+	return nil, nil
+}
+
+func (m *Manager) pathConfigureRead(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
+	c, err := getConfiguration(ctx, req.Storage)
+	if err != nil {
+		return logical.ErrorResponse(fmt.Sprintf("unable to get configuration: %s", err)), nil
+	}
+
+	if c == nil {
+		return logical.ErrorResponse("configuration not found"), nil
+	}
+
+	return &logical.Response{Data: structs.Map(c)}, nil
 }
 
 func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
