@@ -23,10 +23,8 @@ const (
 	fieldNameGitTrdlChannelsBranch                      = "git_trdl_channels_branch"
 	fieldNameLastPublishedGitCommit                     = "last_published_git_commit"
 	fieldNameRequiredNumberOfVerifiedSignaturesOnCommit = "required_number_of_verified_signatures_on_commit"
-	// fieldNameTaskTimeout                                = "task_timeout"
-	// fieldNameTaskHistoryLimit                           = "task_history_limit"
-	fieldNameGitCredentialUsername = "username"
-	fieldNameGitCredentialPassword = "password"
+	fieldNameGitCredentialUsername                      = "username"
+	fieldNameGitCredentialPassword                      = "password"
 
 	fieldNameS3Endpoint        = "s3_endpoint"
 	fieldNameS3Region          = "s3_region"
@@ -98,17 +96,6 @@ func configurePaths(b *backend) []*framework.Path {
 				//fieldNameLastPublishSuccessfulCommit: {
 				//	Type:        framework.TypeString,
 				//	Description: "The commit on which the publication was successfully completed",
-				//},
-				// TODO
-				//fieldNameTaskTimeout: {
-				//	Type:        framework.TypeDurationSecond,
-				//	Description: "Task time limit",
-				//	Default:     "10m",
-				//},
-				//fieldNameTaskHistoryLimit: {
-				//	Type:        framework.TypeInt,
-				//	Description: "Task history limit",
-				//	Default:     10,
 				//},
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{

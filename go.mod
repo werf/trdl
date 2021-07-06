@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.2.0
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/theupdateframework/go-tuf v0.0.0-20201230183259-aee6270feb55
-	github.com/werf/logboek v0.5.4 // indirect
+	github.com/werf/logboek v0.5.4
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )

@@ -70,7 +70,7 @@ func getCurrentTaskUUIDFromStorage(ctx context.Context, storage logical.Storage)
 	}
 
 	if currentRunningTaskValue == nil {
-		return "", err
+		return "", nil
 	}
 
 	return string(currentRunningTaskValue.Value), nil
