@@ -12,17 +12,19 @@ import (
 	"github.com/docker/distribution/reference"
 )
 
-const (
-	containerSourceDir    = "/git"
-	containerArtifactsDir = "/result"
-)
+type DockerfileOpts struct {
+	ContainerSourceDir    string
+	ContainerArtifactsDir string
+	WithArtifacts         bool
+	EnvVars               map[string]string
+}
 
 var (
 	ImageNameWithoutRequiredDigestError = errors.New("the image name must contain an digest \"REPO[:TAG]@DIGEST\" (e.g. \"ubuntu:18.04@sha256:538529c9d229fb55f50e6746b119e899775205d62c0fc1b7e679b30d02ecb6e8\")")
 )
 
-func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, serviceDirInContext string, fromImage string, runCommands []string, withArtifacts bool) error {
-	dockerfileData := generateDockerfile(fromImage, runCommands, serviceDirInContext, withArtifacts)
+func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, serviceDirInContext string, fromImage string, runCommands []string, dockerfileOpts DockerfileOpts) error {
+	dockerfileData := generateDockerfile(fromImage, runCommands, serviceDirInContext, dockerfileOpts)
 	header := &tar.Header{
 		Format:     tar.FormatGNU,
 		Name:       dockerfileTarPath,
@@ -44,7 +46,15 @@ func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, serviceDir
 	return nil
 }
 
-func generateDockerfile(fromImage string, runCommands []string, serviceDirInContext string, withArtifacts bool) []byte {
+func generateDockerfile(fromImage string, runCommands []string, serviceDirInContext string, opts DockerfileOpts) []byte {
+	if opts.ContainerSourceDir == "" {
+		opts.ContainerSourceDir = "/git"
+	}
+
+	if opts.ContainerArtifactsDir == "" {
+		opts.ContainerSourceDir = "/result"
+	}
+
 	var data []byte
 	addLineFunc := func(line string) {
 		data = append(data, []byte(line+"\n")...)
@@ -52,16 +62,20 @@ func generateDockerfile(fromImage string, runCommands []string, serviceDirInCont
 
 	addLineFunc(fmt.Sprintf("FROM %s", fromImage))
 
+	for envVarName, envVarVal := range opts.EnvVars {
+		addLineFunc(fmt.Sprintf("ENV %s=%q", envVarName, envVarVal))
+	}
+
 	// copy source code and set workdir for the following docker instructions
-	addLineFunc(fmt.Sprintf("COPY . %s", containerSourceDir))
-	addLineFunc(fmt.Sprintf("WORKDIR %s", containerSourceDir))
+	addLineFunc(fmt.Sprintf("COPY . %s", opts.ContainerSourceDir))
+	addLineFunc(fmt.Sprintf("WORKDIR %s", opts.ContainerSourceDir))
 
 	// remove service data from user's context
 	addLineFunc(fmt.Sprintf("RUN %s", fmt.Sprintf("rm -rf %s", serviceDirInContext)))
 
-	if withArtifacts {
+	if opts.WithArtifacts {
 		// create empty dir for release artifacts
-		addLineFunc(fmt.Sprintf("RUN %s", fmt.Sprintf("mkdir -p %s", containerArtifactsDir)))
+		addLineFunc(fmt.Sprintf("RUN %s", fmt.Sprintf("mkdir -p %s", opts.ContainerArtifactsDir)))
 	}
 
 	// run user's build commands
@@ -69,11 +83,11 @@ func generateDockerfile(fromImage string, runCommands []string, serviceDirInCont
 		addLineFunc(fmt.Sprintf("RUN %s", command))
 	}
 
-	if withArtifacts {
+	if opts.WithArtifacts {
 		// tar result files to stdout (with control messages for a receiver)
 		serviceRunCommands := []string{
 			fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString(artifactsTarStartReadCode)),
-			fmt.Sprintf("tar c -C %s . | base64", containerArtifactsDir),
+			fmt.Sprintf("tar c -C %s . | base64", opts.ContainerArtifactsDir),
 			fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString(artifactsTarStopReadCode)),
 		}
 		addLineFunc("RUN " + strings.Join(serviceRunCommands, " && "))
