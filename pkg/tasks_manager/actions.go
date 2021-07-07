@@ -13,23 +13,9 @@ import (
 func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
 	var taskUUID string
 	err := m.doTaskWrap(ctx, reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
-		taskUUIDs, err := reqStorage.List(ctx, storageKeyPrefixTask)
+		busy, err := m.isBusy(ctx, reqStorage)
 		if err != nil {
-			return fmt.Errorf("unable to get tasks from storage: %s", err)
-		}
-
-		busy := false
-	loop:
-		for _, uuid := range taskUUIDs {
-			task, err := getTaskFromStorage(ctx, reqStorage, uuid)
-			if err != nil {
-				return fmt.Errorf("unable to get task %q from storage: %s", uuid, err)
-			}
-
-			if task.Status == taskStatusQueued {
-				busy = true
-				break loop
-			}
+			return err
 		}
 
 		if busy {
@@ -117,4 +103,39 @@ func (m *Manager) queueTask(ctx context.Context, workerTaskFunc func(context.Con
 	m.taskChan <- &worker.Task{Context: ctx, UUID: task.UUID, Action: workerTaskFunc}
 
 	return task.UUID, nil
+}
+
+func (m *Manager) isBusy(ctx context.Context, reqStorage logical.Storage) (bool, error) {
+	// busy if there is task in progress
+	{
+		currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, reqStorage)
+		if err != nil {
+			return false, fmt.Errorf("unable to get current task uuid from storage: %s", err)
+		}
+
+		if currentTaskUUID != "" {
+			return true, nil
+		}
+	}
+
+	// busy if there are queued tasks
+	{
+		taskUUIDs, err := reqStorage.List(ctx, storageKeyPrefixTask)
+		if err != nil {
+			return false, fmt.Errorf("unable to get tasks from storage: %s", err)
+		}
+
+		for _, uuid := range taskUUIDs {
+			task, err := getTaskFromStorage(ctx, reqStorage, uuid)
+			if err != nil {
+				return false, fmt.Errorf("unable to get task %q from storage: %s", uuid, err)
+			}
+
+			if task.Status == taskStatusQueued {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }

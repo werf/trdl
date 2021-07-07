@@ -47,6 +47,44 @@ func TestManager_RunTask(t *testing.T) {
 	}
 }
 
+// check that Manager.RunTask queues task or returns the busy error
+func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
+	m := initManager()
+	ctx := context.Background()
+	storage := &logical.InmemStorage{}
+
+	err := storage.Put(ctx, &logical.StorageEntry{
+		Key:   storageKeyCurrentRunningTask,
+		Value: []byte("ANY"),
+	})
+	assert.Nil(t, err)
+
+	{
+		uuid, err := m.RunTask(ctx, storage, noneTask)
+		if assert.Error(t, err) {
+			assert.Equal(t, err, QueueBusyError)
+		}
+		assert.Empty(t, uuid)
+	}
+
+	err = storage.Delete(ctx, storageKeyCurrentRunningTask)
+	assert.Nil(t, err)
+
+	{
+		uuid, err := m.RunTask(ctx, storage, noneTask)
+		assert.Nil(t, err)
+		assert.NotEmpty(t, uuid)
+
+		task, err := getTaskFromStorage(ctx, storage, uuid)
+		assert.Nil(t, err)
+		assert.NotNil(t, task)
+		assert.Equal(t, task.Status, taskStatusQueued)
+
+		workerTask := <-m.taskChan
+		assert.Equal(t, workerTask.UUID, uuid)
+	}
+}
+
 // check that Manager.AddTask queues all tasks
 func TestManager_AddTask(t *testing.T) {
 	m := initManager()
