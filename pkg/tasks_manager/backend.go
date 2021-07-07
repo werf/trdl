@@ -185,21 +185,18 @@ func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uu
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	for ind, w := range m.Workers {
-		if w.HasRunningJobByTaskUUID(uuid) {
-			// stop and drop related worker
-			go w.Stop()
-			m.Workers = append(m.Workers[:ind], m.Workers[ind+1:]...)
+	if m.Worker.HasRunningJobByTaskUUID(uuid) {
+		// stop and drop related worker
+		go m.Worker.Stop()
 
-			// start new worker
-			m.startWorker()
+		// start new worker
+		m.startNewWorker()
 
-			if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {
-				return nil, err
-			}
-
-			return nil, nil
+		if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {
+			return nil, err
 		}
+
+		return nil, nil
 	}
 
 	return &logical.Response{
@@ -261,15 +258,13 @@ func (m *Manager) readTaskLog(ctx context.Context, reqStorage logical.Storage, u
 	}
 
 	// try to get running task log
-	for _, w := range m.Workers {
-		var data []byte
-		withHold := w.HoldRunningJobByTaskUUID(uuid, func(job *worker.Job) {
-			data = job.Log()
-		})
+	var data []byte
+	withHold := m.Worker.HoldRunningJobByTaskUUID(uuid, func(job *worker.Job) {
+		data = job.Log()
+	})
 
-		if withHold {
-			return data, nil, nil
-		}
+	if withHold {
+		return data, nil, nil
 	}
 
 	// get task log from storage

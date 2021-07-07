@@ -14,8 +14,7 @@ import (
 var QueueBusyError = errors.New("busy")
 
 const (
-	numberOfWorkers = 1
-	taskChanSize    = 128
+	taskChanSize = 128
 
 	taskStatusQueued    = "QUEUED"
 	taskStatusRunning   = "RUNNING"
@@ -26,7 +25,7 @@ const (
 
 type Manager struct {
 	Storage logical.Storage
-	Workers []worker.Interface
+	Worker  worker.Interface
 
 	taskChan chan *worker.Task
 	mu       sync.Mutex
@@ -34,23 +33,18 @@ type Manager struct {
 
 func NewManager() Interface {
 	m := &Manager{taskChan: make(chan *worker.Task, taskChanSize)}
-
-	for i := 0; i < numberOfWorkers; i++ {
-		m.startWorker()
-	}
-
+	m.startNewWorker()
 	return m
 }
 
-func (m *Manager) startWorker() {
-	newWorker := worker.NewWorker(m.taskChan, worker.Callbacks{
+func (m *Manager) startNewWorker() {
+	m.Worker = worker.NewWorker(m.taskChan, worker.Callbacks{
 		TaskStartedCallback:   m.taskStartedCallback,
 		TaskFailedCallback:    m.taskFailedCallback,
 		TaskCompletedCallback: m.taskCompletedCallback,
 	})
-	go newWorker.Start()
 
-	m.Workers = append(m.Workers, newWorker)
+	go m.Worker.Start()
 }
 
 func (m *Manager) taskStartedCallback(ctx context.Context, uuid string) error {
