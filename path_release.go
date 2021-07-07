@@ -221,7 +221,10 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 				return fmt.Errorf("unable to add git worktree files to tar: %s", err)
 			}
 
-			if err := docker.GenerateAndAddDockerfileToTar(tw, serviceDockerfilePathInContext, serviceDirInContext, fromImage, runCommands, true); err != nil {
+			dockerfileOpts := docker.DockerfileOpts{
+				WithArtifacts: true,
+			}
+			if err := docker.GenerateAndAddDockerfileToTar(tw, serviceDockerfilePathInContext, serviceDirInContext, fromImage, runCommands, dockerfileOpts); err != nil {
 				return fmt.Errorf("unable to add service dockerfile to tar: %s", err)
 			}
 
