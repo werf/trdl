@@ -42,6 +42,9 @@ func newBackend() (*backend, error) {
 	b.Backend = &framework.Backend{
 		BackendType: logical.TypeLogical,
 		Help:        backendHelp,
+		PeriodicFunc: func(_ context.Context, request *logical.Request) error {
+			return b.TaskQueueManager.PeriodicTask(context.Background(), request)
+		},
 		Paths: framework.PathAppend(
 			[]*framework.Path{
 				releasePath(b),
