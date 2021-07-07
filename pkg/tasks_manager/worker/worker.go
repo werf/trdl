@@ -83,7 +83,8 @@ func (q *Worker) Stop() {
 		q.currentJob.ctxCancelFunc()
 	}
 
-	q.stopChan <- true
+	// release the lock to prevent possible deadlock
+	go func() { q.stopChan <- true }()
 }
 
 func (q *Worker) setCurrentJob(job *Job) {
