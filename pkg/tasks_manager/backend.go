@@ -1,4 +1,4 @@
-package queue_manager
+package tasks_manager
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/fatih/structs"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager/worker"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
@@ -186,7 +186,7 @@ func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uu
 	defer m.mu.Unlock()
 
 	for ind, w := range m.Workers {
-		if w.HasRunningTaskByUUID(uuid) {
+		if w.HasRunningJobByTaskUUID(uuid) {
 			// stop and drop related worker
 			go w.Stop()
 			m.Workers = append(m.Workers[:ind], m.Workers[ind+1:]...)
@@ -263,7 +263,7 @@ func (m *Manager) readTaskLog(ctx context.Context, reqStorage logical.Storage, u
 	// try to get running task log
 	for _, w := range m.Workers {
 		var data []byte
-		withHold := w.HoldRunningTask(uuid, func(job *worker.Job) {
+		withHold := w.HoldRunningJobByTaskUUID(uuid, func(job *worker.Job) {
 			data = job.Log()
 		})
 

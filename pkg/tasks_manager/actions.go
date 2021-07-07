@@ -1,4 +1,4 @@
-package queue_manager
+package tasks_manager
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager/worker"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
 
 func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
@@ -79,7 +79,7 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 
 	config, err := getConfiguration(ctx, reqStorage)
 	if err != nil {
-		return fmt.Errorf("unable to get queue manager configuration: %s", err)
+		return fmt.Errorf("unable to get tasks manager configuration: %s", err)
 	}
 
 	var taskTimeoutDuration time.Duration

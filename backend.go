@@ -7,12 +7,12 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
 )
 
 type backend struct {
 	*framework.Backend
-	TaskQueueManager queue_manager.Interface
+	TasksManager tasks_manager.Interface
 }
 
 var _ logical.Factory = Factory
@@ -36,14 +36,14 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 
 func newBackend() (*backend, error) {
 	b := &backend{
-		TaskQueueManager: queue_manager.NewManager(),
+		TasksManager: tasks_manager.NewManager(),
 	}
 
 	b.Backend = &framework.Backend{
 		BackendType: logical.TypeLogical,
 		Help:        backendHelp,
 		PeriodicFunc: func(_ context.Context, request *logical.Request) error {
-			return b.TaskQueueManager.PeriodicTask(context.Background(), request)
+			return b.TasksManager.PeriodicTask(context.Background(), request)
 		},
 		Paths: framework.PathAppend(
 			[]*framework.Path{
@@ -51,7 +51,7 @@ func newBackend() (*backend, error) {
 				pathPublish(b),
 			},
 			configurePaths(b),
-			b.TaskQueueManager.Paths(),
+			b.TasksManager.Paths(),
 			pgp.Paths(),
 		),
 	}

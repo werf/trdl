@@ -5,8 +5,8 @@ import "context"
 type Interface interface {
 	Start()
 	Stop()
-	HoldRunningTask(uuid string, do func(job *Job)) bool
-	HasRunningTaskByUUID(uuid string) bool
+	HoldRunningJobByTaskUUID(uuid string, do func(job *Job)) bool
+	HasRunningJobByTaskUUID(uuid string) bool
 }
 
 type Task struct {

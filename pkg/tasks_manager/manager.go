@@ -1,21 +1,45 @@
-package queue_manager
+package tasks_manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager/worker"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
 
+var QueueBusyError = errors.New("busy")
+
 const (
+	numberOfWorkers = 1
+
 	taskStatusQueued    = "QUEUED"
 	taskStatusRunning   = "RUNNING"
 	taskStatusCompleted = "COMPLETED"
 	taskStatusFailed    = "FAILED"
 	taskStatusCanceled  = "CANCELED"
 )
+
+type Manager struct {
+	Storage logical.Storage
+	Workers []worker.Interface
+
+	taskChan chan *worker.Task
+	mu       sync.Mutex
+}
+
+func NewManager() Interface {
+	m := &Manager{taskChan: make(chan *worker.Task)}
+
+	for i := 0; i < numberOfWorkers; i++ {
+		m.startWorker()
+	}
+
+	return m
+}
 
 func (m *Manager) startWorker() {
 	newWorker := worker.NewWorker(m.taskChan, worker.Callbacks{

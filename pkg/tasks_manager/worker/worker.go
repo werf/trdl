@@ -55,7 +55,7 @@ func (q *Worker) Start() {
 	}
 }
 
-func (q *Worker) HoldRunningTask(uuid string, do func(job *Job)) bool {
+func (q *Worker) HoldRunningJobByTaskUUID(uuid string, do func(job *Job)) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -68,7 +68,7 @@ func (q *Worker) HoldRunningTask(uuid string, do func(job *Job)) bool {
 	return true
 }
 
-func (q *Worker) HasRunningTaskByUUID(uuid string) bool {
+func (q *Worker) HasRunningJobByTaskUUID(uuid string) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
