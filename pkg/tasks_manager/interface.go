@@ -1,4 +1,4 @@
-package queue_manager
+package tasks_manager
 
 import (
 	"context"
@@ -9,15 +9,7 @@ import (
 
 type Interface interface {
 	BackendInterface
-
-	// RunTask runs task or returns busy error
-	RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(ctx context.Context, storage logical.Storage) error) (string, error)
-
-	// AddTask adds task to queue
-	AddTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(ctx context.Context, storage logical.Storage) error) (string, error)
-
-	// AddOptionalTask adds task to queue if empty
-	AddOptionalTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(ctx context.Context, storage logical.Storage) error) (string, bool, error)
+	ActionsInterface
 }
 
 type BackendInterface interface {
@@ -26,4 +18,15 @@ type BackendInterface interface {
 
 	// PeriodicTask performs a periodic task. Should be used as the PeriodicFunc of backend or be part of an existing implementation
 	PeriodicTask(ctx context.Context, req *logical.Request) error
+}
+
+type ActionsInterface interface {
+	// RunTask runs task or returns busy error
+	RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(ctx context.Context, storage logical.Storage) error) (string, error)
+
+	// AddTask adds task to queue
+	AddTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(ctx context.Context, storage logical.Storage) error) (string, error)
+
+	// AddOptionalTask adds task to queue if empty
+	AddOptionalTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(ctx context.Context, storage logical.Storage) error) (string, bool, error)
 }

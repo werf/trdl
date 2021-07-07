@@ -1,4 +1,4 @@
-package queue_manager
+package tasks_manager
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
-const storageKeyLastPeriodicRunTimestamp = "queue_manager_last_periodic_run_timestamp"
+const storageKeyLastPeriodicRunTimestamp = "tasks_manager_last_periodic_run_timestamp"
 
 var (
 	periodicTaskPeriod        = time.Hour
@@ -56,7 +56,7 @@ func (m *Manager) cleanupTaskHistory(ctx context.Context, req *logical.Request) 
 	{
 		config, err := getConfiguration(ctx, req.Storage)
 		if err != nil {
-			return fmt.Errorf("unable to get queue manager configuration: %s", err)
+			return fmt.Errorf("unable to get tasks manager configuration: %s", err)
 		}
 
 		if config != nil && config.TaskHistoryLimit != "" {

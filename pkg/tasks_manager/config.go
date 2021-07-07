@@ -1,6 +1,6 @@
-package queue_manager
+package tasks_manager
 
-const storageKeyConfiguration = "queue_manager_configuration"
+const storageKeyConfiguration = "tasks_manager_configuration"
 
 type configuration struct {
 	TaskTimeout      string `json:"task_timeout"`

@@ -21,7 +21,7 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/docker"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/queue_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
@@ -94,7 +94,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
 
-	taskUUID, err := b.TaskQueueManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
+	taskUUID, err := b.TasksManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		hclog.L().Debug(fmt.Sprintf("Started task"))
 
@@ -168,7 +168,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		return nil
 	})
 	if err != nil {
-		if err == queue_manager.QueueBusyError {
+		if err == tasks_manager.QueueBusyError {
 			return logical.ErrorResponse(err.Error()), nil
 		}
 

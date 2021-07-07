@@ -1,4 +1,4 @@
-package queue_manager
+package tasks_manager
 
 import (
 	"context"
