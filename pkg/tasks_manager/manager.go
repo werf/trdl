@@ -15,6 +15,7 @@ var QueueBusyError = errors.New("busy")
 
 const (
 	numberOfWorkers = 1
+	taskChanSize    = 128
 
 	taskStatusQueued    = "QUEUED"
 	taskStatusRunning   = "RUNNING"
@@ -32,7 +33,7 @@ type Manager struct {
 }
 
 func NewManager() Interface {
-	m := &Manager{taskChan: make(chan *worker.Task)}
+	m := &Manager{taskChan: make(chan *worker.Task, taskChanSize)}
 
 	for i := 0; i < numberOfWorkers; i++ {
 		m.startWorker()

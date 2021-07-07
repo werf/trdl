@@ -114,7 +114,7 @@ func (m *Manager) queueTask(ctx context.Context, workerTaskFunc func(context.Con
 		return "", fmt.Errorf("unable to put task %q into storage: %s", task.UUID, err)
 	}
 
-	go func() { m.taskChan <- &worker.Task{Context: ctx, UUID: task.UUID, Action: workerTaskFunc} }()
+	m.taskChan <- &worker.Task{Context: ctx, UUID: task.UUID, Action: workerTaskFunc}
 
 	return task.UUID, nil
 }
