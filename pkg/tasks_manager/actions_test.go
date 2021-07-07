@@ -11,9 +11,7 @@ import (
 
 // check that Manager.RunTask queues task or returns the busy error
 func TestManager_RunTask(t *testing.T) {
-	m := initManager()
-	ctx := context.Background()
-	storage := &logical.InmemStorage{}
+	ctx, m, storage := setupTest()
 
 	var uuids []string
 
@@ -23,10 +21,7 @@ func TestManager_RunTask(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
 
-		task, err := getTaskFromStorage(ctx, storage, uuid)
-		assert.Nil(t, err)
-		assert.NotNil(t, task)
-		assert.Equal(t, task.Status, taskStatusQueued)
+		assertQueuedTaskInStorage(t, ctx, storage, uuid)
 
 		uuids = append(uuids, uuid)
 	}
@@ -49,9 +44,7 @@ func TestManager_RunTask(t *testing.T) {
 
 // check that Manager.RunTask queues task or returns the busy error
 func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
-	m := initManager()
-	ctx := context.Background()
-	storage := &logical.InmemStorage{}
+	ctx, m, storage := setupTest()
 
 	err := storage.Put(ctx, &logical.StorageEntry{
 		Key:   storageKeyCurrentRunningTask,
@@ -75,21 +68,16 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
 
-		task, err := getTaskFromStorage(ctx, storage, uuid)
-		assert.Nil(t, err)
-		assert.NotNil(t, task)
-		assert.Equal(t, task.Status, taskStatusQueued)
+		assertQueuedTaskInStorage(t, ctx, storage, uuid)
 
-		workerTask := <-m.taskChan
-		assert.Equal(t, workerTask.UUID, uuid)
+		task := <-m.taskChan
+		assert.Equal(t, task.UUID, uuid)
 	}
 }
 
 // check that Manager.AddTask queues all tasks
 func TestManager_AddTask(t *testing.T) {
-	m := initManager()
-	ctx := context.Background()
-	storage := &logical.InmemStorage{}
+	ctx, m, storage := setupTest()
 
 	var uuids []string
 	for i := 0; i < 2; i++ {
@@ -97,10 +85,7 @@ func TestManager_AddTask(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
 
-		task, err := getTaskFromStorage(ctx, storage, uuid)
-		assert.Nil(t, err)
-		assert.NotNil(t, task)
-		assert.Equal(t, task.Status, taskStatusQueued)
+		assertQueuedTaskInStorage(t, ctx, storage, uuid)
 
 		uuids = append(uuids, uuid)
 	}
@@ -114,9 +99,7 @@ func TestManager_AddTask(t *testing.T) {
 
 // check that Manager.AddOptionalTask queues task when queue is empty
 func TestManager_AddOptionalTask(t *testing.T) {
-	m := initManager()
-	ctx := context.Background()
-	storage := &logical.InmemStorage{}
+	ctx, m, storage := setupTest()
 
 	var uuids []string
 
@@ -127,10 +110,7 @@ func TestManager_AddOptionalTask(t *testing.T) {
 		assert.NotEmpty(t, uuid)
 		assert.True(t, added)
 
-		task, err := getTaskFromStorage(ctx, storage, uuid)
-		assert.Nil(t, err)
-		assert.NotNil(t, task)
-		assert.Equal(t, task.Status, taskStatusQueued)
+		assertQueuedTaskInStorage(t, ctx, storage, uuid)
 
 		uuids = append(uuids, uuid)
 	}
@@ -150,10 +130,25 @@ func TestManager_AddOptionalTask(t *testing.T) {
 	}
 }
 
-func initManager() *Manager {
+func setupTest() (context.Context, *Manager, logical.Storage) {
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
+
+	return ctx, m, storage
+}
+
+func initManagerWithoutWorker() *Manager {
 	taskChan := make(chan *worker.Task, taskChanSize)
 	m := &Manager{taskChan: taskChan}
 	return m
 }
 
 func noneTask(_ context.Context, _ logical.Storage) error { return nil }
+
+func assertQueuedTaskInStorage(t *testing.T, ctx context.Context, storage logical.Storage, uuid string) {
+	task, err := getTaskFromStorage(ctx, storage, uuid)
+	assert.Nil(t, err)
+	assert.NotNil(t, task)
+	assert.Equal(t, task.Status, taskStatusQueued)
+}
