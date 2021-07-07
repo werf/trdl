@@ -8,8 +8,7 @@ import (
 )
 
 type Interface interface {
-	// Paths returns backend paths to work with tasks
-	Paths() []*framework.Path
+	BackendInterface
 
 	// RunTask runs task or returns busy error
 	RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(ctx context.Context, storage logical.Storage) error) (string, error)
@@ -19,4 +18,12 @@ type Interface interface {
 
 	// AddOptionalTask adds task to queue if empty
 	AddOptionalTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(ctx context.Context, storage logical.Storage) error) (string, bool, error)
+}
+
+type BackendInterface interface {
+	// Paths returns backend paths to work with tasks
+	Paths() []*framework.Path
+
+	// PeriodicTask performs a periodic task. Should be used as the PeriodicFunc of backend or be part of an existing implementation
+	PeriodicTask(ctx context.Context, req *logical.Request) error
 }
