@@ -23,19 +23,11 @@ type Manager struct {
 }
 
 func NewManager() Interface {
-	return &Manager{taskChan: make(chan *worker.Task)}
-}
+	m := &Manager{taskChan: make(chan *worker.Task)}
 
-func (m *Manager) initManager(storage logical.Storage) {
-	if len(m.Workers) < numberOfWorkers {
-		for i := 0; i < numberOfWorkers-len(m.Workers); i++ {
-			m.startWorker()
-		}
+	for i := 0; i < numberOfWorkers; i++ {
+		m.startWorker()
 	}
 
-	if m.Storage != nil {
-		return
-	}
-
-	m.Storage = storage
+	return m
 }

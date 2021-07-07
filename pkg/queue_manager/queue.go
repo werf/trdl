@@ -13,20 +13,30 @@ import (
 func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
 	var taskUUID string
 	err := m.doTaskWrap(ctx, reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
-		allWorkersBusy := true
-		for _, w := range m.Workers {
-			if !w.IsBusy() {
-				allWorkersBusy = false
-				break
+		taskUUIDs, err := reqStorage.List(ctx, storageKeyPrefixTask)
+		if err != nil {
+			return fmt.Errorf("unable to get tasks from storage: %s", err)
+		}
+
+		busy := false
+	loop:
+		for _, uuid := range taskUUIDs {
+			task, err := getTaskFromStorage(ctx, reqStorage, uuid)
+			if err != nil {
+				return fmt.Errorf("unable to get task %q from storage: %s", uuid, err)
+			}
+
+			if task.Status == taskStatusQueued {
+				busy = true
+				break loop
 			}
 		}
 
-		if allWorkersBusy {
+		if busy {
 			return QueueBusyError
 		}
 
-		var err error
-		taskUUID, err = m.addWorkerTask(ctx, newTaskFunc)
+		taskUUID, err = m.queueTask(ctx, newTaskFunc)
 		return err
 	})
 
@@ -50,7 +60,7 @@ func (m *Manager) AddTask(ctx context.Context, reqStorage logical.Storage, taskF
 	var taskUUID string
 	err := m.doTaskWrap(ctx, reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
 		var err error
-		taskUUID, err = m.addWorkerTask(ctx, newTaskFunc)
+		taskUUID, err = m.queueTask(ctx, newTaskFunc)
 
 		return err
 	})
@@ -62,7 +72,10 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.initManager(reqStorage) // initialize on first call
+	// initialize on first task
+	if m.Storage == nil {
+		m.Storage = reqStorage
+	}
 
 	config, err := getConfiguration(ctx, reqStorage)
 	if err != nil {
@@ -95,7 +108,7 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 	return f(workerTaskFunc)
 }
 
-func (m *Manager) addWorkerTask(ctx context.Context, workerTaskFunc func(context.Context) error) (string, error) {
+func (m *Manager) queueTask(ctx context.Context, workerTaskFunc func(context.Context) error) (string, error) {
 	task := newTask()
 	if err := putTaskIntoStorage(ctx, m.Storage, task); err != nil {
 		return "", fmt.Errorf("unable to put task %q into storage: %s", task.UUID, err)
