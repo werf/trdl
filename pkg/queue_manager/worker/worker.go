@@ -7,10 +7,10 @@ import (
 )
 
 type Worker struct {
-	currentTask *Task
-	taskChan    chan *Task
-	stopChan    chan bool
-	callbacks   Callbacks
+	currentJob *Job
+	taskChan   chan *Task
+	stopChan   chan bool
+	callbacks  Callbacks
 
 	mu sync.Mutex
 }
@@ -21,7 +21,7 @@ type Callbacks struct {
 	TaskCompletedCallback func(ctx context.Context, uuid string, log []byte) error
 }
 
-func NewWorker(taskChan chan *Task, callbacks Callbacks) *Worker {
+func NewWorker(taskChan chan *Task, callbacks Callbacks) Interface {
 	return &Worker{callbacks: callbacks, taskChan: taskChan, stopChan: make(chan bool)}
 }
 
@@ -30,19 +30,21 @@ func (q *Worker) Start() {
 		select {
 		case task := <-q.taskChan:
 			func() {
-				q.setCurrentTask(task)
-				defer q.resetCurrentTask()
+				job := newJob(task)
 
-				if callbackErr := q.callbacks.TaskStartedCallback(task.ctx, task.uuid); callbackErr != nil {
+				q.setCurrentJob(job)
+				defer q.resetCurrentJob()
+
+				if callbackErr := q.callbacks.TaskStartedCallback(job.ctx, job.taskUUID); callbackErr != nil {
 					panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
 				}
 
-				if err := task.action(); err != nil {
-					if callbackErr := q.callbacks.TaskFailedCallback(task.ctx, task.uuid, task.buff.Bytes(), err); callbackErr != nil {
+				if err := job.action(); err != nil {
+					if callbackErr := q.callbacks.TaskFailedCallback(job.ctx, job.taskUUID, job.Log(), err); callbackErr != nil {
 						panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
 					}
 				} else {
-					if callbackErr := q.callbacks.TaskCompletedCallback(task.ctx, task.uuid, task.buff.Bytes()); callbackErr != nil {
+					if callbackErr := q.callbacks.TaskCompletedCallback(job.ctx, job.taskUUID, job.Log()); callbackErr != nil {
 						panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
 					}
 				}
@@ -53,22 +55,15 @@ func (q *Worker) Start() {
 	}
 }
 
-func (q *Worker) IsBusy() bool {
+func (q *Worker) HoldRunningTask(uuid string, do func(job *Job)) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	return q.currentTask != nil
-}
-
-func (q *Worker) HoldRunningTask(uuid string, do func(task TaskInterface)) bool {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-
-	if q.currentTask == nil || q.currentTask.uuid != uuid {
+	if q.currentJob == nil || q.currentJob.taskUUID != uuid {
 		return false
 	}
 
-	do(q.currentTask)
+	do(q.currentJob)
 
 	return true
 }
@@ -77,30 +72,30 @@ func (q *Worker) HasRunningTaskByUUID(uuid string) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	return q.currentTask != nil && q.currentTask.uuid == uuid
+	return q.currentJob != nil && q.currentJob.taskUUID == uuid
 }
 
 func (q *Worker) Stop() {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	if q.currentTask != nil {
-		q.currentTask.ctxCancelFunc()
+	if q.currentJob != nil {
+		q.currentJob.ctxCancelFunc()
 	}
 
 	q.stopChan <- true
 }
 
-func (q *Worker) setCurrentTask(task *Task) {
+func (q *Worker) setCurrentJob(job *Job) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	q.currentTask = task
+	q.currentJob = job
 }
 
-func (q *Worker) resetCurrentTask() {
+func (q *Worker) resetCurrentJob() {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	q.currentTask = nil
+	q.currentJob = nil
 }

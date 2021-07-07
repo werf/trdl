@@ -263,8 +263,8 @@ func (m *Manager) readTaskLog(ctx context.Context, reqStorage logical.Storage, u
 	// try to get running task log
 	for _, w := range m.Workers {
 		var data []byte
-		withHold := w.HoldRunningTask(uuid, func(task worker.TaskInterface) {
-			data = task.Log()
+		withHold := w.HoldRunningTask(uuid, func(job *worker.Job) {
+			data = job.Log()
 		})
 
 		if withHold {

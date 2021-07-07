@@ -16,7 +16,7 @@ const (
 
 type Manager struct {
 	Storage logical.Storage
-	Workers []*worker.Worker
+	Workers []worker.Interface
 
 	taskChan chan *worker.Task
 	mu       sync.Mutex
