@@ -196,6 +196,10 @@ func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uu
 			return nil, err
 		}
 
+		if err := m.Storage.Delete(ctx, storageKeyCurrentRunningTask); err != nil {
+			return nil, err
+		}
+
 		return nil, nil
 	}
 
