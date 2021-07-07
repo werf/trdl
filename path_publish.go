@@ -163,7 +163,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		return nil
 	})
 	if err != nil {
-		if err == tasks_manager.QueueBusyError {
+		if err == tasks_manager.BusyError {
 			return logical.ErrorResponse(err.Error()), nil
 		}
 

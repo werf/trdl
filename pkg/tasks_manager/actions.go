@@ -19,7 +19,7 @@ func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskF
 		}
 
 		if busy {
-			return QueueBusyError
+			return BusyError
 		}
 
 		taskUUID, err = m.queueTask(ctx, newTaskFunc)
@@ -32,7 +32,7 @@ func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskF
 func (m *Manager) AddOptionalTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, bool, error) {
 	taskUUID, err := m.RunTask(ctx, reqStorage, taskFunc)
 	if err != nil {
-		if err == QueueBusyError {
+		if err == BusyError {
 			return taskUUID, false, nil
 		}
 

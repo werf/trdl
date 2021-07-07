@@ -35,7 +35,7 @@ func TestManager_RunTask(t *testing.T) {
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
 		if assert.Error(t, err) {
-			assert.Equal(t, err, QueueBusyError)
+			assert.Equal(t, err, BusyError)
 		}
 		assert.Empty(t, uuid)
 	}
@@ -62,7 +62,7 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
 		if assert.Error(t, err) {
-			assert.Equal(t, err, QueueBusyError)
+			assert.Equal(t, err, BusyError)
 		}
 		assert.Empty(t, uuid)
 	}

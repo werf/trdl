@@ -11,7 +11,7 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
 
-var QueueBusyError = errors.New("busy")
+var BusyError = errors.New("busy")
 
 const (
 	taskChanSize = 128
