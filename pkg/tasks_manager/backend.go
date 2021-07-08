@@ -19,15 +19,25 @@ const (
 	fieldNameLimit            = "limit"
 	fieldNameOffset           = "offset"
 
-	defaultTaskTimeoutValue          = "10m"
-	defaultTaskTimeoutDuration       = 10 * time.Minute
-	defaultTaskHistoryLimit    int64 = 10
+	defaultTaskTimeoutValue    = "10m"
+	defaultTaskTimeoutDuration = 10 * time.Minute
+	defaultTaskHistoryLimit    = 10
+)
+
+var (
+	pathPatternConfigure  = "task/configure/?"
+	pathPatternTaskList   = "task/?"
+	pathPatternTaskStatus = "task/" + uuidPattern(fieldNameUUID) + "$"
+	pathPatternTaskCancel = "task/" + uuidPattern(fieldNameUUID) + "/cancel$"
+	pathPatternTaskLog    = "task/" + uuidPattern(fieldNameUUID) + "/log$"
+
+	errorResponseConfigurationNotFound = logical.ErrorResponse("configuration not found")
 )
 
 func (m *Manager) Paths() []*framework.Path {
 	return []*framework.Path{
 		{
-			Pattern: "task/configure/?",
+			Pattern: pathPatternConfigure,
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameTaskTimeout: {
 					Type:    framework.TypeDurationSecond,
@@ -51,7 +61,7 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: "task/?",
+			Pattern: pathPatternTaskList,
 			Fields:  map[string]*framework.FieldSchema{},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
@@ -60,7 +70,7 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: "task/" + uuidPattern(fieldNameUUID) + "$",
+			Pattern: pathPatternTaskStatus,
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:     framework.TypeNameString,
@@ -74,7 +84,7 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: "task/" + uuidPattern(fieldNameUUID) + "/cancel$",
+			Pattern: pathPatternTaskCancel,
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:     framework.TypeNameString,
@@ -91,7 +101,7 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: "task/" + uuidPattern(fieldNameUUID) + "/log$",
+			Pattern: pathPatternTaskLog,
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:     framework.TypeNameString,
@@ -124,7 +134,36 @@ func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		return resp, err
 	}
 
-	if err := putConfiguration(ctx, req.Storage, fields.Raw); err != nil {
+	var taskTimeout string
+	{
+		paramTaskTimeout := req.Get(fieldNameTaskTimeout)
+		if paramTaskTimeout == nil {
+			taskTimeout = fields.Schema[fieldNameTaskTimeout].Default.(string)
+		} else {
+			taskTimeout = paramTaskTimeout.(string)
+
+			if _, err := time.ParseDuration(taskTimeout); err != nil {
+				return logical.ErrorResponse(fmt.Sprintf("invalid field %q given, expected golang time duration: %s", fieldNameTaskTimeout, err)), nil
+			}
+		}
+	}
+
+	var taskHistoryLimit int
+	{
+		paramTaskHistoryLimit := req.Get(fieldNameTaskHistoryLimit)
+		if paramTaskHistoryLimit == nil {
+			taskHistoryLimit = fields.Schema[fieldNameTaskHistoryLimit].Default.(int)
+		} else {
+			taskHistoryLimit = paramTaskHistoryLimit.(int)
+		}
+	}
+
+	cfg := &configuration{
+		TaskTimeout:      taskTimeout,
+		TaskHistoryLimit: taskHistoryLimit,
+	}
+
+	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
 		return logical.ErrorResponse(fmt.Sprintf("unable to save configuration: %s", err)), nil
 	}
 
@@ -138,7 +177,7 @@ func (m *Manager) pathConfigureRead(ctx context.Context, req *logical.Request, _
 	}
 
 	if c == nil {
-		return logical.ErrorResponse("configuration not found"), nil
+		return errorResponseConfigurationNotFound, nil
 	}
 
 	return &logical.Response{Data: structs.Map(c)}, nil

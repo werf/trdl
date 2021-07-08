@@ -23,8 +23,8 @@ func getConfiguration(ctx context.Context, storage logical.Storage) (*configurat
 	return config, nil
 }
 
-func putConfiguration(ctx context.Context, storage logical.Storage, raw map[string]interface{}) error {
-	entry, err := logical.StorageEntryJSON(storageKeyConfiguration, raw)
+func putConfiguration(ctx context.Context, storage logical.Storage, cfg *configuration) error {
+	entry, err := logical.StorageEntryJSON(storageKeyConfiguration, cfg)
 	if err != nil {
 		return err
 	}

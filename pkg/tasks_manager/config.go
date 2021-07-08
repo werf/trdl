@@ -4,5 +4,5 @@ const storageKeyConfiguration = "tasks_manager_configuration"
 
 type configuration struct {
 	TaskTimeout      string `json:"task_timeout"`
-	TaskHistoryLimit string `json:"task_history_limit"`
+	TaskHistoryLimit int    `json:"task_history_limit"`
 }
