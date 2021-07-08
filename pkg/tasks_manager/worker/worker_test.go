@@ -123,9 +123,8 @@ func TestWorker_StopWithRunningJob(t *testing.T) {
 
 	w := NewWorker(taskChan, Callbacks{
 		TaskStartedCallback: func(_ context.Context, uuid string) error { return nil },
-		TaskFailedCallback: func(_ context.Context, uuid string, _ []byte, err error) error {
+		TaskFailedCallback: func(_ context.Context, uuid string, _ []byte, _ error) error {
 			assert.Equal(t, taskUUID, uuid)
-			assert.Equal(t, contextCanceledError, err)
 			taskFailedChan <- true
 			return nil
 		},
