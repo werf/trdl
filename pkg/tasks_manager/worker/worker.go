@@ -52,6 +52,10 @@ func (q *Worker) Start() {
 		case <-q.stopChan:
 			return
 		}
+
+		if q.stopChan == nil {
+			return
+		}
 	}
 }
 
@@ -81,10 +85,10 @@ func (q *Worker) Stop() {
 
 	if q.currentJob != nil {
 		q.currentJob.ctxCancelFunc()
+		q.stopChan = nil
+	} else {
+		close(q.stopChan)
 	}
-
-	// release the lock to prevent possible deadlock
-	go func() { q.stopChan <- true }()
 }
 
 func (q *Worker) setCurrentJob(job *Job) {
