@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +14,8 @@ const (
 	TaskFailedCallback    = "FAILED"
 	TaskCompletedCallback = "COMPLETED"
 )
+
+var infiniteTaskContextCanceledError = errors.New(contextCanceledError.Error() + " (infinite)")
 
 func TestTaskCallbacks(t *testing.T) {
 	taskChan := make(chan *Task)
@@ -50,74 +51,104 @@ func TestTaskCallbacks(t *testing.T) {
 	go w.Start()
 
 	for _, c := range []struct {
+		testName string
 		uuid     string
 		callback string
 		log      []byte
 		err      error
 	}{
 		{
+			testName: "completed",
 			uuid:     "1",
 			callback: TaskCompletedCallback,
 			log:      []byte("hello"),
 			err:      nil,
 		},
 		{
+			testName: "failed",
 			uuid:     "2",
 			callback: TaskFailedCallback,
 			log:      []byte("error"),
 			err:      errors.New("error"),
 		},
 	} {
-		expectedUUID = c.uuid
-		expectedCallback = c.callback
-		expectedLog = c.log
-		expectedErr = c.err
+		t.Run(c.testName, func(t *testing.T) {
+			expectedUUID = c.uuid
+			expectedCallback = c.callback
+			expectedLog = c.log
+			expectedErr = c.err
 
-		taskChan <- &Task{
-			Context: context.Background(),
-			UUID:    expectedUUID,
-			Action: func(ctx context.Context) error {
-				logboek.Context(ctx).Log(string(expectedLog))
+			taskChan <- &Task{
+				Context: context.Background(),
+				UUID:    expectedUUID,
+				Action: func(ctx context.Context) error {
+					logboek.Context(ctx).Log(string(expectedLog))
 
-				if expectedErr != nil {
-					return expectedErr
-				}
+					if expectedErr != nil {
+						return expectedErr
+					}
 
-				return nil
-			},
-		}
+					return nil
+				},
+			}
 
-		<-taskProcessedChan
+			<-taskProcessedChan
+		})
 	}
 }
 
 func TestWorker_Stop(t *testing.T) {
 	taskChan := make(chan *Task)
-	taskFailedChan := make(chan bool)
 	workerStoppedChan := make(chan bool)
-	taskUUID := "1"
 
-	w := NewWorker(taskChan, Callbacks{
-		TaskStartedCallback: func(_ context.Context, uuid string) error { return nil },
-		TaskFailedCallback: func(_ context.Context, uuid string, _ []byte, err error) error {
-			assert.Equal(t, taskUUID, uuid)
-			assert.Equal(t, fmt.Errorf("context canceled"), err)
-			taskFailedChan <- true
-			return nil
-		},
-	})
+	w := NewWorker(taskChan, Callbacks{})
 	go func() {
 		w.Start()
 
 		workerStoppedChan <- true
 	}()
 
-	taskChan <- &Task{
-		Context: context.Background(),
-		UUID:    taskUUID,
-		Action:  infiniteTask,
-	}
+	go w.Stop()
 
+	// check worker stopped
+	<-workerStoppedChan
+}
+
+func TestWorker_StopWithRunningJob(t *testing.T) {
+	taskChan := make(chan *Task)
+	taskFailedChan := make(chan bool)
+	workerStoppedChan := make(chan bool)
+	taskUUID := "1"
+	queuedTaskUUID := "2"
+
+	w := NewWorker(taskChan, Callbacks{
+		TaskStartedCallback: func(_ context.Context, uuid string) error { return nil },
+		TaskFailedCallback: func(_ context.Context, uuid string, _ []byte, err error) error {
+			assert.Equal(t, taskUUID, uuid)
+			assert.Equal(t, contextCanceledError, err)
+			taskFailedChan <- true
+			return nil
+		},
+	})
+
+	// start processing tasks
+	go func() {
+		w.Start()
+		workerStoppedChan <- true
+	}()
+
+	// add task
+	taskChan <- stopTask(taskUUID)
+
+	// queue another task
+	go func() {
+		taskChan <- stopTask(queuedTaskUUID)
+	}()
+
+	// give time for the task to become active
+	time.Sleep(time.Microsecond * 100)
+
+	// cancel running task and stop worker
 	go w.Stop()
 
 	// check task failed
@@ -125,6 +156,9 @@ func TestWorker_Stop(t *testing.T) {
 
 	// check worker stopped
 	<-workerStoppedChan
+
+	// check queued task
+	<-taskChan
 }
 
 func TestWorker_HasRunningJobByTaskUUID(t *testing.T) {
@@ -151,16 +185,20 @@ func TestWorker_HasRunningJobByTaskUUID(t *testing.T) {
 		Action:  taskWithDoneCh(doneCh),
 	}
 
-	// check when task running
+	// give time for the task to become active
 	time.Sleep(time.Microsecond * 100)
+
+	// check when task running
 	assert.True(t, w.HasRunningJobByTaskUUID(taskUUID))
 
 	// complete task
 	doneCh <- true
 	<-taskCompletedChan
 
-	// check when task completed
+	// give time to reset current task
 	time.Sleep(time.Microsecond * 100)
+
+	// check when task completed
 	assert.False(t, w.HasRunningJobByTaskUUID(taskUUID))
 }
 
@@ -188,8 +226,10 @@ func TestWorker_HoldRunningJobByTaskUUID(t *testing.T) {
 		Action:  taskWithDoneCh(doneCh),
 	}
 
-	// check reading job log
+	// give time for the task to become active
 	time.Sleep(time.Microsecond * 100)
+
+	// check reading job log
 	withHold := w.HoldRunningJobByTaskUUID(taskUUID, func(job *Job) {
 		expectedLog := []byte("test")
 
@@ -204,8 +244,10 @@ func TestWorker_HoldRunningJobByTaskUUID(t *testing.T) {
 	doneCh <- true
 	<-taskCompletedChan
 
-	// check when task completed
+	// give time to reset current task
 	time.Sleep(time.Microsecond * 100)
+
+	// check when task completed
 	assert.False(t, w.HoldRunningJobByTaskUUID(taskUUID, func(job *Job) {}))
 }
 
@@ -213,7 +255,7 @@ func infiniteTask(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("context canceled")
+			return infiniteTaskContextCanceledError
 		}
 	}
 }
@@ -226,5 +268,13 @@ func taskWithDoneCh(doneCh chan bool) func(context.Context) error {
 				return nil
 			}
 		}
+	}
+}
+
+func stopTask(uuid string) *Task {
+	return &Task{
+		Context: context.Background(),
+		UUID:    uuid,
+		Action:  infiniteTask,
 	}
 }
