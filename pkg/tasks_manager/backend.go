@@ -186,10 +186,8 @@ func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uu
 	defer m.mu.Unlock()
 
 	if m.Worker.HasRunningJobByTaskUUID(uuid) {
-		// stop and drop related worker
-		go m.Worker.Stop()
-
-		// start new worker
+		// stop and run new worker
+		m.Worker.Stop()
 		m.startNewWorker()
 
 		if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {

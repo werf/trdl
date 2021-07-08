@@ -3,9 +3,13 @@ package worker
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/werf/logboek"
 )
+
+var contextCanceledError = errors.New("context canceled")
 
 type Job struct {
 	taskUUID      string
@@ -18,19 +22,43 @@ type Job struct {
 func newJob(task *Task) *Job {
 	buff := bytes.NewBuffer([]byte{})
 	loggerCtx := logboek.NewContext(task.Context, logboek.DefaultLogger().NewSubLogger(buff, buff))
-	taskContext, taskCtxCancelFunc := context.WithCancel(loggerCtx)
+	jobContext, jobCtxCancelFunc := context.WithCancel(loggerCtx)
 
 	return &Job{
-		ctx:           taskContext,
-		ctxCancelFunc: taskCtxCancelFunc,
+		ctx:           jobContext,
+		ctxCancelFunc: jobCtxCancelFunc,
 		taskUUID:      task.UUID,
-		action: func() error {
-			return task.Action(taskContext)
-		},
-		buff: buff,
+		action:        wrapTaskAction(jobContext, task.Action),
+		buff:          buff,
 	}
 }
 
-func (t *Job) Log() []byte {
-	return t.buff.Bytes()
+func wrapTaskAction(jobContext context.Context, taskAction func(ctx context.Context) error) func() error {
+	return func() error {
+		errCh := make(chan error)
+		go func() {
+			defer func() {
+				p := recover()
+				if p == nil || fmt.Sprint(p) == "send on closed channel" {
+					return
+				}
+
+				panic(p)
+			}()
+
+			errCh <- taskAction(jobContext)
+		}()
+
+		select {
+		case <-jobContext.Done():
+			close(errCh)
+			return contextCanceledError
+		case err := <-errCh:
+			return err
+		}
+	}
+}
+
+func (j *Job) Log() []byte {
+	return j.buff.Bytes()
 }
