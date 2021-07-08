@@ -141,10 +141,6 @@ func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 			taskTimeout = fields.Schema[fieldNameTaskTimeout].Default.(string)
 		} else {
 			taskTimeout = paramTaskTimeout.(string)
-
-			if _, err := time.ParseDuration(taskTimeout); err != nil {
-				return logical.ErrorResponse(fmt.Sprintf("invalid field %q given, expected golang time duration: %s", fieldNameTaskTimeout, err)), nil
-			}
 		}
 	}
 
