@@ -59,11 +59,8 @@ func (m *Manager) cleanupTaskHistory(ctx context.Context, req *logical.Request) 
 			return fmt.Errorf("unable to get tasks manager configuration: %s", err)
 		}
 
-		if config != nil && config.TaskHistoryLimit != "" {
-			taskHistoryLimit, err = strconv.ParseInt(config.TaskHistoryLimit, 10, 64)
-			if err != nil {
-				return fmt.Errorf("unexpected %q value %q: %q", fieldNameTaskHistoryLimit, config.TaskHistoryLimit, err)
-			}
+		if config != nil {
+			taskHistoryLimit = config.TaskHistoryLimit
 		}
 	}
 
@@ -98,7 +95,7 @@ func (m *Manager) cleanupTaskHistory(ctx context.Context, req *logical.Request) 
 		return otherTasks[i].Created.After(otherTasks[j].Created)
 	})
 
-	if int64(len(otherTasks)) > taskHistoryLimit {
+	if len(otherTasks) > taskHistoryLimit {
 		tasksToDelete = append(tasksToDelete, otherTasks[taskHistoryLimit:]...)
 	}
 
