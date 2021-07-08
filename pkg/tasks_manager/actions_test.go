@@ -13,13 +13,14 @@ import (
 func TestManager_RunTask(t *testing.T) {
 	ctx, m, storage := setupTest()
 
+	assert.Nil(t, m.Storage, "should be initialized on the first action call")
 	var uuids []string
-
 	// check the first task
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
+		assert.NotNil(t, m.Storage, "should be initialized on the first action call")
 
 		assertQueuedTaskInStorage(t, ctx, storage, uuid)
 
@@ -52,12 +53,14 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
+	assert.Nil(t, m.Storage, "should be initialized on the first action call")
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
 		if assert.Error(t, err) {
 			assert.Equal(t, err, BusyError)
 		}
 		assert.Empty(t, uuid)
+		assert.NotNil(t, m.Storage, "should be initialized on the first action call")
 	}
 
 	err = storage.Delete(ctx, storageKeyCurrentRunningTask)
@@ -79,11 +82,15 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 func TestManager_AddTask(t *testing.T) {
 	ctx, m, storage := setupTest()
 
+	assert.Nil(t, m.Storage, "should be initialized on the first action call")
 	var uuids []string
 	for i := 0; i < 2; i++ {
 		uuid, err := m.AddTask(ctx, storage, noneTask)
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
+		if i == 0 {
+			assert.NotNil(t, m.Storage, "should be initialized on the first action call")
+		}
 
 		assertQueuedTaskInStorage(t, ctx, storage, uuid)
 
@@ -101,14 +108,15 @@ func TestManager_AddTask(t *testing.T) {
 func TestManager_AddOptionalTask(t *testing.T) {
 	ctx, m, storage := setupTest()
 
+	assert.Nil(t, m.Storage, "should be initialized on the first action call")
 	var uuids []string
-
 	// check the first task
 	{
 		uuid, added, err := m.AddOptionalTask(ctx, storage, noneTask)
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
 		assert.True(t, added)
+		assert.NotNil(t, m.Storage, "should be initialized on the first action call")
 
 		assertQueuedTaskInStorage(t, ctx, storage, uuid)
 
