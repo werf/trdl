@@ -12,6 +12,8 @@ const (
 	storageKeyCurrentRunningTask = "current_running_task"
 	storageKeyPrefixTask         = "task-"
 	storageKeyPrefixTaskLog      = "task_log-"
+
+	staleTaskReason = "the unfinished task from the previous run"
 )
 
 func markStaleTaskAsFailed(ctx context.Context, storage logical.Storage) error {
@@ -35,7 +37,7 @@ func markStaleTaskAsFailed(ctx context.Context, storage logical.Storage) error {
 
 	task.Status = taskStatusFailed
 	task.Modified = time.Now()
-	task.Reason = "the unfinished task from the previous run"
+	task.Reason = staleTaskReason
 	if err := putTaskIntoStorage(ctx, storage, task); err != nil {
 		return err
 	}
