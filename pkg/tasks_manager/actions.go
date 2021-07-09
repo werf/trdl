@@ -69,11 +69,8 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 	}
 
 	var taskTimeoutDuration time.Duration
-	if config != nil && config.TaskTimeout != "" {
-		taskTimeoutDuration, err = time.ParseDuration(config.TaskTimeout)
-		if err != nil {
-			return fmt.Errorf("unable to parse task timeout duration %q: %s", config.TaskTimeout, err)
-		}
+	if config != nil {
+		taskTimeoutDuration = config.TaskTimeout
 	} else {
 		taskTimeoutDuration = defaultTaskTimeoutDuration
 	}

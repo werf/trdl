@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
 const (
@@ -19,9 +18,10 @@ const (
 	fieldNameLimit            = "limit"
 	fieldNameOffset           = "offset"
 
-	defaultTaskTimeoutValue    = "10m"
+	fieldDefaultTaskTimeout      = "10m"
+	fieldDefaultTaskHistoryLimit = 10
+
 	defaultTaskTimeoutDuration = 10 * time.Minute
-	defaultTaskHistoryLimit    = 10
 )
 
 var (
@@ -41,11 +41,11 @@ func (m *Manager) Paths() []*framework.Path {
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameTaskTimeout: {
 					Type:    framework.TypeDurationSecond,
-					Default: defaultTaskTimeoutValue,
+					Default: fieldDefaultTaskTimeout,
 				},
 				fieldNameTaskHistoryLimit: {
 					Type:    framework.TypeInt,
-					Default: defaultTaskHistoryLimit,
+					Default: fieldDefaultTaskHistoryLimit,
 				},
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
@@ -128,31 +128,9 @@ func (m *Manager) Paths() []*framework.Path {
 	}
 }
 
-func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	resp, err := util.ValidateRequestFields(req, fields)
-	if resp != nil || err != nil {
-		return resp, err
-	}
-
-	var taskTimeout string
-	{
-		paramTaskTimeout := req.Get(fieldNameTaskTimeout)
-		if paramTaskTimeout == nil {
-			taskTimeout = fields.Schema[fieldNameTaskTimeout].Default.(string)
-		} else {
-			taskTimeout = paramTaskTimeout.(string)
-		}
-	}
-
-	var taskHistoryLimit int
-	{
-		paramTaskHistoryLimit := req.Get(fieldNameTaskHistoryLimit)
-		if paramTaskHistoryLimit == nil {
-			taskHistoryLimit = fields.Schema[fieldNameTaskHistoryLimit].Default.(int)
-		} else {
-			taskHistoryLimit = paramTaskHistoryLimit.(int)
-		}
-	}
+func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
+	taskTimeout := time.Duration(data.Get(fieldNameTaskTimeout).(int)) * time.Second
+	taskHistoryLimit := data.Get(fieldNameTaskHistoryLimit).(int)
 
 	cfg := &configuration{
 		TaskTimeout:      taskTimeout,

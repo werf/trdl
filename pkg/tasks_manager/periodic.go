@@ -52,7 +52,7 @@ func (m *Manager) PeriodicTask(ctx context.Context, req *logical.Request) error 
 
 func (m *Manager) cleanupTaskHistory(ctx context.Context, req *logical.Request) error {
 	// define taskHistoryLimit
-	taskHistoryLimit := defaultTaskHistoryLimit
+	taskHistoryLimit := fieldDefaultTaskHistoryLimit
 	{
 		config, err := getConfiguration(ctx, req.Storage)
 		if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/fatih/structs"
 	"github.com/hashicorp/vault/sdk/framework"
@@ -31,23 +32,25 @@ func TestManager_pathConfigureCreateOrUpdate(t *testing.T) {
 				c, err := getConfiguration(ctx, storage)
 				assert.Nil(t, err)
 				assert.Equal(t, &configuration{
-					TaskTimeout:      defaultTaskTimeoutValue,
-					TaskHistoryLimit: defaultTaskHistoryLimit,
+					TaskTimeout:      defaultTaskTimeoutDuration,
+					TaskHistoryLimit: fieldDefaultTaskHistoryLimit,
 				}, c)
 			})
 
 			t.Run("custom", func(t *testing.T) {
 				ctx, b, _, storage := pathTestSetup(t)
 
-				expectedTaskTimeout := "5m"
-				expectedTaskHistoryLimit := 25
+				fieldValueTaskTimeout := "5m"
+				fieldValueTaskHistoryLimit := 25
+				expectedTaskTimeout := 5 * time.Minute
+				expectedTaskHistoryLimit := fieldValueTaskHistoryLimit
 
 				req := &logical.Request{
 					Operation: op,
 					Path:      "task/configure",
 					Data: map[string]interface{}{
-						fieldNameTaskTimeout:      expectedTaskTimeout,
-						fieldNameTaskHistoryLimit: expectedTaskHistoryLimit,
+						fieldNameTaskTimeout:      fieldValueTaskTimeout,
+						fieldNameTaskHistoryLimit: fieldValueTaskHistoryLimit,
 					},
 					Storage: storage,
 				}
@@ -138,7 +141,7 @@ func TestManager_pathConfigureRead(t *testing.T) {
 
 	t.Run("normal", func(t *testing.T) {
 		expectedConfig := &configuration{
-			TaskTimeout:      "50h",
+			TaskTimeout:      50 * time.Hour,
 			TaskHistoryLimit: 1000,
 		}
 		err := putConfiguration(ctx, storage, expectedConfig)
