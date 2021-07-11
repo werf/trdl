@@ -86,22 +86,12 @@ func TestManager_RunTaskInvalidateStorage(t *testing.T) {
 	var runningTaskUUID string
 	var queuedTaskUUID string
 	{
-		runningTask := newTask()
-		runningTaskUUID = runningTask.UUID
-		runningTask.Status = taskStatusRunning
-		err := putTaskIntoStorage(ctx, storage, runningTask)
-		assert.Nil(t, err)
+		runningTaskUUID, queuedTaskUUID = pathTestFixtures(t, ctx, storage)
 
-		err = storage.Put(ctx, &logical.StorageEntry{
+		err := storage.Put(ctx, &logical.StorageEntry{
 			Key:   storageKeyCurrentRunningTask,
-			Value: []byte(runningTask.UUID),
+			Value: []byte(runningTaskUUID),
 		})
-		assert.Nil(t, err)
-
-		queuedTask := newTask()
-		queuedTaskUUID = queuedTask.UUID
-		queuedTask.Status = taskStatusQueued
-		err = putQueuedTaskIntoStorage(ctx, storage, queuedTask)
 		assert.Nil(t, err)
 	}
 

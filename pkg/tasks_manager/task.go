@@ -9,11 +9,11 @@ import (
 )
 
 type Task struct {
-	UUID     string
-	Status   string
-	Reason   string
-	Created  time.Time
-	Modified time.Time
+	UUID     string    `structs:"uuid" json:"uuid"`
+	Status   string    `structs:"status" json:"status"`
+	Reason   string    `structs:"reason" json:"reason"`
+	Created  time.Time `structs:"created" json:"created"`
+	Modified time.Time `structs:"modified" json:"modified"`
 }
 
 func newTask() *Task {
