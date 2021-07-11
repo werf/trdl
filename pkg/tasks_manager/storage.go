@@ -2,7 +2,6 @@ package tasks_manager
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/hashicorp/vault/sdk/logical"
@@ -38,26 +37,6 @@ func markStaleTaskAsFailed(ctx context.Context, storage logical.Storage) error {
 	task.Status = taskStatusFailed
 	task.Modified = time.Now()
 	task.Reason = staleTaskReason
-	if err := putTaskIntoStorage(ctx, storage, task); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func markTaskAsCanceled(ctx context.Context, storage logical.Storage, uuid string) error {
-	task, err := getTaskFromStorage(ctx, storage, uuid)
-	if err != nil {
-		return err
-	}
-
-	if task == nil {
-		panic(fmt.Sprintf("unexpected error: task %q not found in storage", uuid))
-	}
-
-	task.Status = taskStatusCanceled
-	task.Reason = "the task was canceled"
-	task.Modified = time.Now()
 	if err := putTaskIntoStorage(ctx, storage, task); err != nil {
 		return err
 	}

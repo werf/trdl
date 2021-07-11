@@ -20,7 +20,6 @@ const (
 	taskStatusRunning   = "RUNNING"
 	taskStatusCompleted = "COMPLETED"
 	taskStatusFailed    = "FAILED"
-	taskStatusCanceled  = "CANCELED"
 )
 
 type Manager struct {

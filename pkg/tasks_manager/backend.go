@@ -194,7 +194,7 @@ func (m *Manager) pathTaskCancel(ctx context.Context, req *logical.Request, fiel
 	return m.cancelTask(ctx, req.Storage, uuid)
 }
 
-func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uuid string) (*logical.Response, error) {
+func (m *Manager) cancelTask(_ context.Context, _ logical.Storage, uuid string) (*logical.Response, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -202,14 +202,6 @@ func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uu
 		// stop and run new worker
 		m.Worker.Stop()
 		m.startNewWorker()
-
-		if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {
-			return nil, err
-		}
-
-		if err := m.Storage.Delete(ctx, storageKeyCurrentRunningTask); err != nil {
-			return nil, err
-		}
 
 		return nil, nil
 	}
