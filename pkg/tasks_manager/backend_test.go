@@ -39,10 +39,10 @@ func TestManager_pathConfigureCreateOrUpdate(t *testing.T) {
 			t.Run("custom", func(t *testing.T) {
 				ctx, b, _, storage := pathTestSetup(t)
 
-				fieldValueTaskTimeout := "5m"
-				fieldValueTaskHistoryLimit := 25
 				expectedTaskTimeout := 5 * time.Minute
-				expectedTaskHistoryLimit := fieldValueTaskHistoryLimit
+				expectedTaskHistoryLimit := 25
+				fieldValueTaskTimeout := expectedTaskTimeout.String()
+				fieldValueTaskHistoryLimit := expectedTaskHistoryLimit
 
 				req := &logical.Request{
 					Operation: op,
@@ -90,6 +90,9 @@ func TestManager_pathConfigureRead(t *testing.T) {
 			TaskTimeout:      50 * time.Hour,
 			TaskHistoryLimit: 1000,
 		}
+		expectedResponseData := structs.Map(expectedConfig)
+		expectedResponseData[fieldNameTaskTimeout] = expectedConfig.TaskTimeout.String()
+
 		err := putConfiguration(ctx, storage, expectedConfig)
 		assert.Nil(t, err)
 
@@ -103,7 +106,7 @@ func TestManager_pathConfigureRead(t *testing.T) {
 		resp, err := b.HandleRequest(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, resp)
-		assert.Equal(t, structs.Map(expectedConfig), resp.Data)
+		assert.Equal(t, expectedResponseData, resp.Data)
 	})
 }
 

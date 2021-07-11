@@ -128,9 +128,9 @@ func (m *Manager) Paths() []*framework.Path {
 	}
 }
 
-func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
-	taskTimeout := time.Duration(data.Get(fieldNameTaskTimeout).(int)) * time.Second
-	taskHistoryLimit := data.Get(fieldNameTaskHistoryLimit).(int)
+func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+	taskTimeout := time.Duration(fields.Get(fieldNameTaskTimeout).(int)) * time.Second
+	taskHistoryLimit := fields.Get(fieldNameTaskHistoryLimit).(int)
 
 	cfg := &configuration{
 		TaskTimeout:      taskTimeout,
@@ -154,7 +154,9 @@ func (m *Manager) pathConfigureRead(ctx context.Context, req *logical.Request, _
 		return errorResponseConfigurationNotFound, nil
 	}
 
-	return &logical.Response{Data: structs.Map(c)}, nil
+	data := structs.Map(c)
+	data[fieldNameTaskTimeout] = c.TaskTimeout.String()
+	return &logical.Response{Data: data}, nil
 }
 
 func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
