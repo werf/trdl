@@ -33,7 +33,7 @@ type Manager struct {
 func NewManager() Interface {
 	m := &Manager{taskChan: make(chan *worker.Task, taskChanSize)}
 
-	m.Worker = worker.NewWorker(m.taskChan, worker.Callbacks{
+	m.Worker = worker.NewWorker(context.Background(), m.taskChan, worker.Callbacks{
 		TaskStartedCallback:   m.taskStartedCallback,
 		TaskFailedCallback:    m.taskFailedCallback,
 		TaskCompletedCallback: m.taskCompletedCallback,

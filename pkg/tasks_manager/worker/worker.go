@@ -6,6 +6,7 @@ import (
 )
 
 type Worker struct {
+	ctx        context.Context
 	currentJob *Job
 	taskChan   chan *Task
 	callbacks  Callbacks
@@ -19,72 +20,74 @@ type Callbacks struct {
 	TaskCompletedCallback func(ctx context.Context, uuid string, log []byte)
 }
 
-func NewWorker(taskChan chan *Task, callbacks Callbacks) Interface {
-	return &Worker{callbacks: callbacks, taskChan: taskChan}
+func NewWorker(ctx context.Context, taskChan chan *Task, callbacks Callbacks) Interface {
+	return &Worker{ctx: ctx, callbacks: callbacks, taskChan: taskChan}
 }
 
-func (q *Worker) Start() {
+func (w *Worker) Start() {
 	for {
 		select {
-		case task := <-q.taskChan:
+		case task := <-w.taskChan:
 			func() {
 				job := newJob(task)
-				q.setCurrentJob(job)
-				defer q.resetCurrentJob()
+				w.setCurrentJob(job)
+				defer w.resetCurrentJob()
 
-				q.callbacks.TaskStartedCallback(job.ctx, job.taskUUID)
+				w.callbacks.TaskStartedCallback(w.ctx, job.taskUUID)
 				if err := job.action(); err != nil {
-					q.callbacks.TaskFailedCallback(job.ctx, job.taskUUID, job.Log(), err)
+					w.callbacks.TaskFailedCallback(w.ctx, job.taskUUID, job.Log(), err)
 				} else {
-					q.callbacks.TaskCompletedCallback(job.ctx, job.taskUUID, job.Log())
+					w.callbacks.TaskCompletedCallback(w.ctx, job.taskUUID, job.Log())
 				}
 			}()
+		case <-w.ctx.Done():
+			return
 		}
 	}
 }
 
-func (q *Worker) HoldRunningJobByTaskUUID(uuid string, do func(job *Job)) bool {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+func (w *Worker) HoldRunningJobByTaskUUID(uuid string, do func(job *Job)) bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
-	if q.currentJob == nil || q.currentJob.taskUUID != uuid {
+	if w.currentJob == nil || w.currentJob.taskUUID != uuid {
 		return false
 	}
 
-	do(q.currentJob)
+	do(w.currentJob)
 
 	return true
 }
 
-func (q *Worker) HasRunningJobByTaskUUID(uuid string) bool {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+func (w *Worker) HasRunningJobByTaskUUID(uuid string) bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
-	return q.currentJob != nil && q.currentJob.taskUUID == uuid
+	return w.currentJob != nil && w.currentJob.taskUUID == uuid
 }
 
-func (q *Worker) CancelRunningJobByTaskUUID(uuid string) bool {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+func (w *Worker) CancelRunningJobByTaskUUID(uuid string) bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
-	if q.currentJob != nil && q.currentJob.taskUUID == uuid {
-		q.currentJob.ctxCancelFunc()
+	if w.currentJob != nil && w.currentJob.taskUUID == uuid {
+		w.currentJob.ctxCancelFunc()
 		return true
 	}
 
 	return false
 }
 
-func (q *Worker) setCurrentJob(job *Job) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+func (w *Worker) setCurrentJob(job *Job) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
-	q.currentJob = job
+	w.currentJob = job
 }
 
-func (q *Worker) resetCurrentJob() {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+func (w *Worker) resetCurrentJob() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
-	q.currentJob = nil
+	w.currentJob = nil
 }
