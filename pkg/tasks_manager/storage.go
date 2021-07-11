@@ -9,9 +9,9 @@ import (
 
 const (
 	storageKeyCurrentRunningTask = "current_running_task"
-	storageKeyPrefixQueuedTask   = "queued_task-"
-	storageKeyPrefixTask         = "task-"
-	storageKeyPrefixTaskLog      = "task_log-"
+	storageKeyPrefixQueuedTask   = "queued_task/"
+	storageKeyPrefixTask         = "task/"
+	storageKeyPrefixTaskLog      = "task_log/"
 
 	staleTaskReason = "the unfinished task from the previous run"
 )

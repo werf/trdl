@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	storageKeyPrefixTrustedPGPPublicKey = "trusted_pgp_public_key-"
+	storageKeyPrefixTrustedPGPPublicKey = "trusted_pgp_public_key/"
 )
 
 func GetTrustedPGPPublicKeys(ctx context.Context, storage logical.Storage) ([]string, error) {
