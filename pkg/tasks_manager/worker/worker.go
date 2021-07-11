@@ -8,7 +8,6 @@ import (
 type Worker struct {
 	currentJob *Job
 	taskChan   chan *Task
-	stopChan   chan bool
 	callbacks  Callbacks
 
 	mu sync.Mutex
@@ -21,7 +20,7 @@ type Callbacks struct {
 }
 
 func NewWorker(taskChan chan *Task, callbacks Callbacks) Interface {
-	return &Worker{callbacks: callbacks, taskChan: taskChan, stopChan: make(chan bool)}
+	return &Worker{callbacks: callbacks, taskChan: taskChan}
 }
 
 func (q *Worker) Start() {
@@ -64,16 +63,16 @@ func (q *Worker) HasRunningJobByTaskUUID(uuid string) bool {
 	return q.currentJob != nil && q.currentJob.taskUUID == uuid
 }
 
-func (q *Worker) Stop() {
+func (q *Worker) CancelRunningJobByTaskUUID(uuid string) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	if q.currentJob != nil {
+	if q.currentJob != nil && q.currentJob.taskUUID == uuid {
 		q.currentJob.ctxCancelFunc()
-		q.stopChan = nil
-	} else {
-		close(q.stopChan)
+		return true
 	}
+
+	return false
 }
 
 func (q *Worker) setCurrentJob(job *Job) {

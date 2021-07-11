@@ -94,27 +94,9 @@ func TestTaskCallbacks(t *testing.T) {
 	}
 }
 
-func TestWorker_Stop(t *testing.T) {
-	taskChan := make(chan *Task)
-	workerStoppedChan := make(chan bool)
-
-	w := NewWorker(taskChan, Callbacks{})
-	go func() {
-		w.Start()
-
-		workerStoppedChan <- true
-	}()
-
-	go w.Stop()
-
-	// check worker stopped
-	<-workerStoppedChan
-}
-
-func TestWorker_StopWithRunningJob(t *testing.T) {
+func TestWorker_CancelRunningJobByTaskUUID(t *testing.T) {
 	taskChan := make(chan *Task)
 	taskFailedChan := make(chan bool)
-	workerStoppedChan := make(chan bool)
 	taskUUID := "1"
 	queuedTaskUUID := "2"
 
@@ -127,33 +109,36 @@ func TestWorker_StopWithRunningJob(t *testing.T) {
 	})
 
 	// start processing tasks
-	go func() {
-		w.Start()
-		workerStoppedChan <- true
-	}()
+	go w.Start()
+
+	// check nothing canceled
+	canceled := w.CancelRunningJobByTaskUUID(taskUUID)
+	assert.False(t, canceled)
 
 	// add task
-	taskChan <- stopTask(taskUUID)
+	taskChan <- infiniteTask(taskUUID)
 
 	// queue another task
 	go func() {
-		taskChan <- stopTask(queuedTaskUUID)
+		taskChan <- infiniteTask(queuedTaskUUID)
 	}()
 
 	// give time for the task to become active
 	time.Sleep(time.Microsecond * 100)
 
-	// cancel running task and stop worker
-	go w.Stop()
+	// cancel running task
+	canceled = w.CancelRunningJobByTaskUUID(taskUUID)
+	assert.True(t, canceled)
 
 	// check task failed
 	<-taskFailedChan
 
-	// check worker stopped
-	<-workerStoppedChan
+	// give time for the next task to become active
+	time.Sleep(time.Microsecond * 100)
 
-	// check queued task
-	<-taskChan
+	// check the next task running
+	running := w.HasRunningJobByTaskUUID(queuedTaskUUID)
+	assert.True(t, running)
 }
 
 func TestWorker_HasRunningJobByTaskUUID(t *testing.T) {
@@ -176,7 +161,7 @@ func TestWorker_HasRunningJobByTaskUUID(t *testing.T) {
 	taskChan <- &Task{
 		Context: context.Background(),
 		UUID:    taskUUID,
-		Action:  taskWithDoneCh(doneCh),
+		Action:  taskActionWithDoneCh(doneCh),
 	}
 
 	// give time for the task to become active
@@ -216,7 +201,7 @@ func TestWorker_HoldRunningJobByTaskUUID(t *testing.T) {
 	taskChan <- &Task{
 		Context: context.Background(),
 		UUID:    taskUUID,
-		Action:  taskWithDoneCh(doneCh),
+		Action:  taskActionWithDoneCh(doneCh),
 	}
 
 	// give time for the task to become active
@@ -244,7 +229,7 @@ func TestWorker_HoldRunningJobByTaskUUID(t *testing.T) {
 	assert.False(t, w.HoldRunningJobByTaskUUID(taskUUID, func(job *Job) {}))
 }
 
-func infiniteTask(ctx context.Context) error {
+func infiniteTaskAction(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -253,7 +238,7 @@ func infiniteTask(ctx context.Context) error {
 	}
 }
 
-func taskWithDoneCh(doneCh chan bool) func(context.Context) error {
+func taskActionWithDoneCh(doneCh chan bool) func(context.Context) error {
 	return func(_ context.Context) error {
 		for {
 			select {
@@ -264,10 +249,10 @@ func taskWithDoneCh(doneCh chan bool) func(context.Context) error {
 	}
 }
 
-func stopTask(uuid string) *Task {
+func infiniteTask(uuid string) *Task {
 	return &Task{
 		Context: context.Background(),
 		UUID:    uuid,
-		Action:  infiniteTask,
+		Action:  infiniteTaskAction,
 	}
 }

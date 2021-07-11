@@ -205,28 +205,18 @@ func (m *Manager) pathTaskStatus(ctx context.Context, req *logical.Request, fiel
 	}, nil
 }
 
-func (m *Manager) pathTaskCancel(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func (m *Manager) pathTaskCancel(_ context.Context, _ *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	uuid := fields.Get(fieldNameUUID).(string)
-	return m.cancelTask(ctx, req.Storage, uuid)
-}
 
-func (m *Manager) cancelTask(_ context.Context, _ logical.Storage, uuid string) (*logical.Response, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if m.Worker.HasRunningJobByTaskUUID(uuid) {
-		// stop and run new worker
-		m.Worker.Stop()
-		m.startNewWorker()
-
-		return nil, nil
+	if canceled := m.Worker.CancelRunningJobByTaskUUID(uuid); !canceled {
+		return &logical.Response{
+			Warnings: []string{
+				fmt.Sprintf("task %q not running", uuid),
+			},
+		}, nil
 	}
 
-	return &logical.Response{
-		Warnings: []string{
-			fmt.Sprintf("task %q not running", uuid),
-		},
-	}, nil
+	return nil, nil
 }
 
 func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
