@@ -31,31 +31,6 @@ func TestManager_taskStartedCallback(t *testing.T) {
 		m.taskStartedCallback(ctx, queuedTask.UUID)
 		assertTaskStartedCallbackQueuedTask(t, ctx, m.Storage, queuedTask)
 	})
-
-	t.Run("stale", func(t *testing.T) {
-		queuedTask := newTask()
-		err := putQueuedTaskIntoStorage(ctx, storage, queuedTask)
-		assert.Nil(t, err)
-
-		staleTask := newTask()
-		staleTask.Status = taskStatusRunning
-		err = putTaskIntoStorage(ctx, storage, staleTask)
-		assert.Nil(t, err)
-
-		err = m.Storage.Put(ctx, &logical.StorageEntry{
-			Key:   storageKeyCurrentRunningTask,
-			Value: []byte(staleTask.UUID),
-		})
-		assert.Nil(t, err)
-
-		m.taskStartedCallback(ctx, queuedTask.UUID)
-		assertTaskStartedCallbackQueuedTask(t, ctx, m.Storage, queuedTask)
-
-		updatedStaleTask, err := getTaskFromStorage(ctx, m.Storage, staleTask.UUID)
-		assert.Nil(t, err)
-		assert.Equal(t, taskStatusFailed, updatedStaleTask.Status)
-		assert.Equal(t, staleTaskReason, updatedStaleTask.Reason)
-	})
 }
 
 func TestManager_taskCompletedCallback(t *testing.T) {

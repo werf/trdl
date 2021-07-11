@@ -47,13 +47,13 @@ func TestManager_RunTask(t *testing.T) {
 func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 	ctx, m, storage := setupTest()
 
+	m.Storage = storage
 	err := storage.Put(ctx, &logical.StorageEntry{
 		Key:   storageKeyCurrentRunningTask,
 		Value: []byte("ANY"),
 	})
 	assert.Nil(t, err)
 
-	assert.Nil(t, m.Storage, "should be initialized on the first action call")
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
 		if assert.Error(t, err) {
@@ -75,6 +75,68 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 
 		task := <-m.taskChan
 		assert.Equal(t, task.UUID, uuid)
+	}
+}
+
+// check that Manager.RunTask invalidates inconsistent storage
+func TestManager_RunTaskInvalidateStorage(t *testing.T) {
+	ctx, m, storage := setupTest()
+
+	// imitate inconsistent storage condition after previous plugin run
+	var runningTaskUUID string
+	var queuedTaskUUID string
+	{
+		runningTask := newTask()
+		runningTaskUUID = runningTask.UUID
+		runningTask.Status = taskStatusRunning
+		err := putTaskIntoStorage(ctx, storage, runningTask)
+		assert.Nil(t, err)
+
+		err = storage.Put(ctx, &logical.StorageEntry{
+			Key:   storageKeyCurrentRunningTask,
+			Value: []byte(runningTask.UUID),
+		})
+		assert.Nil(t, err)
+
+		queuedTask := newTask()
+		queuedTaskUUID = queuedTask.UUID
+		queuedTask.Status = taskStatusQueued
+		err = putQueuedTaskIntoStorage(ctx, storage, queuedTask)
+		assert.Nil(t, err)
+	}
+
+	assert.Nil(t, m.Storage, "should be initialized on the first action call")
+
+	uuid, err := m.RunTask(ctx, storage, noneTask)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, uuid)
+
+	// check running task invalidation
+	{
+		task, err := getTaskFromStorage(ctx, storage, runningTaskUUID)
+		assert.Nil(t, err)
+		if assert.NotNil(t, task) {
+			assert.Equal(t, taskStatusFailed, task.Status)
+			assert.Equal(t, taskReasonInvalidatedTask, task.Reason)
+		}
+
+		currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, storage)
+		assert.Nil(t, err)
+		assert.Empty(t, currentTaskUUID)
+	}
+
+	// check queue task invalidation
+	{
+		task, err := getQueuedTaskFromStorage(ctx, storage, queuedTaskUUID)
+		assert.Nil(t, err)
+		assert.Nil(t, task)
+
+		task, err = getTaskFromStorage(ctx, storage, queuedTaskUUID)
+		assert.Nil(t, err)
+		if assert.NotNil(t, task) {
+			assert.Equal(t, taskStatusFailed, task.Status)
+			assert.Equal(t, taskReasonInvalidatedTask, task.Reason)
+		}
 	}
 }
 

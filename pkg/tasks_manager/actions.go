@@ -10,6 +10,8 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
 
+const taskReasonInvalidatedTask = "the task failed due to restart of the plugin"
+
 func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
 	var taskUUID string
 	err := m.doTaskWrap(ctx, reqStorage, taskFunc, func(newTaskFunc func(ctx context.Context) error) error {
@@ -61,6 +63,9 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 	// initialize on first task
 	if m.Storage == nil {
 		m.Storage = reqStorage
+		if err := m.invalidateStorage(ctx, reqStorage); err != nil {
+			return fmt.Errorf("unable to invalidate storage: %s", err)
+		}
 	}
 
 	config, err := getConfiguration(ctx, reqStorage)
@@ -89,6 +94,70 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 	}
 
 	return f(workerTaskFunc)
+}
+
+func (m *Manager) invalidateStorage(ctx context.Context, reqStorage logical.Storage) error {
+	invalidateTask := func(task *Task) error {
+		task.Status = taskStatusFailed
+		task.Reason = taskReasonInvalidatedTask
+		task.Modified = time.Now()
+
+		if err := putTaskIntoStorage(ctx, reqStorage, task); err != nil {
+			return fmt.Errorf("unable to put task %q into the storage: %q", task.UUID, err)
+		}
+
+		return nil
+	}
+
+	// invalidate current running task
+	{
+		currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, reqStorage)
+		if err != nil {
+			return fmt.Errorf("unable to get current running task uuid from storage: %s", err)
+		}
+
+		if currentTaskUUID != "" {
+			runningTask, err := getTaskFromStorage(ctx, reqStorage, currentTaskUUID)
+			if err != nil {
+				return fmt.Errorf("unable to get task %q from storage: %s", currentTaskUUID, err)
+			}
+
+			if runningTask != nil {
+				if err := invalidateTask(runningTask); err != nil {
+					return fmt.Errorf("unable to invalidate task %q: %s", currentTaskUUID, err)
+				}
+			}
+
+			if err := m.Storage.Delete(ctx, storageKeyCurrentRunningTask); err != nil {
+				return fmt.Errorf("unable to delete %q from storage: %q", storageKeyCurrentRunningTask, err)
+			}
+		}
+	}
+
+	// invalidate queued tasks
+	{
+		queuedTasksUUID, err := reqStorage.List(ctx, storageKeyPrefixQueuedTask)
+		if err != nil {
+			return fmt.Errorf("unable to get queued tasks from storage: %s", err)
+		}
+
+		for _, uuid := range queuedTasksUUID {
+			queuedTask, err := getQueuedTaskFromStorage(ctx, m.Storage, uuid)
+			if err != nil {
+				return fmt.Errorf("unable to get queued task %q from storage: %s", uuid, err)
+			}
+
+			if err := invalidateTask(queuedTask); err != nil {
+				return fmt.Errorf("unable to invalidate task %q: %s", uuid, err)
+			}
+
+			if err := m.Storage.Delete(ctx, queuedTaskStorageKey(uuid)); err != nil {
+				return fmt.Errorf("unable to delete %q from storage: %q", storageKeyCurrentRunningTask, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (m *Manager) queueTask(ctx context.Context, workerTaskFunc func(context.Context) error) (string, error) {

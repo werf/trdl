@@ -2,7 +2,6 @@ package tasks_manager
 
 import (
 	"context"
-	"time"
 
 	"github.com/hashicorp/vault/sdk/logical"
 )
@@ -12,38 +11,7 @@ const (
 	storageKeyPrefixQueuedTask   = "queued_task/"
 	storageKeyPrefixTask         = "task/"
 	storageKeyPrefixTaskLog      = "task_log/"
-
-	staleTaskReason = "the unfinished task from the previous run"
 )
-
-func markStaleTaskAsFailed(ctx context.Context, storage logical.Storage) error {
-	uuid, err := getCurrentTaskUUIDFromStorage(ctx, storage)
-	if err != nil {
-		return err
-	}
-
-	if uuid == "" {
-		return nil
-	}
-
-	task, err := getTaskFromStorage(ctx, storage, uuid)
-	if err != nil {
-		return err
-	}
-
-	if task == nil {
-		return nil
-	}
-
-	task.Status = taskStatusFailed
-	task.Modified = time.Now()
-	task.Reason = staleTaskReason
-	if err := putTaskIntoStorage(ctx, storage, task); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func getCurrentTaskUUIDFromStorage(ctx context.Context, storage logical.Storage) (string, error) {
 	currentRunningTaskValue, err := storage.Get(ctx, storageKeyCurrentRunningTask)

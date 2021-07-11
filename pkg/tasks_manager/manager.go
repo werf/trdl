@@ -48,10 +48,6 @@ func (m *Manager) taskStartedCallback(ctx context.Context, uuid string) {
 	defer m.mu.Unlock()
 
 	err := func() error {
-		if err := markStaleTaskAsFailed(ctx, m.Storage); err != nil {
-			return fmt.Errorf("unable to mark stale task as failed: %q", err)
-		}
-
 		if err := m.Storage.Delete(ctx, storageKeyCurrentRunningTask); err != nil {
 			return fmt.Errorf("unable to delete %q from storage: %q", storageKeyCurrentRunningTask, err)
 		}
