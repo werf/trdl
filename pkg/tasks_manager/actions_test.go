@@ -47,13 +47,13 @@ func TestManager_RunTask(t *testing.T) {
 func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 	ctx, m, storage := setupTest()
 
+	m.Storage = storage
 	err := storage.Put(ctx, &logical.StorageEntry{
 		Key:   storageKeyCurrentRunningTask,
 		Value: []byte("ANY"),
 	})
 	assert.Nil(t, err)
 
-	assert.Nil(t, m.Storage, "should be initialized on the first action call")
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
 		if assert.Error(t, err) {
@@ -75,6 +75,58 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 
 		task := <-m.taskChan
 		assert.Equal(t, task.UUID, uuid)
+	}
+}
+
+// check that Manager.RunTask invalidates inconsistent storage
+func TestManager_RunTaskInvalidateStorage(t *testing.T) {
+	ctx, m, storage := setupTest()
+
+	// imitate inconsistent storage condition after previous plugin run
+	var runningTaskUUID string
+	var queuedTaskUUID string
+	{
+		runningTaskUUID, queuedTaskUUID = pathTestFixtures(t, ctx, storage)
+
+		err := storage.Put(ctx, &logical.StorageEntry{
+			Key:   storageKeyCurrentRunningTask,
+			Value: []byte(runningTaskUUID),
+		})
+		assert.Nil(t, err)
+	}
+
+	assert.Nil(t, m.Storage, "should be initialized on the first action call")
+
+	uuid, err := m.RunTask(ctx, storage, noneTask)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, uuid)
+
+	// check running task invalidation
+	{
+		task, err := getTaskFromStorage(ctx, storage, runningTaskUUID)
+		assert.Nil(t, err)
+		if assert.NotNil(t, task) {
+			assert.Equal(t, taskStatusFailed, task.Status)
+			assert.Equal(t, taskReasonInvalidatedTask, task.Reason)
+		}
+
+		currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, storage)
+		assert.Nil(t, err)
+		assert.Empty(t, currentTaskUUID)
+	}
+
+	// check queue task invalidation
+	{
+		task, err := getQueuedTaskFromStorage(ctx, storage, queuedTaskUUID)
+		assert.Nil(t, err)
+		assert.Nil(t, task)
+
+		task, err = getTaskFromStorage(ctx, storage, queuedTaskUUID)
+		assert.Nil(t, err)
+		if assert.NotNil(t, task) {
+			assert.Equal(t, taskStatusFailed, task.Status)
+			assert.Equal(t, taskReasonInvalidatedTask, task.Reason)
+		}
 	}
 }
 
@@ -155,7 +207,7 @@ func initManagerWithoutWorker() *Manager {
 func noneTask(_ context.Context, _ logical.Storage) error { return nil }
 
 func assertQueuedTaskInStorage(t *testing.T, ctx context.Context, storage logical.Storage, uuid string) {
-	task, err := getTaskFromStorage(ctx, storage, uuid)
+	task, err := getQueuedTaskFromStorage(ctx, storage, uuid)
 	assert.Nil(t, err)
 	assert.NotNil(t, task)
 	assert.Equal(t, task.Status, taskStatusQueued)

@@ -4,7 +4,7 @@ import "context"
 
 type Interface interface {
 	Start()
-	Stop()
+	CancelRunningJobByTaskUUID(uuid string) bool
 	HoldRunningJobByTaskUUID(uuid string, do func(job *Job)) bool
 	HasRunningJobByTaskUUID(uuid string) bool
 }

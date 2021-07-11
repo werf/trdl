@@ -128,9 +128,9 @@ func (m *Manager) Paths() []*framework.Path {
 	}
 }
 
-func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
-	taskTimeout := time.Duration(data.Get(fieldNameTaskTimeout).(int)) * time.Second
-	taskHistoryLimit := data.Get(fieldNameTaskHistoryLimit).(int)
+func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+	taskTimeout := time.Duration(fields.Get(fieldNameTaskTimeout).(int)) * time.Second
+	taskHistoryLimit := fields.Get(fieldNameTaskHistoryLimit).(int)
 
 	cfg := &configuration{
 		TaskTimeout:      taskTimeout,
@@ -154,18 +154,25 @@ func (m *Manager) pathConfigureRead(ctx context.Context, req *logical.Request, _
 		return errorResponseConfigurationNotFound, nil
 	}
 
-	return &logical.Response{Data: structs.Map(c)}, nil
+	data := structs.Map(c)
+	data[fieldNameTaskTimeout] = c.TaskTimeout.String()
+	return &logical.Response{Data: data}, nil
 }
 
 func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
-	list, err := req.Storage.List(ctx, storageKeyPrefixTask)
+	queuedTaskList, err := req.Storage.List(ctx, storageKeyPrefixQueuedTask)
+	if err != nil {
+		return nil, err
+	}
+
+	otherTaskList, err := req.Storage.List(ctx, storageKeyPrefixTask)
 	if err != nil {
 		return nil, err
 	}
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"uuids": list,
+			"uuids": append(otherTaskList, queuedTaskList...),
 		},
 	}, nil
 }
@@ -173,9 +180,20 @@ func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *fra
 func (m *Manager) pathTaskStatus(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	uuid := fields.Get(fieldNameUUID).(string)
 
-	task, err := getTaskFromStorage(ctx, req.Storage, uuid)
-	if err != nil {
-		return nil, err
+	var task *Task
+	for _, getTaskFromStorageFunc := range []func(ctx context.Context, storage logical.Storage, uuid string) (*Task, error){
+		getQueuedTaskFromStorage,
+		getTaskFromStorage,
+	} {
+		t, err := getTaskFromStorageFunc(ctx, req.Storage, uuid)
+		if err != nil {
+			return nil, err
+		}
+
+		if t != nil {
+			task = t
+			break
+		}
 	}
 
 	if task == nil {
@@ -189,36 +207,18 @@ func (m *Manager) pathTaskStatus(ctx context.Context, req *logical.Request, fiel
 	}, nil
 }
 
-func (m *Manager) pathTaskCancel(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func (m *Manager) pathTaskCancel(_ context.Context, _ *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	uuid := fields.Get(fieldNameUUID).(string)
-	return m.cancelTask(ctx, req.Storage, uuid)
-}
 
-func (m *Manager) cancelTask(ctx context.Context, reqStorage logical.Storage, uuid string) (*logical.Response, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if m.Worker.HasRunningJobByTaskUUID(uuid) {
-		// stop and run new worker
-		m.Worker.Stop()
-		m.startNewWorker()
-
-		if err := markTaskAsCanceled(ctx, reqStorage, uuid); err != nil {
-			return nil, err
-		}
-
-		if err := m.Storage.Delete(ctx, storageKeyCurrentRunningTask); err != nil {
-			return nil, err
-		}
-
-		return nil, nil
+	if canceled := m.Worker.CancelRunningJobByTaskUUID(uuid); !canceled {
+		return &logical.Response{
+			Warnings: []string{
+				fmt.Sprintf("task %q not running", uuid),
+			},
+		}, nil
 	}
 
-	return &logical.Response{
-		Warnings: []string{
-			fmt.Sprintf("task %q not running", uuid),
-		},
-	}, nil
+	return nil, nil
 }
 
 func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
@@ -268,7 +268,16 @@ func (m *Manager) readTaskLog(ctx context.Context, reqStorage logical.Storage, u
 		}
 
 		if task == nil {
-			return nil, logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
+			queuedTask, err := getQueuedTaskFromStorage(ctx, reqStorage, uuid)
+			if err != nil {
+				return nil, nil, fmt.Errorf("unable to get queued task %q from storage: %s", uuid, err)
+			}
+
+			if queuedTask != nil {
+				return nil, logical.ErrorResponse(fmt.Sprintf("task %q in queue", uuid)), nil
+			} else {
+				return nil, logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
+			}
 		}
 	}
 

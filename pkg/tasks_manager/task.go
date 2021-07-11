@@ -9,11 +9,11 @@ import (
 )
 
 type Task struct {
-	UUID     string
-	Status   string
-	Reason   string
-	Created  time.Time
-	Modified time.Time
+	UUID     string    `structs:"uuid" json:"uuid"`
+	Status   string    `structs:"status" json:"status"`
+	Reason   string    `structs:"reason" json:"reason"`
+	Created  time.Time `structs:"created" json:"created"`
+	Modified time.Time `structs:"modified" json:"modified"`
 }
 
 func newTask() *Task {
@@ -28,6 +28,10 @@ func newTask() *Task {
 	return task
 }
 
+func queuedTaskToStorageEntry(task *Task) (*logical.StorageEntry, error) {
+	return logical.StorageEntryJSON(queuedTaskStorageKey(task.UUID), task)
+}
+
 func taskToStorageEntry(task *Task) (*logical.StorageEntry, error) {
 	return logical.StorageEntryJSON(taskStorageKey(task.UUID), task)
 }
@@ -39,6 +43,10 @@ func storageEntryToTask(entry *logical.StorageEntry) (*Task, error) {
 	}
 
 	return task, nil
+}
+
+func queuedTaskStorageKey(uuid string) string {
+	return storageKeyPrefixQueuedTask + uuid
 }
 
 func taskStorageKey(uuid string) string {

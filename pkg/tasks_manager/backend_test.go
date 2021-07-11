@@ -2,7 +2,6 @@ package tasks_manager
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -40,10 +39,10 @@ func TestManager_pathConfigureCreateOrUpdate(t *testing.T) {
 			t.Run("custom", func(t *testing.T) {
 				ctx, b, _, storage := pathTestSetup(t)
 
-				fieldValueTaskTimeout := "5m"
-				fieldValueTaskHistoryLimit := 25
 				expectedTaskTimeout := 5 * time.Minute
-				expectedTaskHistoryLimit := fieldValueTaskHistoryLimit
+				expectedTaskHistoryLimit := 25
+				fieldValueTaskTimeout := expectedTaskTimeout.String()
+				fieldValueTaskHistoryLimit := expectedTaskHistoryLimit
 
 				req := &logical.Request{
 					Operation: op,
@@ -65,59 +64,6 @@ func TestManager_pathConfigureCreateOrUpdate(t *testing.T) {
 					TaskTimeout:      expectedTaskTimeout,
 					TaskHistoryLimit: expectedTaskHistoryLimit,
 				}, c)
-			})
-
-			t.Run("invalid fields", func(t *testing.T) {
-				for _, test := range []struct {
-					name             string
-					taskTimeout      interface{}
-					taskHistoryLimit interface{}
-					expectedErrMsg   string
-				}{
-					{
-						name:           fmt.Sprintf("invalid %s", fieldNameTaskTimeout),
-						taskTimeout:    "no valid",
-						expectedErrMsg: fmt.Sprintf("error converting input no valid for field %q: strconv.ParseInt: parsing \"no valid\": invalid syntax", fieldNameTaskTimeout),
-					},
-					{
-						name:             fmt.Sprintf("invalid %s", fieldNameTaskHistoryLimit),
-						taskHistoryLimit: "no valid",
-						expectedErrMsg:   fmt.Sprintf("error converting input no valid for field %q: cannot parse '' as int: strconv.ParseInt: parsing \"no valid\": invalid syntax", fieldNameTaskHistoryLimit),
-					},
-				} {
-					t.Run(test.name, func(t *testing.T) {
-						ctx, b, _, storage := pathTestSetup(t)
-
-						data := make(map[string]interface{})
-						if test.taskTimeout != nil {
-							data[fieldNameTaskTimeout] = test.taskTimeout
-						}
-
-						if test.taskHistoryLimit != nil {
-							data[fieldNameTaskHistoryLimit] = test.taskHistoryLimit
-						}
-
-						req := &logical.Request{
-							Operation: op,
-							Path:      "task/configure",
-							Data:      data,
-							Storage:   storage,
-						}
-
-						// check field validation failed
-						resp, err := b.HandleRequest(ctx, req)
-						assert.Nil(t, resp)
-						assert.NotNil(t, err)
-						if assert.Error(t, err) {
-							assert.Equal(t, test.expectedErrMsg, err.Error())
-						}
-
-						// check no configuration in storage
-						c, err := getConfiguration(ctx, storage)
-						assert.Nil(t, err)
-						assert.Nil(t, c)
-					})
-				}
 			})
 		})
 	}
@@ -144,6 +90,9 @@ func TestManager_pathConfigureRead(t *testing.T) {
 			TaskTimeout:      50 * time.Hour,
 			TaskHistoryLimit: 1000,
 		}
+		expectedResponseData := structs.Map(expectedConfig)
+		expectedResponseData[fieldNameTaskTimeout] = expectedConfig.TaskTimeout.String()
+
 		err := putConfiguration(ctx, storage, expectedConfig)
 		assert.Nil(t, err)
 
@@ -157,8 +106,168 @@ func TestManager_pathConfigureRead(t *testing.T) {
 		resp, err := b.HandleRequest(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, resp)
-		assert.Equal(t, structs.Map(expectedConfig), resp.Data)
+		assert.Equal(t, expectedResponseData, resp.Data)
 	})
+}
+
+func TestManager_pathTaskList(t *testing.T) {
+	ctx, b, _, storage := pathTestSetup(t)
+
+	t.Run("empty", func(t *testing.T) {
+		req := &logical.Request{
+			Operation: logical.ReadOperation,
+			Path:      "task",
+			Data:      make(map[string]interface{}),
+			Storage:   storage,
+		}
+
+		resp, err := b.HandleRequest(ctx, req)
+		assert.Nil(t, err)
+		if assert.NotNil(t, resp) {
+			assert.Equal(t, map[string]interface{}{"uuids": []string(nil)}, resp.Data)
+		}
+	})
+
+	t.Run("all", func(t *testing.T) {
+		// fixtures
+		var runningTaskUUID string
+		var queuedTaskUUID string
+		{
+			runningTaskUUID, queuedTaskUUID = pathTestFixtures(t, ctx, storage)
+		}
+
+		req := &logical.Request{
+			Operation: logical.ReadOperation,
+			Path:      "task",
+			Data:      make(map[string]interface{}),
+			Storage:   storage,
+		}
+
+		resp, err := b.HandleRequest(ctx, req)
+		assert.Nil(t, err)
+		if assert.NotNil(t, resp) {
+			assert.Equal(t, map[string]interface{}{"uuids": []string{runningTaskUUID, queuedTaskUUID}}, resp.Data)
+		}
+	})
+}
+
+func TestManager_pathTaskStatus(t *testing.T) {
+	ctx, b, _, storage := pathTestSetup(t)
+
+	t.Run("nonexistent", func(t *testing.T) {
+		randomUUID := "bfc441c7-a143-4ab2-9aac-4d109cef5018"
+
+		req := &logical.Request{
+			Operation: logical.ReadOperation,
+			Path:      "task/" + randomUUID,
+			Data:      make(map[string]interface{}),
+			Storage:   storage,
+		}
+
+		resp, err := b.HandleRequest(ctx, req)
+		assert.Nil(t, err)
+		if assert.NotNil(t, resp) {
+			assert.Equal(t, map[string]interface{}{"error": "task \"bfc441c7-a143-4ab2-9aac-4d109cef5018\" not found"}, resp.Data)
+		}
+	})
+
+	// fixtures
+	var runningTaskUUID string
+	var queuedTaskUUID string
+	{
+		runningTaskUUID, queuedTaskUUID = pathTestFixtures(t, ctx, storage)
+	}
+
+	for _, test := range []struct {
+		name        string
+		taskUUID    string
+		getTaskFunc func(ctx context.Context, storage logical.Storage, uuid string) (*Task, error)
+	}{
+		{
+			name:        taskStatusQueued,
+			taskUUID:    queuedTaskUUID,
+			getTaskFunc: getQueuedTaskFromStorage,
+		},
+		{
+			name:        taskStatusRunning,
+			taskUUID:    runningTaskUUID,
+			getTaskFunc: getTaskFromStorage,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			req := &logical.Request{
+				Operation: logical.ReadOperation,
+				Path:      "task/" + test.taskUUID,
+				Data:      make(map[string]interface{}),
+				Storage:   storage,
+			}
+
+			testTask, err := test.getTaskFunc(ctx, storage, test.taskUUID)
+			assert.Nil(t, err)
+			assert.NotNil(t, testTask)
+
+			resp, err := b.HandleRequest(ctx, req)
+			assert.Nil(t, err)
+			if assert.NotNil(t, resp) {
+				assert.Equal(t, map[string]interface{}{"status": structs.Map(testTask)}, resp.Data)
+			}
+		})
+	}
+}
+
+func TestManager_pathTaskCancel(t *testing.T) {
+	ctx, b, m, storage := pathTestSetup(t)
+
+	t.Run("nonexistent", func(t *testing.T) {
+		randomUUID := "bfc441c7-a143-4ab2-9aac-4d109cef5018"
+
+		req := &logical.Request{
+			Operation: logical.CreateOperation,
+			Path:      "task/" + randomUUID + "/cancel",
+			Data:      make(map[string]interface{}),
+			Storage:   storage,
+		}
+
+		resp, err := b.HandleRequest(ctx, req)
+		assert.Nil(t, err)
+		if assert.NotNil(t, resp) {
+			assert.Equal(t, []string{"task \"bfc441c7-a143-4ab2-9aac-4d109cef5018\" not running"}, resp.Warnings)
+		}
+	})
+
+	t.Run(taskStatusRunning, func(t *testing.T) {
+		uuid, err := m.AddTask(ctx, storage, infiniteTaskAction)
+		assert.Nil(t, err)
+		assert.NotEmpty(t, uuid)
+
+		// give time for the task to become active
+		time.Sleep(time.Microsecond * 100)
+
+		req := &logical.Request{
+			Operation: logical.CreateOperation,
+			Path:      "task/" + uuid + "/cancel",
+			Data:      make(map[string]interface{}),
+			Storage:   storage,
+		}
+
+		resp, err := b.HandleRequest(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, resp)
+	})
+}
+
+func pathTestFixtures(t *testing.T, ctx context.Context, storage logical.Storage) (string, string) {
+	runningTask := newTask()
+	runningTask.Status = taskStatusRunning
+	err := putTaskIntoStorage(ctx, storage, runningTask)
+	assert.Nil(t, err)
+
+	queuedTask := newTask()
+	queuedTask.Status = taskStatusQueued
+	err = putQueuedTaskIntoStorage(ctx, storage, queuedTask)
+	assert.Nil(t, err)
+
+	return runningTask.UUID, queuedTask.UUID
 }
 
 func pathTestSetup(t *testing.T) (context.Context, logical.Backend, Interface, logical.Storage) {
@@ -174,4 +283,8 @@ func pathTestSetup(t *testing.T) (context.Context, logical.Backend, Interface, l
 	assert.Nil(t, err)
 
 	return ctx, b, m, storage
+}
+
+func infiniteTaskAction(_ context.Context, _ logical.Storage) error {
+	select {}
 }

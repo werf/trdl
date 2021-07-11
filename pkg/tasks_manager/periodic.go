@@ -13,8 +13,7 @@ import (
 const storageKeyLastPeriodicRunTimestamp = "tasks_manager_last_periodic_run_timestamp"
 
 var (
-	periodicTaskPeriod        = time.Hour
-	periodicTaskQueuedTaskTTL = 12 * time.Hour
+	periodicTaskPeriod = time.Hour
 )
 
 func (m *Manager) PeriodicTask(ctx context.Context, req *logical.Request) error {
@@ -69,37 +68,27 @@ func (m *Manager) cleanupTaskHistory(ctx context.Context, req *logical.Request) 
 		return err
 	}
 
-	var queuedTasks []*Task
-	var otherTasks []*Task
+	var finishedTasks []*Task
 	for _, taskUUID := range list {
 		task, err := getTaskFromStorage(ctx, req.Storage, taskUUID)
 		if err != nil {
 			return fmt.Errorf("unable to get task %q from storage: %s", taskUUID, err)
 		}
 
-		if task.Status == taskStatusQueued {
-			queuedTasks = append(queuedTasks, task)
-		} else {
-			otherTasks = append(otherTasks, task)
+		if task.Status == taskStatusCompleted || task.Status == taskStatusFailed {
+			finishedTasks = append(finishedTasks, task)
 		}
 	}
 
-	var tasksToDelete []*Task
-	for _, task := range queuedTasks {
-		if time.Since(task.Created) > periodicTaskQueuedTaskTTL {
-			tasksToDelete = append(tasksToDelete, task)
-		}
-	}
-
-	sort.Slice(otherTasks, func(i, j int) bool {
-		return otherTasks[i].Created.After(otherTasks[j].Created)
+	sort.Slice(finishedTasks, func(i, j int) bool {
+		return finishedTasks[i].Modified.After(finishedTasks[j].Modified)
 	})
 
-	if len(otherTasks) > taskHistoryLimit {
-		tasksToDelete = append(tasksToDelete, otherTasks[taskHistoryLimit:]...)
+	if len(finishedTasks) > taskHistoryLimit {
+		finishedTasks = append(finishedTasks, finishedTasks[taskHistoryLimit:]...)
 	}
 
-	for _, task := range tasksToDelete {
+	for _, task := range finishedTasks {
 		if err := req.Storage.Delete(ctx, taskStorageKey(task.UUID)); err != nil {
 			return err
 		}
