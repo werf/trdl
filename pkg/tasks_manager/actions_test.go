@@ -155,7 +155,7 @@ func initManagerWithoutWorker() *Manager {
 func noneTask(_ context.Context, _ logical.Storage) error { return nil }
 
 func assertQueuedTaskInStorage(t *testing.T, ctx context.Context, storage logical.Storage, uuid string) {
-	task, err := getTaskFromStorage(ctx, storage, uuid)
+	task, err := getQueuedTaskFromStorage(ctx, storage, uuid)
 	assert.Nil(t, err)
 	assert.NotNil(t, task)
 	assert.Equal(t, task.Status, taskStatusQueued)

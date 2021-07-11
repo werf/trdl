@@ -58,18 +58,22 @@ func (m *Manager) taskStartedCallback(ctx context.Context, uuid string) error {
 		return err
 	}
 
-	task, err := getTaskFromStorage(ctx, m.Storage, uuid)
+	task, err := getQueuedTaskFromStorage(ctx, m.Storage, uuid)
 	if err != nil {
 		return err
 	}
 
 	if task == nil {
-		panic(fmt.Sprintf("unexpected error: task %q not found in storage", uuid))
+		panic(fmt.Sprintf("unexpected error: queued task %q not found in storage", uuid))
 	}
 
 	task.Status = taskStatusRunning
 	task.Modified = time.Now()
 	if err := putTaskIntoStorage(ctx, m.Storage, task); err != nil {
+		return err
+	}
+
+	if err := m.Storage.Delete(ctx, queuedTaskStorageKey(uuid)); err != nil {
 		return err
 	}
 

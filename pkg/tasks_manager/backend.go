@@ -158,14 +158,19 @@ func (m *Manager) pathConfigureRead(ctx context.Context, req *logical.Request, _
 }
 
 func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
-	list, err := req.Storage.List(ctx, storageKeyPrefixTask)
+	queuedTaskList, err := req.Storage.List(ctx, storageKeyPrefixQueuedTask)
+	if err != nil {
+		return nil, err
+	}
+
+	otherTaskList, err := req.Storage.List(ctx, storageKeyPrefixTask)
 	if err != nil {
 		return nil, err
 	}
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"uuids": list,
+			"uuids": append(otherTaskList, queuedTaskList...),
 		},
 	}, nil
 }
@@ -173,9 +178,20 @@ func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *fra
 func (m *Manager) pathTaskStatus(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	uuid := fields.Get(fieldNameUUID).(string)
 
-	task, err := getTaskFromStorage(ctx, req.Storage, uuid)
-	if err != nil {
-		return nil, err
+	var task *Task
+	for _, getTaskFromStorageFunc := range []func(ctx context.Context, storage logical.Storage, uuid string) (*Task, error){
+		getQueuedTaskFromStorage,
+		getTaskFromStorage,
+	} {
+		t, err := getTaskFromStorageFunc(ctx, req.Storage, uuid)
+		if err != nil {
+			return nil, err
+		}
+
+		if t != nil {
+			task = t
+			break
+		}
 	}
 
 	if task == nil {
@@ -260,7 +276,16 @@ func (m *Manager) readTaskLog(ctx context.Context, reqStorage logical.Storage, u
 		}
 
 		if task == nil {
-			return nil, logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
+			queuedTask, err := getQueuedTaskFromStorage(ctx, reqStorage, uuid)
+			if err != nil {
+				return nil, nil, fmt.Errorf("unable to get queued task %q from storage: %s", uuid, err)
+			}
+
+			if queuedTask != nil {
+				return nil, logical.ErrorResponse(fmt.Sprintf("task %q in queue", uuid)), nil
+			} else {
+				return nil, logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
+			}
 		}
 	}
 

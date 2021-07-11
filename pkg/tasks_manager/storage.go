@@ -9,6 +9,7 @@ import (
 
 const (
 	storageKeyCurrentRunningTask = "current_running_task"
+	storageKeyPrefixQueuedTask   = "queued_task-"
 	storageKeyPrefixTask         = "task-"
 	storageKeyPrefixTaskLog      = "task_log-"
 
@@ -57,8 +58,16 @@ func getCurrentTaskUUIDFromStorage(ctx context.Context, storage logical.Storage)
 	return string(currentRunningTaskValue.Value), nil
 }
 
+func getQueuedTaskFromStorage(ctx context.Context, storage logical.Storage, uuid string) (*Task, error) {
+	return getTaskFromStorageBase(ctx, storage, queuedTaskStorageKey(uuid))
+}
+
 func getTaskFromStorage(ctx context.Context, storage logical.Storage, uuid string) (*Task, error) {
-	e, err := storage.Get(ctx, taskStorageKey(uuid))
+	return getTaskFromStorageBase(ctx, storage, taskStorageKey(uuid))
+}
+
+func getTaskFromStorageBase(ctx context.Context, storage logical.Storage, taskStorageKey string) (*Task, error) {
+	e, err := storage.Get(ctx, taskStorageKey)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +90,15 @@ func getTaskLogFromStorage(ctx context.Context, storage logical.Storage, uuid st
 	}
 
 	return e.Value, nil
+}
+
+func putQueuedTaskIntoStorage(ctx context.Context, storage logical.Storage, task *Task) error {
+	e, err := queuedTaskToStorageEntry(task)
+	if err != nil {
+		return err
+	}
+
+	return storage.Put(ctx, e)
 }
 
 func putTaskIntoStorage(ctx context.Context, storage logical.Storage, task *Task) error {

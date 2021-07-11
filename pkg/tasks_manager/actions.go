@@ -93,8 +93,8 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 
 func (m *Manager) queueTask(ctx context.Context, workerTaskFunc func(context.Context) error) (string, error) {
 	task := newTask()
-	if err := putTaskIntoStorage(ctx, m.Storage, task); err != nil {
-		return "", fmt.Errorf("unable to put task %q into storage: %s", task.UUID, err)
+	if err := putQueuedTaskIntoStorage(ctx, m.Storage, task); err != nil {
+		return "", fmt.Errorf("unable to put queued task %q into storage: %s", task.UUID, err)
 	}
 
 	m.taskChan <- &worker.Task{Context: ctx, UUID: task.UUID, Action: workerTaskFunc}
@@ -117,20 +117,13 @@ func (m *Manager) isBusy(ctx context.Context, reqStorage logical.Storage) (bool,
 
 	// busy if there are queued tasks
 	{
-		taskUUIDs, err := reqStorage.List(ctx, storageKeyPrefixTask)
+		queuedTasksUUID, err := reqStorage.List(ctx, storageKeyPrefixQueuedTask)
 		if err != nil {
-			return false, fmt.Errorf("unable to get tasks from storage: %s", err)
+			return false, fmt.Errorf("unable to get queued tasks from storage: %s", err)
 		}
 
-		for _, uuid := range taskUUIDs {
-			task, err := getTaskFromStorage(ctx, reqStorage, uuid)
-			if err != nil {
-				return false, fmt.Errorf("unable to get task %q from storage: %s", uuid, err)
-			}
-
-			if task.Status == taskStatusQueued {
-				return true, nil
-			}
+		if len(queuedTasksUUID) != 0 {
+			return true, nil
 		}
 	}
 

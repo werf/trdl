@@ -28,6 +28,10 @@ func newTask() *Task {
 	return task
 }
 
+func queuedTaskToStorageEntry(task *Task) (*logical.StorageEntry, error) {
+	return logical.StorageEntryJSON(queuedTaskStorageKey(task.UUID), task)
+}
+
 func taskToStorageEntry(task *Task) (*logical.StorageEntry, error) {
 	return logical.StorageEntryJSON(taskStorageKey(task.UUID), task)
 }
@@ -39,6 +43,10 @@ func storageEntryToTask(entry *logical.StorageEntry) (*Task, error) {
 	}
 
 	return task, nil
+}
+
+func queuedTaskStorageKey(uuid string) string {
+	return storageKeyPrefixQueuedTask + uuid
 }
 
 func taskStorageKey(uuid string) string {

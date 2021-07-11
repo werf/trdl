@@ -19,13 +19,13 @@ func TestManager_taskStartedCallback(t *testing.T) {
 		assertPanic(
 			t,
 			func() { _ = m.taskStartedCallback(ctx, "1") },
-			"unexpected error: task \"1\" not found in storage",
+			"unexpected error: queued task \"1\" not found in storage",
 		)
 	})
 
 	t.Run("queued", func(t *testing.T) {
 		queuedTask := newTask()
-		err := putTaskIntoStorage(ctx, storage, queuedTask)
+		err := putQueuedTaskIntoStorage(ctx, storage, queuedTask)
 		assert.Nil(t, err)
 
 		err = m.taskStartedCallback(ctx, queuedTask.UUID)
@@ -35,7 +35,7 @@ func TestManager_taskStartedCallback(t *testing.T) {
 
 	t.Run("stale", func(t *testing.T) {
 		queuedTask := newTask()
-		err := putTaskIntoStorage(ctx, storage, queuedTask)
+		err := putQueuedTaskIntoStorage(ctx, storage, queuedTask)
 		assert.Nil(t, err)
 
 		staleTask := newTask()
@@ -139,14 +139,18 @@ func TestManager_taskFailedCallback(t *testing.T) {
 	})
 }
 
-func assertTaskStartedCallbackQueuedTask(t *testing.T, ctx context.Context, storage logical.Storage, queuedTask *Task) {
-	runningTask, err := getTaskFromStorage(ctx, storage, queuedTask.UUID)
+func assertTaskStartedCallbackQueuedTask(t *testing.T, ctx context.Context, storage logical.Storage, startedTask *Task) {
+	queuedTask, err := getQueuedTaskFromStorage(ctx, storage, startedTask.UUID)
+	assert.Nil(t, err)
+	assert.Nil(t, queuedTask)
+
+	runningTask, err := getTaskFromStorage(ctx, storage, startedTask.UUID)
 	assert.Nil(t, err)
 	assert.Equal(t, taskStatusRunning, runningTask.Status)
 
 	currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, storage)
 	assert.Nil(t, err)
-	assert.Equal(t, queuedTask.UUID, currentTaskUUID)
+	assert.Equal(t, startedTask.UUID, currentTaskUUID)
 }
 
 func assertPanic(t *testing.T, f func(), expectedMsg string) {
