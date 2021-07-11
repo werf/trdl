@@ -27,25 +27,22 @@ func TestTaskCallbacks(t *testing.T) {
 	var expectedLog []byte
 
 	w := NewWorker(taskChan, Callbacks{
-		TaskStartedCallback: func(_ context.Context, uuid string) error {
+		TaskStartedCallback: func(_ context.Context, uuid string) {
 			assert.Equal(t, expectedUUID, uuid)
-			return nil
 		},
-		TaskFailedCallback: func(_ context.Context, uuid string, log []byte, err error) error {
+		TaskFailedCallback: func(_ context.Context, uuid string, log []byte, err error) {
 			assert.Equal(t, expectedCallback, TaskFailedCallback)
 			assert.Equal(t, expectedUUID, uuid)
 			assert.Equal(t, expectedErr, err)
 			assert.Equal(t, expectedLog, log)
 			taskProcessedChan <- true
-			return nil
 		},
-		TaskCompletedCallback: func(_ context.Context, uuid string, log []byte) error {
+		TaskCompletedCallback: func(_ context.Context, uuid string, log []byte) {
 			assert.Equal(t, expectedCallback, TaskCompletedCallback)
 			assert.Equal(t, uuid, expectedUUID)
 			assert.Nil(t, expectedErr)
 			assert.Equal(t, log, expectedLog)
 			taskProcessedChan <- true
-			return nil
 		},
 	})
 	go w.Start()
@@ -122,11 +119,10 @@ func TestWorker_StopWithRunningJob(t *testing.T) {
 	queuedTaskUUID := "2"
 
 	w := NewWorker(taskChan, Callbacks{
-		TaskStartedCallback: func(_ context.Context, uuid string) error { return nil },
-		TaskFailedCallback: func(_ context.Context, uuid string, _ []byte, _ error) error {
+		TaskStartedCallback: func(_ context.Context, uuid string) {},
+		TaskFailedCallback: func(_ context.Context, uuid string, _ []byte, _ error) {
 			assert.Equal(t, taskUUID, uuid)
 			taskFailedChan <- true
-			return nil
 		},
 	})
 
@@ -166,10 +162,9 @@ func TestWorker_HasRunningJobByTaskUUID(t *testing.T) {
 	taskUUID := "1"
 
 	w := NewWorker(taskChan, Callbacks{
-		TaskStartedCallback: func(_ context.Context, uuid string) error { return nil },
-		TaskCompletedCallback: func(ctx context.Context, uuid string, log []byte) error {
+		TaskStartedCallback: func(_ context.Context, uuid string) {},
+		TaskCompletedCallback: func(ctx context.Context, uuid string, log []byte) {
 			taskCompletedChan <- true
-			return nil
 		},
 	})
 	go w.Start()
@@ -207,10 +202,9 @@ func TestWorker_HoldRunningJobByTaskUUID(t *testing.T) {
 	taskUUID := "1"
 
 	w := NewWorker(taskChan, Callbacks{
-		TaskStartedCallback: func(_ context.Context, uuid string) error { return nil },
-		TaskCompletedCallback: func(_ context.Context, uuid string, log []byte) error {
+		TaskStartedCallback: func(_ context.Context, uuid string) {},
+		TaskCompletedCallback: func(_ context.Context, uuid string, log []byte) {
 			taskCompletedChan <- true
-			return nil
 		},
 	})
 	go w.Start()

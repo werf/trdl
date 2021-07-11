@@ -18,8 +18,8 @@ func TestManager_taskStartedCallback(t *testing.T) {
 	t.Run("nonexistent", func(t *testing.T) {
 		assertPanic(
 			t,
-			func() { _ = m.taskStartedCallback(ctx, "1") },
-			"unexpected error: queued task \"1\" not found in storage",
+			func() { m.taskStartedCallback(ctx, "1") },
+			"runtime error: the task \"1\" not found in storage",
 		)
 	})
 
@@ -28,8 +28,7 @@ func TestManager_taskStartedCallback(t *testing.T) {
 		err := putQueuedTaskIntoStorage(ctx, storage, queuedTask)
 		assert.Nil(t, err)
 
-		err = m.taskStartedCallback(ctx, queuedTask.UUID)
-		assert.Nil(t, err)
+		m.taskStartedCallback(ctx, queuedTask.UUID)
 		assertTaskStartedCallbackQueuedTask(t, ctx, m.Storage, queuedTask)
 	})
 
@@ -49,8 +48,7 @@ func TestManager_taskStartedCallback(t *testing.T) {
 		})
 		assert.Nil(t, err)
 
-		err = m.taskStartedCallback(ctx, queuedTask.UUID)
-		assert.Nil(t, err)
+		m.taskStartedCallback(ctx, queuedTask.UUID)
 		assertTaskStartedCallbackQueuedTask(t, ctx, m.Storage, queuedTask)
 
 		updatedStaleTask, err := getTaskFromStorage(ctx, m.Storage, staleTask.UUID)
@@ -69,8 +67,8 @@ func TestManager_taskCompletedCallback(t *testing.T) {
 	t.Run("nonexistent", func(t *testing.T) {
 		assertPanic(
 			t,
-			func() { _ = m.taskCompletedCallback(ctx, "1", nil) },
-			"unexpected error: task \"1\" not found in storage",
+			func() { m.taskCompletedCallback(ctx, "1", nil) },
+			"runtime error: the task \"1\" not found in storage",
 		)
 	})
 
@@ -81,8 +79,7 @@ func TestManager_taskCompletedCallback(t *testing.T) {
 		assert.Nil(t, err)
 
 		taskActionLog := []byte("Hello!")
-		err = m.taskCompletedCallback(ctx, runningTask.UUID, taskActionLog)
-		assert.Nil(t, err)
+		m.taskCompletedCallback(ctx, runningTask.UUID, taskActionLog)
 
 		completed, err := getTaskFromStorage(ctx, storage, runningTask.UUID)
 		assert.Nil(t, err)
@@ -108,8 +105,8 @@ func TestManager_taskFailedCallback(t *testing.T) {
 	t.Run("nonexistent", func(t *testing.T) {
 		assertPanic(
 			t,
-			func() { _ = m.taskFailedCallback(ctx, "1", nil, nil) },
-			"unexpected error: task \"1\" not found in storage",
+			func() { m.taskFailedCallback(ctx, "1", nil, nil) },
+			"runtime error: the task \"1\" not found in storage",
 		)
 	})
 
@@ -121,8 +118,7 @@ func TestManager_taskFailedCallback(t *testing.T) {
 
 		taskActionErr := fmt.Errorf("error")
 		taskActionLog := []byte("Hello!")
-		err = m.taskFailedCallback(ctx, runningTask.UUID, taskActionLog, taskActionErr)
-		assert.Nil(t, err)
+		m.taskFailedCallback(ctx, runningTask.UUID, taskActionLog, taskActionErr)
 
 		failedTask, err := getTaskFromStorage(ctx, storage, runningTask.UUID)
 		assert.Nil(t, err)

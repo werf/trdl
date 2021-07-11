@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"sync"
 )
 
@@ -16,9 +15,9 @@ type Worker struct {
 }
 
 type Callbacks struct {
-	TaskStartedCallback   func(ctx context.Context, uuid string) error
-	TaskFailedCallback    func(ctx context.Context, uuid string, log []byte, err error) error
-	TaskCompletedCallback func(ctx context.Context, uuid string, log []byte) error
+	TaskStartedCallback   func(ctx context.Context, uuid string)
+	TaskFailedCallback    func(ctx context.Context, uuid string, log []byte, err error)
+	TaskCompletedCallback func(ctx context.Context, uuid string, log []byte)
 }
 
 func NewWorker(taskChan chan *Task, callbacks Callbacks) Interface {
@@ -31,30 +30,16 @@ func (q *Worker) Start() {
 		case task := <-q.taskChan:
 			func() {
 				job := newJob(task)
-
 				q.setCurrentJob(job)
 				defer q.resetCurrentJob()
 
-				if callbackErr := q.callbacks.TaskStartedCallback(job.ctx, job.taskUUID); callbackErr != nil {
-					panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
-				}
-
+				q.callbacks.TaskStartedCallback(job.ctx, job.taskUUID)
 				if err := job.action(); err != nil {
-					if callbackErr := q.callbacks.TaskFailedCallback(job.ctx, job.taskUUID, job.Log(), err); callbackErr != nil {
-						panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
-					}
+					q.callbacks.TaskFailedCallback(job.ctx, job.taskUUID, job.Log(), err)
 				} else {
-					if callbackErr := q.callbacks.TaskCompletedCallback(job.ctx, job.taskUUID, job.Log()); callbackErr != nil {
-						panic(fmt.Sprintf("runtime error: %s", callbackErr.Error()))
-					}
+					q.callbacks.TaskCompletedCallback(job.ctx, job.taskUUID, job.Log())
 				}
 			}()
-		case <-q.stopChan:
-			return
-		}
-
-		if q.stopChan == nil {
-			return
 		}
 	}
 }
