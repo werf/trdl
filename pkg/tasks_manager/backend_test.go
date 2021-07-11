@@ -2,7 +2,6 @@ package tasks_manager
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -65,59 +64,6 @@ func TestManager_pathConfigureCreateOrUpdate(t *testing.T) {
 					TaskTimeout:      expectedTaskTimeout,
 					TaskHistoryLimit: expectedTaskHistoryLimit,
 				}, c)
-			})
-
-			t.Run("invalid fields", func(t *testing.T) {
-				for _, test := range []struct {
-					name             string
-					taskTimeout      interface{}
-					taskHistoryLimit interface{}
-					expectedErrMsg   string
-				}{
-					{
-						name:           fmt.Sprintf("invalid %s", fieldNameTaskTimeout),
-						taskTimeout:    "no valid",
-						expectedErrMsg: fmt.Sprintf("error converting input no valid for field %q: strconv.ParseInt: parsing \"no valid\": invalid syntax", fieldNameTaskTimeout),
-					},
-					{
-						name:             fmt.Sprintf("invalid %s", fieldNameTaskHistoryLimit),
-						taskHistoryLimit: "no valid",
-						expectedErrMsg:   fmt.Sprintf("error converting input no valid for field %q: cannot parse '' as int: strconv.ParseInt: parsing \"no valid\": invalid syntax", fieldNameTaskHistoryLimit),
-					},
-				} {
-					t.Run(test.name, func(t *testing.T) {
-						ctx, b, _, storage := pathTestSetup(t)
-
-						data := make(map[string]interface{})
-						if test.taskTimeout != nil {
-							data[fieldNameTaskTimeout] = test.taskTimeout
-						}
-
-						if test.taskHistoryLimit != nil {
-							data[fieldNameTaskHistoryLimit] = test.taskHistoryLimit
-						}
-
-						req := &logical.Request{
-							Operation: op,
-							Path:      "task/configure",
-							Data:      data,
-							Storage:   storage,
-						}
-
-						// check field validation failed
-						resp, err := b.HandleRequest(ctx, req)
-						assert.Nil(t, resp)
-						assert.NotNil(t, err)
-						if assert.Error(t, err) {
-							assert.Equal(t, test.expectedErrMsg, err.Error())
-						}
-
-						// check no configuration in storage
-						c, err := getConfiguration(ctx, storage)
-						assert.Nil(t, err)
-						assert.Nil(t, c)
-					})
-				}
 			})
 		})
 	}
