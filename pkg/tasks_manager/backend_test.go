@@ -215,6 +215,47 @@ func TestManager_pathTaskStatus(t *testing.T) {
 	}
 }
 
+func TestManager_pathTaskCancel(t *testing.T) {
+	ctx, b, m, storage := pathTestSetup(t)
+
+	t.Run("nonexistent", func(t *testing.T) {
+		randomUUID := "bfc441c7-a143-4ab2-9aac-4d109cef5018"
+
+		req := &logical.Request{
+			Operation: logical.CreateOperation,
+			Path:      "task/" + randomUUID + "/cancel",
+			Data:      make(map[string]interface{}),
+			Storage:   storage,
+		}
+
+		resp, err := b.HandleRequest(ctx, req)
+		assert.Nil(t, err)
+		if assert.NotNil(t, resp) {
+			assert.Equal(t, []string{"task \"bfc441c7-a143-4ab2-9aac-4d109cef5018\" not running"}, resp.Warnings)
+		}
+	})
+
+	t.Run(taskStatusRunning, func(t *testing.T) {
+		uuid, err := m.AddTask(ctx, storage, infiniteTaskAction)
+		assert.Nil(t, err)
+		assert.NotEmpty(t, uuid)
+
+		// give time for the task to become active
+		time.Sleep(time.Microsecond * 100)
+
+		req := &logical.Request{
+			Operation: logical.CreateOperation,
+			Path:      "task/" + uuid + "/cancel",
+			Data:      make(map[string]interface{}),
+			Storage:   storage,
+		}
+
+		resp, err := b.HandleRequest(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, resp)
+	})
+}
+
 func pathTestFixtures(t *testing.T, ctx context.Context, storage logical.Storage) (string, string) {
 	runningTask := newTask()
 	runningTask.Status = taskStatusRunning
@@ -242,4 +283,8 @@ func pathTestSetup(t *testing.T) (context.Context, logical.Backend, Interface, l
 	assert.Nil(t, err)
 
 	return ctx, b, m, storage
+}
+
+func infiniteTaskAction(_ context.Context, _ logical.Storage) error {
+	select {}
 }
