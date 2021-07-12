@@ -12,9 +12,7 @@ import (
 
 const storageKeyLastPeriodicRunTimestamp = "tasks_manager_last_periodic_run_timestamp"
 
-var (
-	periodicTaskPeriod = time.Hour
-)
+var periodicTaskPeriod = time.Hour
 
 func (m *Manager) PeriodicTask(ctx context.Context, req *logical.Request) error {
 	// lock manager
@@ -83,7 +81,7 @@ func (m *Manager) cleanupTaskHistory(ctx context.Context, req *logical.Request) 
 	})
 
 	if len(completedTasks) > taskHistoryLimit {
-		completedTasks = append(completedTasks, completedTasks[taskHistoryLimit:]...)
+		completedTasks = append([]*Task(nil), completedTasks[taskHistoryLimit:]...)
 	}
 
 	for _, task := range completedTasks {

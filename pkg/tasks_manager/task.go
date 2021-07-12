@@ -30,6 +30,8 @@ const (
 	storageKeyPrefixTaskLog       = "task_log/"
 )
 
+var taskStateStatusesCompleted = []taskStatus{taskStatusSucceeded, taskStatusFailed, taskStatusCanceled}
+
 type Task struct {
 	UUID     string     `structs:"uuid" json:"uuid"`
 	Status   taskStatus `structs:"status" json:"status"`
@@ -239,12 +241,13 @@ func taskStatusState(status taskStatus) taskState {
 }
 
 func isCompletedTaskStatus(status taskStatus) bool {
-	switch status {
-	case taskStatusSucceeded, taskStatusFailed, taskStatusCanceled:
-		return true
-	default:
-		return false
+	for _, s := range taskStateStatusesCompleted {
+		if s == status {
+			return true
+		}
 	}
+
+	return false
 }
 
 func taskLogStorageKey(uuid string) string {
