@@ -33,7 +33,7 @@ func TestManager_taskStartedCallback(t *testing.T) {
 		runningTask, err := getTaskFromStorage(ctx, storage, taskStateRunning, queuedTaskUUID)
 		assert.Nil(t, err)
 		if assert.NotNil(t, runningTask) {
-			assert.Equal(t, taskStatusRunning, runningTask.Status)
+			assert.Equal(t, string(taskStatusRunning), runningTask.Status)
 			assert.Equal(t, queuedTaskUUID, runningTask.UUID)
 		}
 	})
@@ -66,7 +66,7 @@ func TestManager_taskSucceededCallback(t *testing.T) {
 		completedTask, err := getTaskFromStorage(ctx, storage, taskStateCompleted, runningTaskUUID)
 		assert.Nil(t, err)
 		if assert.NotNil(t, completedTask) {
-			assert.Equal(t, taskStatusSucceeded, completedTask.Status)
+			assert.Equal(t, string(taskStatusSucceeded), completedTask.Status)
 			assert.Equal(t, runningTaskUUID, completedTask.UUID)
 			assert.Empty(t, completedTask.Reason)
 		}
@@ -106,7 +106,7 @@ func TestManager_taskFailedCallback(t *testing.T) {
 		completedTask, err := getTaskFromStorage(ctx, storage, taskStateCompleted, runningTaskUUID)
 		assert.Nil(t, err)
 		if assert.NotNil(t, completedTask) {
-			assert.Equal(t, taskStatusFailed, completedTask.Status)
+			assert.Equal(t, string(taskStatusFailed), completedTask.Status)
 			assert.Equal(t, runningTaskUUID, completedTask.UUID)
 			assert.Equal(t, taskActionErr.Error(), completedTask.Reason)
 		}

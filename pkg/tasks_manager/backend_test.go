@@ -472,7 +472,7 @@ func assertAndAddCompletedTaskToStorage(t *testing.T, ctx context.Context, stora
 	task, err = getTaskFromStorage(ctx, storage, taskStateCompleted, taskUUID)
 	assert.Nil(t, err)
 	if assert.NotNil(t, task) {
-		assert.Equal(t, status, task.Status)
+		assert.Equal(t, string(status), task.Status)
 	}
 
 	return taskUUID

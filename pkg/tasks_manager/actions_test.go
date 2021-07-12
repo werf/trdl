@@ -96,7 +96,7 @@ func TestManager_RunTaskInvalidateStorage(t *testing.T) {
 		task, err = getTaskFromStorage(ctx, storage, taskStateCompleted, runningTaskUUID)
 		assert.Nil(t, err)
 		if assert.NotNil(t, task) {
-			assert.Equal(t, taskStatusCanceled, task.Status)
+			assert.Equal(t, string(taskStatusCanceled), task.Status)
 			assert.Equal(t, taskReasonInvalidatedTask, task.Reason)
 		}
 	}
@@ -110,7 +110,7 @@ func TestManager_RunTaskInvalidateStorage(t *testing.T) {
 		task, err = getTaskFromStorage(ctx, storage, taskStateCompleted, queuedTaskUUID)
 		assert.Nil(t, err)
 		if assert.NotNil(t, task) {
-			assert.Equal(t, taskStatusCanceled, task.Status)
+			assert.Equal(t, string(taskStatusCanceled), task.Status)
 			assert.Equal(t, taskReasonInvalidatedTask, task.Reason)
 		}
 	}
@@ -196,5 +196,5 @@ func assertQueuedTaskInStorage(t *testing.T, ctx context.Context, storage logica
 	task, err := getTaskFromStorage(ctx, storage, taskStateQueued, uuid)
 	assert.Nil(t, err)
 	assert.NotNil(t, task)
-	assert.Equal(t, task.Status, taskStatusQueued)
+	assert.Equal(t, task.Status, string(taskStatusQueued))
 }
