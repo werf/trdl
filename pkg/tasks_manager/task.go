@@ -33,17 +33,17 @@ const (
 var taskStateStatusesCompleted = []taskStatus{taskStatusSucceeded, taskStatusFailed, taskStatusCanceled}
 
 type Task struct {
-	UUID     string     `structs:"uuid" json:"uuid"`
-	Status   taskStatus `structs:"status" json:"status"`
-	Reason   string     `structs:"reason" json:"reason"`
-	Created  time.Time  `structs:"created" json:"created"`
-	Modified time.Time  `structs:"modified" json:"modified"`
+	UUID     string    `structs:"uuid" json:"uuid"`
+	Status   string    `structs:"status" json:"status"`
+	Reason   string    `structs:"reason" json:"reason"`
+	Created  time.Time `structs:"created" json:"created"`
+	Modified time.Time `structs:"modified" json:"modified"`
 }
 
 func newTask() *Task {
 	task := &Task{}
 	task.UUID = uuid.NewV4().String()
-	task.Status = taskStatusQueued
+	task.Status = string(taskStatusQueued)
 
 	tNow := time.Now()
 	task.Created = tNow
@@ -86,7 +86,7 @@ func switchTaskToRunningInStorage(ctx context.Context, storage logical.Storage, 
 	// add running task to storage
 	{
 		runningTask := prevTask
-		runningTask.Status = taskStatusRunning
+		runningTask.Status = string(taskStatusRunning)
 		runningTask.Modified = time.Now()
 		runningTaskState := taskStateRunning
 
@@ -147,7 +147,7 @@ func switchTaskToCompletedInStorage(ctx context.Context, storage logical.Storage
 	// add completed task and optional log to storage
 	{
 		completedTask := prevTask
-		completedTask.Status = status
+		completedTask.Status = string(status)
 		completedTask.Modified = time.Now()
 		completedTask.Reason = opts.reason
 		completedTaskState := taskStatusState(status)
