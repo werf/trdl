@@ -19,12 +19,10 @@ type DockerfileOpts struct {
 	EnvVars               map[string]string
 }
 
-var (
-	ImageNameWithoutRequiredDigestError = errors.New("the image name must contain an digest \"REPO[:TAG]@DIGEST\" (e.g. \"ubuntu:18.04@sha256:538529c9d229fb55f50e6746b119e899775205d62c0fc1b7e679b30d02ecb6e8\")")
-)
+var ErrImageNameWithoutRequiredDigest = errors.New("the image name must contain an digest \"REPO[:TAG]@DIGEST\" (e.g. \"ubuntu:18.04@sha256:538529c9d229fb55f50e6746b119e899775205d62c0fc1b7e679b30d02ecb6e8\")")
 
-func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, serviceDirInContext string, fromImage string, runCommands []string, dockerfileOpts DockerfileOpts) error {
-	dockerfileData := generateDockerfile(fromImage, runCommands, serviceDirInContext, dockerfileOpts)
+func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, fromImage string, runCommands []string, dockerfileOpts DockerfileOpts) error {
+	dockerfileData := generateDockerfile(fromImage, runCommands, dockerfileOpts)
 	header := &tar.Header{
 		Format:     tar.FormatGNU,
 		Name:       dockerfileTarPath,
@@ -46,13 +44,13 @@ func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, serviceDir
 	return nil
 }
 
-func generateDockerfile(fromImage string, runCommands []string, serviceDirInContext string, opts DockerfileOpts) []byte {
+func generateDockerfile(fromImage string, runCommands []string, opts DockerfileOpts) []byte {
 	if opts.ContainerSourceDir == "" {
 		opts.ContainerSourceDir = "/git"
 	}
 
 	if opts.ContainerArtifactsDir == "" {
-		opts.ContainerSourceDir = "/result"
+		opts.ContainerArtifactsDir = "/result"
 	}
 
 	var data []byte
@@ -69,9 +67,6 @@ func generateDockerfile(fromImage string, runCommands []string, serviceDirInCont
 	// copy source code and set workdir for the following docker instructions
 	addLineFunc(fmt.Sprintf("COPY . %s", opts.ContainerSourceDir))
 	addLineFunc(fmt.Sprintf("WORKDIR %s", opts.ContainerSourceDir))
-
-	// remove service data from user's context
-	addLineFunc(fmt.Sprintf("RUN %s", fmt.Sprintf("rm -rf %s", serviceDirInContext)))
 
 	if opts.WithArtifacts {
 		// create empty dir for release artifacts
@@ -98,7 +93,7 @@ func generateDockerfile(fromImage string, runCommands []string, serviceDirInCont
 
 func ValidateImageNameWithDigest(imageName string) error {
 	if !reference.ReferenceRegexp.MatchString(imageName) {
-		return ImageNameWithoutRequiredDigestError
+		return ErrImageNameWithoutRequiredDigest
 	}
 
 	res := reference.ReferenceRegexp.FindStringSubmatch(imageName)
@@ -110,7 +105,7 @@ func ValidateImageNameWithDigest(imageName string) error {
 	if len(res) != 4 {
 		panic(fmt.Sprintf("unexpected regexp find submatch result %v (%d)", res, len(res)))
 	} else if res[3] == "" {
-		return ImageNameWithoutRequiredDigestError
+		return ErrImageNameWithoutRequiredDigest
 	}
 
 	return nil
