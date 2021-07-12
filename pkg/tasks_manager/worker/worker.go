@@ -59,13 +59,6 @@ func (w *Worker) HoldRunningJobByTaskUUID(uuid string, do func(job *Job)) bool {
 	return true
 }
 
-func (w *Worker) HasRunningJobByTaskUUID(uuid string) bool {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	return w.currentJob != nil && w.currentJob.taskUUID == uuid
-}
-
 func (w *Worker) CancelRunningJobByTaskUUID(uuid string) bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
