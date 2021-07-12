@@ -57,7 +57,7 @@ func TestTaskCallbacks(t *testing.T) {
 			assert.Equal(t, expectedLog, log)
 			taskProcessedChan <- true
 		},
-		TaskCompletedCallback: func(_ context.Context, uuid string, log []byte) {
+		TaskSucceededCallback: func(_ context.Context, uuid string, log []byte) {
 			assert.Equal(t, expectedCallback, TaskCompletedCallback)
 			assert.Equal(t, uuid, expectedUUID)
 			assert.Nil(t, expectedErr)
@@ -170,7 +170,7 @@ func TestWorker_HoldRunningJobByTaskUUID(t *testing.T) {
 
 	w := NewWorker(context.Background(), taskChan, Callbacks{
 		TaskStartedCallback: func(_ context.Context, uuid string) {},
-		TaskCompletedCallback: func(_ context.Context, uuid string, log []byte) {
+		TaskSucceededCallback: func(_ context.Context, uuid string, log []byte) {
 			taskCompletedChan <- true
 		},
 	})

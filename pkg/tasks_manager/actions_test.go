@@ -13,14 +13,14 @@ import (
 func TestManager_RunTask(t *testing.T) {
 	ctx, m, storage := setupTest()
 
-	assert.Nil(t, m.Storage, "should be initialized on the first action call")
+	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	var uuids []string
 	// check the first task
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
-		assert.NotNil(t, m.Storage, "should be initialized on the first action call")
+		assert.NotNil(t, m.Storage, "must be initialized on the first action call")
 
 		assertQueuedTaskInStorage(t, ctx, storage, uuid)
 
@@ -48,11 +48,7 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 	ctx, m, storage := setupTest()
 
 	m.Storage = storage
-	err := storage.Put(ctx, &logical.StorageEntry{
-		Key:   storageKeyCurrentRunningTask,
-		Value: []byte("ANY"),
-	})
-	assert.Nil(t, err)
+	runningTaskUUID := assertAndAddRunningTaskToStorage(t, ctx, storage)
 
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
@@ -60,10 +56,10 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 			assert.Equal(t, err, BusyError)
 		}
 		assert.Empty(t, uuid)
-		assert.NotNil(t, m.Storage, "should be initialized on the first action call")
+		assert.NotNil(t, m.Storage, "must be initialized on the first action call")
 	}
 
-	err = storage.Delete(ctx, storageKeyCurrentRunningTask)
+	err := storage.Delete(ctx, taskStorageKey(taskStateRunning, runningTaskUUID))
 	assert.Nil(t, err)
 
 	{
@@ -83,48 +79,38 @@ func TestManager_RunTaskInvalidateStorage(t *testing.T) {
 	ctx, m, storage := setupTest()
 
 	// imitate inconsistent storage condition after previous plugin run
-	var runningTaskUUID string
-	var queuedTaskUUID string
-	{
-		runningTaskUUID, queuedTaskUUID = pathTestFixtures(t, ctx, storage)
-
-		err := storage.Put(ctx, &logical.StorageEntry{
-			Key:   storageKeyCurrentRunningTask,
-			Value: []byte(runningTaskUUID),
-		})
-		assert.Nil(t, err)
-	}
-
-	assert.Nil(t, m.Storage, "should be initialized on the first action call")
+	queuedTaskUUID := assertAndAddNewTaskToStorage(t, ctx, storage)
+	runningTaskUUID := assertAndAddRunningTaskToStorage(t, ctx, storage)
+	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 
 	uuid, err := m.RunTask(ctx, storage, noneTask)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, uuid)
 
-	// check running task invalidation
+	// check queue and running task invalidation
 	{
-		task, err := getTaskFromStorage(ctx, storage, runningTaskUUID)
+		task, err := getTaskFromStorage(ctx, storage, taskStateRunning, runningTaskUUID)
+		assert.Nil(t, err)
+		assert.Nil(t, task)
+
+		task, err = getTaskFromStorage(ctx, storage, taskStateCompleted, runningTaskUUID)
 		assert.Nil(t, err)
 		if assert.NotNil(t, task) {
-			assert.Equal(t, taskStatusFailed, task.Status)
+			assert.Equal(t, taskStatusCanceled, task.Status)
 			assert.Equal(t, taskReasonInvalidatedTask, task.Reason)
 		}
-
-		currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, storage)
-		assert.Nil(t, err)
-		assert.Empty(t, currentTaskUUID)
 	}
 
 	// check queue task invalidation
 	{
-		task, err := getQueuedTaskFromStorage(ctx, storage, queuedTaskUUID)
+		task, err := getTaskFromStorage(ctx, storage, taskStateQueued, queuedTaskUUID)
 		assert.Nil(t, err)
 		assert.Nil(t, task)
 
-		task, err = getTaskFromStorage(ctx, storage, queuedTaskUUID)
+		task, err = getTaskFromStorage(ctx, storage, taskStateCompleted, queuedTaskUUID)
 		assert.Nil(t, err)
 		if assert.NotNil(t, task) {
-			assert.Equal(t, taskStatusFailed, task.Status)
+			assert.Equal(t, taskStatusCanceled, task.Status)
 			assert.Equal(t, taskReasonInvalidatedTask, task.Reason)
 		}
 	}
@@ -134,14 +120,14 @@ func TestManager_RunTaskInvalidateStorage(t *testing.T) {
 func TestManager_AddTask(t *testing.T) {
 	ctx, m, storage := setupTest()
 
-	assert.Nil(t, m.Storage, "should be initialized on the first action call")
+	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	var uuids []string
 	for i := 0; i < 2; i++ {
 		uuid, err := m.AddTask(ctx, storage, noneTask)
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
 		if i == 0 {
-			assert.NotNil(t, m.Storage, "should be initialized on the first action call")
+			assert.NotNil(t, m.Storage, "must be initialized on the first action call")
 		}
 
 		assertQueuedTaskInStorage(t, ctx, storage, uuid)
@@ -156,11 +142,11 @@ func TestManager_AddTask(t *testing.T) {
 	}
 }
 
-// check that Manager.AddOptionalTask queues task when queue is empty
+// check that Manager.AddOptionalTask queues task when manager not busy
 func TestManager_AddOptionalTask(t *testing.T) {
 	ctx, m, storage := setupTest()
 
-	assert.Nil(t, m.Storage, "should be initialized on the first action call")
+	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	var uuids []string
 	// check the first task
 	{
@@ -168,7 +154,7 @@ func TestManager_AddOptionalTask(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
 		assert.True(t, added)
-		assert.NotNil(t, m.Storage, "should be initialized on the first action call")
+		assert.NotNil(t, m.Storage, "must be initialized on the first action call")
 
 		assertQueuedTaskInStorage(t, ctx, storage, uuid)
 
@@ -207,7 +193,7 @@ func initManagerWithoutWorker() *Manager {
 func noneTask(_ context.Context, _ logical.Storage) error { return nil }
 
 func assertQueuedTaskInStorage(t *testing.T, ctx context.Context, storage logical.Storage, uuid string) {
-	task, err := getQueuedTaskFromStorage(ctx, storage, uuid)
+	task, err := getTaskFromStorage(ctx, storage, taskStateQueued, uuid)
 	assert.Nil(t, err)
 	assert.NotNil(t, task)
 	assert.Equal(t, task.Status, taskStatusQueued)

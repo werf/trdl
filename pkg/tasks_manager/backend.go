@@ -160,28 +160,26 @@ func (m *Manager) pathConfigureRead(ctx context.Context, req *logical.Request, _
 }
 
 func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
-	queuedTaskList, err := req.Storage.List(ctx, storageKeyPrefixQueuedTask)
-	if err != nil {
-		return nil, err
+	var list []string
+	for _, state := range []taskState{taskStateCompleted, taskStateRunning, taskStateQueued} {
+		prefix := taskStorageKeyPrefix(state)
+		l, err := req.Storage.List(ctx, prefix)
+		if err != nil {
+			return nil, fmt.Errorf("unable to list %q in storage: %s", prefix, err)
+		}
+
+		list = append(list, l...)
 	}
 
-	otherTaskList, err := req.Storage.List(ctx, storageKeyPrefixTask)
-	if err != nil {
-		return nil, err
-	}
-
-	return logical.ListResponse(append(otherTaskList, queuedTaskList...)), nil
+	return logical.ListResponse(list), nil
 }
 
 func (m *Manager) pathTaskStatus(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	uuid := fields.Get(fieldNameUUID).(string)
 
 	var task *Task
-	for _, getTaskFromStorageFunc := range []func(ctx context.Context, storage logical.Storage, uuid string) (*Task, error){
-		getQueuedTaskFromStorage,
-		getTaskFromStorage,
-	} {
-		t, err := getTaskFromStorageFunc(ctx, req.Storage, uuid)
+	for _, state := range []taskState{taskStateQueued, taskStateRunning, taskStateCompleted} {
+		t, err := getTaskFromStorage(ctx, req.Storage, state, uuid)
 		if err != nil {
 			return nil, err
 		}
@@ -252,44 +250,48 @@ func (m *Manager) readTaskLog(ctx context.Context, reqStorage logical.Storage, u
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// check task existence
-	{
-		task, err := getTaskFromStorage(ctx, reqStorage, uuid)
-		if err != nil {
-			return nil, nil, fmt.Errorf("unable to get task %q from storage: %s", uuid, err)
-		}
-
-		if task == nil {
-			queuedTask, err := getQueuedTaskFromStorage(ctx, reqStorage, uuid)
-			if err != nil {
-				return nil, nil, fmt.Errorf("unable to get queued task %q from storage: %s", uuid, err)
-			}
-
-			if queuedTask != nil {
-				return nil, logical.ErrorResponse(fmt.Sprintf("task %q in queue", uuid)), nil
-			} else {
-				return nil, logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
-			}
-		}
-	}
-
 	// try to get running task log
-	var data []byte
-	withHold := m.Worker.HoldRunningJobByTaskUUID(uuid, func(job *worker.Job) {
-		data = job.Log()
-	})
+	{
+		var data []byte
+		hold := m.Worker.HoldRunningJobByTaskUUID(uuid, func(job *worker.Job) {
+			data = job.Log()
+		})
 
-	if withHold {
-		return data, nil, nil
+		if hold {
+			return data, nil, nil
+		}
 	}
 
-	// get task log from storage
-	data, err := getTaskLogFromStorage(ctx, reqStorage, uuid)
-	if err != nil {
-		return nil, nil, fmt.Errorf("unable to get task log %q from storage: %s", uuid, err)
+	// try to get completed task log
+	{
+		t, err := getTaskFromStorage(ctx, reqStorage, taskStateCompleted, uuid)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if t != nil {
+			data, err := getTaskLogFromStorage(ctx, reqStorage, t.UUID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("unable to get task log %q from storage: %s", uuid, err)
+			}
+
+			return data, nil, nil
+		}
 	}
 
-	return data, nil, nil
+	// check queued task
+	{
+		t, err := getTaskFromStorage(ctx, reqStorage, taskStateQueued, uuid)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if t != nil {
+			return nil, logical.ErrorResponse(fmt.Sprintf("task %q in queue", uuid)), nil
+		}
+	}
+
+	return nil, logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
 }
 
 const uuidPatternRegexp = "(?i:[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12})"

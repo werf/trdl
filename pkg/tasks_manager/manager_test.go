@@ -1,127 +1,120 @@
 package tasks_manager
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestManager_taskStartedCallback(t *testing.T) {
 	ctx, m, storage := setupTest()
 
-	assert.Nil(t, m.Storage, "should be initialized on the first action call")
+	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	m.Storage = storage
 
 	t.Run("nonexistent", func(t *testing.T) {
 		assertPanic(
 			t,
 			func() { m.taskStartedCallback(ctx, "1") },
-			"runtime error: the task \"1\" not found in storage",
+			"runtime error: queued task \"1\" must be in storage",
 		)
 	})
 
 	t.Run("queued", func(t *testing.T) {
-		queuedTask := newTask()
-		err := putQueuedTaskIntoStorage(ctx, storage, queuedTask)
-		assert.Nil(t, err)
+		queuedTaskUUID := assertAndAddNewTaskToStorage(t, ctx, storage)
 
-		m.taskStartedCallback(ctx, queuedTask.UUID)
-		assertTaskStartedCallbackQueuedTask(t, ctx, m.Storage, queuedTask)
+		m.taskStartedCallback(ctx, queuedTaskUUID)
+
+		queuedTask, err := getTaskFromStorage(ctx, storage, taskStateQueued, queuedTaskUUID)
+		assert.Nil(t, err)
+		assert.Nil(t, queuedTask)
+
+		runningTask, err := getTaskFromStorage(ctx, storage, taskStateRunning, queuedTaskUUID)
+		assert.Nil(t, err)
+		if assert.NotNil(t, runningTask) {
+			assert.Equal(t, taskStatusRunning, runningTask.Status)
+			assert.Equal(t, queuedTaskUUID, runningTask.UUID)
+		}
 	})
 }
 
-func TestManager_taskCompletedCallback(t *testing.T) {
+func TestManager_taskSucceededCallback(t *testing.T) {
 	ctx, m, storage := setupTest()
 
-	assert.Nil(t, m.Storage, "should be initialized on the first action call")
+	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	m.Storage = storage
 
 	t.Run("nonexistent", func(t *testing.T) {
 		assertPanic(
 			t,
-			func() { m.taskCompletedCallback(ctx, "1", nil) },
-			"runtime error: the task \"1\" not found in storage",
+			func() { m.taskSucceededCallback(ctx, "1", nil) },
+			"runtime error: queued or running task \"1\" not found in storage",
 		)
 	})
 
 	t.Run("running", func(t *testing.T) {
-		runningTask := newTask()
-		runningTask.Status = taskStatusRunning
-		err := putTaskIntoStorage(ctx, storage, runningTask)
-		assert.Nil(t, err)
+		runningTaskUUID := assertAndAddRunningTaskToStorage(t, ctx, storage)
 
 		taskActionLog := []byte("Hello!")
-		m.taskCompletedCallback(ctx, runningTask.UUID, taskActionLog)
+		m.taskSucceededCallback(ctx, runningTaskUUID, taskActionLog)
 
-		completed, err := getTaskFromStorage(ctx, storage, runningTask.UUID)
+		runningTask, err := getTaskFromStorage(ctx, storage, taskStateRunning, runningTaskUUID)
 		assert.Nil(t, err)
-		assert.Equal(t, taskStatusCompleted, completed.Status)
-		assert.Empty(t, completed.Reason)
+		assert.Nil(t, runningTask)
 
-		log, err := getTaskLogFromStorage(ctx, storage, runningTask.UUID)
+		completedTask, err := getTaskFromStorage(ctx, storage, taskStateCompleted, runningTaskUUID)
+		assert.Nil(t, err)
+		if assert.NotNil(t, completedTask) {
+			assert.Equal(t, taskStatusSucceeded, completedTask.Status)
+			assert.Equal(t, runningTaskUUID, completedTask.UUID)
+			assert.Empty(t, completedTask.Reason)
+		}
+
+		log, err := getTaskLogFromStorage(ctx, storage, runningTaskUUID)
 		assert.Nil(t, err)
 		assert.Equal(t, taskActionLog, log)
-
-		currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, storage)
-		assert.Nil(t, err)
-		assert.Empty(t, currentTaskUUID)
 	})
 }
 
 func TestManager_taskFailedCallback(t *testing.T) {
 	ctx, m, storage := setupTest()
 
-	assert.Nil(t, m.Storage, "should be initialized on the first action call")
+	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	m.Storage = storage
+
+	taskActionErr := fmt.Errorf("error")
 
 	t.Run("nonexistent", func(t *testing.T) {
 		assertPanic(
 			t,
-			func() { m.taskFailedCallback(ctx, "1", nil, nil) },
-			"runtime error: the task \"1\" not found in storage",
+			func() { m.taskFailedCallback(ctx, "1", nil, taskActionErr) },
+			"runtime error: queued or running task \"1\" not found in storage",
 		)
 	})
 
 	t.Run("running", func(t *testing.T) {
-		runningTask := newTask()
-		runningTask.Status = taskStatusRunning
-		err := putTaskIntoStorage(ctx, storage, runningTask)
-		assert.Nil(t, err)
+		runningTaskUUID := assertAndAddRunningTaskToStorage(t, ctx, storage)
 
-		taskActionErr := fmt.Errorf("error")
 		taskActionLog := []byte("Hello!")
-		m.taskFailedCallback(ctx, runningTask.UUID, taskActionLog, taskActionErr)
+		m.taskFailedCallback(ctx, runningTaskUUID, taskActionLog, taskActionErr)
 
-		failedTask, err := getTaskFromStorage(ctx, storage, runningTask.UUID)
+		runningTask, err := getTaskFromStorage(ctx, storage, taskStateRunning, runningTaskUUID)
 		assert.Nil(t, err)
-		assert.Equal(t, taskStatusFailed, failedTask.Status)
-		assert.Equal(t, taskActionErr.Error(), failedTask.Reason)
+		assert.Nil(t, runningTask)
 
-		log, err := getTaskLogFromStorage(ctx, storage, runningTask.UUID)
+		completedTask, err := getTaskFromStorage(ctx, storage, taskStateCompleted, runningTaskUUID)
+		assert.Nil(t, err)
+		if assert.NotNil(t, completedTask) {
+			assert.Equal(t, taskStatusFailed, completedTask.Status)
+			assert.Equal(t, runningTaskUUID, completedTask.UUID)
+			assert.Equal(t, taskActionErr.Error(), completedTask.Reason)
+		}
+
+		log, err := getTaskLogFromStorage(ctx, storage, runningTaskUUID)
 		assert.Nil(t, err)
 		assert.Equal(t, taskActionLog, log)
-
-		currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, storage)
-		assert.Nil(t, err)
-		assert.Empty(t, currentTaskUUID)
 	})
-}
-
-func assertTaskStartedCallbackQueuedTask(t *testing.T, ctx context.Context, storage logical.Storage, startedTask *Task) {
-	queuedTask, err := getQueuedTaskFromStorage(ctx, storage, startedTask.UUID)
-	assert.Nil(t, err)
-	assert.Nil(t, queuedTask)
-
-	runningTask, err := getTaskFromStorage(ctx, storage, startedTask.UUID)
-	assert.Nil(t, err)
-	assert.Equal(t, taskStatusRunning, runningTask.Status)
-
-	currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, storage)
-	assert.Nil(t, err)
-	assert.Equal(t, startedTask.UUID, currentTaskUUID)
 }
 
 func assertPanic(t *testing.T, f func(), expectedMsg string) {
