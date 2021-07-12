@@ -91,7 +91,7 @@ func TestManager_pathConfigureRead(t *testing.T) {
 			TaskHistoryLimit: 1000,
 		}
 		expectedResponseData := structs.Map(expectedConfig)
-		expectedResponseData[fieldNameTaskTimeout] = expectedConfig.TaskTimeout.String()
+		expectedResponseData[fieldNameTaskTimeout] = expectedConfig.TaskTimeout / time.Second
 
 		err := putConfiguration(ctx, storage, expectedConfig)
 		assert.Nil(t, err)
@@ -124,7 +124,7 @@ func TestManager_pathTaskList(t *testing.T) {
 		resp, err := b.HandleRequest(ctx, req)
 		assert.Nil(t, err)
 		if assert.NotNil(t, resp) {
-			assert.Equal(t, map[string]interface{}{"uuids": []string(nil)}, resp.Data)
+			assert.Equal(t, map[string]interface{}{}, resp.Data)
 		}
 	})
 
@@ -146,7 +146,7 @@ func TestManager_pathTaskList(t *testing.T) {
 		resp, err := b.HandleRequest(ctx, req)
 		assert.Nil(t, err)
 		if assert.NotNil(t, resp) {
-			assert.Equal(t, map[string]interface{}{"uuids": []string{runningTaskUUID, queuedTaskUUID}}, resp.Data)
+			assert.Equal(t, map[string]interface{}{"keys": []string{runningTaskUUID, queuedTaskUUID}}, resp.Data)
 		}
 	})
 }
@@ -209,7 +209,7 @@ func TestManager_pathTaskStatus(t *testing.T) {
 			resp, err := b.HandleRequest(ctx, req)
 			assert.Nil(t, err)
 			if assert.NotNil(t, resp) {
-				assert.Equal(t, map[string]interface{}{"status": structs.Map(testTask)}, resp.Data)
+				assert.Equal(t, structs.Map(testTask), resp.Data)
 			}
 		})
 	}

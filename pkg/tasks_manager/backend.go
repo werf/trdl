@@ -155,7 +155,7 @@ func (m *Manager) pathConfigureRead(ctx context.Context, req *logical.Request, _
 	}
 
 	data := structs.Map(c)
-	data[fieldNameTaskTimeout] = c.TaskTimeout.String()
+	data[fieldNameTaskTimeout] = c.TaskTimeout / time.Second
 	return &logical.Response{Data: data}, nil
 }
 
@@ -170,11 +170,7 @@ func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *fra
 		return nil, err
 	}
 
-	return &logical.Response{
-		Data: map[string]interface{}{
-			"uuids": append(otherTaskList, queuedTaskList...),
-		},
-	}, nil
+	return logical.ListResponse(append(otherTaskList, queuedTaskList...)), nil
 }
 
 func (m *Manager) pathTaskStatus(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
@@ -200,11 +196,7 @@ func (m *Manager) pathTaskStatus(ctx context.Context, req *logical.Request, fiel
 		return logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
 	}
 
-	return &logical.Response{
-		Data: map[string]interface{}{
-			"status": structs.Map(task),
-		},
-	}, nil
+	return &logical.Response{Data: structs.Map(task)}, nil
 }
 
 func (m *Manager) pathTaskCancel(_ context.Context, _ *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
@@ -251,7 +243,7 @@ func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fie
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"log": string(data),
+			"result": string(data),
 		},
 	}, nil
 }
