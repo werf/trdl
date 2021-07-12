@@ -157,48 +157,10 @@ func TestWorker_CancelRunningJobByTaskUUID(t *testing.T) {
 	time.Sleep(time.Microsecond * 100)
 
 	// check the next task running
-	running := w.HasRunningJobByTaskUUID(queuedTaskUUID)
-	assert.True(t, running)
-}
-
-func TestWorker_HasRunningJobByTaskUUID(t *testing.T) {
-	taskChan := make(chan *Task)
-	taskCompletedChan := make(chan bool)
-	taskUUID := "1"
-
-	w := NewWorker(context.Background(), taskChan, Callbacks{
-		TaskStartedCallback: func(_ context.Context, uuid string) {},
-		TaskCompletedCallback: func(ctx context.Context, uuid string, log []byte) {
-			taskCompletedChan <- true
-		},
-	})
-	go w.Start()
-
-	// check when task not started yet
-	assert.False(t, w.HasRunningJobByTaskUUID(taskUUID))
-
-	doneCh := make(chan bool)
-	taskChan <- &Task{
-		Context: context.Background(),
-		UUID:    taskUUID,
-		Action:  taskActionWithDoneCh(doneCh),
+	currentJob := w.(*Worker).currentJob
+	if assert.NotNil(t, currentJob) {
+		assert.Equal(t, currentJob.taskUUID, queuedTaskUUID)
 	}
-
-	// give time for the task to become active
-	time.Sleep(time.Microsecond * 100)
-
-	// check when task running
-	assert.True(t, w.HasRunningJobByTaskUUID(taskUUID))
-
-	// complete task
-	doneCh <- true
-	<-taskCompletedChan
-
-	// give time to reset current task
-	time.Sleep(time.Microsecond * 100)
-
-	// check when task completed
-	assert.False(t, w.HasRunningJobByTaskUUID(taskUUID))
 }
 
 func TestWorker_HoldRunningJobByTaskUUID(t *testing.T) {

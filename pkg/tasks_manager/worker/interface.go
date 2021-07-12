@@ -6,7 +6,6 @@ type Interface interface {
 	Start()
 	CancelRunningJobByTaskUUID(uuid string) bool
 	HoldRunningJobByTaskUUID(uuid string, do func(job *Job)) bool
-	HasRunningJobByTaskUUID(uuid string) bool
 }
 
 type Task struct {
