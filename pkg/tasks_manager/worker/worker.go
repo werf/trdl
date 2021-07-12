@@ -17,7 +17,7 @@ type Worker struct {
 type Callbacks struct {
 	TaskStartedCallback   func(ctx context.Context, uuid string)
 	TaskFailedCallback    func(ctx context.Context, uuid string, log []byte, err error)
-	TaskCompletedCallback func(ctx context.Context, uuid string, log []byte)
+	TaskSucceededCallback func(ctx context.Context, uuid string, log []byte)
 }
 
 func NewWorker(ctx context.Context, taskChan chan *Task, callbacks Callbacks) Interface {
@@ -37,7 +37,7 @@ func (w *Worker) Start() {
 				if err := job.action(); err != nil {
 					w.callbacks.TaskFailedCallback(w.ctx, job.taskUUID, job.Log(), err)
 				} else {
-					w.callbacks.TaskCompletedCallback(w.ctx, job.taskUUID, job.Log())
+					w.callbacks.TaskSucceededCallback(w.ctx, job.taskUUID, job.Log())
 				}
 			}()
 		case <-w.ctx.Done():

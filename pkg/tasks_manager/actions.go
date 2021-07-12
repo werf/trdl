@@ -2,6 +2,7 @@ package tasks_manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,7 +11,9 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
 
-const taskReasonInvalidatedTask = "the task failed due to restart of the plugin"
+var BusyError = errors.New("busy")
+
+const taskReasonInvalidatedTask = "the task canceled due to restart of the plugin"
 
 func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, error) {
 	var taskUUID string
@@ -97,63 +100,22 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 }
 
 func (m *Manager) invalidateStorage(ctx context.Context, reqStorage logical.Storage) error {
-	invalidateTask := func(task *Task) error {
-		task.Status = taskStatusFailed
-		task.Reason = taskReasonInvalidatedTask
-		task.Modified = time.Now()
-
-		if err := putTaskIntoStorage(ctx, reqStorage, task); err != nil {
-			return fmt.Errorf("unable to put task %q into the storage: %q", task.UUID, err)
+	var list []string
+	for _, state := range []taskState{taskStateRunning, taskStateQueued} {
+		prefix := taskStorageKeyPrefix(state)
+		l, err := reqStorage.List(ctx, prefix)
+		if err != nil {
+			return fmt.Errorf("unable to list %q in storage: %s", prefix, err)
 		}
 
-		return nil
+		list = append(list, l...)
 	}
 
-	// invalidate current running task
-	{
-		currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, reqStorage)
-		if err != nil {
-			return fmt.Errorf("unable to get current running task uuid from storage: %s", err)
-		}
-
-		if currentTaskUUID != "" {
-			runningTask, err := getTaskFromStorage(ctx, reqStorage, currentTaskUUID)
-			if err != nil {
-				return fmt.Errorf("unable to get task %q from storage: %s", currentTaskUUID, err)
-			}
-
-			if runningTask != nil {
-				if err := invalidateTask(runningTask); err != nil {
-					return fmt.Errorf("unable to invalidate task %q: %s", currentTaskUUID, err)
-				}
-			}
-
-			if err := m.Storage.Delete(ctx, storageKeyCurrentRunningTask); err != nil {
-				return fmt.Errorf("unable to delete %q from storage: %q", storageKeyCurrentRunningTask, err)
-			}
-		}
-	}
-
-	// invalidate queued tasks
-	{
-		queuedTasksUUID, err := reqStorage.List(ctx, storageKeyPrefixQueuedTask)
-		if err != nil {
-			return fmt.Errorf("unable to get queued tasks from storage: %s", err)
-		}
-
-		for _, uuid := range queuedTasksUUID {
-			queuedTask, err := getQueuedTaskFromStorage(ctx, m.Storage, uuid)
-			if err != nil {
-				return fmt.Errorf("unable to get queued task %q from storage: %s", uuid, err)
-			}
-
-			if err := invalidateTask(queuedTask); err != nil {
-				return fmt.Errorf("unable to invalidate task %q: %s", uuid, err)
-			}
-
-			if err := m.Storage.Delete(ctx, queuedTaskStorageKey(uuid)); err != nil {
-				return fmt.Errorf("unable to delete %q from storage: %q", storageKeyCurrentRunningTask, err)
-			}
+	for _, uuid := range list {
+		if err := switchTaskToCompletedInStorage(ctx, reqStorage, taskStatusCanceled, uuid, switchTaskToCompletedInStorageOptions{
+			reason: taskReasonInvalidatedTask,
+		}); err != nil {
+			return fmt.Errorf("unable to invalidate task %q: %s", uuid, err)
 		}
 	}
 
@@ -161,37 +123,25 @@ func (m *Manager) invalidateStorage(ctx context.Context, reqStorage logical.Stor
 }
 
 func (m *Manager) queueTask(ctx context.Context, workerTaskFunc func(context.Context) error) (string, error) {
-	task := newTask()
-	if err := putQueuedTaskIntoStorage(ctx, m.Storage, task); err != nil {
-		return "", fmt.Errorf("unable to put queued task %q into storage: %s", task.UUID, err)
+	queuedTaskUUID, err := addNewTaskToStorage(ctx, m.Storage)
+	if err != nil {
+		return "", err
 	}
 
-	m.taskChan <- &worker.Task{Context: ctx, UUID: task.UUID, Action: workerTaskFunc}
+	m.taskChan <- &worker.Task{Context: ctx, UUID: queuedTaskUUID, Action: workerTaskFunc}
 
-	return task.UUID, nil
+	return queuedTaskUUID, nil
 }
 
 func (m *Manager) isBusy(ctx context.Context, reqStorage logical.Storage) (bool, error) {
-	// busy if there is task in progress
-	{
-		currentTaskUUID, err := getCurrentTaskUUIDFromStorage(ctx, reqStorage)
+	// busy if there are running or queued tasks
+	for _, prefix := range []string{storageKeyPrefixRunningTask, storageKeyPrefixQueuedTask} {
+		list, err := reqStorage.List(ctx, prefix)
 		if err != nil {
-			return false, fmt.Errorf("unable to get current task uuid from storage: %s", err)
+			return false, fmt.Errorf("unable to list %q in storage: %s", prefix, err)
 		}
 
-		if currentTaskUUID != "" {
-			return true, nil
-		}
-	}
-
-	// busy if there are queued tasks
-	{
-		queuedTasksUUID, err := reqStorage.List(ctx, storageKeyPrefixQueuedTask)
-		if err != nil {
-			return false, fmt.Errorf("unable to get queued tasks from storage: %s", err)
-		}
-
-		if len(queuedTasksUUID) != 0 {
+		if len(list) != 0 {
 			return true, nil
 		}
 	}

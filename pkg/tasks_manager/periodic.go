@@ -63,33 +63,31 @@ func (m *Manager) cleanupTaskHistory(ctx context.Context, req *logical.Request) 
 		}
 	}
 
-	list, err := req.Storage.List(ctx, storageKeyPrefixTask)
+	list, err := req.Storage.List(ctx, taskStorageKeyPrefix(taskStateCompleted))
 	if err != nil {
 		return err
 	}
 
-	var finishedTasks []*Task
+	var completedTasks []*Task
 	for _, taskUUID := range list {
-		task, err := getTaskFromStorage(ctx, req.Storage, taskUUID)
+		task, err := getTaskFromStorage(ctx, req.Storage, taskStateCompleted, taskUUID)
 		if err != nil {
-			return fmt.Errorf("unable to get task %q from storage: %s", taskUUID, err)
+			return err
 		}
 
-		if task.Status == taskStatusCompleted || task.Status == taskStatusFailed {
-			finishedTasks = append(finishedTasks, task)
-		}
+		completedTasks = append(completedTasks, task)
 	}
 
-	sort.Slice(finishedTasks, func(i, j int) bool {
-		return finishedTasks[i].Modified.After(finishedTasks[j].Modified)
+	sort.Slice(completedTasks, func(i, j int) bool {
+		return completedTasks[i].Modified.After(completedTasks[j].Modified)
 	})
 
-	if len(finishedTasks) > taskHistoryLimit {
-		finishedTasks = append(finishedTasks, finishedTasks[taskHistoryLimit:]...)
+	if len(completedTasks) > taskHistoryLimit {
+		completedTasks = append(completedTasks, completedTasks[taskHistoryLimit:]...)
 	}
 
-	for _, task := range finishedTasks {
-		if err := req.Storage.Delete(ctx, taskStorageKey(task.UUID)); err != nil {
+	for _, task := range completedTasks {
+		if err := req.Storage.Delete(ctx, taskStorageKey(taskStateCompleted, task.UUID)); err != nil {
 			return err
 		}
 

@@ -129,12 +129,8 @@ func TestManager_pathTaskList(t *testing.T) {
 	})
 
 	t.Run("all", func(t *testing.T) {
-		// fixtures
-		var runningTaskUUID string
-		var queuedTaskUUID string
-		{
-			runningTaskUUID, queuedTaskUUID = pathTestFixtures(t, ctx, storage)
-		}
+		queuedTaskUUID := assertAndAddNewTaskToStorage(t, ctx, storage)
+		runningTaskUUID := assertAndAddRunningTaskToStorage(t, ctx, storage)
 
 		req := &logical.Request{
 			Operation: logical.ReadOperation,
@@ -172,29 +168,23 @@ func TestManager_pathTaskStatus(t *testing.T) {
 	})
 
 	// fixtures
-	var runningTaskUUID string
-	var queuedTaskUUID string
-	{
-		runningTaskUUID, queuedTaskUUID = pathTestFixtures(t, ctx, storage)
-	}
+	queuedTaskUUID := assertAndAddNewTaskToStorage(t, ctx, storage)
+	runningTaskUUID := assertAndAddRunningTaskToStorage(t, ctx, storage)
 
 	for _, test := range []struct {
-		name        string
-		taskUUID    string
-		getTaskFunc func(ctx context.Context, storage logical.Storage, uuid string) (*Task, error)
+		taskState taskState
+		taskUUID  string
 	}{
 		{
-			name:        taskStatusQueued,
-			taskUUID:    queuedTaskUUID,
-			getTaskFunc: getQueuedTaskFromStorage,
+			taskState: taskStateQueued,
+			taskUUID:  queuedTaskUUID,
 		},
 		{
-			name:        taskStatusRunning,
-			taskUUID:    runningTaskUUID,
-			getTaskFunc: getTaskFromStorage,
+			taskState: taskStateRunning,
+			taskUUID:  runningTaskUUID,
 		},
 	} {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(string(test.taskState), func(t *testing.T) {
 			req := &logical.Request{
 				Operation: logical.ReadOperation,
 				Path:      "task/" + test.taskUUID,
@@ -202,7 +192,7 @@ func TestManager_pathTaskStatus(t *testing.T) {
 				Storage:   storage,
 			}
 
-			testTask, err := test.getTaskFunc(ctx, storage, test.taskUUID)
+			testTask, err := getTaskFromStorage(ctx, storage, test.taskState, test.taskUUID)
 			assert.Nil(t, err)
 			assert.NotNil(t, testTask)
 
@@ -235,7 +225,7 @@ func TestManager_pathTaskCancel(t *testing.T) {
 		}
 	})
 
-	t.Run(taskStatusRunning, func(t *testing.T) {
+	t.Run(string(taskStateRunning), func(t *testing.T) {
 		uuid, err := m.AddTask(ctx, storage, infiniteTaskAction)
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
@@ -256,18 +246,35 @@ func TestManager_pathTaskCancel(t *testing.T) {
 	})
 }
 
-func pathTestFixtures(t *testing.T, ctx context.Context, storage logical.Storage) (string, string) {
-	runningTask := newTask()
-	runningTask.Status = taskStatusRunning
-	err := putTaskIntoStorage(ctx, storage, runningTask)
+func assertAndAddNewTaskToStorage(t *testing.T, ctx context.Context, storage logical.Storage) string {
+	queuedTaskUUID, err := addNewTaskToStorage(ctx, storage)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, queuedTaskUUID)
+
+	task, err := getTaskFromStorage(ctx, storage, taskStateQueued, queuedTaskUUID)
+	assert.Nil(t, err)
+	assert.NotNil(t, task)
+
+	return queuedTaskUUID
+}
+
+func assertAndAddRunningTaskToStorage(t *testing.T, ctx context.Context, storage logical.Storage) string {
+	runningTaskUUID, err := addNewTaskToStorage(ctx, storage)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, runningTaskUUID)
+
+	err = switchTaskToRunningInStorage(ctx, storage, runningTaskUUID)
 	assert.Nil(t, err)
 
-	queuedTask := newTask()
-	queuedTask.Status = taskStatusQueued
-	err = putQueuedTaskIntoStorage(ctx, storage, queuedTask)
+	task, err := getTaskFromStorage(ctx, storage, taskStateQueued, runningTaskUUID)
 	assert.Nil(t, err)
+	assert.Nil(t, task, "queued task must be deleted from storage")
 
-	return runningTask.UUID, queuedTask.UUID
+	task, err = getTaskFromStorage(ctx, storage, taskStateRunning, runningTaskUUID)
+	assert.Nil(t, err)
+	assert.NotNil(t, task)
+
+	return runningTaskUUID
 }
 
 func pathTestSetup(t *testing.T) (context.Context, logical.Backend, Interface, logical.Storage) {
