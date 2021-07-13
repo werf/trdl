@@ -19,13 +19,16 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/docker"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
 const (
-	fieldNameGitTag = "git_tag"
+	fieldNameGitTag      = "git_tag"
+	fieldNameGitUsername = "git_username"
+	fieldNameGitPassword = "git_password"
 )
 
 func releasePath(b *backend) *framework.Path {
@@ -37,11 +40,11 @@ func releasePath(b *backend) *framework.Path {
 				Description: "Project git repository tag which should be released",
 				Required:    true,
 			},
-			fieldNameGitCredentialUsername: {
+			fieldNameGitUsername: {
 				Type:        framework.TypeString,
 				Description: "Git username",
 			},
-			fieldNameGitCredentialPassword: {
+			fieldNameGitPassword: {
 				Type:        framework.TypeString,
 				Description: "Git password",
 			},
@@ -60,35 +63,33 @@ func releasePath(b *backend) *framework.Path {
 }
 
 func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	resp, err := util.ValidateRequestFields(req, fields)
-	if resp != nil || err != nil {
-		return resp, err
+	if err := util.CheckRequiredFields(req, fields); err != nil {
+		return logical.ErrorResponse(err.Error()), nil
 	}
 
-	c, resp, err := GetAndValidateConfiguration(ctx, req.Storage)
-	if resp != nil || err != nil {
-		return resp, err
+	cfg, err := getConfiguration(ctx, req.Storage)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get configuration from storage: %s", err)
+	}
+
+	if cfg == nil {
+		return logical.ErrorResponse("configuration not found"), nil
+	}
+
+	gitCredentialFromStorage, err := getGitCredential(ctx, req.Storage)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get git credential from storage: %s", err)
 	}
 
 	gitTag := fields.Get(fieldNameGitTag).(string)
-
-	var gitUsername string
-	val, ok := fields.GetOk(fieldNameGitCredentialUsername)
-	if ok {
-		gitUsername = val.(string)
-	} else {
-		gitUsername = c.GitCredential.Username
+	gitUsername := fields.Get(fieldNameGitUsername).(string)
+	gitPassword := fields.Get(fieldNameGitPassword).(string)
+	if gitCredentialFromStorage != nil && gitUsername == "" && gitPassword == "" {
+		gitUsername = gitCredentialFromStorage.Username
+		gitPassword = gitCredentialFromStorage.Password
 	}
 
-	var gitPassword string
-	val, ok = fields.GetOk(fieldNameGitCredentialPassword)
-	if ok {
-		gitPassword = val.(string)
-	} else {
-		gitPassword = c.GitCredential.Password
-	}
-
-	publisherRepository, err := GetPublisherRepository(ctx, c, req.Storage)
+	publisherRepository, err := GetPublisherRepository(ctx, cfg, req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
@@ -97,7 +98,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		hclog.L().Debug("Started task")
 
-		gitRepo, err := cloneGitRepositoryTag(c.GitRepoUrl, gitTag, gitUsername, gitPassword)
+		gitRepo, err := cloneGitRepositoryTag(cfg.GitRepoUrl, gitTag, gitUsername, gitPassword)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}
@@ -105,7 +106,12 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
 		hclog.L().Debug("Cloned git repo")
 
-		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, c.TrustedPGPPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
+		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
+		if err != nil {
+			return fmt.Errorf("unable to get trusted pgp public keys: %s", err)
+		}
+
+		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, trustedPGPPublicKeys, cfg.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 

@@ -13,16 +13,19 @@ import (
 
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
 const (
-	DefaultGitTrdlChannelsBranch = "trdl"
-	LastPublishedGitCommitKey    = "last_published_git_commit"
+	storageKeyLastPublishedGitCommit = "last_published_git_commit"
+
+	defaultGitTrdlChannelsBranch = "trdl"
 )
 
-func pathPublish(b *backend) *framework.Path {
+func publishPath(b *backend) *framework.Path {
 	return &framework.Path{
 		Pattern: `publish$`,
 		Fields: map[string]*framework.FieldSchema{
@@ -48,45 +51,50 @@ func pathPublish(b *backend) *framework.Path {
 	}
 }
 
-func GetGitTrdlChannelsBranch(cfg *Configuration) string {
-	if cfg.GitTrdlChannelsBranch != "" {
-		return cfg.GitTrdlChannelsBranch
-	}
-	return DefaultGitTrdlChannelsBranch
-}
-
 func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	c, resp, err := GetAndValidateConfiguration(ctx, req.Storage)
-	if resp != nil || err != nil {
-		return resp, err
+	if err := util.CheckRequiredFields(req, fields); err != nil {
+		return logical.ErrorResponse(err.Error()), nil
 	}
 
-	var gitUsername string
-	val, ok := fields.GetOk(fieldNameGitCredentialUsername)
-	if ok {
-		gitUsername = val.(string)
-	} else {
-		gitUsername = c.GitCredential.Username
+	cfg, err := getConfiguration(ctx, req.Storage)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get configuration from storage: %s", err)
 	}
 
-	var gitPassword string
-	val, ok = fields.GetOk(fieldNameGitCredentialPassword)
-	if ok {
-		gitPassword = val.(string)
-	} else {
-		gitPassword = c.GitCredential.Password
+	if cfg == nil {
+		return logical.ErrorResponse("configuration not found"), nil
 	}
 
-	gitBranch := GetGitTrdlChannelsBranch(c)
-
-	var lastPublishedGitCommit string
-	if lastCommitEntry, err := req.Storage.Get(ctx, LastPublishedGitCommitKey); err != nil {
-		return nil, fmt.Errorf("error getting last published git commit by key %q from storage: %s", LastPublishedGitCommitKey, err)
-	} else if lastCommitEntry != nil {
-		lastPublishedGitCommit = string(lastCommitEntry.Value)
+	gitCredentialFromStorage, err := getGitCredential(ctx, req.Storage)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get git credential from storage: %s", err)
 	}
 
-	publisherRepository, err := GetPublisherRepository(ctx, c, req.Storage)
+	gitUsername := fields.Get(fieldNameGitUsername).(string)
+	gitPassword := fields.Get(fieldNameGitPassword).(string)
+	if gitCredentialFromStorage != nil && gitUsername == "" && gitPassword == "" {
+		gitUsername = gitCredentialFromStorage.Username
+		gitPassword = gitCredentialFromStorage.Password
+	}
+
+	gitBranch := cfg.GitTrdlChannelsBranch
+	if gitBranch != "" {
+		gitBranch = defaultGitTrdlChannelsBranch
+	}
+
+	lastPublishedGitCommit := cfg.InitialLastPublishedGitCommit
+	{
+		entry, err := req.Storage.Get(ctx, storageKeyLastPublishedGitCommit)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get %q from storage: %s", storageKeyLastPublishedGitCommit, err)
+		}
+
+		if entry != nil {
+			lastPublishedGitCommit = string(entry.Value)
+		}
+	}
+
+	publisherRepository, err := GetPublisherRepository(ctx, cfg, req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
@@ -95,7 +103,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		hclog.L().Debug("Started task")
 
-		gitRepo, err := cloneGitRepositoryBranch(c.GitRepoUrl, gitBranch, gitUsername, gitPassword)
+		gitRepo, err := cloneGitRepositoryBranch(cfg.GitRepoUrl, gitBranch, gitUsername, gitPassword)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}
@@ -122,7 +130,12 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 			}
 		}
 
-		if err := trdlGit.VerifyCommitSignatures(gitRepo, headRef.Hash().String(), c.TrustedPGPPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
+		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
+		if err != nil {
+			return fmt.Errorf("unable to get trusted pgp public keys: %s", err)
+		}
+
+		if err := trdlGit.VerifyCommitSignatures(gitRepo, headRef.Hash().String(), trustedPGPPublicKeys, cfg.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
@@ -152,8 +165,8 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Tuf repo commit done\n")
 		hclog.L().Debug("Tuf repo commit done")
 
-		if err := storage.Put(ctx, &logical.StorageEntry{Key: LastPublishedGitCommitKey, Value: []byte(headRef.Hash().String())}); err != nil {
-			return fmt.Errorf("error putting published commit record by key %q: %s", LastPublishedGitCommitKey, err)
+		if err := storage.Put(ctx, &logical.StorageEntry{Key: storageKeyLastPublishedGitCommit, Value: []byte(headRef.Hash().String())}); err != nil {
+			return fmt.Errorf("unable to put %q into storage: %s", storageKeyLastPublishedGitCommit, err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Put published commit record %q\n", headRef.Hash().String())
