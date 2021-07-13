@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/vault/sdk/logical"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
 )
 
@@ -49,9 +50,9 @@ func GetAndValidateConfiguration(ctx context.Context, storage logical.Storage) (
 		}
 
 		// TODO
-		//if c.RequiredNumberOfVerifiedSignaturesOnCommit <= 0 {
+		// if c.RequiredNumberOfVerifiedSignaturesOnCommit <= 0 {
 		//	return nil, logical.ErrorResponse("required configuration field %q must be set and be more than 0", fieldNameRequiredNumberOfVerifiedSignaturesOnCommit), nil
-		//}
+		// }
 	}
 
 	// parse git credential

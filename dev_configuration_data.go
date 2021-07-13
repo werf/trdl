@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-hclog"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/keyhelper"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 )

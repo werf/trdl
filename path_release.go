@@ -11,12 +11,11 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	git "github.com/go-git/go-git/v5"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-
 	"github.com/werf/logboek"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/docker"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
@@ -96,7 +95,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 	taskUUID, err := b.TasksManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		logboek.Context(ctx).Default().LogF("Started task\n")
-		hclog.L().Debug(fmt.Sprintf("Started task"))
+		hclog.L().Debug("Started task")
 
 		gitRepo, err := cloneGitRepositoryTag(c.GitRepoUrl, gitTag, gitUsername, gitPassword)
 		if err != nil {
@@ -104,14 +103,14 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
-		hclog.L().Debug(fmt.Sprintf("Cloned git repo"))
+		hclog.L().Debug("Cloned git repo")
 
 		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, c.TrustedPGPPublicKeys, c.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Verified tag signatures\n")
-		hclog.L().Debug(fmt.Sprintf("Verified tag signatures"))
+		hclog.L().Debug("Verified tag signatures")
 
 		trdlCfg, err := getTrdlConfig(gitRepo, gitTag)
 		if err != nil {
@@ -126,7 +125,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Built release artifacts tar archive\n")
-		hclog.L().Debug(fmt.Sprintf("Built release artifacts tar archive"))
+		hclog.L().Debug("Built release artifacts tar archive")
 
 		{
 			twArtifacts := tar.NewReader(tarReader)
@@ -162,7 +161,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			}
 
 			logboek.Context(ctx).Default().LogF("Tuf repo commit done\n")
-			hclog.L().Debug(fmt.Sprintf("Tuf repo commit done"))
+			hclog.L().Debug("Tuf repo commit done")
 		}
 
 		return nil

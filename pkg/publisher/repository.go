@@ -48,7 +48,7 @@ func NewRepository(s3Filesystem *S3Filesystem, tufStore *NonAtomicTufStore, tufR
 }
 
 func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
-	hclog.L().Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys"))
+	hclog.L().Debug("-- S3Repository.SetPrivKeys")
 
 	repository.TufStore.PrivKeys = privKeys
 
@@ -81,7 +81,7 @@ func (repository *S3Repository) PublishTarget(ctx context.Context, pathInsideTar
 	return nil
 }
 
-func (repository *S3Repository) Commit(ctx context.Context) error {
+func (repository *S3Repository) Commit(_ context.Context) error {
 	if err := repository.TufRepo.Snapshot(tuf.CompressionTypeNone); err != nil {
 		return fmt.Errorf("tuf repo snapshot failed: %s", err)
 	}

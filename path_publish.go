@@ -5,13 +5,12 @@ import (
 	"fmt"
 
 	git "github.com/go-git/go-git/v5"
-	"gopkg.in/yaml.v2"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-
 	"github.com/werf/logboek"
+	"gopkg.in/yaml.v2"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
@@ -94,7 +93,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 	taskUUID, err := b.TasksManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		logboek.Context(ctx).Default().LogF("Started task\n")
-		hclog.L().Debug(fmt.Sprintf("Started task"))
+		hclog.L().Debug("Started task")
 
 		gitRepo, err := cloneGitRepositoryBranch(c.GitRepoUrl, gitBranch, gitUsername, gitPassword)
 		if err != nil {
@@ -102,7 +101,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
-		hclog.L().Debug(fmt.Sprintf("Cloned git repo"))
+		hclog.L().Debug("Cloned git repo")
 
 		headRef, err := gitRepo.Head()
 		if err != nil {
@@ -128,7 +127,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Verified commit signatures\n")
-		hclog.L().Debug(fmt.Sprintf("Verified commit signatures"))
+		hclog.L().Debug("Verified commit signatures")
 
 		cfg, err := GetTrdlChannelsConfig(gitRepo)
 		if err != nil {
@@ -144,14 +143,14 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Published trdl channels config into the repository\n")
-		hclog.L().Debug(fmt.Sprintf("Published trdl channels config into the repository"))
+		hclog.L().Debug("Published trdl channels config into the repository")
 
 		if err := publisherRepository.Commit(ctx); err != nil {
 			return fmt.Errorf("unable to commit new tuf repository state: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Tuf repo commit done\n")
-		hclog.L().Debug(fmt.Sprintf("Tuf repo commit done"))
+		hclog.L().Debug("Tuf repo commit done")
 
 		if err := storage.Put(ctx, &logical.StorageEntry{Key: LastPublishedGitCommitKey, Value: []byte(headRef.Hash().String())}); err != nil {
 			return fmt.Errorf("error putting published commit record by key %q: %s", LastPublishedGitCommitKey, err)

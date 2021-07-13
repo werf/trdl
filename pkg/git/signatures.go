@@ -153,7 +153,7 @@ func objectSignaturesFromNotes(repo *git.Repository, objectID string) ([]string,
 
 func base64LineToMultiline(base64Line string) string {
 	var lines []string
-	var lineRunes = []rune(base64Line)
+	lineRunes := []rune(base64Line)
 	for len(lineRunes) != 0 {
 		var chunk []rune
 		if len(lineRunes) >= 76 {

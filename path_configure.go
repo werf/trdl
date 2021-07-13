@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/theupdateframework/go-tuf"
 	"github.com/theupdateframework/go-tuf/sign"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
@@ -93,10 +94,10 @@ func configurePaths(b *backend) []*framework.Path {
 				},
 
 				// TODO
-				//fieldNameLastPublishSuccessfulCommit: {
-				//	Type:        framework.TypeString,
-				//	Description: "The commit on which the publication was successfully completed",
-				//},
+				// fieldNameLastPublishSuccessfulCommit: {
+				// 	Type:        framework.TypeString,
+				// 	Description: "The commit on which the publication was successfully completed",
+				// },
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{

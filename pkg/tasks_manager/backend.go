@@ -8,6 +8,7 @@ import (
 	"github.com/fatih/structs"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
 
@@ -272,11 +273,12 @@ func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fie
 		return resp, nil
 	}
 
-	if len(data) <= offset {
+	switch {
+	case len(data) <= offset:
 		data = nil
-	} else if len(data[offset:]) < limit || limit == 0 {
+	case len(data[offset:]) < limit || limit == 0:
 		data = data[offset:]
-	} else {
+	default:
 		data = data[offset : offset+limit]
 	}
 
