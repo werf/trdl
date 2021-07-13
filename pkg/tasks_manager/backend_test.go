@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fatih/structs"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
@@ -91,12 +90,16 @@ func TestManager_pathConfigureRead(t *testing.T) {
 	})
 
 	t.Run("normal", func(t *testing.T) {
+		expectedTimeout := 50 * time.Hour
+		expectedHistoryLimit := 1000
 		expectedConfig := &configuration{
-			TaskTimeout:      50 * time.Hour,
-			TaskHistoryLimit: 1000,
+			TaskTimeout:      expectedTimeout,
+			TaskHistoryLimit: expectedHistoryLimit,
 		}
-		expectedResponseData := structs.Map(expectedConfig)
-		expectedResponseData[fieldNameTaskTimeout] = expectedConfig.TaskTimeout / time.Second
+		expectedResponseData := map[string]interface{}{
+			fieldNameTaskTimeout:      expectedTimeout / time.Second,
+			fieldNameTaskHistoryLimit: expectedHistoryLimit,
+		}
 
 		err := putConfiguration(ctx, storage, expectedConfig)
 		assert.Nil(t, err)
@@ -202,7 +205,15 @@ func TestManager_pathTaskStatus(t *testing.T) {
 			resp, err := b.HandleRequest(ctx, req)
 			assert.Nil(t, err)
 			if assert.NotNil(t, resp) {
-				assert.Equal(t, structs.Map(testTask), resp.Data)
+				expectedResponseData := map[string]interface{}{
+					"uuid":     testTask.UUID,
+					"status":   testTask.Status,
+					"reason":   testTask.Reason,
+					"created":  testTask.Created,
+					"modified": testTask.Modified,
+				}
+
+				assert.Equal(t, expectedResponseData, resp.Data)
 			}
 		})
 	}
