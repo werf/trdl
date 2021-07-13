@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/Masterminds/semver"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
 )
 

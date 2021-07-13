@@ -32,11 +32,12 @@ func CloneInMemory(url string, opts CloneOptions) (*git.Repository, error) {
 	{
 		cloneOptions.URL = url
 
-		if opts.TagName != "" {
+		switch {
+		case opts.TagName != "":
 			cloneOptions.ReferenceName = plumbing.ReferenceName(fmt.Sprintf("refs/tags/%s", opts.TagName))
-		} else if opts.BranchName != "" {
+		case opts.BranchName != "":
 			cloneOptions.ReferenceName = plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", opts.BranchName))
-		} else if opts.ReferenceName != "" {
+		case opts.ReferenceName != "":
 			cloneOptions.ReferenceName = plumbing.ReferenceName(opts.ReferenceName)
 		}
 

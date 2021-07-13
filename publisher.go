@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/theupdateframework/go-tuf/sign"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 )
 

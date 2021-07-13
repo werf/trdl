@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
+
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
 
@@ -92,7 +93,7 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 			return err
 		}
 
-		hclog.L().Debug(fmt.Sprintf("task succeeded"))
+		hclog.L().Debug("task succeeded")
 		return nil
 	}
 

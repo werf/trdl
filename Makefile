@@ -14,6 +14,9 @@ endif
 
 all: fmt build start
 
+lint:
+	GOOS=$(OS) GOARCH="$(GOARCH)" golangci-lint run ./... --config .golangci.yaml
+
 build:
 	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
 
@@ -42,4 +45,4 @@ clean:
 fmt:
 	go fmt $$(go list ./...)
 
-.PHONY: build clean fmt start enable
+.PHONY: lint build clean fmt start enable

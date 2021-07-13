@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"os"
 
-	trdl "github.com/werf/vault-plugin-secrets-trdl"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/plugin"
+
+	trdl "github.com/werf/vault-plugin-secrets-trdl"
 )
 
 func main() {
-	logFile, err := os.OpenFile("trdl.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	logFile, err := os.OpenFile("trdl.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
 	if err != nil {
 		panic(fmt.Sprintf("failed to open trdl.log file: %s", err))
 	}
@@ -25,7 +25,7 @@ func main() {
 
 	apiClientMeta := &api.PluginAPIClientMeta{}
 	flags := apiClientMeta.FlagSet()
-	flags.Parse(os.Args[1:]) // Ignore command, strictly parse flags
+	_ = flags.Parse(os.Args[1:]) // Ignore command, strictly parse flags
 
 	tlsConfig := apiClientMeta.GetTLSConfig()
 	tlsProviderFunc := api.VaultPluginTLSProvider(tlsConfig)

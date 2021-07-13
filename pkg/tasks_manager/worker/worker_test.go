@@ -214,20 +214,16 @@ func TestWorker_HoldRunningJobByTaskUUID(t *testing.T) {
 func taskActionWithDoneCh(doneCh chan bool) func(context.Context) error {
 	return func(_ context.Context) error {
 		for {
-			select {
-			case <-doneCh:
-				return nil
-			}
+			<-doneCh
+			return nil
 		}
 	}
 }
 
 func infiniteTaskAction(ctx context.Context) error {
 	for {
-		select {
-		case <-ctx.Done():
-			return infiniteTaskContextCanceledError
-		}
+		<-ctx.Done()
+		return infiniteTaskContextCanceledError
 	}
 }
 

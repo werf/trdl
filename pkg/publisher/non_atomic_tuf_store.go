@@ -34,10 +34,10 @@ type NonAtomicTufStore struct {
 	stagedFiles []string
 }
 
-func NewNonAtomicTufStore(privKeys TufRepoPrivKeys, Filesystem Filesystem) *NonAtomicTufStore {
+func NewNonAtomicTufStore(privKeys TufRepoPrivKeys, filesystem Filesystem) *NonAtomicTufStore {
 	return &NonAtomicTufStore{
 		PrivKeys:   privKeys,
-		Filesystem: Filesystem,
+		Filesystem: filesystem,
 		stagedMeta: make(map[string]json.RawMessage),
 	}
 }
@@ -157,8 +157,8 @@ func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, path string
 	return nil
 }
 
-func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[string]int, hashes map[string]data.Hashes) error {
-	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.Commit"))
+func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[string]int, _ map[string]data.Hashes) error {
+	hclog.L().Debug("-- NonAtomicTufStore.Commit")
 	if consistentSnapshot {
 		panic("not supported")
 	}
@@ -236,7 +236,7 @@ func (m *NonAtomicTufStore) Clean() error {
 	panic("not supported")
 }
 
-func computeTargetPaths(consistentSnapshot bool, name string, hashes map[string]data.Hashes) []string {
+func computeTargetPaths(consistentSnapshot bool, name string, _ map[string]data.Hashes) []string {
 	if consistentSnapshot {
 		panic("not supported")
 	}

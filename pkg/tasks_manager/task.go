@@ -10,8 +10,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-type taskStatus string
-type taskState string
+type (
+	taskStatus string
+	taskState  string
+)
 
 const (
 	taskStatusQueued    taskStatus = "QUEUED"
