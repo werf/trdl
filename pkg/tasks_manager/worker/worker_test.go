@@ -157,10 +157,8 @@ func TestWorker_CancelRunningJobByTaskUUID(t *testing.T) {
 	time.Sleep(time.Microsecond * 100)
 
 	// check the next task running
-	currentJob := w.(*Worker).currentJob
-	if assert.NotNil(t, currentJob) {
-		assert.Equal(t, currentJob.taskUUID, queuedTaskUUID)
-	}
+	hold := w.HoldRunningJobByTaskUUID(queuedTaskUUID, func(job *Job) {})
+	assert.True(t, hold)
 }
 
 func TestWorker_HoldRunningJobByTaskUUID(t *testing.T) {
