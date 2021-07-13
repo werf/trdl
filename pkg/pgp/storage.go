@@ -17,8 +17,8 @@ func GetTrustedPGPPublicKeys(ctx context.Context, storage logical.Storage) ([]st
 	}
 
 	var trustedPGPPublicKeys []string
-	for _, postfix := range list {
-		storageEntryKey := storageKeyPrefixTrustedPGPPublicKey + postfix
+	for _, name := range list {
+		storageEntryKey := trustedPGPPublicKeyStorageKey(name)
 		e, err := storage.Get(ctx, storageEntryKey)
 		if err != nil {
 			return nil, err
@@ -28,4 +28,8 @@ func GetTrustedPGPPublicKeys(ctx context.Context, storage logical.Storage) ([]st
 	}
 
 	return trustedPGPPublicKeys, nil
+}
+
+func trustedPGPPublicKeyStorageKey(name string) string {
+	return storageKeyPrefixTrustedPGPPublicKey + name
 }

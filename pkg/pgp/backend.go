@@ -31,16 +31,16 @@ func Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{
-					Callback: pathConfigureTrustedPGPPublicKeyCreate,
+					Callback: pathConfigureTrustedPGPPublicKeyCreateOrUpdate,
 				},
 				logical.UpdateOperation: &framework.PathOperation{
-					Callback: pathConfigureTrustedPGPPublicKeyCreate,
+					Callback: pathConfigureTrustedPGPPublicKeyCreateOrUpdate,
 				},
 				logical.ReadOperation: &framework.PathOperation{
-					Callback: pathConfigureTrustedPGPPublicKeyList,
+					Callback: pathConfigureTrustedPGPPublicKeyReadOrList,
 				},
 				logical.ListOperation: &framework.PathOperation{
-					Callback: pathConfigureTrustedPGPPublicKeyList,
+					Callback: pathConfigureTrustedPGPPublicKeyReadOrList,
 				},
 			},
 		},
@@ -68,22 +68,32 @@ func Paths() []*framework.Path {
 	}
 }
 
-func pathConfigureTrustedPGPPublicKeyList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
-	list, err := req.Storage.List(ctx, storageKeyPrefixTrustedPGPPublicKey)
-	if err != nil {
-		return nil, err
+func pathConfigureTrustedPGPPublicKeyCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+	name := fields.Get(fieldNameTrustedPGPPublicKeyName).(string)
+	key := fields.Get(fieldNameTrustedPGPPublicKeyData).(string)
+	if err := req.Storage.Put(ctx, &logical.StorageEntry{
+		Key:   trustedPGPPublicKeyStorageKey(name),
+		Value: []byte(key),
+	}); err != nil {
+		return nil, fmt.Errorf("unable to put trusted pgp public key: %s", err)
 	}
 
-	return &logical.Response{
-		Data: map[string]interface{}{
-			"names": list,
-		},
-	}, nil
+	return nil, nil
+}
+
+func pathConfigureTrustedPGPPublicKeyReadOrList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
+	list, err := req.Storage.List(ctx, storageKeyPrefixTrustedPGPPublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("unable to list %q in storage: %s", storageKeyPrefixTrustedPGPPublicKey, err)
+	}
+
+	return logical.ListResponse(list), nil
 }
 
 func pathConfigureTrustedPGPPublicKeyRead(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	name := fields.Get(fieldNameTrustedPGPPublicKeyName).(string)
-	e, err := req.Storage.Get(ctx, storageKeyPrefixTrustedPGPPublicKey+name)
+
+	e, err := req.Storage.Get(ctx, trustedPGPPublicKeyStorageKey(name))
 	if err != nil {
 		return nil, err
 	}
@@ -100,22 +110,9 @@ func pathConfigureTrustedPGPPublicKeyRead(ctx context.Context, req *logical.Requ
 	}, nil
 }
 
-func pathConfigureTrustedPGPPublicKeyCreate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	name := fields.Get(fieldNameTrustedPGPPublicKeyName).(string)
-	key := fields.Get(fieldNameTrustedPGPPublicKeyData).(string)
-	if err := req.Storage.Put(ctx, &logical.StorageEntry{
-		Key:   storageKeyPrefixTrustedPGPPublicKey + name,
-		Value: []byte(key),
-	}); err != nil {
-		return nil, err
-	}
-
-	return nil, nil
-}
-
 func pathConfigureTrustedPGPPublicKeyDelete(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	name := fields.Get(fieldNameTrustedPGPPublicKeyName).(string)
-	if err := req.Storage.Delete(ctx, storageKeyPrefixTrustedPGPPublicKey+name); err != nil {
+	if err := req.Storage.Delete(ctx, trustedPGPPublicKeyStorageKey(name)); err != nil {
 		return nil, err
 	}
 
