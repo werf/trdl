@@ -1,19 +1,12 @@
 package trdl
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/fatih/structs"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/theupdateframework/go-tuf"
-	"github.com/theupdateframework/go-tuf/sign"
 
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
@@ -30,11 +23,7 @@ const (
 	fieldNameS3SecretAccessKey                          = "s3_secret_access_key"
 	fieldNameS3BucketName                               = "s3_bucket_name"
 
-	storageKeyConfiguration             = "configuration"
-	storageKeyTufRepositoryRootKey      = "tuf_repository_root_key"
-	storageKeyTufRepositoryTargetsKey   = "tuf_repository_targets_key"
-	storageKeyTufRepositorySnapshotKey  = "tuf_repository_snapshot_key"
-	storageKeyTufRepositoryTimestampKey = "tuf_repository_timestamp_key"
+	storageKeyConfiguration = "configuration"
 )
 
 func configurePath(b *backend) *framework.Path {
@@ -106,7 +95,7 @@ func (b *backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		return logical.ErrorResponse(err.Error()), nil
 	}
 
-	c := &configuration{
+	cfg := &configuration{
 		GitRepoUrl:                                 fields.Get(fieldNameGitRepoUrl).(string),
 		GitTrdlChannelsBranch:                      fields.Get(fieldNameGitTrdlChannelsBranch).(string),
 		InitialLastPublishedGitCommit:              fields.Get(fieldNameInitialLastPublishedGitCommit).(string),
@@ -118,11 +107,11 @@ func (b *backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		S3BucketName:                               fields.Get(fieldNameS3BucketName).(string),
 	}
 
-	if err := b.initTufRepoAndRelatedData(ctx, req.Storage, c); err != nil {
-		return nil, fmt.Errorf("unable to init tuf repo and related data: %s", err)
+	if err := b.Publisher.InitRepository(ctx, req.Storage, cfg.RepositoryOptions()); err != nil {
+		return nil, fmt.Errorf("unable to init publisher repository: %s", err)
 	}
 
-	if err := putConfiguration(ctx, req.Storage, c); err != nil {
+	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
 		return nil, fmt.Errorf("unable to put configuration into storage: %s", err)
 	}
 
@@ -142,90 +131,6 @@ func (b *backend) pathConfigureRead(ctx context.Context, req *logical.Request, _
 	return &logical.Response{Data: structs.Map(cfg)}, nil
 }
 
-func (b *backend) initTufRepoAndRelatedData(ctx context.Context, storage logical.Storage, c *configuration) error {
-	awsConfig := &aws.Config{
-		Endpoint:    aws.String(c.S3Endpoint),
-		Region:      aws.String(c.S3Region),
-		Credentials: credentials.NewStaticCredentials(c.S3AccessKeyID, c.S3SecretAccessKey, ""),
-	}
-
-	publisherRepository, err := publisher.NewRepositoryWithOptions(
-		publisher.S3Options{AwsConfig: awsConfig, BucketName: c.S3BucketName},
-		publisher.TufRepoOptions{},
-	)
-	if err != nil {
-		return fmt.Errorf("error initializing publisher repository: %s", err)
-	}
-
-	if err := publisherRepository.TufRepo.Init(false); err == tuf.ErrInitNotAllowed {
-		if os.Getenv("TRDL_DEV") != "1" {
-			return fmt.Errorf("found existing targets in the tuf repository in the s3 storage, cannot reinitialize already initialized repository. Please use new s3 bucket or remove existing targets")
-		}
-	} else if err != nil {
-		return fmt.Errorf("unable to init tuf repository: %s", err)
-	}
-
-	if os.Getenv("TRDL_DEV") == "1" {
-		devKeys, err := LoadDevPublisherKeys()
-		if err != nil {
-			return fmt.Errorf("error loading dev mode publisher keys: %s", err)
-		}
-
-		if err := publisherRepository.SetPrivKeys(devKeys); err != nil {
-			return fmt.Errorf("unable to set dev private keys: %s", err)
-		}
-	} else {
-		_, err = publisherRepository.TufRepo.GenKey("root")
-		if err != nil {
-			return fmt.Errorf("error generating tuf repository root key: %s", err)
-		}
-
-		_, err = publisherRepository.TufRepo.GenKey("targets")
-		if err != nil {
-			return fmt.Errorf("error generating tuf repository targets key: %s", err)
-		}
-
-		_, err = publisherRepository.TufRepo.GenKey("snapshot")
-		if err != nil {
-			return fmt.Errorf("error generating tuf repository snapshot key: %s", err)
-		}
-
-		_, err = publisherRepository.TufRepo.GenKey("timestamp")
-		if err != nil {
-			return fmt.Errorf("error generating tuf repository timestamp key: %s", err)
-		}
-	}
-
-	for _, storeKey := range []struct {
-		Key        *sign.PrivateKey
-		StorageKey string
-	}{
-		{publisherRepository.TufStore.PrivKeys.Root, storageKeyTufRepositoryRootKey},
-		{publisherRepository.TufStore.PrivKeys.Targets, storageKeyTufRepositoryTargetsKey},
-		{publisherRepository.TufStore.PrivKeys.Snapshot, storageKeyTufRepositorySnapshotKey},
-		{publisherRepository.TufStore.PrivKeys.Timestamp, storageKeyTufRepositoryTimestampKey},
-	} {
-		entry, err := logical.StorageEntryJSON(storeKey.StorageKey, storeKey.Key)
-		if err != nil {
-			return fmt.Errorf("error creating storage json entry by key %q: %s", storeKey.StorageKey, err)
-		}
-
-		if err := storage.Put(ctx, entry); err != nil {
-			return fmt.Errorf("error putting json entry by key %q into the storage: %s", storeKey.StorageKey, err)
-		}
-	}
-
-	if err := publisherRepository.PublishTarget(ctx, "initialized_at", bytes.NewBuffer([]byte(time.Now().UTC().String()+"\n"))); err != nil {
-		return fmt.Errorf("unable to publish initialization timestamp: %s", err)
-	}
-
-	if err := publisherRepository.Commit(ctx); err != nil {
-		return fmt.Errorf("unable to commit initialized tuf repository: %s", err)
-	}
-
-	return nil
-}
-
 type configuration struct {
 	GitRepoUrl                                 string `structs:"git_repo_url" json:"git_repo_url"`
 	GitTrdlChannelsBranch                      string `structs:"git_trdl_channels_branch" json:"git_trdl_channels_branch"`
@@ -236,6 +141,16 @@ type configuration struct {
 	S3AccessKeyID                              string `structs:"s3_access_key_id" json:"s3_access_key_id"`
 	S3SecretAccessKey                          string `structs:"s3_secret_access_key" json:"s3_secret_access_key"`
 	S3BucketName                               string `structs:"s3_bucket_name" json:"s3_bucket_name"`
+}
+
+func (cfg *configuration) RepositoryOptions() publisher.RepositoryOptions {
+	return publisher.RepositoryOptions{
+		S3Endpoint:        cfg.S3Endpoint,
+		S3Region:          cfg.S3Region,
+		S3AccessKeyID:     cfg.S3AccessKeyID,
+		S3SecretAccessKey: cfg.S3SecretAccessKey,
+		S3BucketName:      cfg.S3BucketName,
+	}
 }
 
 func getConfiguration(ctx context.Context, storage logical.Storage) (*configuration, error) {

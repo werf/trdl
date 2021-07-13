@@ -1,4 +1,4 @@
-package trdl
+package publisher
 
 import (
 	"bytes"
@@ -7,15 +7,14 @@ import (
 	"github.com/hashicorp/go-hclog"
 
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/keyhelper"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 )
 
-func LoadDevPublisherKeys() (publisher.TufRepoPrivKeys, error) {
-	privKeys := publisher.TufRepoPrivKeys{}
+func LoadDevPublisherKeys() (TufRepoPrivKeys, error) {
+	privKeys := TufRepoPrivKeys{}
 
 	{
 		if keys, err := keyhelper.LoadKeys(bytes.NewReader([]byte(fixturePublisherRootKey)), []byte(fixturePublisherRootPassphrase)); err != nil {
-			return publisher.TufRepoPrivKeys{}, fmt.Errorf("error loading fixture root key: %s", err)
+			return TufRepoPrivKeys{}, fmt.Errorf("error loading fixture root key: %s", err)
 		} else {
 			privKeys.Root = keys[0]
 		}
@@ -23,7 +22,7 @@ func LoadDevPublisherKeys() (publisher.TufRepoPrivKeys, error) {
 
 	{
 		if keys, err := keyhelper.LoadKeys(bytes.NewReader([]byte(fixturePublisherTargetsKey)), []byte(fixturePublisherTargetsPassphrase)); err != nil {
-			return publisher.TufRepoPrivKeys{}, fmt.Errorf("error loading fixture targets key: %s", err)
+			return TufRepoPrivKeys{}, fmt.Errorf("error loading fixture targets key: %s", err)
 		} else {
 			privKeys.Targets = keys[0]
 		}
@@ -31,7 +30,7 @@ func LoadDevPublisherKeys() (publisher.TufRepoPrivKeys, error) {
 
 	{
 		if keys, err := keyhelper.LoadKeys(bytes.NewReader([]byte(fixturePublisherSnapshotKey)), []byte(fixturePublisherSnapshotPassphrase)); err != nil {
-			return publisher.TufRepoPrivKeys{}, fmt.Errorf("error loading fixture snapshot key: %s", err)
+			return TufRepoPrivKeys{}, fmt.Errorf("error loading fixture snapshot key: %s", err)
 		} else {
 			privKeys.Snapshot = keys[0]
 		}
@@ -39,7 +38,7 @@ func LoadDevPublisherKeys() (publisher.TufRepoPrivKeys, error) {
 
 	{
 		if keys, err := keyhelper.LoadKeys(bytes.NewReader([]byte(fixturePublisherTimestampKey)), []byte(fixturePublisherTimestampPassphrase)); err != nil {
-			return publisher.TufRepoPrivKeys{}, fmt.Errorf("error loading fixture timestamp key: %s", err)
+			return TufRepoPrivKeys{}, fmt.Errorf("error loading fixture timestamp key: %s", err)
 		} else {
 			privKeys.Timestamp = keys[0]
 		}
