@@ -29,11 +29,11 @@ func publishPath(b *backend) *framework.Path {
 	return &framework.Path{
 		Pattern: `publish$`,
 		Fields: map[string]*framework.FieldSchema{
-			fieldNameGitCredentialUsername: {
+			fieldNameGitUsername: {
 				Type:        framework.TypeString,
 				Description: "Git username",
 			},
-			fieldNameGitCredentialPassword: {
+			fieldNameGitPassword: {
 				Type:        framework.TypeString,
 				Description: "Git password",
 			},
