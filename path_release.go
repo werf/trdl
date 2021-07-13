@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -184,6 +185,27 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			"task_uuid": taskUUID,
 		},
 	}, nil
+}
+
+func cloneGitRepositoryTag(url, gitTag, username, password string) (*git.Repository, error) {
+	cloneGitOptions := trdlGit.CloneOptions{
+		TagName:           gitTag,
+		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+	}
+
+	if username != "" && password != "" {
+		cloneGitOptions.Auth = &http.BasicAuth{
+			Username: username,
+			Password: password,
+		}
+	}
+
+	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return gitRepo, nil
 }
 
 func getTrdlConfig(gitRepo *git.Repository, gitTag string) (*config.Trdl, error) {

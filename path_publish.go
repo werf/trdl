@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -186,6 +187,27 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 			"task_uuid": taskUUID,
 		},
 	}, nil
+}
+
+func cloneGitRepositoryBranch(url, gitBranch, username, password string) (*git.Repository, error) {
+	cloneGitOptions := trdlGit.CloneOptions{
+		BranchName:        gitBranch,
+		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+	}
+
+	if username != "" && password != "" {
+		cloneGitOptions.Auth = &http.BasicAuth{
+			Username: username,
+			Password: password,
+		}
+	}
+
+	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return gitRepo, nil
 }
 
 func GetTrdlChannelsConfig(gitRepo *git.Repository) (*config.TrdlChannels, error) {
