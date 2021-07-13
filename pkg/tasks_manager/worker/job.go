@@ -1,10 +1,8 @@
 package worker
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/werf/logboek"
 )
@@ -16,11 +14,11 @@ type Job struct {
 	action        func() error
 	ctx           context.Context
 	ctxCancelFunc context.CancelFunc
-	buff          *bytes.Buffer
+	buff          *SafeBuffer
 }
 
 func newJob(task *Task) *Job {
-	buff := bytes.NewBuffer([]byte{})
+	buff := NewSafeBuffer()
 	loggerCtx := logboek.NewContext(task.Context, logboek.DefaultLogger().NewSubLogger(buff, buff))
 	jobContext, jobCtxCancelFunc := context.WithCancel(loggerCtx)
 
@@ -36,22 +34,13 @@ func newJob(task *Task) *Job {
 func wrapTaskAction(jobContext context.Context, taskAction func(ctx context.Context) error) func() error {
 	return func() error {
 		errCh := make(chan error)
+
 		go func() {
-			defer func() {
-				p := recover()
-				if p == nil || fmt.Sprint(p) == "send on closed channel" {
-					return
-				}
-
-				panic(p)
-			}()
-
 			errCh <- taskAction(jobContext)
 		}()
 
 		select {
 		case <-jobContext.Done():
-			close(errCh)
 			return contextCanceledError
 		case err := <-errCh:
 			return err
