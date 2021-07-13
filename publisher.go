@@ -12,7 +12,7 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 )
 
-func GetPublisherRepository(ctx context.Context, cfg *Configuration, storage logical.Storage) (*publisher.S3Repository, error) {
+func GetPublisherRepository(ctx context.Context, cfg *configuration, storage logical.Storage) (*publisher.S3Repository, error) {
 	awsConfig := &aws.Config{
 		Endpoint:    aws.String(cfg.S3Endpoint),
 		Region:      aws.String(cfg.S3Region),

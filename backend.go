@@ -48,12 +48,13 @@ func newBackend() (*backend, error) {
 		},
 		Paths: framework.PathAppend(
 			[]*framework.Path{
+				configurePath(b),
+				configureGitCredentialPath(b),
 				releasePath(b),
-				pathPublish(b),
+				publishPath(b),
 			},
-			configurePaths(b),
-			b.TasksManager.Paths(),
 			pgp.Paths(),
+			b.TasksManager.Paths(),
 		),
 	}
 

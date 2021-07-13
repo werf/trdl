@@ -7,17 +7,12 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
-func ValidateRequestFields(req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	fields.Raw = req.Data
-	if err := fields.Validate(); err != nil {
-		return logical.ErrorResponse(err.Error()), nil
-	}
-
+func CheckRequiredFields(req *logical.Request, fields *framework.FieldData) error {
 	for fieldName, schema := range fields.Schema {
 		if schema.Required && req.Get(fieldName) == nil {
-			return logical.ErrorResponse(fmt.Sprintf("required field %q must be set", fieldName)), nil
+			return fmt.Errorf("required field %q must be set", fieldName)
 		}
 	}
 
-	return nil, nil
+	return nil
 }
