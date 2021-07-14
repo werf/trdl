@@ -12,7 +12,10 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
 
-var BusyError = errors.New("busy")
+var (
+	ErrBusy            = errors.New("busy")
+	ErrContextCanceled = errors.New("context canceled")
+)
 
 const taskReasonInvalidatedTask = "the task canceled due to restart of the plugin"
 
@@ -25,7 +28,7 @@ func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskF
 		}
 
 		if busy {
-			return BusyError
+			return ErrBusy
 		}
 
 		taskUUID, err = m.queueTask(ctx, newTaskFunc)
@@ -38,7 +41,7 @@ func (m *Manager) RunTask(ctx context.Context, reqStorage logical.Storage, taskF
 func (m *Manager) AddOptionalTask(ctx context.Context, reqStorage logical.Storage, taskFunc func(context.Context, logical.Storage) error) (string, bool, error) {
 	taskUUID, err := m.RunTask(ctx, reqStorage, taskFunc)
 	if err != nil {
-		if err == BusyError {
+		if err == ErrBusy {
 			return taskUUID, false, nil
 		}
 
@@ -84,20 +87,46 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 		taskTimeoutDuration = defaultTaskTimeoutDuration
 	}
 
-	workerTaskFunc := func(ctx context.Context) error {
+	workerTaskFunc := m.WrapTaskFunc(taskFunc, taskTimeoutDuration)
+
+	return f(workerTaskFunc)
+}
+
+// WrapTaskFunc separates processing of the context and the taskFunc execution in the background
+func (m *Manager) WrapTaskFunc(taskFunc func(context.Context, logical.Storage) error, taskTimeoutDuration time.Duration) func(ctx context.Context) error {
+	return func(ctx context.Context) error {
 		ctxWithTimeout, ctxCancelFunc := context.WithTimeout(ctx, taskTimeoutDuration)
 		defer ctxCancelFunc()
 
-		if err := taskFunc(ctxWithTimeout, m.Storage); err != nil {
-			hclog.L().Debug(fmt.Sprintf("task failed: %s", err))
-			return err
+		resCh := make(chan error)
+		go func() {
+			defer func() {
+				p := recover()
+				if p == nil || fmt.Sprint(p) == "send on closed channel" {
+					return
+				}
+
+				panic(p)
+			}()
+
+			resCh <- taskFunc(ctxWithTimeout, m.Storage)
+		}()
+
+		select {
+		case <-ctxWithTimeout.Done():
+			close(resCh)
+			hclog.L().Debug("task failed: context canceled")
+			return ErrContextCanceled
+		case err := <-resCh:
+			if err != nil {
+				hclog.L().Debug(fmt.Sprintf("task failed: %s", err))
+				return err
+			}
+
+			hclog.L().Debug("task succeeded")
+			return nil
 		}
-
-		hclog.L().Debug("task succeeded")
-		return nil
 	}
-
-	return f(workerTaskFunc)
 }
 
 func (m *Manager) invalidateStorage(ctx context.Context, reqStorage logical.Storage) error {

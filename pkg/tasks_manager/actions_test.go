@@ -177,12 +177,36 @@ func TestManager_AddOptionalTask(t *testing.T) {
 	}
 }
 
-func setupTest() (context.Context, *Manager, logical.Storage) {
+func TestManager_WrapTaskFunc(t *testing.T) {
 	ctx := context.Background()
 	m := initManagerWithoutWorker()
 	storage := &logical.InmemStorage{}
 
-	return ctx, m, storage
+	// storage must be initialized when calling the method
+	m.Storage = storage
+
+	// wrap task func
+	taskFuncErrCh := make(chan error)
+	wrappedTaskErrCh := make(chan error)
+	doneCh := make(chan bool)
+	wrappedTaskFunc := m.WrapTaskFunc(func(ctx context.Context, _ logical.Storage) error {
+		defer func() { doneCh <- true }()
+		return <-taskFuncErrCh
+	}, defaultTaskTimeoutDuration)
+
+	// run wrapped task func
+	ctx, ctxCancelFunc := context.WithCancel(context.Background())
+	go func() {
+		wrappedTaskErrCh <- wrappedTaskFunc(ctx)
+	}()
+
+	// cancel context and check context canceled error
+	ctxCancelFunc()
+	assert.Equal(t, ErrContextCanceled, <-wrappedTaskErrCh)
+
+	// check that main action running in background
+	taskFuncErrCh <- fmt.Errorf("error")
+	<-doneCh
 }
 
 func initManagerWithoutWorker() *Manager {

@@ -13,9 +13,3 @@ type TaskCallbacksInterface interface {
 	TaskFailedCallback(ctx context.Context, uuid string, log []byte, err error)
 	TaskSucceededCallback(ctx context.Context, uuid string, log []byte)
 }
-
-type Task struct {
-	Context context.Context
-	UUID    string
-	Action  func(ctx context.Context) error
-}
