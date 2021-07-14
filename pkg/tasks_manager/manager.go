@@ -21,18 +21,13 @@ type Manager struct {
 
 func NewManager() Interface {
 	m := &Manager{taskChan: make(chan *worker.Task, taskChanSize)}
-
-	m.Worker = worker.NewWorker(context.Background(), m.taskChan, worker.Callbacks{
-		TaskStartedCallback:   m.taskStartedCallback,
-		TaskFailedCallback:    m.taskFailedCallback,
-		TaskSucceededCallback: m.taskSucceededCallback,
-	})
+	m.Worker = worker.NewWorker(context.Background(), m.taskChan, m)
 	go m.Worker.Start()
 
 	return m
 }
 
-func (m *Manager) taskStartedCallback(ctx context.Context, uuid string) {
+func (m *Manager) TaskStartedCallback(ctx context.Context, uuid string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -41,7 +36,7 @@ func (m *Manager) taskStartedCallback(ctx context.Context, uuid string) {
 	}
 }
 
-func (m *Manager) taskSucceededCallback(ctx context.Context, uuid string, log []byte) {
+func (m *Manager) TaskSucceededCallback(ctx context.Context, uuid string, log []byte) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -52,7 +47,7 @@ func (m *Manager) taskSucceededCallback(ctx context.Context, uuid string, log []
 	}
 }
 
-func (m *Manager) taskFailedCallback(ctx context.Context, uuid string, log []byte, taskErr error) {
+func (m *Manager) TaskFailedCallback(ctx context.Context, uuid string, log []byte, taskErr error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

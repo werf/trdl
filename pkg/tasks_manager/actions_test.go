@@ -2,6 +2,7 @@ package tasks_manager
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
@@ -12,7 +13,9 @@ import (
 
 // check that Manager.RunTask queues task or returns the busy error
 func TestManager_RunTask(t *testing.T) {
-	ctx, m, storage := setupTest()
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	var uuids []string
@@ -32,7 +35,7 @@ func TestManager_RunTask(t *testing.T) {
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
 		if assert.Error(t, err) {
-			assert.Equal(t, err, BusyError)
+			assert.Equal(t, err, ErrBusy)
 		}
 		assert.Empty(t, uuid)
 	}
@@ -46,7 +49,9 @@ func TestManager_RunTask(t *testing.T) {
 
 // check that Manager.RunTask queues task or returns the busy error
 func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
-	ctx, m, storage := setupTest()
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	m.Storage = storage
 	runningTaskUUID := assertAndAddRunningTaskToStorage(t, ctx, storage)
@@ -54,7 +59,7 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 	{
 		uuid, err := m.RunTask(ctx, storage, noneTask)
 		if assert.Error(t, err) {
-			assert.Equal(t, err, BusyError)
+			assert.Equal(t, err, ErrBusy)
 		}
 		assert.Empty(t, uuid)
 		assert.NotNil(t, m.Storage, "must be initialized on the first action call")
@@ -77,7 +82,9 @@ func TestManager_RunTaskWithCurrentRunningTask(t *testing.T) {
 
 // check that Manager.RunTask invalidates inconsistent storage
 func TestManager_RunTaskInvalidateStorage(t *testing.T) {
-	ctx, m, storage := setupTest()
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	// imitate inconsistent storage condition after previous plugin run
 	queuedTaskUUID := assertAndAddNewTaskToStorage(t, ctx, storage)
@@ -119,7 +126,9 @@ func TestManager_RunTaskInvalidateStorage(t *testing.T) {
 
 // check that Manager.AddTask queues all tasks
 func TestManager_AddTask(t *testing.T) {
-	ctx, m, storage := setupTest()
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	var uuids []string
@@ -145,7 +154,9 @@ func TestManager_AddTask(t *testing.T) {
 
 // check that Manager.AddOptionalTask queues task when manager not busy
 func TestManager_AddOptionalTask(t *testing.T) {
-	ctx, m, storage := setupTest()
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	var uuids []string
@@ -177,12 +188,36 @@ func TestManager_AddOptionalTask(t *testing.T) {
 	}
 }
 
-func setupTest() (context.Context, *Manager, logical.Storage) {
+func TestManager_WrapTaskFunc(t *testing.T) {
 	ctx := context.Background()
 	m := initManagerWithoutWorker()
 	storage := &logical.InmemStorage{}
 
-	return ctx, m, storage
+	// storage must be initialized when calling the method
+	m.Storage = storage
+
+	// wrap task func
+	taskFuncErrCh := make(chan error)
+	wrappedTaskErrCh := make(chan error)
+	doneCh := make(chan bool)
+	wrappedTaskFunc := m.WrapTaskFunc(func(ctx context.Context, _ logical.Storage) error {
+		defer func() { doneCh <- true }()
+		return <-taskFuncErrCh
+	}, defaultTaskTimeoutDuration)
+
+	// run wrapped task func
+	ctx, ctxCancelFunc := context.WithCancel(context.Background())
+	go func() {
+		wrappedTaskErrCh <- wrappedTaskFunc(ctx)
+	}()
+
+	// cancel context and check context canceled error
+	ctxCancelFunc()
+	assert.Equal(t, ErrContextCanceled, <-wrappedTaskErrCh)
+
+	// check that main action running in background
+	taskFuncErrCh <- fmt.Errorf("error")
+	<-doneCh
 }
 
 func initManagerWithoutWorker() *Manager {

@@ -2,12 +2,9 @@ package worker
 
 import (
 	"context"
-	"errors"
 
 	"github.com/werf/logboek"
 )
-
-var contextCanceledError = errors.New("context canceled")
 
 type Job struct {
 	taskUUID      string
@@ -15,6 +12,12 @@ type Job struct {
 	ctx           context.Context
 	ctxCancelFunc context.CancelFunc
 	buff          *SafeBuffer
+}
+
+type Task struct {
+	Context context.Context
+	UUID    string
+	Action  func(ctx context.Context) error
 }
 
 func newJob(task *Task) *Job {
@@ -26,25 +29,8 @@ func newJob(task *Task) *Job {
 		ctx:           jobContext,
 		ctxCancelFunc: jobCtxCancelFunc,
 		taskUUID:      task.UUID,
-		action:        wrapTaskAction(jobContext, task.Action),
+		action:        func() error { return task.Action(jobContext) },
 		buff:          buff,
-	}
-}
-
-func wrapTaskAction(jobContext context.Context, taskAction func(ctx context.Context) error) func() error {
-	return func() error {
-		errCh := make(chan error)
-
-		go func() {
-			errCh <- taskAction(jobContext)
-		}()
-
-		select {
-		case <-jobContext.Done():
-			return contextCanceledError
-		case err := <-errCh:
-			return err
-		}
 	}
 }
 

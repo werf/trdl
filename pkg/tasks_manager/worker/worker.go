@@ -9,19 +9,13 @@ type Worker struct {
 	ctx        context.Context
 	currentJob *Job
 	taskChan   chan *Task
-	callbacks  Callbacks
+	callbacks  TaskCallbacksInterface
 
 	mu sync.Mutex
 }
 
-type Callbacks struct {
-	TaskStartedCallback   func(ctx context.Context, uuid string)
-	TaskFailedCallback    func(ctx context.Context, uuid string, log []byte, err error)
-	TaskSucceededCallback func(ctx context.Context, uuid string, log []byte)
-}
-
-func NewWorker(ctx context.Context, taskChan chan *Task, callbacks Callbacks) Interface {
-	return &Worker{ctx: ctx, callbacks: callbacks, taskChan: taskChan}
+func NewWorker(ctx context.Context, taskChan chan *Task, callbacks TaskCallbacksInterface) Interface {
+	return &Worker{ctx: ctx, taskChan: taskChan, callbacks: callbacks}
 }
 
 func (w *Worker) Start() {

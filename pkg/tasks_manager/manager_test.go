@@ -1,14 +1,18 @@
 package tasks_manager
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestManager_taskStartedCallback(t *testing.T) {
-	ctx, m, storage := setupTest()
+func TestManager_StartedCallback(t *testing.T) {
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	m.Storage = storage
@@ -16,7 +20,7 @@ func TestManager_taskStartedCallback(t *testing.T) {
 	t.Run("nonexistent", func(t *testing.T) {
 		assertPanic(
 			t,
-			func() { m.taskStartedCallback(ctx, "1") },
+			func() { m.TaskStartedCallback(ctx, "1") },
 			"runtime error: queued task \"1\" must be in storage",
 		)
 	})
@@ -24,7 +28,7 @@ func TestManager_taskStartedCallback(t *testing.T) {
 	t.Run("queued", func(t *testing.T) {
 		queuedTaskUUID := assertAndAddNewTaskToStorage(t, ctx, storage)
 
-		m.taskStartedCallback(ctx, queuedTaskUUID)
+		m.TaskStartedCallback(ctx, queuedTaskUUID)
 
 		queuedTask, err := getTaskFromStorage(ctx, storage, taskStateQueued, queuedTaskUUID)
 		assert.Nil(t, err)
@@ -39,8 +43,10 @@ func TestManager_taskStartedCallback(t *testing.T) {
 	})
 }
 
-func TestManager_taskSucceededCallback(t *testing.T) {
-	ctx, m, storage := setupTest()
+func TestManager_SucceededCallback(t *testing.T) {
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	m.Storage = storage
@@ -48,7 +54,7 @@ func TestManager_taskSucceededCallback(t *testing.T) {
 	t.Run("nonexistent", func(t *testing.T) {
 		assertPanic(
 			t,
-			func() { m.taskSucceededCallback(ctx, "1", nil) },
+			func() { m.TaskSucceededCallback(ctx, "1", nil) },
 			"runtime error: queued or running task \"1\" not found in storage",
 		)
 	})
@@ -57,7 +63,7 @@ func TestManager_taskSucceededCallback(t *testing.T) {
 		runningTaskUUID := assertAndAddRunningTaskToStorage(t, ctx, storage)
 
 		taskActionLog := []byte("Hello!")
-		m.taskSucceededCallback(ctx, runningTaskUUID, taskActionLog)
+		m.TaskSucceededCallback(ctx, runningTaskUUID, taskActionLog)
 
 		runningTask, err := getTaskFromStorage(ctx, storage, taskStateRunning, runningTaskUUID)
 		assert.Nil(t, err)
@@ -77,8 +83,10 @@ func TestManager_taskSucceededCallback(t *testing.T) {
 	})
 }
 
-func TestManager_taskFailedCallback(t *testing.T) {
-	ctx, m, storage := setupTest()
+func TestManager_FailedCallback(t *testing.T) {
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	m.Storage = storage
@@ -88,7 +96,7 @@ func TestManager_taskFailedCallback(t *testing.T) {
 	t.Run("nonexistent", func(t *testing.T) {
 		assertPanic(
 			t,
-			func() { m.taskFailedCallback(ctx, "1", nil, taskActionErr) },
+			func() { m.TaskFailedCallback(ctx, "1", nil, taskActionErr) },
 			"runtime error: queued or running task \"1\" not found in storage",
 		)
 	})
@@ -97,7 +105,7 @@ func TestManager_taskFailedCallback(t *testing.T) {
 		runningTaskUUID := assertAndAddRunningTaskToStorage(t, ctx, storage)
 
 		taskActionLog := []byte("Hello!")
-		m.taskFailedCallback(ctx, runningTaskUUID, taskActionLog, taskActionErr)
+		m.TaskFailedCallback(ctx, runningTaskUUID, taskActionLog, taskActionErr)
 
 		runningTask, err := getTaskFromStorage(ctx, storage, taskStateRunning, runningTaskUUID)
 		assert.Nil(t, err)
