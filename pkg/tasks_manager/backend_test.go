@@ -238,12 +238,15 @@ func TestManager_pathTaskCancel(t *testing.T) {
 	})
 
 	t.Run(string(taskStateRunning), func(t *testing.T) {
-		uuid, err := m.AddTask(ctx, storage, infiniteTaskAction)
+		startedCh := make(chan bool)
+		taskFunc := testTaskAction(startedCh)
+
+		uuid, err := m.AddTask(ctx, storage, taskFunc)
 		assert.Nil(t, err)
 		assert.NotEmpty(t, uuid)
 
-		// give time for the task to become active
-		time.Sleep(time.Microsecond * 100)
+		// wait till the task is started
+		<-startedCh
 
 		req := &logical.Request{
 			Operation: logical.CreateOperation,
@@ -314,17 +317,18 @@ func TestManager_pathTaskLog(t *testing.T) {
 	})
 
 	t.Run(string(taskStateRunning), func(t *testing.T) {
-		logCh := make(chan string)
-		uuid, err := m.RunTask(ctx, storage, taskActionWithLogCh(logCh))
+		msgCh := make(chan string)
+		msgSentCh := make(chan bool)
+		uuid, err := m.RunTask(ctx, storage, taskActionWithLogCh(msgCh, msgSentCh))
 		assert.Nil(t, err)
 
 		var expectedLog string
 		for _, msg := range []string{"", "hello ", "world!"} {
 			expectedLog += msg
-			logCh <- msg
 
-			// give time for the task to log msg
-			time.Sleep(time.Microsecond * 50)
+			// send log message
+			msgCh <- msg
+			<-msgSentCh
 
 			req := &logical.Request{
 				Operation: logical.ReadOperation,
@@ -491,7 +495,7 @@ func assertAndAddCompletedTaskToStorage(t *testing.T, ctx context.Context, stora
 
 func pathTestSetup(t *testing.T) (context.Context, logical.Backend, Interface, logical.Storage) {
 	ctx := context.Background()
-	m := NewManager()
+	m := NewManager() // TODO: use worker interface
 	storage := &logical.InmemStorage{}
 
 	config := logical.TestBackendConfig()
@@ -504,14 +508,18 @@ func pathTestSetup(t *testing.T) (context.Context, logical.Backend, Interface, l
 	return ctx, b, m, storage
 }
 
-func infiniteTaskAction(_ context.Context, _ logical.Storage) error {
-	select {}
+func testTaskAction(startedCh chan bool) func(context.Context, logical.Storage) error {
+	return func(context.Context, logical.Storage) error {
+		startedCh <- true
+		select {}
+	}
 }
 
-func taskActionWithLogCh(logCh chan string) func(context.Context, logical.Storage) error {
+func taskActionWithLogCh(msgCh chan string, msgSentCh chan bool) func(context.Context, logical.Storage) error {
 	return func(ctx context.Context, _ logical.Storage) error {
 		for {
-			logboek.Context(ctx).Log(<-logCh)
+			logboek.Context(ctx).Log(<-msgCh)
+			msgSentCh <- true
 		}
 	}
 }

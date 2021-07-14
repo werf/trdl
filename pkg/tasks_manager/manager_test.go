@@ -1,14 +1,18 @@
 package tasks_manager
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestManager_StartedCallback(t *testing.T) {
-	ctx, m, storage := setupTest()
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	m.Storage = storage
@@ -40,7 +44,9 @@ func TestManager_StartedCallback(t *testing.T) {
 }
 
 func TestManager_SucceededCallback(t *testing.T) {
-	ctx, m, storage := setupTest()
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	m.Storage = storage
@@ -78,7 +84,9 @@ func TestManager_SucceededCallback(t *testing.T) {
 }
 
 func TestManager_FailedCallback(t *testing.T) {
-	ctx, m, storage := setupTest()
+	ctx := context.Background()
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
 
 	assert.Nil(t, m.Storage, "must be initialized on the first action call")
 	m.Storage = storage
