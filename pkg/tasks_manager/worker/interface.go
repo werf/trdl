@@ -8,6 +8,12 @@ type Interface interface {
 	HoldRunningJobByTaskUUID(uuid string, do func(job *Job)) bool
 }
 
+type TaskCallbacksInterface interface {
+	TaskStartedCallback(ctx context.Context, uuid string)
+	TaskFailedCallback(ctx context.Context, uuid string, log []byte, err error)
+	TaskSucceededCallback(ctx context.Context, uuid string, log []byte)
+}
+
 type Task struct {
 	Context context.Context
 	UUID    string

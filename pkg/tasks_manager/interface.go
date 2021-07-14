@@ -5,11 +5,14 @@ import (
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
 
 type Interface interface {
 	BackendInterface
 	ActionsInterface
+	worker.TaskCallbacksInterface
 }
 
 type BackendInterface interface {
