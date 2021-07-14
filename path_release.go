@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -20,7 +21,6 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/docker"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
@@ -89,7 +89,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		gitPassword = gitCredentialFromStorage.Password
 	}
 
-	publisherRepository, err := GetPublisherRepository(ctx, cfg, req.Storage)
+	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, cfg.RepositoryOptions())
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
@@ -153,7 +153,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", hdr.Name)
 					hclog.L().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", hdr.Name))
 
-					if err := publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
+					if err := b.Publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
 						return fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
 					}
 
@@ -185,6 +185,27 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			"task_uuid": taskUUID,
 		},
 	}, nil
+}
+
+func cloneGitRepositoryTag(url, gitTag, username, password string) (*git.Repository, error) {
+	cloneGitOptions := trdlGit.CloneOptions{
+		TagName:           gitTag,
+		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+	}
+
+	if username != "" && password != "" {
+		cloneGitOptions.Auth = &http.BasicAuth{
+			Username: username,
+			Password: password,
+		}
+	}
+
+	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return gitRepo, nil
 }
 
 func getTrdlConfig(gitRepo *git.Repository, gitTag string) (*config.Trdl, error) {

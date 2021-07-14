@@ -8,12 +8,14 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
 )
 
 type backend struct {
 	*framework.Backend
-	TasksManager tasks_manager.Interface
+	TasksManager tasks_manager.ActionsInterface
+	Publisher    publisher.ActionsInterface
 }
 
 var _ logical.Factory = Factory
@@ -36,15 +38,27 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 }
 
 func newBackend() (*backend, error) {
+	tasksManager := tasks_manager.NewManager()
+	publisherManager := publisher.NewPublisher()
+
 	b := &backend{
-		TasksManager: tasks_manager.NewManager(),
+		TasksManager: tasksManager,
+		Publisher:    publisherManager,
 	}
 
 	b.Backend = &framework.Backend{
 		BackendType: logical.TypeLogical,
 		Help:        backendHelp,
 		PeriodicFunc: func(_ context.Context, request *logical.Request) error {
-			return b.TasksManager.PeriodicTask(context.Background(), request)
+			if err := tasksManager.PeriodicTask(context.Background(), request); err != nil {
+				return err
+			}
+
+			if err := publisherManager.PeriodicTask(context.Background(), request); err != nil {
+				return err
+			}
+
+			return nil
 		},
 		Paths: framework.PathAppend(
 			[]*framework.Path{
@@ -54,7 +68,7 @@ func newBackend() (*backend, error) {
 				publishPath(b),
 			},
 			pgp.Paths(),
-			b.TasksManager.Paths(),
+			tasksManager.Paths(),
 		),
 	}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -14,7 +15,6 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
 	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
@@ -94,7 +94,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 	}
 
-	publisherRepository, err := GetPublisherRepository(ctx, cfg, req.Storage)
+	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, cfg.RepositoryOptions())
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
@@ -151,7 +151,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Got trdl channels config:\n%s\n---\n", cfgDump)
 		hclog.L().Debug(fmt.Sprintf("Got trdl channels config:\n%s\n---", cfgDump))
 
-		if err := publisher.PublishChannelsConfig(ctx, publisherRepository, cfg); err != nil {
+		if err := b.Publisher.PublishChannelsConfig(ctx, publisherRepository, cfg); err != nil {
 			return fmt.Errorf("error publishing trdl channels into the repository: %s", err)
 		}
 
@@ -187,6 +187,27 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 			"task_uuid": taskUUID,
 		},
 	}, nil
+}
+
+func cloneGitRepositoryBranch(url, gitBranch, username, password string) (*git.Repository, error) {
+	cloneGitOptions := trdlGit.CloneOptions{
+		BranchName:        gitBranch,
+		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+	}
+
+	if username != "" && password != "" {
+		cloneGitOptions.Auth = &http.BasicAuth{
+			Username: username,
+			Password: password,
+		}
+	}
+
+	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return gitRepo, nil
 }
 
 func GetTrdlChannelsConfig(gitRepo *git.Repository) (*config.TrdlChannels, error) {
