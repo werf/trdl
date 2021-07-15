@@ -86,6 +86,9 @@ func configurePath(b *backend) *framework.Path {
 			logical.ReadOperation: &framework.PathOperation{
 				Callback: b.pathConfigureRead,
 			},
+			logical.DeleteOperation: &framework.PathOperation{
+				Callback: b.pathConfigureDelete,
+			},
 		},
 	}
 }
@@ -129,6 +132,14 @@ func (b *backend) pathConfigureRead(ctx context.Context, req *logical.Request, _
 	}
 
 	return &logical.Response{Data: structs.Map(cfg)}, nil
+}
+
+func (b *backend) pathConfigureDelete(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
+	if err := deleteConfiguration(ctx, req.Storage); err != nil {
+		return logical.ErrorResponse("unable to delete configuration: %s", err), nil
+	}
+
+	return nil, nil
 }
 
 type configuration struct {
@@ -181,4 +192,8 @@ func putConfiguration(ctx context.Context, storage logical.Storage, config *conf
 	}
 
 	return err
+}
+
+func deleteConfiguration(ctx context.Context, storage logical.Storage) error {
+	return storage.Delete(ctx, storageKeyConfiguration)
 }
