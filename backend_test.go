@@ -22,6 +22,7 @@ var (
 type MockedTasksManager struct {
 	mock.Mock
 	tasks_manager.ActionsInterface
+	IsBusy bool
 }
 
 func (m *MockedTasksManager) Paths() []*framework.Path {
@@ -32,6 +33,16 @@ func (m *MockedTasksManager) Paths() []*framework.Path {
 func (m *MockedTasksManager) PeriodicFunc(_ context.Context, _ *logical.Request) error {
 	m.Called()
 	return nil
+}
+
+func (m *MockedTasksManager) RunTask(_ context.Context, _ logical.Storage, _ func(ctx context.Context, storage logical.Storage) error) (string, error) {
+	m.Called()
+
+	if !m.IsBusy {
+		return "UUID", nil
+	} else {
+		return "", tasks_manager.ErrBusy
+	}
 }
 
 type MockedPublisher struct {
@@ -52,6 +63,11 @@ func (m *MockedPublisher) PeriodicFunc(_ context.Context, _ *logical.Request) er
 func (m *MockedPublisher) InitRepository(_ context.Context, _ logical.Storage, _ publisher.RepositoryOptions) error {
 	m.Called()
 	return nil
+}
+
+func (m *MockedPublisher) GetRepository(_ context.Context, _ logical.Storage, _ publisher.RepositoryOptions) (publisher.RepositoryInterface, error) {
+	m.Called()
+	return nil, nil
 }
 
 type CommonSuite struct {

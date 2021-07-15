@@ -56,9 +56,6 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_RequiredFields() {
 				Storage:   suite.storage,
 			}
 
-			// check InitRepository was not called
-			suite.mockedPublisher.AssertExpectations(suite.T())
-
 			resp, err := suite.backend.HandleRequest(suite.ctx, req)
 			assert.Nil(suite.T(), err)
 			assert.Equal(
