@@ -136,3 +136,18 @@ func (suite *BackendSuite) TestInitPeriodicFunc() {
 func TestBackend(t *testing.T) {
 	suite.Run(t, new(BackendSuite))
 }
+
+func TestFactory(t *testing.T) {
+	ctx := context.Background()
+
+	b, err := Factory(ctx, logical.TestBackendConfig())
+	assert.Nil(t, err)
+	if assert.NotNil(t, b) {
+		impl := b.(*backend)
+		assert.NotNil(t, impl.Backend)
+		assert.NotNil(t, impl.Publisher)
+		assert.NotNil(t, impl.TasksManager)
+		assert.NotEmpty(t, impl.Paths)
+		assert.NotNil(t, impl.PeriodicFunc)
+	}
+}
