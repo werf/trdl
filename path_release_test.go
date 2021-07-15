@@ -17,14 +17,14 @@ type PathReleaseCallbackSuite struct {
 	CommonSuite
 }
 
-func (suite *PathReleaseCallbackSuite) TestRequiredGitTagField() {
-	req := &logical.Request{
-		Operation: logical.CreateOperation,
-		Path:      "release",
-		Storage:   suite.storage,
-	}
+func (suite *PathReleaseCallbackSuite) SetupTest() {
+	suite.CommonSuite.SetupTest()
+	suite.req.Path = "release"
+	suite.req.Operation = logical.CreateOperation
+}
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+func (suite *PathReleaseCallbackSuite) TestRequiredGitTagField() {
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Equal(
 		suite.T(),
@@ -36,14 +36,9 @@ func (suite *PathReleaseCallbackSuite) TestRequiredGitTagField() {
 }
 
 func (suite *PathReleaseCallbackSuite) TestConfigurationNotFound() {
-	req := &logical.Request{
-		Operation: logical.CreateOperation,
-		Path:      "release",
-		Data:      map[string]interface{}{"git_tag": fieldGitTagValidValue},
-		Storage:   suite.storage,
-	}
+	suite.req.Data = map[string]interface{}{fieldNameGitTag: fieldGitTagValidValue}
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), errorResponseConfigurationNotFound, resp)
 }
@@ -52,19 +47,12 @@ func (suite *PathReleaseCallbackSuite) TestBasic() {
 	err := putConfiguration(suite.ctx, suite.storage, completeConfiguration())
 	assert.Nil(suite.T(), err)
 
-	req := &logical.Request{
-		Operation: logical.CreateOperation,
-		Path:      "release",
-		Data: map[string]interface{}{
-			fieldNameGitTag: fieldGitTagValidValue,
-		},
-		Storage: suite.storage,
-	}
+	suite.req.Data = map[string]interface{}{fieldNameGitTag: fieldGitTagValidValue}
 
 	suite.mockedPublisher.On("GetRepository").Return(nil)
 	suite.mockedTasksManager.On("RunTask").Return("UUID", nil)
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	if assert.NotNil(suite.T(), resp) {
 		assert.Equal(
@@ -87,19 +75,12 @@ func (suite *PathReleaseCallbackSuite) TestBusy() {
 	// tasks manager is busy
 	suite.mockedTasksManager.IsBusy = true
 
-	req := &logical.Request{
-		Operation: logical.CreateOperation,
-		Path:      "release",
-		Data: map[string]interface{}{
-			fieldNameGitTag: fieldGitTagValidValue,
-		},
-		Storage: suite.storage,
-	}
+	suite.req.Data = map[string]interface{}{fieldNameGitTag: fieldGitTagValidValue}
 
 	suite.mockedPublisher.On("GetRepository").Return(nil)
 	suite.mockedTasksManager.On("RunTask").Return("", tasks_manager.ErrBusy)
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), logical.ErrorResponse(tasks_manager.ErrBusy.Error()), resp)
 

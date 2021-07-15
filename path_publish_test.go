@@ -14,14 +14,14 @@ type PathPublishCallbackSuite struct {
 	CommonSuite
 }
 
-func (suite *PathPublishCallbackSuite) TestConfigurationNotFound() {
-	req := &logical.Request{
-		Operation: logical.CreateOperation,
-		Path:      "publish",
-		Storage:   suite.storage,
-	}
+func (suite *PathPublishCallbackSuite) SetupTest() {
+	suite.CommonSuite.SetupTest()
+	suite.req.Path = "publish"
+	suite.req.Operation = logical.CreateOperation
+}
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+func (suite *PathPublishCallbackSuite) TestConfigurationNotFound() {
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), errorResponseConfigurationNotFound, resp)
 }
@@ -30,16 +30,10 @@ func (suite *PathPublishCallbackSuite) TestBasic() {
 	err := putConfiguration(suite.ctx, suite.storage, completeConfiguration())
 	assert.Nil(suite.T(), err)
 
-	req := &logical.Request{
-		Operation: logical.CreateOperation,
-		Path:      "publish",
-		Storage:   suite.storage,
-	}
-
 	suite.mockedPublisher.On("GetRepository").Return(nil)
 	suite.mockedTasksManager.On("RunTask").Return("UUID", nil)
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	if assert.NotNil(suite.T(), resp) {
 		assert.Equal(
@@ -62,16 +56,10 @@ func (suite *PathPublishCallbackSuite) TestBusy() {
 	// tasks manager is busy
 	suite.mockedTasksManager.IsBusy = true
 
-	req := &logical.Request{
-		Operation: logical.CreateOperation,
-		Path:      "publish",
-		Storage:   suite.storage,
-	}
-
 	suite.mockedPublisher.On("GetRepository").Return(nil)
 	suite.mockedTasksManager.On("RunTask").Return("", tasks_manager.ErrBusy)
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), logical.ErrorResponse(tasks_manager.ErrBusy.Error()), resp)
 

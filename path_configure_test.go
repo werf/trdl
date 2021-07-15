@@ -13,18 +13,20 @@ type PathConfigureCallbacksSuite struct {
 	CommonSuite
 }
 
+func (suite *PathConfigureCallbacksSuite) SetupTest() {
+	suite.CommonSuite.SetupTest()
+	suite.req.Path = "configure"
+}
+
 func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_CompleteConfiguration() {
 	reqData := dataCompleteConfiguration()
-	req := &logical.Request{
-		Operation: logical.CreateOperation,
-		Path:      "configure",
-		Data:      reqData,
-		Storage:   suite.storage,
-	}
+
+	suite.req.Operation = logical.CreateOperation
+	suite.req.Data = reqData
 
 	suite.mockedPublisher.On("InitRepository").Return(nil)
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Nil(suite.T(), resp)
 
@@ -49,14 +51,11 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_RequiredFields() {
 		suite.Run(requiredField, func() {
 			reqData := dataCompleteConfiguration()
 			delete(reqData, requiredField)
-			req := &logical.Request{
-				Operation: logical.CreateOperation,
-				Path:      "configure",
-				Data:      reqData,
-				Storage:   suite.storage,
-			}
 
-			resp, err := suite.backend.HandleRequest(suite.ctx, req)
+			suite.req.Operation = logical.CreateOperation
+			suite.req.Data = reqData
+
+			resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 			assert.Nil(suite.T(), err)
 			assert.Equal(
 				suite.T(),
@@ -73,13 +72,9 @@ func (suite *PathConfigureCallbacksSuite) TestRead() {
 	err := putConfiguration(suite.ctx, suite.storage, completeConfiguration())
 	assert.Nil(suite.T(), err)
 
-	req := &logical.Request{
-		Operation: logical.ReadOperation,
-		Path:      "configure",
-		Storage:   suite.storage,
-	}
+	suite.req.Operation = logical.ReadOperation
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	if assert.NotNil(suite.T(), resp) && assert.NotNil(suite.T(), resp.Data) {
 		assert.Equal(suite.T(), dataCompleteConfiguration(), resp.Data)
@@ -87,13 +82,9 @@ func (suite *PathConfigureCallbacksSuite) TestRead() {
 }
 
 func (suite *PathConfigureCallbacksSuite) TestRead_ConfigurationNotFound() {
-	req := &logical.Request{
-		Operation: logical.ReadOperation,
-		Path:      "configure",
-		Storage:   suite.storage,
-	}
+	suite.req.Operation = logical.ReadOperation
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	if assert.NotNil(suite.T(), resp) {
 		assert.Equal(suite.T(), errorResponseConfigurationNotFound, resp)
@@ -104,13 +95,9 @@ func (suite *PathConfigureCallbacksSuite) TestDelete() {
 	err := putConfiguration(suite.ctx, suite.storage, completeConfiguration())
 	assert.Nil(suite.T(), err)
 
-	req := &logical.Request{
-		Operation: logical.DeleteOperation,
-		Path:      "configure",
-		Storage:   suite.storage,
-	}
+	suite.req.Operation = logical.DeleteOperation
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Nil(suite.T(), resp)
 
@@ -120,13 +107,9 @@ func (suite *PathConfigureCallbacksSuite) TestDelete() {
 }
 
 func (suite *PathConfigureCallbacksSuite) TestDelete_ConfigurationNotFound() {
-	req := &logical.Request{
-		Operation: logical.DeleteOperation,
-		Path:      "configure",
-		Storage:   suite.storage,
-	}
+	suite.req.Operation = logical.DeleteOperation
 
-	resp, err := suite.backend.HandleRequest(suite.ctx, req)
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Nil(suite.T(), resp)
 }

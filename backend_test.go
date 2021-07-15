@@ -74,6 +74,7 @@ type CommonSuite struct {
 	suite.Suite
 	ctx                context.Context
 	backend            *backend
+	req                *logical.Request
 	storage            logical.Storage
 	mockedTasksManager *MockedTasksManager
 	mockedPublisher    *MockedPublisher
@@ -98,6 +99,7 @@ func (suite *CommonSuite) SetupTest() {
 
 	suite.ctx = ctx
 	suite.backend = b
+	suite.req = &logical.Request{Storage: storage}
 	suite.storage = storage
 	suite.mockedTasksManager = mockedTasksManager
 	suite.mockedPublisher = mockedPublisher
