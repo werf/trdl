@@ -3,25 +3,8 @@ package tasks_manager
 import (
 	"context"
 
-	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
 )
-
-type Interface interface {
-	BackendInterface
-	ActionsInterface
-	worker.TaskCallbacksInterface
-}
-
-type BackendInterface interface {
-	// Paths returns backend paths to work with tasks
-	Paths() []*framework.Path
-
-	// PeriodicTask performs a periodic task. Should be used as the PeriodicFunc of backend or be part of an existing implementation
-	PeriodicTask(ctx context.Context, req *logical.Request) error
-}
 
 type ActionsInterface interface {
 	// RunTask runs task or returns busy error

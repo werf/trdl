@@ -19,7 +19,7 @@ type Manager struct {
 	mu       sync.Mutex
 }
 
-func NewManager() Interface {
+func NewManager() *Manager {
 	m := &Manager{taskChan: make(chan *worker.Task, taskChanSize)}
 	m.Worker = worker.NewWorker(context.Background(), m.taskChan, m)
 	go m.Worker.Start()

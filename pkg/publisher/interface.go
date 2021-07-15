@@ -9,15 +9,6 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
 )
 
-type Interface interface {
-	BackendInterface
-	ActionsInterface
-}
-
-type BackendInterface interface {
-	PeriodicTask(ctx context.Context, req *logical.Request) error
-}
-
 type ActionsInterface interface {
 	InitRepository(ctx context.Context, storage logical.Storage, options RepositoryOptions) error
 	GetRepository(ctx context.Context, storage logical.Storage, options RepositoryOptions) (RepositoryInterface, error)

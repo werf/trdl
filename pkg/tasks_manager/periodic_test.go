@@ -16,7 +16,7 @@ import (
 type PeriodicTaskSuite struct {
 	suite.Suite
 	ctx     context.Context
-	manager Interface
+	manager *Manager
 	storage logical.Storage
 }
 
@@ -104,7 +104,7 @@ func (suite *PeriodicTaskSuite) testCleanupTaskHistory(testedTaskHistoryLimit in
 	}
 
 	req := &logical.Request{Storage: suite.storage}
-	err := suite.manager.PeriodicTask(suite.ctx, req)
+	err := suite.manager.PeriodicFunc(suite.ctx, req)
 	assert.Nil(suite.T(), err)
 
 	// check storage
@@ -163,7 +163,7 @@ func (suite *PeriodicTaskSuite) TestLastPeriodicRunTimestamp() {
 			}
 
 			req := &logical.Request{Storage: suite.storage}
-			err := suite.manager.PeriodicTask(suite.ctx, req)
+			err := suite.manager.PeriodicFunc(suite.ctx, req)
 			assert.Nil(suite.T(), err)
 
 			entry, err := suite.storage.Get(suite.ctx, storageKeyLastPeriodicRunTimestamp)

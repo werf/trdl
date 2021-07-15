@@ -14,7 +14,7 @@ const storageKeyLastPeriodicRunTimestamp = "tasks_manager_last_periodic_run_time
 
 var periodicTaskPeriod = time.Hour
 
-func (m *Manager) PeriodicTask(ctx context.Context, req *logical.Request) error {
+func (m *Manager) PeriodicFunc(ctx context.Context, req *logical.Request) error {
 	// lock manager
 	m.mu.Lock()
 	defer m.mu.Unlock()
