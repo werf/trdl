@@ -69,7 +69,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		return errorResponseConfigurationNotFound, nil
 	}
 
-	gitCredentialFromStorage, err := getGitCredential(ctx, req.Storage)
+	gitCredentialFromStorage, err := trdlGit.GetGitCredential(ctx, req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get git credential from storage: %s", err)
 	}
