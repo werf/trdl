@@ -1,47 +1,16 @@
 package trdl
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 type PathConfigureCallbacksSuite struct {
-	suite.Suite
-	ctx                context.Context
-	backend            *backend
-	storage            logical.Storage
-	mockedTasksManager *MockedTasksManager
-	mockedPublisher    *MockedPublisher
-}
-
-func (suite *PathConfigureCallbacksSuite) SetupTest() {
-	mockedTasksManager := &MockedTasksManager{}
-	mockedPublisher := &MockedPublisher{}
-	b := &backend{
-		Backend:      &framework.Backend{},
-		TasksManager: mockedTasksManager,
-		Publisher:    mockedPublisher,
-	}
-	b.Paths = []*framework.Path{configurePath(b)}
-
-	ctx := context.Background()
-	storage := &logical.InmemStorage{}
-	config := logical.TestBackendConfig()
-	config.StorageView = storage
-	err := b.Setup(ctx, config)
-	assert.Nil(suite.T(), err)
-
-	suite.ctx = ctx
-	suite.backend = b
-	suite.storage = storage
-	suite.mockedTasksManager = mockedTasksManager
-	suite.mockedPublisher = mockedPublisher
+	CommonSuite
 }
 
 func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_CompleteConfiguration() {
