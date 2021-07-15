@@ -7,7 +7,7 @@ import (
 	"golang.org/x/crypto/openpgp"
 )
 
-func VerifyPgpSignatures(pgpSignatures []string, signedReaderFunc func() (io.Reader, error), pgpKeys []string, requiredNumberOfVerifiedSignatures int) ([]string, int, error) {
+func VerifyPGPSignatures(pgpSignatures []string, signedReaderFunc func() (io.Reader, error), pgpKeys []string, requiredNumberOfVerifiedSignatures int) ([]string, int, error) {
 	for _, pgpSignature := range pgpSignatures {
 		i := 0
 		l := len(pgpKeys)

@@ -39,7 +39,7 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string,
 			return fmt.Errorf("unable to encode tag object: %s", err)
 		}
 
-		pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPgpSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
+		pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func VerifyCommitSignatures(repo *git.Repository, commit string, pgpKeys []strin
 			return err
 		}
 
-		pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPgpSignatures([]string{co.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
+		pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{co.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
 		if err != nil {
 			return err
 		}
@@ -87,7 +87,7 @@ func verifyObjectSignatures(repo *git.Repository, objectID string, pgpKeys []str
 		return fmt.Errorf("not enough pgp signatures")
 	}
 
-	pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPgpSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, pgpKeys, requiredNumberOfVerifiedSignatures)
+	pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, pgpKeys, requiredNumberOfVerifiedSignatures)
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,8 @@ import (
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
 const (
@@ -69,8 +71,13 @@ func Paths() []*framework.Path {
 }
 
 func pathConfigureTrustedPGPPublicKeyCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+	if err := util.CheckRequiredFields(req, fields); err != nil {
+		return logical.ErrorResponse(err.Error()), nil
+	}
+
 	name := fields.Get(fieldNameTrustedPGPPublicKeyName).(string)
 	key := fields.Get(fieldNameTrustedPGPPublicKeyData).(string)
+
 	if err := req.Storage.Put(ctx, &logical.StorageEntry{
 		Key:   trustedPGPPublicKeyStorageKey(name),
 		Value: []byte(key),
