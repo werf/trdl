@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/git"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
@@ -65,10 +66,10 @@ func (b *backend) InitPaths(modules ...BackendModuleInterface) {
 	b.Paths = framework.PathAppend(
 		[]*framework.Path{
 			configurePath(b),
-			configureGitCredentialPath(b),
 			releasePath(b),
 			publishPath(b),
 		},
+		git.CredentialsPaths(),
 		pgp.Paths(),
 	)
 
