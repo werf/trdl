@@ -6,6 +6,6 @@ type Publisher struct {
 	mu sync.Mutex
 }
 
-func NewPublisher() Interface {
+func NewPublisher() *Publisher {
 	return &Publisher{}
 }

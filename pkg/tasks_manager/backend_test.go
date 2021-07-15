@@ -493,7 +493,7 @@ func assertAndAddCompletedTaskToStorage(t *testing.T, ctx context.Context, stora
 	return taskUUID
 }
 
-func pathTestSetup(t *testing.T) (context.Context, logical.Backend, Interface, logical.Storage) {
+func pathTestSetup(t *testing.T) (context.Context, logical.Backend, *Manager, logical.Storage) {
 	ctx := context.Background()
 	m := NewManager() // TODO: use worker interface
 	storage := &logical.InmemStorage{}

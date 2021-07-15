@@ -12,6 +12,11 @@ import (
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
 )
 
+type BackendModuleInterface interface {
+	Paths() []*framework.Path
+	PeriodicFunc(ctx context.Context, req *logical.Request) error
+}
+
 type backend struct {
 	*framework.Backend
 	TasksManager tasks_manager.ActionsInterface
@@ -49,30 +54,39 @@ func newBackend() (*backend, error) {
 	b.Backend = &framework.Backend{
 		BackendType: logical.TypeLogical,
 		Help:        backendHelp,
-		PeriodicFunc: func(_ context.Context, request *logical.Request) error {
-			if err := tasksManager.PeriodicTask(context.Background(), request); err != nil {
-				return err
-			}
-
-			if err := publisherManager.PeriodicTask(context.Background(), request); err != nil {
-				return err
-			}
-
-			return nil
-		},
-		Paths: framework.PathAppend(
-			[]*framework.Path{
-				configurePath(b),
-				configureGitCredentialPath(b),
-				releasePath(b),
-				publishPath(b),
-			},
-			pgp.Paths(),
-			tasksManager.Paths(),
-		),
 	}
 
+	b.InitPaths(tasksManager)
+	b.InitPeriodicFunc(tasksManager, publisherManager)
 	return b, nil
+}
+
+func (b *backend) InitPaths(modules ...BackendModuleInterface) {
+	b.Paths = framework.PathAppend(
+		[]*framework.Path{
+			configurePath(b),
+			configureGitCredentialPath(b),
+			releasePath(b),
+			publishPath(b),
+		},
+		pgp.Paths(),
+	)
+
+	for _, module := range modules {
+		b.Paths = append(b.Paths, module.Paths()...)
+	}
+}
+
+func (b *backend) InitPeriodicFunc(modules ...BackendModuleInterface) {
+	b.PeriodicFunc = func(ctx context.Context, request *logical.Request) error {
+		for _, module := range modules {
+			if err := module.PeriodicFunc(context.Background(), request); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
 }
 
 const (
