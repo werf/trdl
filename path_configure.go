@@ -26,6 +26,8 @@ const (
 	storageKeyConfiguration = "configuration"
 )
 
+var errorResponseConfigurationNotFound = logical.ErrorResponse("configuration not found")
+
 func configurePath(b *backend) *framework.Path {
 	return &framework.Path{
 		Pattern: "configure/?",
@@ -128,7 +130,7 @@ func (b *backend) pathConfigureRead(ctx context.Context, req *logical.Request, _
 	}
 
 	if cfg == nil {
-		return logical.ErrorResponse("configuration not found"), nil
+		return errorResponseConfigurationNotFound, nil
 	}
 
 	return &logical.Response{Data: structs.Map(cfg)}, nil

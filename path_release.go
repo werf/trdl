@@ -73,7 +73,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 	}
 
 	if cfg == nil {
-		return logical.ErrorResponse("configuration not found"), nil
+		return errorResponseConfigurationNotFound, nil
 	}
 
 	gitCredentialFromStorage, err := getGitCredential(ctx, req.Storage)
