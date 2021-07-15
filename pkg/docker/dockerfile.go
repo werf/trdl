@@ -3,13 +3,10 @@ package docker
 import (
 	"archive/tar"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/docker/distribution/reference"
 )
 
 type DockerfileOpts struct {
@@ -18,8 +15,6 @@ type DockerfileOpts struct {
 	WithArtifacts         bool
 	EnvVars               map[string]string
 }
-
-var ErrImageNameWithoutRequiredDigest = errors.New("the image name must contain an digest \"REPO[:TAG]@DIGEST\" (e.g. \"ubuntu:18.04@sha256:538529c9d229fb55f50e6746b119e899775205d62c0fc1b7e679b30d02ecb6e8\")")
 
 func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, fromImage string, runCommands []string, dockerfileOpts DockerfileOpts) error {
 	dockerfileData := generateDockerfile(fromImage, runCommands, dockerfileOpts)
@@ -89,24 +84,4 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	}
 
 	return data
-}
-
-func ValidateImageNameWithDigest(imageName string) error {
-	if !reference.ReferenceRegexp.MatchString(imageName) {
-		return ErrImageNameWithoutRequiredDigest
-	}
-
-	res := reference.ReferenceRegexp.FindStringSubmatch(imageName)
-
-	// res[0] full match
-	// res[1] repository
-	// res[2] tag
-	// res[3] digest
-	if len(res) != 4 {
-		panic(fmt.Sprintf("unexpected regexp find submatch result %v (%d)", res, len(res)))
-	} else if res[3] == "" {
-		return ErrImageNameWithoutRequiredDigest
-	}
-
-	return nil
 }
