@@ -61,7 +61,7 @@ func (suite *PathPublishCallbackSuite) TestBusy() {
 
 	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), logical.ErrorResponse(tasks_manager.ErrBusy.Error()), resp)
+	assert.Equal(suite.T(), logical.ErrorResponse("busy"), resp)
 
 	suite.mockedPublisher.AssertExpectations(suite.T())
 	suite.mockedTasksManager.AssertExpectations(suite.T())

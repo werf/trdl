@@ -2,7 +2,6 @@ package tasks_manager
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -22,7 +21,7 @@ func TestManager_pathConfigureCreateOrUpdate(t *testing.T) {
 				ctx, b, _, storage := pathTestSetup(t)
 
 				req := &logical.Request{
-					Operation: op,
+					Operation: logical.CreateOperation,
 					Path:      "task/configure",
 					Data:      make(map[string]interface{}),
 					Storage:   storage,
@@ -168,9 +167,7 @@ func TestManager_pathTaskStatus(t *testing.T) {
 
 		resp, err := b.HandleRequest(ctx, req)
 		assert.Nil(t, err)
-		if assert.NotNil(t, resp) {
-			assert.Equal(t, map[string]interface{}{"error": "task \"bfc441c7-a143-4ab2-9aac-4d109cef5018\" not found"}, resp.Data)
-		}
+		assert.Equal(t, logical.ErrorResponse("Task %q not found", randomUUID), resp)
 	})
 
 	// fixtures
@@ -274,9 +271,7 @@ func TestManager_pathTaskLog(t *testing.T) {
 
 		resp, err := b.HandleRequest(ctx, req)
 		assert.Nil(t, err)
-		if assert.NotNil(t, resp) {
-			assert.Equal(t, map[string]interface{}{"error": "task \"bfc441c7-a143-4ab2-9aac-4d109cef5018\" not found"}, resp.Data)
-		}
+		assert.Equal(t, logical.ErrorResponse("Task %q not found", randomUUID), resp)
 	})
 
 	t.Run(string(taskStateQueued), func(t *testing.T) {
@@ -291,9 +286,7 @@ func TestManager_pathTaskLog(t *testing.T) {
 
 		resp, err := b.HandleRequest(ctx, req)
 		assert.Nil(t, err)
-		if assert.NotNil(t, resp) {
-			assert.Equal(t, map[string]interface{}{"error": fmt.Sprintf("task %q in queue", queuedTaskUUID)}, resp.Data)
-		}
+		assert.Equal(t, logical.ErrorResponse("Task %q in queue", queuedTaskUUID), resp)
 	})
 
 	t.Run(string(taskStateCompleted), func(t *testing.T) {
@@ -355,12 +348,12 @@ func TestManager_pathTaskLog(t *testing.T) {
 			{
 				name:           "negative offset",
 				offset:         -1,
-				expectedErrMsg: "field \"offset\" cannot be negative",
+				expectedErrMsg: "Field \"offset\" cannot be negative",
 			},
 			{
 				name:           "negative limit",
 				limit:          -1,
-				expectedErrMsg: "field \"limit\" cannot be negative",
+				expectedErrMsg: "Field \"limit\" cannot be negative",
 			},
 		} {
 			t.Run(test.name, func(t *testing.T) {
@@ -376,9 +369,7 @@ func TestManager_pathTaskLog(t *testing.T) {
 
 				resp, err := b.HandleRequest(ctx, req)
 				assert.Nil(t, err)
-				if assert.NotNil(t, resp) {
-					assert.Equal(t, map[string]interface{}{"error": test.expectedErrMsg}, resp.Data)
-				}
+				assert.Equal(t, logical.ErrorResponse(test.expectedErrMsg), resp)
 			})
 		}
 

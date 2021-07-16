@@ -33,7 +33,7 @@ var (
 	pathPatternTaskCancel = "task/" + uuidPattern(fieldNameUUID) + "/cancel$"
 	pathPatternTaskLog    = "task/" + uuidPattern(fieldNameUUID) + "/log$"
 
-	errorResponseConfigurationNotFound = logical.ErrorResponse("configuration not found")
+	errorResponseConfigurationNotFound = logical.ErrorResponse("Configuration not found")
 )
 
 func (m *Manager) Paths() []*framework.Path {
@@ -137,7 +137,7 @@ func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 	}
 
 	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
-		return logical.ErrorResponse(fmt.Sprintf("unable to save configuration: %s", err)), nil
+		return nil, fmt.Errorf("unable to save configuration: %s", err)
 	}
 
 	return nil, nil
@@ -146,7 +146,7 @@ func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 func (m *Manager) pathConfigureRead(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	c, err := getConfiguration(ctx, req.Storage)
 	if err != nil {
-		return logical.ErrorResponse(fmt.Sprintf("unable to get configuration: %s", err)), nil
+		return nil, fmt.Errorf("unable to get configuration: %s", err)
 	}
 
 	if c == nil {
@@ -190,7 +190,7 @@ func (m *Manager) pathTaskStatus(ctx context.Context, req *logical.Request, fiel
 	}
 
 	if task == nil {
-		return logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
+		return logical.ErrorResponse("Task %q not found", uuid), nil
 	}
 
 	return &logical.Response{Data: structs.Map(task)}, nil
@@ -216,11 +216,11 @@ func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fie
 	uuid := fields.Get(fieldNameUUID).(string)
 
 	if offset < 0 {
-		return logical.ErrorResponse("field %q cannot be negative", fieldNameOffset), nil
+		return logical.ErrorResponse("Field %q cannot be negative", fieldNameOffset), nil
 	}
 
 	if limit < 0 {
-		return logical.ErrorResponse("field %q cannot be negative", fieldNameLimit), nil
+		return logical.ErrorResponse("Field %q cannot be negative", fieldNameLimit), nil
 	}
 
 	data, resp, err := func() ([]byte, *logical.Response, error) {
@@ -261,11 +261,11 @@ func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fie
 			}
 
 			if t != nil {
-				return nil, logical.ErrorResponse(fmt.Sprintf("task %q in queue", uuid)), nil
+				return nil, logical.ErrorResponse("Task %q in queue", uuid), nil
 			}
 		}
 
-		return nil, logical.ErrorResponse(fmt.Sprintf("task %q not found", uuid)), nil
+		return nil, logical.ErrorResponse("Task %q not found", uuid), nil
 	}()
 	if err != nil {
 		return nil, err

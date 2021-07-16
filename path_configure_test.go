@@ -1,7 +1,6 @@
 package trdl
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
@@ -57,13 +56,7 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_RequiredFields() {
 
 			resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 			assert.Nil(suite.T(), err)
-			assert.Equal(
-				suite.T(),
-				logical.ErrorResponse(
-					fmt.Sprintf("required field %q must be set", requiredField),
-				),
-				resp,
-			)
+			assert.Equal(suite.T(), logical.ErrorResponse("Required field %q must be set", requiredField), resp)
 		})
 	}
 }
