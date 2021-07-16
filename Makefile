@@ -23,24 +23,23 @@ build:
 start:
 	export TRDL_DEV=1 ; vault server -dev -dev-root-token-id=root -dev-plugin-dir=./vault/plugins -log-level trace
 
-enable:
-ifndef TRDL_S3_SECRET_ACCESS_KEY
-	$(error TRDL_S3_SECRET_ACCESS_KEY variable required)
-endif
-ifndef TRDL_S3_ACCESS_KEY_ID
-	$(error TRDL_S3_ACCESS_KEY_ID variable required)
-endif
-
+dev: minio
 	VAULT_ADDR='http://127.0.0.1:8200' vault secrets enable -path=trdl-test-project vault-plugin-secrets-trdl
-	VAULT_ADDR='http://127.0.0.1:8200' vault write trdl-test-project/configure s3_secret_access_key="${TRDL_S3_SECRET_ACCESS_KEY}" s3_access_key_id="${TRDL_S3_ACCESS_KEY_ID}" s3_region=ru-central1 s3_bucket_name=trdl-test-project s3_endpoint=https://storage.yandexcloud.net required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project
-
-	VAULT_ADDR='http://127.0.0.1:8200' vault secrets enable -path=trdl-test-werf vault-plugin-secrets-trdl
-	VAULT_ADDR='http://127.0.0.1:8200' vault write trdl-test-werf/configure s3_secret_access_key="${TRDL_S3_SECRET_ACCESS_KEY}" s3_access_key_id="${TRDL_S3_ACCESS_KEY_ID}" s3_region=ru-central1 s3_bucket_name=trdl-test-werf s3_endpoint=https://storage.yandexcloud.net required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf
+	VAULT_ADDR='http://127.0.0.1:8200' vault write trdl-test-project/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project
 
 	tail -f trdl.log
 
+MINIO_RUNNING = $(shell docker inspect trdl_minio 2>&1 >/dev/null && echo true || echo false)
+minio:
+ifneq ($(MINIO_RUNNING), true)
+	docker run --name trdl_minio --detach --rm -p 9000:9000 -p 9001:9001 --volume $$(pwd)/minio_data:/data minio/minio server /data --console-address ":9001"
+	docker run -ti --rm -e MC_HOST_main=http://minioadmin:minioadmin@$$(docker inspect trdl_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 minio/mc mb main/trdl-test-project
+endif
+
 clean:
+	docker rm -f trdl_minio || true
 	rm -f ./vault/plugins/vault-plugin-secrets-trdl
+	sudo rm -rf ./minio_data
 
 fmt:
 	go fmt $$(go list ./...)
