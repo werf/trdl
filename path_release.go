@@ -37,7 +37,7 @@ func releasePath(b *backend) *framework.Path {
 		Fields: map[string]*framework.FieldSchema{
 			fieldNameGitTag: {
 				Type:        framework.TypeString,
-				Description: "Project git repository tag which should be released",
+				Description: "Git tag",
 				Required:    true,
 			},
 			fieldNameGitUsername: {
@@ -323,12 +323,6 @@ func handleFromImageBuildResponse(response types.ImageBuildResponse, tarWriter *
 }
 
 const (
-	pathReleaseHelpSyn = `
-	Performs release of project.
-	`
-
-	pathReleaseHelpDesc = `
-	Performs release of project by the specified git tag.
-	Provided command should prepare release artifacts in the /result directory, which will be published into the TUF repository.
-	`
+	pathReleaseHelpSyn  = "Perform a release"
+	pathReleaseHelpDesc = "Perform a release for the specified git tag"
 )
