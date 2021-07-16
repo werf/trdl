@@ -68,42 +68,29 @@ func (m *Publisher) InitRepository(ctx context.Context, storage logical.Storage,
 	}
 
 	if err := publisherRepository.TufRepo.Init(false); err == tuf.ErrInitNotAllowed {
-		if os.Getenv("TRDL_DEV") != "1" {
-			return fmt.Errorf("found existing targets in the tuf repository in the s3 storage, cannot reinitialize already initialized repository. Please use new s3 bucket or remove existing targets")
-		}
+		return fmt.Errorf("found existing targets in the tuf repository in the s3 storage, cannot reinitialize already initialized repository. Please use new s3 bucket or remove existing targets")
 	} else if err != nil {
 		return fmt.Errorf("unable to init tuf repository: %s", err)
 	}
 
-	if os.Getenv("TRDL_DEV") == "1" {
-		devKeys, err := LoadDevPublisherKeys()
-		if err != nil {
-			return fmt.Errorf("error loading dev mode publisher keys: %s", err)
-		}
+	_, err = publisherRepository.TufRepo.GenKey("root")
+	if err != nil {
+		return fmt.Errorf("error generating tuf repository root key: %s", err)
+	}
 
-		if err := publisherRepository.SetPrivKeys(devKeys); err != nil {
-			return fmt.Errorf("unable to set dev private keys: %s", err)
-		}
-	} else {
-		_, err = publisherRepository.TufRepo.GenKey("root")
-		if err != nil {
-			return fmt.Errorf("error generating tuf repository root key: %s", err)
-		}
+	_, err = publisherRepository.TufRepo.GenKey("targets")
+	if err != nil {
+		return fmt.Errorf("error generating tuf repository targets key: %s", err)
+	}
 
-		_, err = publisherRepository.TufRepo.GenKey("targets")
-		if err != nil {
-			return fmt.Errorf("error generating tuf repository targets key: %s", err)
-		}
+	_, err = publisherRepository.TufRepo.GenKey("snapshot")
+	if err != nil {
+		return fmt.Errorf("error generating tuf repository snapshot key: %s", err)
+	}
 
-		_, err = publisherRepository.TufRepo.GenKey("snapshot")
-		if err != nil {
-			return fmt.Errorf("error generating tuf repository snapshot key: %s", err)
-		}
-
-		_, err = publisherRepository.TufRepo.GenKey("timestamp")
-		if err != nil {
-			return fmt.Errorf("error generating tuf repository timestamp key: %s", err)
-		}
+	_, err = publisherRepository.TufRepo.GenKey("timestamp")
+	if err != nil {
+		return fmt.Errorf("error generating tuf repository timestamp key: %s", err)
 	}
 
 	for _, storeKey := range []struct {
