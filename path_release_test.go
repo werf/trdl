@@ -1,7 +1,6 @@
 package trdl
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
@@ -26,13 +25,7 @@ func (suite *PathReleaseCallbackSuite) SetupTest() {
 func (suite *PathReleaseCallbackSuite) TestRequiredGitTagField() {
 	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
-	assert.Equal(
-		suite.T(),
-		logical.ErrorResponse(
-			fmt.Sprintf("required field %q must be set", fieldNameGitTag),
-		),
-		resp,
-	)
+	assert.Equal(suite.T(), logical.ErrorResponse("Required field %q must be set", fieldNameGitTag), resp)
 }
 
 func (suite *PathReleaseCallbackSuite) TestConfigurationNotFound() {
@@ -82,7 +75,7 @@ func (suite *PathReleaseCallbackSuite) TestBusy() {
 
 	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), logical.ErrorResponse(tasks_manager.ErrBusy.Error()), resp)
+	assert.Equal(suite.T(), logical.ErrorResponse("busy"), resp)
 
 	suite.mockedPublisher.AssertExpectations(suite.T())
 	suite.mockedTasksManager.AssertExpectations(suite.T())

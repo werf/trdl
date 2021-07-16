@@ -73,13 +73,7 @@ func (suite *pathConfigureTrustedPGPPublicKeyCallbacksSuite) TestKeyCreateOrUpda
 
 			resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 			assert.Nil(suite.T(), err)
-			assert.Equal(
-				suite.T(),
-				logical.ErrorResponse(
-					fmt.Sprintf("required field %q must be set", fieldName),
-				),
-				resp,
-			)
+			assert.Equal(suite.T(), logical.ErrorResponse("Required field %q must be set", fieldName), resp)
 		})
 	}
 }
@@ -153,7 +147,7 @@ func (suite *pathConfigureTrustedPGPPublicKeyCallbacksSuite) TestKeyRead_NoKey()
 
 	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), logical.ErrorResponse(fmt.Sprintf("PGP public key %q not found in storage", testKeyName)), resp)
+	assert.Equal(suite.T(), logical.ErrorResponse("PGP public key %q not found in storage", testKeyName), resp)
 }
 
 func (suite *pathConfigureTrustedPGPPublicKeyCallbacksSuite) TestKeyDelete() {

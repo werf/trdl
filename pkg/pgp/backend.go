@@ -71,8 +71,8 @@ func Paths() []*framework.Path {
 }
 
 func pathConfigureTrustedPGPPublicKeyCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	if err := util.CheckRequiredFields(req, fields); err != nil {
-		return logical.ErrorResponse(err.Error()), nil
+	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
+		return errResp, nil
 	}
 
 	name := fields.Get(fieldNameTrustedPGPPublicKeyName).(string)
@@ -106,7 +106,7 @@ func pathConfigureTrustedPGPPublicKeyRead(ctx context.Context, req *logical.Requ
 	}
 
 	if e == nil {
-		return logical.ErrorResponse(fmt.Sprintf("PGP public key %q not found in storage", name)), nil
+		return logical.ErrorResponse("PGP public key %q not found in storage", name), nil
 	}
 
 	return &logical.Response{

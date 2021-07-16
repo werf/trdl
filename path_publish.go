@@ -56,8 +56,8 @@ func publishPath(b *backend) *framework.Path {
 }
 
 func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	if err := util.CheckRequiredFields(req, fields); err != nil {
-		return logical.ErrorResponse(err.Error()), nil
+	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
+		return errResp, nil
 	}
 
 	cfg, err := getConfiguration(ctx, req.Storage)
@@ -180,7 +180,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 	})
 	if err != nil {
 		if err == tasks_manager.ErrBusy {
-			return logical.ErrorResponse(err.Error()), nil
+			return logical.ErrorResponse("busy"), nil
 		}
 
 		return nil, err

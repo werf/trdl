@@ -26,7 +26,7 @@ const (
 	storageKeyConfiguration = "configuration"
 )
 
-var errorResponseConfigurationNotFound = logical.ErrorResponse("configuration not found")
+var errorResponseConfigurationNotFound = logical.ErrorResponse("Configuration not found")
 
 func configurePath(b *backend) *framework.Path {
 	return &framework.Path{
@@ -96,8 +96,8 @@ func configurePath(b *backend) *framework.Path {
 }
 
 func (b *backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	if err := util.CheckRequiredFields(req, fields); err != nil {
-		return logical.ErrorResponse(err.Error()), nil
+	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
+		return errResp, nil
 	}
 
 	cfg := &configuration{
@@ -138,7 +138,7 @@ func (b *backend) pathConfigureRead(ctx context.Context, req *logical.Request, _
 
 func (b *backend) pathConfigureDelete(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	if err := deleteConfiguration(ctx, req.Storage); err != nil {
-		return logical.ErrorResponse("unable to delete configuration: %s", err), nil
+		return nil, fmt.Errorf("unable to delete configuration: %s", err)
 	}
 
 	return nil, nil
