@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -22,6 +23,11 @@ type S3Filesystem struct {
 }
 
 func NewS3Filesystem(awsConfig *aws.Config, bucketName string) *S3Filesystem {
+	if !strings.Contains(*awsConfig.Endpoint, "s3.amazonaws.com") {
+		awsConfig.S3ForcePathStyle = new(bool)
+		*awsConfig.S3ForcePathStyle = true
+	}
+
 	return &S3Filesystem{AwsConfig: awsConfig, BucketName: bucketName}
 }
 
