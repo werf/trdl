@@ -229,11 +229,6 @@ func GetTrdlChannelsConfig(gitRepo *git.Repository) (*config.TrdlChannels, error
 }
 
 const (
-	pathPublishHelpSyn = `
-	Publishes release channels mapping of the project.
-	`
-
-	pathPublishHelpDesc = `
-	Publishes release channels mapping of the project using trdl-channels.yaml configuration file.
-	`
+	pathPublishHelpSyn  = "Publish release channels"
+	pathPublishHelpDesc = "Publish release channels based on trdl_channels.yaml configuration in the git repository"
 )

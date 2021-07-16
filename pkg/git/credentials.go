@@ -37,18 +37,18 @@ func CredentialsPaths() []*framework.Path {
 
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{
-					Callback: pathConfigureGitCredentialCreateOrUpdate,
+					Description: "Configure git credential",
+					Callback:    pathConfigureGitCredentialCreateOrUpdate,
 				},
 				logical.UpdateOperation: &framework.PathOperation{
-					Callback: pathConfigureGitCredentialCreateOrUpdate,
+					Description: "Configure git credential",
+					Callback:    pathConfigureGitCredentialCreateOrUpdate,
 				},
 				logical.DeleteOperation: &framework.PathOperation{
-					Callback: pathConfigureGitCredentialDelete,
+					Description: "Reset git credential",
+					Callback:    pathConfigureGitCredentialDelete,
 				},
 			},
-
-			HelpSynopsis:    "TODO",
-			HelpDescription: "TODO",
 		},
 	}
 }

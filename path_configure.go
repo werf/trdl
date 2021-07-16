@@ -39,12 +39,12 @@ func configurePath(b *backend) *framework.Path {
 			},
 			fieldNameGitTrdlChannelsBranch: {
 				Type:        framework.TypeString,
-				Description: `Set branch of the configured git repository which contains trdl_channels.yaml configuration (will use "trdl" branch by default)`,
+				Description: "Git branch that contains trdl_channels.yaml configuration (trdl by default)",
 				Required:    false,
 			},
 			fieldNameInitialLastPublishedGitCommit: {
 				Type:        framework.TypeString,
-				Description: "Set or override last published git commit which contains trdl channels",
+				Description: "Initial last published git commit",
 				Required:    false,
 			},
 			fieldNameRequiredNumberOfVerifiedSignaturesOnCommit: {
@@ -80,16 +80,20 @@ func configurePath(b *backend) *framework.Path {
 		},
 		Operations: map[logical.Operation]framework.OperationHandler{
 			logical.CreateOperation: &framework.PathOperation{
-				Callback: b.pathConfigureCreateOrUpdate,
+				Description: "Configure plugin",
+				Callback:    b.pathConfigureCreateOrUpdate,
 			},
 			logical.UpdateOperation: &framework.PathOperation{
-				Callback: b.pathConfigureCreateOrUpdate,
+				Description: "Configure plugin",
+				Callback:    b.pathConfigureCreateOrUpdate,
 			},
 			logical.ReadOperation: &framework.PathOperation{
-				Callback: b.pathConfigureRead,
+				Description: "Read plugin configuration",
+				Callback:    b.pathConfigureRead,
 			},
 			logical.DeleteOperation: &framework.PathOperation{
-				Callback: b.pathConfigureDelete,
+				Description: "Reset plugin configuration",
+				Callback:    b.pathConfigureDelete,
 			},
 		},
 	}
