@@ -21,7 +21,7 @@ type BackendModuleInterface interface {
 type backend struct {
 	*framework.Backend
 	TasksManager tasks_manager.ActionsInterface
-	Publisher    publisher.ActionsInterface
+	Publisher    publisher.Interface
 }
 
 var _ logical.Factory = Factory

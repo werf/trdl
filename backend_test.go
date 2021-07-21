@@ -47,7 +47,7 @@ func (m *MockedTasksManager) RunTask(_ context.Context, _ logical.Storage, _ fun
 
 type MockedPublisher struct {
 	mock.Mock
-	publisher.ActionsInterface
+	publisher.Interface
 }
 
 func (m *MockedPublisher) Paths() []*framework.Path {
