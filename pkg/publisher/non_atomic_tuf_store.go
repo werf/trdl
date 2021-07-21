@@ -15,10 +15,10 @@ import (
 )
 
 type TufRepoPrivKeys struct {
-	Root      *sign.PrivateKey
-	Snapshot  *sign.PrivateKey
-	Targets   *sign.PrivateKey
-	Timestamp *sign.PrivateKey
+	Root      *sign.PrivateKey `json:"root"`
+	Snapshot  *sign.PrivateKey `json:"snapshot"`
+	Targets   *sign.PrivateKey `json:"targets"`
+	Timestamp *sign.PrivateKey `json:"timestamp"`
 }
 
 type stagedFileDesc struct {

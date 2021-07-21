@@ -23,8 +23,6 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_CompleteConfigurati
 	suite.req.Operation = logical.CreateOperation
 	suite.req.Data = reqData
 
-	suite.mockedPublisher.On("InitRepository").Return(nil)
-
 	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Nil(suite.T(), resp)

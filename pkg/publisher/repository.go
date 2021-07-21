@@ -69,6 +69,42 @@ func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
 	return nil
 }
 
+func (repository *S3Repository) GetPrivKeys() TufRepoPrivKeys {
+	return repository.TufStore.PrivKeys
+}
+
+func (repository *S3Repository) GenPrivKeys() error {
+	if _, err := repository.TufRepo.GenKey("root"); err != nil {
+		return fmt.Errorf("error generating tuf repository root key: %s", err)
+	}
+
+	if _, err := repository.TufRepo.GenKey("targets"); err != nil {
+		return fmt.Errorf("error generating tuf repository targets key: %s", err)
+	}
+
+	if _, err := repository.TufRepo.GenKey("snapshot"); err != nil {
+		return fmt.Errorf("error generating tuf repository snapshot key: %s", err)
+	}
+
+	if _, err := repository.TufRepo.GenKey("timestamp"); err != nil {
+		return fmt.Errorf("error generating tuf repository timestamp key: %s", err)
+	}
+
+	return nil
+}
+
+func (repository *S3Repository) Init() error {
+	err := repository.TufRepo.Init(false)
+
+	if err == tuf.ErrInitNotAllowed {
+		hclog.L().Info("Tuf repository already initialized: skip initialization")
+	} else if err != nil {
+		return fmt.Errorf("unable to init tuf repository: %s", err)
+	}
+
+	return nil
+}
+
 func (repository *S3Repository) PublishTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error {
 	if err := repository.TufStore.StageTargetFile(ctx, pathInsideTargets, data); err != nil {
 		return fmt.Errorf("unable to add staged file %q: %s", pathInsideTargets, err)

@@ -25,6 +25,8 @@ lint:
 vault/plugins/vault-plugin-secrets-trdl: $(GOSRC)
 	CGO_ENABLED=0 GOOS=$(OS) GOARCH="$(GOARCH)" go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
 
+build: vault/plugins/vault-plugin-secrets-trdl
+
 .run: vault/plugins/vault-plugin-secrets-trdl
 	# Run minio, create bucket
 	docker rm -f trdl_dev_minio || true

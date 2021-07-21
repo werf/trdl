@@ -116,10 +116,6 @@ func (b *backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		S3BucketName:                               fields.Get(fieldNameS3BucketName).(string),
 	}
 
-	if err := b.Publisher.InitRepository(ctx, req.Storage, cfg.RepositoryOptions()); err != nil {
-		return nil, fmt.Errorf("unable to init publisher repository: %s", err)
-	}
-
 	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
 		return nil, fmt.Errorf("unable to put configuration into storage: %s", err)
 	}

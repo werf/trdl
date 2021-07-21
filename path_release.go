@@ -93,6 +93,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		gitPassword = gitCredentialFromStorage.Password
 	}
 
+	hclog.L().Debug("Before publisher.GetRepository")
 	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, cfg.RepositoryOptions())
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
