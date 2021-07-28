@@ -119,12 +119,12 @@ func (c Client) ExecRepoChannelReleaseBin(repoName, group, channel string, optio
 
 	if err := repoClient.ExecChannelReleaseBin(group, channel, optionalBinName, args); err != nil {
 		switch e := err.(type) {
-		case repo.ErrChannelNotFoundLocally:
-			return prepareChannelNotFoundLocallyError(e)
-		case repo.ErrChannelReleaseNotFoundLocally:
-			return prepareChannelReleaseNotFoundLocallyError(e)
-		case repo.ErrChannelReleaseBinSeveralFilesFound:
-			return prepareChannelReleaseBinSeveralFilesFoundError(e)
+		case repo.ChannelNotFoundLocallyErr:
+			return prepareChannelNotFoundLocallyErr(e)
+		case repo.ChannelReleaseNotFoundLocallyErr:
+			return prepareChannelReleaseNotFoundLocallyErr(e)
+		case repo.ChannelReleaseBinSeveralFilesFoundErr:
+			return prepareChannelReleaseBinSeveralFilesFoundErr(e)
 		}
 
 		return err
@@ -142,10 +142,10 @@ func (c Client) GetRepoChannelReleaseDir(repoName, group, channel string) (strin
 	dir, err := repoClient.GetChannelReleaseDir(group, channel)
 	if err != nil {
 		switch e := err.(type) {
-		case repo.ErrChannelNotFoundLocally:
-			return "", prepareChannelNotFoundLocallyError(e)
-		case repo.ErrChannelReleaseNotFoundLocally:
-			return "", prepareChannelReleaseNotFoundLocallyError(e)
+		case repo.ChannelNotFoundLocallyErr:
+			return "", prepareChannelNotFoundLocallyErr(e)
+		case repo.ChannelReleaseNotFoundLocallyErr:
+			return "", prepareChannelReleaseNotFoundLocallyErr(e)
 		}
 
 		return "", err
@@ -163,10 +163,10 @@ func (c Client) GetRepoChannelReleaseBinDir(repoName, group, channel string) (st
 	dir, err := repoClient.GetChannelReleaseBinDir(group, channel)
 	if err != nil {
 		switch e := err.(type) {
-		case repo.ErrChannelNotFoundLocally:
-			return "", prepareChannelNotFoundLocallyError(e)
-		case repo.ErrChannelReleaseNotFoundLocally:
-			return "", prepareChannelReleaseNotFoundLocallyError(e)
+		case repo.ChannelNotFoundLocallyErr:
+			return "", prepareChannelNotFoundLocallyErr(e)
+		case repo.ChannelReleaseNotFoundLocallyErr:
+			return "", prepareChannelReleaseNotFoundLocallyErr(e)
 		}
 
 		return "", err
@@ -175,7 +175,7 @@ func (c Client) GetRepoChannelReleaseBinDir(repoName, group, channel string) (st
 	return dir, nil
 }
 
-func prepareChannelNotFoundLocallyError(e repo.ErrChannelNotFoundLocally) error {
+func prepareChannelNotFoundLocallyErr(e repo.ChannelNotFoundLocallyErr) error {
 	return fmt.Errorf(
 		"%s, update channel with \"trdl update %s %s %s\" command",
 		e.Error(),
@@ -185,7 +185,7 @@ func prepareChannelNotFoundLocallyError(e repo.ErrChannelNotFoundLocally) error 
 	)
 }
 
-func prepareChannelReleaseNotFoundLocallyError(e repo.ErrChannelReleaseNotFoundLocally) error {
+func prepareChannelReleaseNotFoundLocallyErr(e repo.ChannelReleaseNotFoundLocallyErr) error {
 	return fmt.Errorf(
 		"%s, update channel with \"trdl update %s %s %s\" command",
 		e.Error(),
@@ -195,7 +195,7 @@ func prepareChannelReleaseNotFoundLocallyError(e repo.ErrChannelReleaseNotFoundL
 	)
 }
 
-func prepareChannelReleaseBinSeveralFilesFoundError(e repo.ErrChannelReleaseBinSeveralFilesFound) error {
+func prepareChannelReleaseBinSeveralFilesFoundErr(e repo.ChannelReleaseBinSeveralFilesFoundErr) error {
 	return fmt.Errorf(
 		"%s: it is necessary to specify the certain name:\n - %s",
 		e.Error(),

@@ -126,7 +126,7 @@ func (c Client) channelReleaseBinPath(group, channel string, optionalBinName str
 			names = append(names, strings.TrimLeft(m, dir+string(os.PathSeparator)))
 		}
 
-		return "", NewErrChannelReleaseSeveralFilesFound(c.repoName, group, channel, releaseName, names)
+		return "", NewChannelReleaseSeveralFilesFoundErr(c.repoName, group, channel, releaseName, names)
 	} else if len(matches) == 0 {
 		if optionalBinName == "" {
 			return "", fmt.Errorf("binary file not found in release")
@@ -173,7 +173,7 @@ func (c Client) channelReleaseDir(group, channel string) (dir string, release st
 	if len(matches) > 1 {
 		return "", "", fmt.Errorf("unexpected files in release directory:\n - %s", strings.Join(matches, "\n - "))
 	} else if len(matches) == 0 {
-		return "", "", NewErrChannelReleaseNotFoundLocally(c.repoName, group, channel, release)
+		return "", "", NewChannelReleaseNotFoundLocallyErr(c.repoName, group, channel, release)
 	}
 
 	return matches[0], release, nil
@@ -187,7 +187,7 @@ func (c Client) channelRelease(group, channel string) (string, error) {
 	}
 
 	if !exist {
-		return "", NewErrChannelNotFoundLocally(c.repoName, group, channel)
+		return "", NewChannelNotFoundLocallyErr(c.repoName, group, channel)
 	}
 
 	return readChannelRelease(channelFilePath)

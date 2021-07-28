@@ -8,7 +8,7 @@ import (
 func IsDirExist(path string) (bool, error) {
 	fileInfo, err := os.Lstat(path)
 	if err != nil {
-		if isNotExistError(err) {
+		if isNotExistErr(err) {
 			return false, nil
 		}
 
@@ -21,7 +21,7 @@ func IsDirExist(path string) (bool, error) {
 func IsRegularFileExist(path string) (bool, error) {
 	fileInfo, err := os.Lstat(path)
 	if err != nil {
-		if isNotExistError(err) {
+		if isNotExistErr(err) {
 			return false, nil
 		}
 
@@ -31,10 +31,10 @@ func IsRegularFileExist(path string) (bool, error) {
 	return fileInfo.Mode().IsRegular(), nil
 }
 
-func isNotExistError(err error) bool {
-	return os.IsNotExist(err) || IsNotADirectoryError(err)
+func isNotExistErr(err error) bool {
+	return os.IsNotExist(err) || IsNotDirectoryErr(err)
 }
 
-func IsNotADirectoryError(err error) bool {
+func IsNotDirectoryErr(err error) bool {
 	return strings.HasSuffix(err.Error(), "not a directory")
 }
