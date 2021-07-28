@@ -59,7 +59,7 @@ func (c *Client) init(repoUrl string, locksPath string) error {
 }
 
 func (c *Client) initTufClient(repoUrl string) (err error) {
-	return lockgate.WithAcquire(c.locker, c.tufClientLockName(), lockgate.AcquireOptions{Shared: false, Timeout: time.Minute * 2}, func(_ bool) error {
+	return lockgate.WithAcquire(c.locker, c.tufClientLockName(), lockgate.AcquireOptions{Shared: true, Timeout: time.Minute * 2}, func(_ bool) error {
 		c.tufClient, err = tuf.NewClient(c.metaLocalStoreDir(), repoUrl)
 		return err
 	})
