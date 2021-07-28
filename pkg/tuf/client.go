@@ -6,6 +6,7 @@ import (
 	tufClient "github.com/theupdateframework/go-tuf/client"
 	leveldbstore "github.com/theupdateframework/go-tuf/client/leveldbstore"
 	"github.com/theupdateframework/go-tuf/data"
+	"github.com/theupdateframework/go-tuf/util"
 )
 
 type client struct {
@@ -60,6 +61,10 @@ func (c client) Init(rootKeys []*data.Key, threshold int) error {
 	}
 
 	return nil
+}
+
+func (c client) Download(name string, destination tufClient.Destination) error {
+	return c.Client.Download(util.NormalizeTarget(name), destination)
 }
 
 func (c client) DownloadMetaUnsafe(name string, maxMetaSize int64) ([]byte, error) {

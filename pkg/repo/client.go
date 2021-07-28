@@ -94,6 +94,10 @@ func (c Client) channelPath(group, channel string) string {
 	return filepath.Join(c.dir, channelsDir, group, channel)
 }
 
+func (c Client) channelReleaseDir(releaseName string) string {
+	return filepath.Join(c.dir, releasesDir, releaseName)
+}
+
 func (c Client) channelTmpPath(group, channel string) string {
 	return filepath.Join(c.tpmDir, channelsDir, group, channel)
 }
@@ -102,8 +106,8 @@ func (c Client) channelReleaseTmpDir(releaseName string) string {
 	return filepath.Join(c.tpmDir, releasesDir, releaseName)
 }
 
-func (c Client) channelReleaseBinPath(group, channel string, optionalBinName string) (string, error) {
-	dir, releaseName, err := c.channelReleaseBinDir(group, channel)
+func (c Client) findChannelReleaseBinPath(group, channel string, optionalBinName string) (string, error) {
+	dir, releaseName, err := c.findChannelReleaseBinDir(group, channel)
 	if err != nil {
 		return "", err
 	}
@@ -123,7 +127,7 @@ func (c Client) channelReleaseBinPath(group, channel string, optionalBinName str
 	if len(matches) > 1 {
 		var names []string
 		for _, m := range matches {
-			names = append(names, strings.TrimLeft(m, dir+string(os.PathSeparator)))
+			names = append(names, strings.TrimPrefix(m, dir+string(os.PathSeparator)))
 		}
 
 		return "", NewChannelReleaseSeveralFilesFoundErr(c.repoName, group, channel, releaseName, names)
@@ -138,8 +142,8 @@ func (c Client) channelReleaseBinPath(group, channel string, optionalBinName str
 	return matches[0], nil
 }
 
-func (c Client) channelReleaseBinDir(group, channel string) (dir string, release string, err error) {
-	releaseDir, releaseName, err := c.channelReleaseDir(group, channel)
+func (c Client) findChannelReleaseBinDir(group, channel string) (dir string, release string, err error) {
+	releaseDir, releaseName, err := c.findChannelReleaseDir(group, channel)
 	if err != nil {
 		return "", "", err
 	}
@@ -157,8 +161,8 @@ func (c Client) channelReleaseBinDir(group, channel string) (dir string, release
 	return binDir, releaseName, nil
 }
 
-func (c Client) channelReleaseDir(group, channel string) (dir string, release string, err error) {
-	release, err = c.channelRelease(group, channel)
+func (c Client) findChannelReleaseDir(group, channel string) (dir string, release string, err error) {
+	release, err = c.getChannelRelease(group, channel)
 	if err != nil {
 		return "", "", err
 	}
@@ -179,7 +183,7 @@ func (c Client) channelReleaseDir(group, channel string) (dir string, release st
 	return matches[0], release, nil
 }
 
-func (c Client) channelRelease(group, channel string) (string, error) {
+func (c Client) getChannelRelease(group, channel string) (string, error) {
 	channelFilePath := c.channelPath(group, channel)
 	exist, err := util.IsRegularFileExist(channelFilePath)
 	if err != nil {

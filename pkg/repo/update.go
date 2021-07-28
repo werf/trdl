@@ -114,12 +114,12 @@ func (c Client) syncChannelRelease(release string) error {
 	releaseTargetNamePrefixWithOSArch := path.Join(releaseTargetNamePrefix, osArch)
 
 	var deferErr error // the error affects the defer function
-	releaseDir := c.channelReleaseTmpDir(release)
+	releaseDir := c.channelReleaseDir(release)
 	releaseTmpDir := c.channelReleaseTmpDir(release)
 	{ // stop updating if all release files are up-to-date
 		releaseFilesUpToDate := true
 		for targetName, targetMeta := range targets {
-			releaseFileRelPath := filepath.FromSlash(strings.TrimLeft(targetName, releaseTargetNamePrefix+"/"))
+			releaseFileRelPath := filepath.FromSlash(strings.TrimPrefix(targetName, releaseTargetNamePrefix+"/"))
 			releaseFilePath := filepath.Join(releaseDir, releaseFileRelPath)
 
 			equal, err := isLocalFileUpToDate(releaseFilePath, targetMeta)
@@ -155,7 +155,7 @@ func (c Client) syncChannelRelease(release string) error {
 			releaseFilePathMode = fileModeRegular
 		}
 
-		releaseFileRelPath := filepath.FromSlash(strings.TrimLeft(targetName, releaseTargetNamePrefix+"/"))
+		releaseFileRelPath := filepath.FromSlash(strings.TrimPrefix(targetName, releaseTargetNamePrefix+"/"))
 		releaseFilePath := filepath.Join(releaseTmpDir, releaseFileRelPath)
 		if deferErr = c.syncFile(targetName, targetMeta, releaseFilePath, releaseFilePathMode); deferErr != nil {
 			return fmt.Errorf("unable to sync file %q: %s", releaseFilePath, deferErr)
