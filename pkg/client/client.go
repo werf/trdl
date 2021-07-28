@@ -102,7 +102,30 @@ func (c Client) AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 
 	})
 }
 
-func (c Client) UpdateRepoChannel(repoName, group, channel string) error {
+func (c Client) SetRepoDefaultChannel(repoName, channel string) error {
+	if err := c.configuration.StageRepoDefaultChannel(repoName, channel); err != nil {
+		if err == repoConfigurationNotFoundErr {
+			return prepareRepositoryNotInitializedErr(repoName)
+		}
+
+		return err
+	}
+
+	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+		if err := c.configuration.Save(c.configurationPath()); err != nil {
+			return fmt.Errorf("unable to save trdl configuration: %s", err)
+		}
+
+		return nil
+	})
+}
+
+func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string) error {
+	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
+	if err != nil {
+		return err
+	}
+
 	repoClient, err := c.GetRepoClient(repoName)
 	if err != nil {
 		return err
@@ -111,7 +134,12 @@ func (c Client) UpdateRepoChannel(repoName, group, channel string) error {
 	return repoClient.UpdateChannel(group, channel)
 }
 
-func (c Client) ExecRepoChannelReleaseBin(repoName, group, channel string, optionalBinName string, args []string) error {
+func (c Client) ExecRepoChannelReleaseBin(repoName, group, optionalChannel, optionalBinName string, args []string) error {
+	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
+	if err != nil {
+		return err
+	}
+
 	repoClient, err := c.GetRepoClient(repoName)
 	if err != nil {
 		return err
@@ -133,7 +161,12 @@ func (c Client) ExecRepoChannelReleaseBin(repoName, group, channel string, optio
 	return nil
 }
 
-func (c Client) GetRepoChannelReleaseDir(repoName, group, channel string) (string, error) {
+func (c Client) GetRepoChannelReleaseDir(repoName, group, optionalChannel string) (string, error) {
+	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
+	if err != nil {
+		return "", err
+	}
+
 	repoClient, err := c.GetRepoClient(repoName)
 	if err != nil {
 		return "", err
@@ -154,7 +187,12 @@ func (c Client) GetRepoChannelReleaseDir(repoName, group, channel string) (strin
 	return dir, nil
 }
 
-func (c Client) GetRepoChannelReleaseBinDir(repoName, group, channel string) (string, error) {
+func (c Client) GetRepoChannelReleaseBinDir(repoName, group, optionalChannel string) (string, error) {
+	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
+	if err != nil {
+		return "", err
+	}
+
 	repoClient, err := c.GetRepoClient(repoName)
 	if err != nil {
 		return "", err
@@ -217,7 +255,7 @@ func (c Client) repoClient(repoName string) (RepoInterface, error) {
 		return nil, err
 	}
 
-	repoUrl, err := c.repoRemoteUrl(repoName)
+	repoUrl, err := c.getRepoRemoteUrl(repoName)
 	if err != nil {
 		return nil, err
 	}
@@ -229,13 +267,43 @@ func (c *Client) repoDir(repoName string) string {
 	return filepath.Join(c.dir, "repositories", repoName)
 }
 
-func (c *Client) repoRemoteUrl(repoName string) (string, error) {
-	repoConfiguration := c.configuration.GetRepoConfiguration(repoName)
-	if repoConfiguration == nil {
-		return "", fmt.Errorf("repository %q not initialized: configure it with \"trdl add\" command", repoName)
+func (c *Client) getRepoRemoteUrl(repoName string) (string, error) {
+	repoConfiguration, err := c.getRepoConfiguration(repoName)
+	if err != nil {
+		return "", err
 	}
 
 	return repoConfiguration.Url, nil
+}
+
+func (c *Client) processRepoOptionalChannel(repoName, optionalChannel string) (string, error) {
+	if optionalChannel != "" {
+		return optionalChannel, nil
+	}
+
+	repoConfiguration, err := c.getRepoConfiguration(repoName)
+	if err != nil {
+		return "", err
+	}
+
+	if repoConfiguration.DefaultChannel == "" {
+		return trdl.DefaultChannel, nil
+	}
+
+	return repoConfiguration.DefaultChannel, nil
+}
+
+func (c *Client) getRepoConfiguration(repoName string) (*RepoConfiguration, error) {
+	repoConfiguration := c.configuration.GetRepoConfiguration(repoName)
+	if repoConfiguration == nil {
+		return nil, prepareRepositoryNotInitializedErr(repoName)
+	}
+
+	return repoConfiguration, nil
+}
+
+func prepareRepositoryNotInitializedErr(repoName string) error {
+	return fmt.Errorf("repository %q not initialized: configure it with \"trdl add\" command", repoName)
 }
 
 func (c *Client) configurationPath() string {

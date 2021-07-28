@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	trdlClient "github.com/werf/trdl/pkg/client"
+	"github.com/werf/trdl/pkg/trdl"
 )
 
 func listCmd() *cobra.Command {
@@ -32,9 +33,14 @@ func listCmd() *cobra.Command {
 
 			sort.Strings(repoNameList)
 
-			tbl := table.New("Name", "URL")
+			tbl := table.New("Name", "URL", "Default Channel")
 			for _, repoName := range repoNameList {
-				tbl.AddRow(repoName, repoConfigurationByName[repoName].Url)
+				defaultChannel := repoConfigurationByName[repoName].DefaultChannel
+				if defaultChannel == "" {
+					defaultChannel = trdl.DefaultChannel
+				}
+
+				tbl.AddRow(repoName, repoConfigurationByName[repoName].Url, defaultChannel)
 			}
 			tbl.Print()
 
