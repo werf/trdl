@@ -12,7 +12,7 @@ import (
 type execCmdData struct {
 	repoName           string
 	group              string
-	channel            string
+	optionalChannel    string
 	optionalBinaryName string
 	optionalBinaryArgs []string
 }
@@ -40,7 +40,7 @@ func execCmd() *cobra.Command {
 			}
 
 			if err := c.ExecRepoChannelReleaseBin(
-				cmdData.repoName, cmdData.group, cmdData.channel,
+				cmdData.repoName, cmdData.group, cmdData.optionalChannel,
 				cmdData.optionalBinaryName, cmdData.optionalBinaryArgs,
 			); err != nil {
 				return fmt.Errorf("unable to exec release bin: %s", err)
@@ -70,26 +70,24 @@ func processExecArgs(cmd *cobra.Command, args []string) (*execCmdData, error) {
 
 	switch len(restArgs) {
 	case 0:
-		data.channel = trdl.ChannelStable
 		return data, nil
 	case 1:
 		for _, c := range trdl.Channels {
 			if c == restArgs[0] {
-				data.channel = restArgs[0]
+				data.optionalChannel = restArgs[0]
 				return data, nil
 			}
 		}
-		data.channel = trdl.ChannelStable
 
 		data.optionalBinaryName = restArgs[0]
 		return data, nil
 	case 2:
-		channel, err := ParseOptionalChannelValue(restArgs[0])
-		if err != nil {
+		optionalChannel := restArgs[0]
+		if err := ValidateChannel(optionalChannel); err != nil {
 			return nil, err
 		}
 
-		data.channel = channel
+		data.optionalChannel = optionalChannel
 		data.optionalBinaryName = restArgs[1]
 		return data, nil
 	default:

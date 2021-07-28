@@ -2,10 +2,11 @@ package client
 
 type Interface interface {
 	AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 string) error
-	UpdateRepoChannel(repoName, group, channel string) error
-	ExecRepoChannelReleaseBin(repoName, group, channel string, optionalBinName string, args []string) error
-	GetRepoChannelReleaseDir(repoName, group, channel string) (string, error)
-	GetRepoChannelReleaseBinDir(repoName, group, channel string) (string, error)
+	SetRepoDefaultChannel(repoName, channel string) error
+	UpdateRepoChannel(repoName, group, optionalChannel string) error
+	ExecRepoChannelReleaseBin(repoName, group, optionalChannel string, optionalBinName string, args []string) error
+	GetRepoChannelReleaseDir(repoName, group, optionalChannel string) (string, error)
+	GetRepoChannelReleaseBinDir(repoName, group, optionalChannel string) (string, error)
 	GetRepoList() []*RepoConfiguration
 	GetRepoClient(repoName string) (RepoInterface, error)
 }
@@ -20,6 +21,7 @@ type RepoInterface interface {
 
 type configurationInterface interface {
 	StageRepoConfiguration(name, url string)
+	StageRepoDefaultChannel(name, channel string) error
 	Reload() error
 	Save(configPath string) error
 	GetRepoConfiguration(name string) *RepoConfiguration

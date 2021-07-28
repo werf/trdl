@@ -8,6 +8,7 @@ const (
 	ChannelEA        = "ea"
 	ChannelStable    = "stable"
 	ChannelRockSolid = "rock-solid"
+	DefaultChannel   = ChannelStable
 )
 
 var Channels = []string{

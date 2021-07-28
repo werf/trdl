@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,6 +12,8 @@ import (
 )
 
 const configurationFileBasename = "config.yaml"
+
+var repoConfigurationNotFoundErr = errors.New("configuration not found")
 
 type configuration struct {
 	Repositories []*RepoConfiguration `yaml:"repositories"`
@@ -25,8 +28,9 @@ func newConfiguration(configPath string) (configuration, error) {
 }
 
 type RepoConfiguration struct {
-	Name string
-	Url  string
+	Name           string `yaml:"name"`
+	Url            string `yaml:"url"`
+	DefaultChannel string `yaml:"defaultChannel"`
 }
 
 func newRepoConfiguration(name, url string) *RepoConfiguration {
@@ -56,6 +60,17 @@ func (c *configuration) StageRepoConfiguration(name, url string) {
 	}
 
 	repo.Url = url
+}
+
+func (c *configuration) StageRepoDefaultChannel(name, channel string) error {
+	repo := c.GetRepoConfiguration(name)
+	if repo == nil {
+		return repoConfigurationNotFoundErr
+	}
+
+	repo.DefaultChannel = channel
+
+	return nil
 }
 
 func (c *configuration) Reload() error {

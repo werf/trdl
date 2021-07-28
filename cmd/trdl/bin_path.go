@@ -22,15 +22,13 @@ func binPathCmd() *cobra.Command {
 			repoName := args[0]
 			group := args[1]
 
-			var optionalChannelValue string
+			var optionalChannel string
 			if len(args) == 3 {
-				optionalChannelValue = args[2]
-			}
-
-			channel, err := ParseOptionalChannelValue(optionalChannelValue)
-			if err != nil {
-				PrintHelp(cmd)
-				return err
+				optionalChannel = args[2]
+				if err := ValidateChannel(optionalChannel); err != nil {
+					PrintHelp(cmd)
+					return err
+				}
 			}
 
 			c, err := trdlClient.NewClient(trdlHomeDirectory)
@@ -38,7 +36,7 @@ func binPathCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			dir, err := c.GetRepoChannelReleaseBinDir(repoName, group, channel)
+			dir, err := c.GetRepoChannelReleaseBinDir(repoName, group, optionalChannel)
 			if err != nil {
 				return fmt.Errorf("unable to get channel release bin directory: %s", err)
 			}

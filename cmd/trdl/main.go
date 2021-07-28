@@ -29,6 +29,7 @@ func rootCmd() *cobra.Command {
 
 	rootCmd.AddCommand(
 		addCmd(),
+		setDefaultChannelCmd(),
 		updateCmd(),
 		execCmd(),
 		dirPathCmd(),
