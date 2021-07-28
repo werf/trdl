@@ -11,7 +11,6 @@ import (
 
 	"github.com/theupdateframework/go-tuf/data"
 	util2 "github.com/theupdateframework/go-tuf/util"
-
 	"github.com/werf/lockgate"
 
 	"github.com/werf/trdl/pkg/trdl"
@@ -125,7 +124,7 @@ func (c Client) syncChannelRelease(release string) error {
 
 			equal, err := isLocalFileUpToDate(releaseFilePath, targetMeta)
 			if err != nil {
-				return fmt.Errorf("unable to compare local file %q with target %q: %s", releaseFilePath, targetMeta, err)
+				return fmt.Errorf("unable to compare local file %q with target %q: %s", releaseFilePath, targetName, err)
 			}
 
 			if !equal {
