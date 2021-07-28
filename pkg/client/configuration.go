@@ -13,7 +13,7 @@ import (
 const configurationFileBasename = "config.yaml"
 
 type configuration struct {
-	Projects []*ProjectConfiguration `yaml:"projects"`
+	Repositories []*RepoConfiguration `yaml:"repositories"`
 
 	configPath string
 }
@@ -24,38 +24,38 @@ func newConfiguration(configPath string) (configuration, error) {
 	return c, c.load()
 }
 
-type ProjectConfiguration struct {
-	Name    string
-	RepoUrl string
+type RepoConfiguration struct {
+	Name string
+	Url  string
 }
 
-func newProjectConfiguration(name, repoUrl string) *ProjectConfiguration {
-	return &ProjectConfiguration{Name: name, RepoUrl: repoUrl}
+func newRepoConfiguration(name, url string) *RepoConfiguration {
+	return &RepoConfiguration{Name: name, Url: url}
 }
 
-func (c configuration) GetProjectConfigurations() []*ProjectConfiguration {
-	return c.Projects
+func (c configuration) GetRepoConfigurationList() []*RepoConfiguration {
+	return c.Repositories
 }
 
-func (c configuration) GetProjectConfiguration(projectName string) *ProjectConfiguration {
-	for i := range c.Projects {
-		project := c.Projects[i]
-		if project.Name == projectName {
-			return project
+func (c configuration) GetRepoConfiguration(name string) *RepoConfiguration {
+	for i := range c.Repositories {
+		repo := c.Repositories[i]
+		if repo.Name == name {
+			return repo
 		}
 	}
 
 	return nil
 }
 
-func (c *configuration) StageProjectConfiguration(projectName, repoUrl string) {
-	project := c.GetProjectConfiguration(projectName)
-	if project == nil {
-		c.Projects = append(c.Projects, newProjectConfiguration(projectName, repoUrl))
+func (c *configuration) StageRepoConfiguration(name, url string) {
+	repo := c.GetRepoConfiguration(name)
+	if repo == nil {
+		c.Repositories = append(c.Repositories, newRepoConfiguration(name, url))
 		return
 	}
 
-	project.RepoUrl = repoUrl
+	repo.Url = url
 }
 
 func (c *configuration) Reload() error {

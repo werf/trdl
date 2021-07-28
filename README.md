@@ -8,17 +8,17 @@
 ├── config.yaml
 ├── .locks
 │   ├── ...
-│   └── projects
+│   └── repositories
 │       ├── ...
-│       └── <PROJECT_NAME>
+│       └── <REPO>
 ├── .tmp
 │   ├── ...
-│   └── projects
+│   └── repositories
 │       ├── ...
-│       └── <PROJECT_NAME>
-└── projects
+│       └── <REPO>
+└── repositories
     ├── ...
-    └── <PROJECT_NAME>
+    └── <REPO>
         ├── channels
         │   ├── ...
         │   └── <GROUP_NAME>
@@ -34,8 +34,8 @@
 
 ```shell
 ~/.trdl$ cat config.yaml
-projects:
+repositories:
   ...
-  - name: <PROJECT_NAME>
-    repourl: <REPO_URL>
+  - name: <REPO>
+    url: <URL>
 ```

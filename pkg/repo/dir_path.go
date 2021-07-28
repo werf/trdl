@@ -1,4 +1,4 @@
-package project
+package repo
 
 import (
 	"github.com/werf/lockgate"
@@ -6,9 +6,9 @@ import (
 	"github.com/werf/trdl/pkg/trdl"
 )
 
-func (c Client) ChannelReleaseBinDir(group, channel string) (dir string, err error) {
+func (c Client) GetChannelReleaseDir(group, channel string) (dir string, err error) {
 	err = lockgate.WithAcquire(c.locker, c.channelLockName(group, channel), lockgate.AcquireOptions{Shared: true, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
-		dir, _, err = c.channelReleaseBinDir(group, channel)
+		dir, _, err = c.channelReleaseDir(group, channel)
 		return err
 	})
 
