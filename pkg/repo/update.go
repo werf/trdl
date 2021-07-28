@@ -140,7 +140,7 @@ func (c Client) syncChannelRelease(release string) error {
 		defer func() {
 			if deferErr != nil {
 				if err := os.RemoveAll(releaseTmpDir); err != nil {
-					panic(fmt.Errorf("unable to remove %q: %s", releaseTmpDir, err))
+					panic(fmt.Errorf("unable to remove %q: %s (previous err: %s)", releaseTmpDir, err, deferErr))
 				}
 			}
 		}()
@@ -226,8 +226,13 @@ func (c Client) downloadFile(targetName string, dest string, destMode os.FileMod
 	if err != nil {
 		return err
 	}
-	file := destinationFile{f}
+	defer func() {
+		if err := f.Close(); err != nil {
+			panic(fmt.Errorf("unable to close file: %s", err))
+		}
+	}()
 
+	file := destinationFile{f}
 	if err := c.tufClient.Download(targetName, &file); err != nil {
 		return err
 	}
