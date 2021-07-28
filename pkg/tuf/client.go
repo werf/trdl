@@ -3,10 +3,9 @@ package tuf
 import (
 	"fmt"
 
-	"github.com/theupdateframework/go-tuf/data"
-
 	tufClient "github.com/theupdateframework/go-tuf/client"
 	leveldbstore "github.com/theupdateframework/go-tuf/client/leveldbstore"
+	"github.com/theupdateframework/go-tuf/data"
 )
 
 type client struct {
