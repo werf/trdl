@@ -10,7 +10,7 @@ import (
 )
 
 type execCmdData struct {
-	projectName        string
+	repoName           string
 	group              string
 	channel            string
 	optionalBinaryName string
@@ -19,8 +19,8 @@ type execCmdData struct {
 
 func execCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "exec PROJECT_NAME GROUP [CHANNEL] [BINARY_NAME] [--] [ARGS]",
-		Short:                 "Exec channel release binary",
+		Use:                   "exec REPO GROUP [CHANNEL] [BINARY_NAME] [--] [ARGS]",
+		Short:                 "Exec the channel release binary",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MinimumNArgs(2)(cmd, args); err != nil {
@@ -39,8 +39,8 @@ func execCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			if err := c.ExecProjectChannelReleaseBin(
-				cmdData.projectName, cmdData.group, cmdData.channel,
+			if err := c.ExecRepoChannelReleaseBin(
+				cmdData.repoName, cmdData.group, cmdData.channel,
 				cmdData.optionalBinaryName, cmdData.optionalBinaryArgs,
 			); err != nil {
 				return fmt.Errorf("unable to exec release bin: %s", err)
@@ -56,7 +56,7 @@ func execCmd() *cobra.Command {
 func processExecArgs(cmd *cobra.Command, args []string) (*execCmdData, error) {
 	data := &execCmdData{}
 
-	data.projectName = args[0]
+	data.repoName = args[0]
 	data.group = args[1]
 
 	doubleDashInd := cmd.ArgsLenAtDash()

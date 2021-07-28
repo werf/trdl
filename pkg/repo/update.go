@@ -1,4 +1,4 @@
-package project
+package repo
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ func (c Client) UpdateChannel(group, channel string) error {
 		channelPath := c.channelPath(group, channel)
 		channelTmpPath := c.channelTmpPath(group, channel)
 		{ // create tmp channel if channel is not up-to-date
-			targets, err := c.tufClient.Targets()
+			targets, err := c.tufClient.GetTargets()
 			if err != nil {
 				return err
 			}
@@ -42,7 +42,7 @@ func (c Client) UpdateChannel(group, channel string) error {
 			targetName := c.channelTargetName(group, channel)
 			targetMeta, ok := targets[targetName]
 			if !ok {
-				return fmt.Errorf("channel not found in the repo (group: %q, channel: %q)", group, channel)
+				return fmt.Errorf("channel not found in the repository (group: %q, channel: %q)", group, channel)
 			}
 
 			channelUpToDate, err = isLocalFileUpToDate(channelPath, targetMeta)
@@ -195,7 +195,7 @@ func (c Client) selectAppropriateReleaseTargets(release string) (targets data.Ta
 
 	if len(targets) == 0 {
 		return nil, "", fmt.Errorf(
-			"nothing found in the repo for release: %q, os: %q, arch: %q",
+			"nothing found in the repository for release: %q, os: %q, arch: %q",
 			release, runtime.GOOS, runtime.GOARCH,
 		)
 	}
@@ -236,7 +236,7 @@ func (c Client) downloadFile(targetName string, dest string, destMode os.FileMod
 }
 
 func (c Client) filterTargets(prefix string) (data.TargetFiles, error) {
-	targets, err := c.tufClient.Targets()
+	targets, err := c.tufClient.GetTargets()
 	if err != nil {
 		return nil, err
 	}

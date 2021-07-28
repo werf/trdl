@@ -1,4 +1,4 @@
-package project
+package repo
 
 import (
 	"fmt"

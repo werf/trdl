@@ -9,7 +9,7 @@ import (
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
 
-	"github.com/werf/trdl/pkg/project"
+	"github.com/werf/trdl/pkg/repo"
 	"github.com/werf/trdl/pkg/trdl"
 	"github.com/werf/trdl/pkg/util"
 )
@@ -77,21 +77,21 @@ func (c *Client) initConfiguration() error {
 	})
 }
 
-func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootSha512 string) error {
+func (c Client) AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 string) error {
 	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
 		if err := c.configuration.Reload(); err != nil {
 			return err
 		}
 
-		c.configuration.StageProjectConfiguration(projectName, repoUrl)
+		c.configuration.StageRepoConfiguration(repoName, repoUrl)
 
-		projectClient, err := c.ProjectClient(projectName)
+		repoClient, err := c.GetRepoClient(repoName)
 		if err != nil {
 			return err
 		}
 
-		if err := projectClient.Init(repoUrl, rootVersion, rootSha512); err != nil {
-			return fmt.Errorf("unable to init project %q client: %s", projectName, err)
+		if err := repoClient.Init(repoUrl, rootVersion, rootSha512); err != nil {
+			return fmt.Errorf("unable to init repository %q client: %s", repoName, err)
 		}
 
 		if err := c.configuration.Save(c.configurationPath()); err != nil {
@@ -102,29 +102,29 @@ func (c Client) AddProject(projectName, repoUrl string, rootVersion int64, rootS
 	})
 }
 
-func (c Client) UpdateProjectChannel(projectName, group, channel string) error {
-	projectClient, err := c.ProjectClient(projectName)
+func (c Client) UpdateRepoChannel(repoName, group, channel string) error {
+	repoClient, err := c.GetRepoClient(repoName)
 	if err != nil {
 		return err
 	}
 
-	return projectClient.UpdateChannel(group, channel)
+	return repoClient.UpdateChannel(group, channel)
 }
 
-func (c Client) ExecProjectChannelReleaseBin(projectName, group, channel string, optionalBinName string, args []string) error {
-	projectClient, err := c.ProjectClient(projectName)
+func (c Client) ExecRepoChannelReleaseBin(repoName, group, channel string, optionalBinName string, args []string) error {
+	repoClient, err := c.GetRepoClient(repoName)
 	if err != nil {
 		return err
 	}
 
-	if err := projectClient.ExecChannelReleaseBin(group, channel, optionalBinName, args); err != nil {
+	if err := repoClient.ExecChannelReleaseBin(group, channel, optionalBinName, args); err != nil {
 		switch e := err.(type) {
-		case project.ErrChannelNotFoundLocally:
-			return prepareChannelNotFoundLocallyError(e)
-		case project.ErrChannelReleaseNotFoundLocally:
-			return prepareChannelReleaseNotFoundLocallyError(e)
-		case project.ErrChannelReleaseBinSeveralFilesFound:
-			return prepareChannelReleaseBinSeveralFilesFoundError(e)
+		case repo.ChannelNotFoundLocallyErr:
+			return prepareChannelNotFoundLocallyErr(e)
+		case repo.ChannelReleaseNotFoundLocallyErr:
+			return prepareChannelReleaseNotFoundLocallyErr(e)
+		case repo.ChannelReleaseBinSeveralFilesFoundErr:
+			return prepareChannelReleaseBinSeveralFilesFoundErr(e)
 		}
 
 		return err
@@ -133,19 +133,19 @@ func (c Client) ExecProjectChannelReleaseBin(projectName, group, channel string,
 	return nil
 }
 
-func (c Client) ProjectChannelReleaseDir(projectName, group, channel string) (string, error) {
-	projectClient, err := c.ProjectClient(projectName)
+func (c Client) GetRepoChannelReleaseDir(repoName, group, channel string) (string, error) {
+	repoClient, err := c.GetRepoClient(repoName)
 	if err != nil {
 		return "", err
 	}
 
-	dir, err := projectClient.ChannelReleaseDir(group, channel)
+	dir, err := repoClient.GetChannelReleaseDir(group, channel)
 	if err != nil {
 		switch e := err.(type) {
-		case project.ErrChannelNotFoundLocally:
-			return "", prepareChannelNotFoundLocallyError(e)
-		case project.ErrChannelReleaseNotFoundLocally:
-			return "", prepareChannelReleaseNotFoundLocallyError(e)
+		case repo.ChannelNotFoundLocallyErr:
+			return "", prepareChannelNotFoundLocallyErr(e)
+		case repo.ChannelReleaseNotFoundLocallyErr:
+			return "", prepareChannelReleaseNotFoundLocallyErr(e)
 		}
 
 		return "", err
@@ -154,19 +154,19 @@ func (c Client) ProjectChannelReleaseDir(projectName, group, channel string) (st
 	return dir, nil
 }
 
-func (c Client) ProjectChannelReleaseBinDir(projectName, group, channel string) (string, error) {
-	projectClient, err := c.ProjectClient(projectName)
+func (c Client) GetRepoChannelReleaseBinDir(repoName, group, channel string) (string, error) {
+	repoClient, err := c.GetRepoClient(repoName)
 	if err != nil {
 		return "", err
 	}
 
-	dir, err := projectClient.ChannelReleaseBinDir(group, channel)
+	dir, err := repoClient.GetChannelReleaseBinDir(group, channel)
 	if err != nil {
 		switch e := err.(type) {
-		case project.ErrChannelNotFoundLocally:
-			return "", prepareChannelNotFoundLocallyError(e)
-		case project.ErrChannelReleaseNotFoundLocally:
-			return "", prepareChannelReleaseNotFoundLocallyError(e)
+		case repo.ChannelNotFoundLocallyErr:
+			return "", prepareChannelNotFoundLocallyErr(e)
+		case repo.ChannelReleaseNotFoundLocallyErr:
+			return "", prepareChannelReleaseNotFoundLocallyErr(e)
 		}
 
 		return "", err
@@ -175,27 +175,27 @@ func (c Client) ProjectChannelReleaseBinDir(projectName, group, channel string) 
 	return dir, nil
 }
 
-func prepareChannelNotFoundLocallyError(e project.ErrChannelNotFoundLocally) error {
+func prepareChannelNotFoundLocallyErr(e repo.ChannelNotFoundLocallyErr) error {
 	return fmt.Errorf(
 		"%s, update channel with \"trdl update %s %s %s\" command",
 		e.Error(),
-		e.ProjectName,
+		e.RepoName,
 		e.Group,
 		e.Channel,
 	)
 }
 
-func prepareChannelReleaseNotFoundLocallyError(e project.ErrChannelReleaseNotFoundLocally) error {
+func prepareChannelReleaseNotFoundLocallyErr(e repo.ChannelReleaseNotFoundLocallyErr) error {
 	return fmt.Errorf(
 		"%s, update channel with \"trdl update %s %s %s\" command",
 		e.Error(),
-		e.ProjectName,
+		e.RepoName,
 		e.Group,
 		e.Channel,
 	)
 }
 
-func prepareChannelReleaseBinSeveralFilesFoundError(e project.ErrChannelReleaseBinSeveralFilesFound) error {
+func prepareChannelReleaseBinSeveralFilesFoundErr(e repo.ChannelReleaseBinSeveralFilesFoundErr) error {
 	return fmt.Errorf(
 		"%s: it is necessary to specify the certain name:\n - %s",
 		e.Error(),
@@ -203,55 +203,55 @@ func prepareChannelReleaseBinSeveralFilesFoundError(e project.ErrChannelReleaseB
 	)
 }
 
-func (c Client) ListProjects() []*ProjectConfiguration {
-	return c.configuration.GetProjectConfigurations()
+func (c Client) GetRepoList() []*RepoConfiguration {
+	return c.configuration.GetRepoConfigurationList()
 }
 
-func (c Client) ProjectClient(projectName string) (ProjectInterface, error) {
-	return c.projectClient(projectName)
+func (c Client) GetRepoClient(repoName string) (RepoInterface, error) {
+	return c.repoClient(repoName)
 }
 
-func (c Client) projectClient(projectName string) (ProjectInterface, error) {
-	projectDir := c.projectDir(projectName)
-	if err := os.MkdirAll(projectDir, os.ModePerm); err != nil {
+func (c Client) repoClient(repoName string) (RepoInterface, error) {
+	repoDir := c.repoDir(repoName)
+	if err := os.MkdirAll(repoDir, os.ModePerm); err != nil {
 		return nil, err
 	}
 
-	repoUrl, err := c.projectRemoteUrl(projectName)
+	repoUrl, err := c.repoRemoteUrl(repoName)
 	if err != nil {
 		return nil, err
 	}
 
-	return project.NewClient(projectName, projectDir, repoUrl, c.projectLocksDir(projectName), c.projectTmpDir(projectName))
+	return repo.NewClient(repoName, repoDir, repoUrl, c.repoLocksDir(repoName), c.repoTmpDir(repoName))
 }
 
-func (c *Client) projectDir(projectName string) string {
-	return filepath.Join(c.dir, "projects", projectName)
+func (c *Client) repoDir(repoName string) string {
+	return filepath.Join(c.dir, "repositories", repoName)
 }
 
-func (c *Client) projectRemoteUrl(projectName string) (string, error) {
-	projectConfiguration := c.configuration.GetProjectConfiguration(projectName)
-	if projectConfiguration == nil {
-		return "", fmt.Errorf("project %q not initialized: configure it with \"trdl add\" command", projectName)
+func (c *Client) repoRemoteUrl(repoName string) (string, error) {
+	repoConfiguration := c.configuration.GetRepoConfiguration(repoName)
+	if repoConfiguration == nil {
+		return "", fmt.Errorf("repository %q not initialized: configure it with \"trdl add\" command", repoName)
 	}
 
-	return projectConfiguration.RepoUrl, nil
+	return repoConfiguration.Url, nil
 }
 
 func (c *Client) configurationPath() string {
 	return filepath.Join(c.dir, configurationFileBasename)
 }
 
-func (c *Client) projectLocksDir(projectName string) string {
-	return filepath.Join(c.locksDir(), "projects", projectName)
+func (c *Client) repoLocksDir(repoName string) string {
+	return filepath.Join(c.locksDir(), "repositories", repoName)
 }
 
 func (c *Client) locksDir() string {
 	return filepath.Join(c.dir, ".locks")
 }
 
-func (c *Client) projectTmpDir(projectName string) string {
-	return filepath.Join(c.tmpDir(), "projects", projectName)
+func (c *Client) repoTmpDir(repoName string) string {
+	return filepath.Join(c.tmpDir(), "repositories", repoName)
 }
 
 func (c *Client) tmpDir() string {

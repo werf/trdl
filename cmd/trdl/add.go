@@ -11,8 +11,8 @@ import (
 
 func addCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "add PROJECT_NAME REPO_URL ROOT_VERSION ROOT_SHA512",
-		Short:                 "Initialize the project",
+		Use:                   "add REPO URL ROOT_VERSION ROOT_SHA512",
+		Short:                 "Initialize the repository",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.ExactArgs(4)(cmd, args); err != nil {
@@ -20,8 +20,8 @@ func addCmd() *cobra.Command {
 				return err
 			}
 
-			projectName := args[0]
-			url := args[1]
+			repoName := args[0]
+			repoUrl := args[1]
 			rootVersionArg := args[2]
 			rootSha512 := args[3]
 
@@ -36,8 +36,8 @@ func addCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			if err := c.AddProject(projectName, url, rootVersion, rootSha512); err != nil {
-				return fmt.Errorf("unable to add the project: %s", err)
+			if err := c.AddRepo(repoName, repoUrl, rootVersion, rootSha512); err != nil {
+				return fmt.Errorf("unable to add the repository: %s", err)
 			}
 
 			return nil

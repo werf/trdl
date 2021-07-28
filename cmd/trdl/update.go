@@ -10,8 +10,8 @@ import (
 
 func updateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "update PROJECT_NAME GROUP [CHANNEL]",
-		Short:                 "Update the project channel files",
+		Use:                   "update REPO GROUP [CHANNEL]",
+		Short:                 "Update the channel",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
@@ -19,7 +19,7 @@ func updateCmd() *cobra.Command {
 				return err
 			}
 
-			projectName := args[0]
+			repoName := args[0]
 			group := args[1]
 
 			var optionalChannelValue string
@@ -38,7 +38,7 @@ func updateCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			if err := c.UpdateProjectChannel(projectName, group, channel); err != nil {
+			if err := c.UpdateRepoChannel(repoName, group, channel); err != nil {
 				return fmt.Errorf("unable to update channel: %s", err)
 			}
 

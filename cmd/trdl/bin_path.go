@@ -10,7 +10,7 @@ import (
 
 func binPathCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "bin-path PROJECT_NAME GROUP [CHANNEL]",
+		Use:                   "bin-path REPO GROUP [CHANNEL]",
 		Short:                 "Get path to channel release bin directory",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -19,7 +19,7 @@ func binPathCmd() *cobra.Command {
 				return err
 			}
 
-			projectName := args[0]
+			repoName := args[0]
 			group := args[1]
 
 			var optionalChannelValue string
@@ -38,7 +38,7 @@ func binPathCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			dir, err := c.ProjectChannelReleaseBinDir(projectName, group, channel)
+			dir, err := c.GetRepoChannelReleaseBinDir(repoName, group, channel)
 			if err != nil {
 				return fmt.Errorf("unable to get channel release bin directory: %s", err)
 			}

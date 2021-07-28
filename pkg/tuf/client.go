@@ -92,3 +92,7 @@ func (c *client) saveMeta() error {
 
 	return nil
 }
+
+func (c client) GetTargets() (data.TargetFiles, error) {
+	return c.Client.Targets()
+}

@@ -13,7 +13,7 @@ import (
 func listCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "list",
-		Short:                 "List projects",
+		Short:                 "List repositories",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := trdlClient.NewClient(trdlHomeDirectory)
@@ -21,20 +21,20 @@ func listCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			projectConfigurationList := c.ListProjects()
-			var projectNameList []string
-			projectConfigurationByName := map[string]*trdlClient.ProjectConfiguration{}
-			for _, projectConfiguration := range projectConfigurationList {
-				projectName := projectConfiguration.Name
-				projectNameList = append(projectNameList, projectName)
-				projectConfigurationByName[projectName] = projectConfiguration
+			repoConfigurationList := c.GetRepoList()
+			var repoNameList []string
+			repoConfigurationByName := map[string]*trdlClient.RepoConfiguration{}
+			for _, repoConfiguration := range repoConfigurationList {
+				repoName := repoConfiguration.Name
+				repoNameList = append(repoNameList, repoName)
+				repoConfigurationByName[repoName] = repoConfiguration
 			}
 
-			sort.Strings(projectNameList)
+			sort.Strings(repoNameList)
 
-			tbl := table.New("Name", "Repo URL")
-			for _, projectName := range projectNameList {
-				tbl.AddRow(projectName, projectConfigurationByName[projectName].RepoUrl)
+			tbl := table.New("Name", "URL")
+			for _, repoName := range repoNameList {
+				tbl.AddRow(repoName, repoConfigurationByName[repoName].Url)
 			}
 			tbl.Print()
 

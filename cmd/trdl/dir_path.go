@@ -10,7 +10,7 @@ import (
 
 func dirPathCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "dir-path PROJECT_NAME GROUP [CHANNEL]",
+		Use:                   "dir-path REPO GROUP [CHANNEL]",
 		Short:                 "Get path to channel release directory",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -19,7 +19,7 @@ func dirPathCmd() *cobra.Command {
 				return err
 			}
 
-			projectName := args[0]
+			repoName := args[0]
 			group := args[1]
 
 			var optionalChannelValue string
@@ -38,7 +38,7 @@ func dirPathCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			dir, err := c.ProjectChannelReleaseDir(projectName, group, channel)
+			dir, err := c.GetRepoChannelReleaseDir(repoName, group, channel)
 			if err != nil {
 				return fmt.Errorf("unable to get channel release directory: %s", err)
 			}
