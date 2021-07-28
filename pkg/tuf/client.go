@@ -6,6 +6,7 @@ import (
 	tufClient "github.com/theupdateframework/go-tuf/client"
 	leveldbstore "github.com/theupdateframework/go-tuf/client/leveldbstore"
 	"github.com/theupdateframework/go-tuf/data"
+	"github.com/theupdateframework/go-tuf/util"
 )
 
 type client struct {
@@ -51,7 +52,19 @@ func NewClient(metaLocalStoreDir, repoUrl string) (Client, error) {
 }
 
 func (c client) Init(rootKeys []*data.Key, threshold int) error {
-	return c.Client.Init(rootKeys, threshold)
+	if err := c.Client.Init(rootKeys, threshold); err != nil {
+		return err
+	}
+
+	if err := c.saveMeta(); err != nil {
+		return fmt.Errorf("unable to save tuf meta: %s", err)
+	}
+
+	return nil
+}
+
+func (c client) Download(name string, destination tufClient.Destination) error {
+	return c.Client.Download(util.NormalizeTarget(name), destination)
 }
 
 func (c client) DownloadMetaUnsafe(name string, maxMetaSize int64) ([]byte, error) {

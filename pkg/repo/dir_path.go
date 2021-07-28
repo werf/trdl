@@ -8,7 +8,7 @@ import (
 
 func (c Client) GetChannelReleaseDir(group, channel string) (dir string, err error) {
 	err = lockgate.WithAcquire(c.locker, c.channelLockName(group, channel), lockgate.AcquireOptions{Shared: true, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
-		dir, _, err = c.channelReleaseDir(group, channel)
+		dir, _, err = c.findChannelReleaseDir(group, channel)
 		return err
 	})
 

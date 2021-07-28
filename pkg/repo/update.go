@@ -114,12 +114,12 @@ func (c Client) syncChannelRelease(release string) error {
 	releaseTargetNamePrefixWithOSArch := path.Join(releaseTargetNamePrefix, osArch)
 
 	var deferErr error // the error affects the defer function
-	releaseDir := c.channelReleaseTmpDir(release)
+	releaseDir := c.channelReleaseDir(release)
 	releaseTmpDir := c.channelReleaseTmpDir(release)
 	{ // stop updating if all release files are up-to-date
 		releaseFilesUpToDate := true
 		for targetName, targetMeta := range targets {
-			releaseFileRelPath := filepath.FromSlash(strings.TrimLeft(targetName, releaseTargetNamePrefix+"/"))
+			releaseFileRelPath := filepath.FromSlash(strings.TrimPrefix(targetName, releaseTargetNamePrefix+"/"))
 			releaseFilePath := filepath.Join(releaseDir, releaseFileRelPath)
 
 			equal, err := isLocalFileUpToDate(releaseFilePath, targetMeta)
@@ -140,7 +140,7 @@ func (c Client) syncChannelRelease(release string) error {
 		defer func() {
 			if deferErr != nil {
 				if err := os.RemoveAll(releaseTmpDir); err != nil {
-					panic(fmt.Errorf("unable to remove %q: %s", releaseTmpDir, err))
+					panic(fmt.Errorf("unable to remove %q: %s (previous err: %s)", releaseTmpDir, err, deferErr))
 				}
 			}
 		}()
@@ -155,7 +155,7 @@ func (c Client) syncChannelRelease(release string) error {
 			releaseFilePathMode = fileModeRegular
 		}
 
-		releaseFileRelPath := filepath.FromSlash(strings.TrimLeft(targetName, releaseTargetNamePrefix+"/"))
+		releaseFileRelPath := filepath.FromSlash(strings.TrimPrefix(targetName, releaseTargetNamePrefix+"/"))
 		releaseFilePath := filepath.Join(releaseTmpDir, releaseFileRelPath)
 		if deferErr = c.syncFile(targetName, targetMeta, releaseFilePath, releaseFilePathMode); deferErr != nil {
 			return fmt.Errorf("unable to sync file %q: %s", releaseFilePath, deferErr)
@@ -226,8 +226,13 @@ func (c Client) downloadFile(targetName string, dest string, destMode os.FileMod
 	if err != nil {
 		return err
 	}
-	file := destinationFile{f}
+	defer func() {
+		if err := f.Close(); err != nil {
+			panic(fmt.Errorf("unable to close file: %s", err))
+		}
+	}()
 
+	file := destinationFile{f}
 	if err := c.tufClient.Download(targetName, &file); err != nil {
 		return err
 	}
