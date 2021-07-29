@@ -90,7 +90,7 @@ func (c Client) AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 
 			return err
 		}
 
-		if err := repoClient.Init(repoUrl, rootVersion, rootSha512); err != nil {
+		if err := repoClient.Setup(rootVersion, rootSha512); err != nil {
 			return fmt.Errorf("unable to init repository %q client: %s", repoName, err)
 		}
 

@@ -12,7 +12,7 @@ type Interface interface {
 }
 
 type RepoInterface interface {
-	Init(repoUrl string, rootVersion int64, rootSha512 string) error
+	Setup(rootVersion int64, rootSha512 string) error
 	UpdateChannel(group, channel string) error
 	ExecChannelReleaseBin(group, channel string, optionalBinName string, args []string) error
 	GetChannelReleaseDir(group, channel string) (string, error)

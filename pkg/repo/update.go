@@ -24,7 +24,7 @@ var (
 
 func (c Client) UpdateChannel(group, channel string) error {
 	return lockgate.WithAcquire(c.locker, c.updateChannelLockName(group, channel), lockgate.AcquireOptions{Shared: false, Timeout: time.Minute * 5}, func(_ bool) error {
-		if err := c.syncMeta(); err != nil {
+		if err := c.tufClient.Update(); err != nil {
 			return err
 		}
 
@@ -214,30 +214,7 @@ func (c Client) syncFile(targetName string, targetMeta data.TargetFileMeta, dest
 		return nil
 	}
 
-	return c.downloadFile(targetName, dest, destMode)
-}
-
-func (c Client) downloadFile(targetName string, dest string, destMode os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
-		return err
-	}
-
-	f, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE, destMode)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			panic(fmt.Errorf("unable to close file: %s", err))
-		}
-	}()
-
-	file := destinationFile{f}
-	if err := c.tufClient.Download(targetName, &file); err != nil {
-		return err
-	}
-
-	return nil
+	return c.tufClient.DownloadFile(targetName, dest, destMode)
 }
 
 func (c Client) filterTargets(prefix string) (data.TargetFiles, error) {
