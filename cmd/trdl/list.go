@@ -17,7 +17,7 @@ func listCmd() *cobra.Command {
 		Short:                 "List repositories",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c, err := trdlClient.NewClient(trdlHomeDirectory)
+			c, err := trdlClient.NewClient(homeDir)
 			if err != nil {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}

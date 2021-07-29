@@ -31,7 +31,7 @@ func addCmd() *cobra.Command {
 				return fmt.Errorf("unable to parse required argument \"ROOT_VERSION\": %s", err)
 			}
 
-			c, err := trdlClient.NewClient(trdlHomeDirectory)
+			c, err := trdlClient.NewClient(homeDir)
 			if err != nil {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}

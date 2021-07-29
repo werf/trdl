@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const trdlHomeDirectory = "~/.trdl"
+var homeDir string
 
 func main() {
 	if err := rootCmd().Execute(); err != nil {
@@ -38,5 +38,16 @@ func rootCmd() *cobra.Command {
 		versionCmd(),
 	)
 
+	SetupHomeDir(rootCmd)
+
 	return rootCmd
+}
+
+func SetupHomeDir(cmd *cobra.Command) {
+	defaultHomeDir := os.Getenv("TRDL_HOME_DIR")
+	if defaultHomeDir == "" {
+		defaultHomeDir = "~/.trdl"
+	}
+
+	cmd.Flags().StringVarP(&homeDir, "home-dir", "", defaultHomeDir, "Set trdl home directory (default $TRDL_HOME_DIR or ~/.trdl)")
 }
