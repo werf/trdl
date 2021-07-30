@@ -42,7 +42,7 @@ build: vault/plugins/vault-plugin-secrets-trdl
 
 	# Run vault dev server
 	docker rm -f trdl_dev_vault || true
-	docker run --workdir /app --privileged --name trdl_dev_vault --detach --volume $$(pwd):/app -p 8200:8200 vault:latest server -dev -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
+	docker run --workdir /app --privileged --name trdl_dev_vault --detach --volume /var/run/docker.sock:/var/run/docker.sock --volume $$(pwd):/app -p 8200:8200 vault:latest server -dev -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
 	( \
 		while ! VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault status ; \
 		do \
@@ -51,8 +51,8 @@ build: vault/plugins/vault-plugin-secrets-trdl
 	)
 
 	# Enable and configure plugin
-	VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault secrets enable -path=trdl-test-project vault-plugin-secrets-trdl
-	VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault write trdl-test-project/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project
+	VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault secrets enable -path=trdl-test-project vault-plugin-secrets-trdl
+	VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault write trdl-test-project/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project
 
 	touch .run
 
