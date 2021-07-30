@@ -1,0 +1,158 @@
+name: Tests
+on:
+  push:
+    paths:
+      - '.github/workflows/tests.yml'
+      - '**/*.go'
+  schedule:
+    - cron:  '0 8 * * *'
+
+jobs:
+  precompiled_tests_binaries:
+    name: Precompiled tests binaries
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+    runs-on: "${{ matrix.os }}"
+    steps:
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Compile tests binaries
+        run: |
+          # e2e tests binaries
+          ./scripts/ci/precompiled_tests_binaries.sh ./e2e ./precompiled_tests_binaries/e2e
+
+          # trdl with coverage binary
+          ./scripts/ci/trdl_with_coverage.sh
+        shell: bash
+
+      - name: Upload e2e tests binaries
+        uses: actions/upload-artifact@master
+        with:
+          name: "${{ matrix.os }}_e2e_tests_binaries"
+          path: precompiled_tests_binaries/e2e
+          if-no-files-found: error
+
+      - name: Upload trdl with coverage binary
+        uses: actions/upload-artifact@master
+        with:
+          name: "${{ matrix.os }}_trdl_with_coverage"
+          path: bin/tests/trdl_with_coverage
+          if-no-files-found: error
+
+  e2e_tests:
+    name: End-to-end tests
+    needs: precompiled_tests_binaries
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+    runs-on: "${{ matrix.os }}"
+    steps:
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download tests binaries
+        uses: actions/download-artifact@master
+        with:
+          name: "${{ matrix.os }}_e2e_tests_binaries"
+          path: .
+
+      - name: Download trdl with coverage binary
+        uses: actions/download-artifact@master
+        with:
+          name: "${{ matrix.os }}_trdl_with_coverage"
+          path: .
+
+      - name: Prepare environment
+        run: |
+          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/${{ matrix.os }}
+          mkdir -p $TRDL_TEST_COVERAGE_DIR
+          echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
+
+          chmod +x trdl_with_coverage
+          find e2e/tests -type f -name '*.test' -exec chmod +x {} \;
+
+          go install github.com/theupdateframework/go-tuf/cmd/tuf
+          make minio_up
+
+          go install github.com/onsi/ginkgo/ginkgo
+        shell: bash
+
+      - name: Test
+        run: |
+          test_binaries=$(find e2e/tests -type f -name '*.test')
+          TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/trdl_with_coverage ginkgo -p -keepGoing $test_binaries
+        shell: bash
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: tests_coverage
+          path: tests_coverage
+
+  upload_coverage:
+    name: Upload coverage
+    needs: e2e_tests
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@master
+        with:
+          name: tests_coverage
+          path: tests_coverage
+
+      - name: Prepare environment
+        run: |
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+          chmod +x ./cc-test-reporter
+
+          go build github.com/wadey/gocovmerge
+          chmod +x ./gocovmerge
+
+          echo TRDL_TEST_COVERAGE_DIR=tests_coverage >> $GITHUB_ENV
+
+      - name: Prepare coverage file
+        run: |
+          find $TRDL_TEST_COVERAGE_DIR -type f -exec \
+            sed -i -e "s|/home/ubuntu/actions-runner/_work/werf/trdl|github.com/werf/trdl|g" {} +
+
+          coverage_files=$(find $TRDL_TEST_COVERAGE_DIR -name '*.out')
+          ./gocovmerge ${coverage_files[@]} > coverage.out
+
+      - name: Format and upload
+        run: |
+          export GIT_BRANCH=${GITHUB_REF:11}
+          export GIT_COMMIT_SHA=$GITHUB_SHA
+
+          ./cc-test-reporter format-coverage \
+              -t=gocov \
+              -p=github.com/werf/trdl/ \
+              coverage.out
+
+          ./cc-test-reporter upload-coverage
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
