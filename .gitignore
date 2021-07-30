@@ -15,3 +15,6 @@
 # vendor/
 
 .idea
+
+# Mount directory for development minio container (make minio_up)
+scripts/minio/.minio_data
