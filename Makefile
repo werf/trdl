@@ -11,13 +11,18 @@ endif
 
 GOSRC = $(shell find . -type f -name '*.go')
 .DEFAULT_GOAL := all
-
-.PHONY: fmt lint
-
-all: fmt lint
+.PHONY: fmt lint minio_up minio_down
 
 fmt:
 	gofumpt -l -w .
 
 lint:
 	GOOS=$(OS) GOARCH="$(GOARCH)" golangci-lint run ./... --config .golangci.yaml
+
+minio_up:
+	./scripts/minio/up.sh
+
+minio_down:
+	./scripts/minio/down.sh
+
+all: fmt lint
