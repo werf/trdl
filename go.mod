@@ -13,6 +13,7 @@ require (
 	github.com/rodaine/table v1.0.1
 	github.com/spf13/cobra v1.1.3
 	github.com/theupdateframework/go-tuf v0.0.0-20201230183259-aee6270feb55
+	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad // indirect
 	github.com/werf/lockgate v0.0.0-20210423043214-fd4df31c9ab0
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
