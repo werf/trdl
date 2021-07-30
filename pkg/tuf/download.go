@@ -1,7 +1,6 @@
 package tuf
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -18,11 +17,7 @@ func (c Client) DownloadFile(targetName string, dest string, destMode os.FileMod
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			panic(fmt.Errorf("unable to close file: %s", err))
-		}
-	}()
+	defer func() { _ = f.Close() }()
 
 	file := destinationFile{f}
 	if err := c.Download(targetName, &file); err != nil {
