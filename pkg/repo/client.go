@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
@@ -28,7 +27,7 @@ type Client struct {
 	repoName  string
 	dir       string
 	tpmDir    string
-	tufClient tuf.Client
+	tufClient TufInterface
 	locker    lockgate.Locker
 }
 
@@ -48,21 +47,25 @@ func NewClient(repoName, dir, repoUrl, locksPath, tmpDir string) (Client, error)
 
 func (c *Client) init(repoUrl string, locksPath string) error {
 	if err := c.initFileLocker(locksPath); err != nil {
-		return err
+		return fmt.Errorf("unable to init file locker: %s", err)
 	}
 
-	if err := c.initTufClient(repoUrl); err != nil {
+	if err := c.initTufClient(repoUrl, locksPath); err != nil {
 		return fmt.Errorf("unable to init tuf client: %s", err)
 	}
 
 	return nil
 }
 
-func (c *Client) initTufClient(repoUrl string) (err error) {
-	return lockgate.WithAcquire(c.locker, c.tufClientLockName(), lockgate.AcquireOptions{Shared: true, Timeout: time.Minute * 2}, func(_ bool) error {
-		c.tufClient, err = tuf.NewClient(c.metaLocalStoreDir(), repoUrl)
+func (c *Client) initTufClient(repoUrl, locksPath string) (err error) {
+	tufClient, err := tuf.NewClient(repoUrl, c.metaLocalStoreDir(), filepath.Join(locksPath, "tuf"))
+	if err != nil {
 		return err
-	})
+	}
+
+	c.tufClient = tufClient
+
+	return nil
 }
 
 func (c *Client) initFileLocker(locksPath string) error {
@@ -74,12 +77,6 @@ func (c *Client) initFileLocker(locksPath string) error {
 	c.locker = locker
 
 	return nil
-}
-
-func (c Client) syncMeta() error {
-	return lockgate.WithAcquire(c.locker, c.tufClientLockName(), lockgate.AcquireOptions{Shared: false, Timeout: time.Minute * 2}, func(acquired bool) error {
-		return c.tufClient.Update()
-	})
 }
 
 func (c Client) channelTargetName(group, channel string) string {
@@ -221,8 +218,4 @@ func (c Client) updateChannelLockName(group, channel string) string {
 
 func (c Client) updateReleaseLockName(release string) string {
 	return fmt.Sprintf("update-release-%s", release)
-}
-
-func (c Client) tufClientLockName() string {
-	return "tuf-client"
 }
