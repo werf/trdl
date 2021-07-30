@@ -134,6 +134,24 @@ func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string) error
 	return repoClient.UpdateChannel(group, channel)
 }
 
+func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, asFile bool) error {
+	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
+	if err != nil {
+		return err
+	}
+
+	repoClient, err := c.GetRepoClient(repoName)
+	if err != nil {
+		return err
+	}
+
+	if err := repoClient.UseChannelReleaseBinDir(group, channel, shell, asFile); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c Client) ExecRepoChannelReleaseBin(repoName, group, optionalChannel, optionalBinName string, args []string) error {
 	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
 	if err != nil {
@@ -260,7 +278,7 @@ func (c Client) repoClient(repoName string) (RepoInterface, error) {
 		return nil, err
 	}
 
-	return repo.NewClient(repoName, repoDir, repoUrl, c.repoLocksDir(repoName), c.repoTmpDir(repoName))
+	return repo.NewClient(repoName, repoDir, repoUrl, c.repoLocksDir(repoName), c.repoTmpDir(repoName), c.repoLogsDir(repoName))
 }
 
 func (c *Client) repoDir(repoName string) string {
@@ -320,6 +338,10 @@ func (c *Client) locksDir() string {
 
 func (c *Client) repoTmpDir(repoName string) string {
 	return filepath.Join(c.tmpDir(), "repositories", repoName)
+}
+
+func (c *Client) repoLogsDir(repoName string) string {
+	return filepath.Join(c.dir, "logs", repoName)
 }
 
 func (c *Client) tmpDir() string {

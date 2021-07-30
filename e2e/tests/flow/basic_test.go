@@ -59,7 +59,7 @@ var _ = Describe("Basic", func() {
 			util.RunSucceedCommand(
 				"",
 				trdlBinPath,
-				"update", testRepoName, "v0",
+				"update", testRepoName, validGroup,
 			)
 		})
 
@@ -68,13 +68,7 @@ var _ = Describe("Basic", func() {
 				util.RunSucceedCommand(
 					"",
 					trdlBinPath,
-					"add", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
-				)
-
-				util.RunSucceedCommand(
-					"",
-					trdlBinPath,
-					"update", testRepoName, "v0",
+					"update", testRepoName, validGroup,
 				)
 			})
 
@@ -82,7 +76,7 @@ var _ = Describe("Basic", func() {
 				output := util.SucceedCommandOutputString(
 					"",
 					trdlBinPath,
-					"bin-path", testRepoName, "v0",
+					"bin-path", testRepoName, validGroup,
 				)
 
 				if runtime.GOOS == "windows" {
@@ -96,7 +90,7 @@ var _ = Describe("Basic", func() {
 				output := util.SucceedCommandOutputString(
 					"",
 					trdlBinPath,
-					"dir-path", testRepoName, "v0",
+					"dir-path", testRepoName, validGroup,
 				)
 
 				if runtime.GOOS == "windows" {
@@ -107,10 +101,15 @@ var _ = Describe("Basic", func() {
 			})
 
 			It("exec", func() {
+				args := []string{"exec", testRepoName, validGroup}
+				if runtime.GOOS == "windows" {
+					args = append(args, "script.bat")
+				}
+
 				output := util.SucceedCommandOutputString(
 					"",
 					trdlBinPath,
-					"exec", testRepoName, "v0",
+					args...,
 				)
 
 				if runtime.GOOS == "windows" {
