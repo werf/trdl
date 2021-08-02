@@ -21,21 +21,24 @@ const (
 
 	channelsDir = targetsChannels
 	releasesDir = targetsReleases
+	scriptsDir  = "scripts"
 )
 
 type Client struct {
 	repoName  string
 	dir       string
 	tpmDir    string
+	logsDir   string
 	tufClient TufInterface
 	locker    lockgate.Locker
 }
 
-func NewClient(repoName, dir, repoUrl, locksPath, tmpDir string) (Client, error) {
+func NewClient(repoName, dir, repoUrl, locksPath, tmpDir, logsDir string) (Client, error) {
 	c := Client{
 		repoName: repoName,
 		dir:      dir,
 		tpmDir:   tmpDir,
+		logsDir:  logsDir,
 	}
 
 	if err := c.init(repoUrl, locksPath); err != nil {
@@ -52,6 +55,10 @@ func (c *Client) init(repoUrl string, locksPath string) error {
 
 	if err := c.initTufClient(repoUrl, locksPath); err != nil {
 		return fmt.Errorf("unable to init tuf client: %s", err)
+	}
+
+	if err := os.MkdirAll(c.logsDir, os.ModePerm); err != nil {
+		return fmt.Errorf("unable to create logs directory %q: %s", c.logsDir, err)
 	}
 
 	return nil
@@ -95,12 +102,20 @@ func (c Client) channelReleaseDir(releaseName string) string {
 	return filepath.Join(c.dir, releasesDir, releaseName)
 }
 
+func (c Client) channelScriptsDir(group, channel string) string {
+	return filepath.Join(c.dir, scriptsDir, strings.Join([]string{group, channel}, "-"))
+}
+
 func (c Client) channelTmpPath(group, channel string) string {
 	return filepath.Join(c.tpmDir, channelsDir, group, channel)
 }
 
 func (c Client) channelReleaseTmpDir(releaseName string) string {
 	return filepath.Join(c.tpmDir, releasesDir, releaseName)
+}
+
+func (c Client) channelScriptsTmpDir(group, channel string) string {
+	return filepath.Join(c.tpmDir, scriptsDir, strings.Join([]string{group, channel}, "-"))
 }
 
 func (c Client) findChannelReleaseBinPath(group, channel string, optionalBinName string) (string, error) {

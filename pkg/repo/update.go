@@ -86,7 +86,7 @@ func (c Client) UpdateChannel(group, channel string) error {
 					}
 
 					if deferErr = os.Rename(channelTmpPath, channelPath); deferErr != nil {
-						return fmt.Errorf("unable to rename file %q to %q: %s", channelTmpPath, channelPath, deferErr)
+						return deferErr
 					}
 
 					return nil
@@ -162,12 +162,16 @@ func (c Client) syncChannelRelease(release string) error {
 		}
 	}
 
+	if deferErr = os.RemoveAll(releaseDir); deferErr != nil {
+		return fmt.Errorf("unable to remove broken release dir %q: %s", releaseDir, deferErr)
+	}
+
 	if deferErr = os.MkdirAll(filepath.Dir(releaseDir), os.ModePerm); deferErr != nil {
 		return fmt.Errorf("unable to mkdir all %q: %s", releaseDir, deferErr)
 	}
 
 	if deferErr = os.Rename(releaseTmpDir, releaseDir); deferErr != nil {
-		return fmt.Errorf("unable to rename file %q to %q: %s", releaseTmpDir, releaseDir, deferErr)
+		return deferErr
 	}
 
 	return nil

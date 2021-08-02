@@ -22,6 +22,7 @@ const (
 	validRepoUrl     = "http://localhost:9000/test-project"
 	validRootVersion = "4"
 	validRootSHA512  = "67afb6eb389e2ec89017ff19f94caf1c9a78d79565553d155d93d0525b28f86f6ffb6a96f3c20c4b062b7e4b2498f20050d31fd057998ec01ea625a84a93ec7e"
+	validGroup       = "v0"
 )
 
 var (

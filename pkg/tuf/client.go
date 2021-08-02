@@ -38,10 +38,10 @@ func NewClient(repoUrl, metaLocalStoreDir, locksPath string) (*Client, error) {
 	if err := lockgate.WithAcquire(
 		c.locker,
 		metaLocalStoreDirLockName,
-		lockgate.AcquireOptions{Shared: true, Timeout: time.Minute * 2},
+		lockgate.AcquireOptions{Shared: false, Timeout: time.Minute * 2},
 		func(_ bool) error {
 			if err := c.initTufClient(); err != nil {
-				return fmt.Errorf("unable to init tuf client: %s", err)
+				return err
 			}
 
 			return nil

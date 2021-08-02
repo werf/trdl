@@ -6,6 +6,8 @@ on:
       - '**/*.go'
   schedule:
     - cron:  '0 8 * * *'
+  repository_dispatch:
+    types: [ tests ]
 
 jobs:
   precompiled_tests_binaries:

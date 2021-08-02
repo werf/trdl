@@ -9,6 +9,10 @@ const (
 	ChannelStable    = "stable"
 	ChannelRockSolid = "rock-solid"
 	DefaultChannel   = ChannelStable
+
+	ShellUnix       = "unix"
+	ShellCmd        = "cmd"
+	ShellPowerShell = "pwsh"
 )
 
 var Channels = []string{
