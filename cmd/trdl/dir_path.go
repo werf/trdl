@@ -11,7 +11,7 @@ import (
 func dirPathCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "dir-path REPO GROUP [CHANNEL]",
-		Short:                 "Get path to channel release directory",
+		Short:                 "Get path to the directory with channel release files",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {

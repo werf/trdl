@@ -12,7 +12,7 @@ import (
 func addCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "add REPO URL ROOT_VERSION ROOT_SHA512",
-		Short:                 "Initialize the repository",
+		Short:                 "Add repository",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.ExactArgs(4)(cmd, args); err != nil {

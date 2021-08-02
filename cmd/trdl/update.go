@@ -17,7 +17,7 @@ func updateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:                   "update REPO GROUP [CHANNEL]",
-		Short:                 "Update the channel",
+		Short:                 "Update channel",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
