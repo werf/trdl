@@ -17,6 +17,6 @@
 /vault/plugins/
 /publisher
 /trdl.log
-/minio_data
+/.minio_data
 /.run
 /.idea
