@@ -82,7 +82,7 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 	}
 
 	gitBranch := cfg.GitTrdlChannelsBranch
-	if gitBranch != "" {
+	if gitBranch == "" {
 		gitBranch = defaultGitTrdlChannelsBranch
 	}
 
@@ -118,6 +118,13 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		headRef, err := gitRepo.Head()
 		if err != nil {
 			return fmt.Errorf("error getting git repo branch %q head reference: %s", gitBranch, err)
+		}
+		headCommit := headRef.Hash().String()
+
+		// skip commit if already processed
+		if lastPublishedGitCommit == headCommit {
+			hclog.L().Debug("Head commit not changed: skipping publish task")
+			return nil
 		}
 
 		if lastPublishedGitCommit != "" {
