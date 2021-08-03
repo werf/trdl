@@ -103,13 +103,16 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		hclog.L().Debug("Started task")
 
+		logboek.Context(ctx).Default().LogF("Cloning git repo\n")
+		hclog.L().Debug("Cloning git repo")
+
 		gitRepo, err := cloneGitRepositoryTag(cfg.GitRepoUrl, gitTag, gitUsername, gitPassword)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}
 
-		logboek.Context(ctx).Default().LogF("Cloned git repo\n")
-		hclog.L().Debug("Cloned git repo")
+		logboek.Context(ctx).Default().LogF("Verifying tag PGP signatures\n")
+		hclog.L().Debug("Verifying tag PGP signatures")
 
 		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
 		if err != nil {
@@ -120,31 +123,25 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
-		logboek.Context(ctx).Default().LogF("Verified tag signatures\n")
-		hclog.L().Debug("Verified tag signatures")
+		logboek.Context(ctx).Default().LogF("Getting trdl.yaml configuration from the git tag %q\n", gitTag)
 
 		trdlCfg, err := getTrdlConfig(gitRepo, gitTag)
 		if err != nil {
 			return fmt.Errorf("unable to get trdl configuration: %s", err)
 		}
 
-		logboek.Context(ctx).Default().LogF("Got trdl.yaml configuration\n")
+		logboek.Context(ctx).Default().LogF("Starting release artifacts tar archive build\n")
+		hclog.L().Debug("Starting release artifacts tar archive build")
 
 		tarReader, tarWriter := io.Pipe()
 		if err := buildReleaseArtifacts(ctx, tarWriter, gitRepo, trdlCfg.DockerImage, trdlCfg.Commands); err != nil {
 			return fmt.Errorf("unable to build release artifacts: %s", err)
 		}
 
-		logboek.Context(ctx).Default().LogF("Built release artifacts tar archive\n")
-		hclog.L().Debug("Built release artifacts tar archive")
-
 		{
 			twArtifacts := tar.NewReader(tarReader)
 			for {
 				hdr, err := twArtifacts.Next()
-
-				logboek.Context(ctx).Default().LogF("Next tar entry hdr=%#v err=%v\n", hdr, err)
-				hclog.L().Debug(fmt.Sprintf("Next tar entry hdr=%#v err=%v", hdr, err))
 
 				if err == io.EOF {
 					break
@@ -248,6 +245,9 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 		if err := func() error {
 			tw := tar.NewWriter(contextWriter)
 
+			logboek.Context(ctx).Default().LogF("Adding git worktree files to the build context\n")
+			hclog.L().Debug("Adding git worktree files to the build context")
+
 			if err := trdlGit.AddWorktreeFilesToTar(tw, gitRepo); err != nil {
 				return fmt.Errorf("unable to add git worktree files to tar: %s", err)
 			}
@@ -276,6 +276,9 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 		}
 	}()
 
+	logboek.Context(ctx).Default().LogF("Building docker image with artifacts\n")
+	hclog.L().Debug("Building docker image with artifacts")
+
 	response, err := cli.ImageBuild(ctx, contextReader, types.ImageBuildOptions{
 		Dockerfile:  serviceDockerfilePathInContext,
 		PullParent:  true,
@@ -288,15 +291,15 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 		return fmt.Errorf("unable to run docker image build: %s", err)
 	}
 
-	handleFromImageBuildResponse(response, tarWriter)
+	handleFromImageBuildResponse(ctx, response, tarWriter)
 
 	return nil
 }
 
-func handleFromImageBuildResponse(response types.ImageBuildResponse, tarWriter *io.PipeWriter) {
+func handleFromImageBuildResponse(ctx context.Context, response types.ImageBuildResponse, tarWriter *io.PipeWriter) {
 	r, w := io.Pipe()
 	go func() {
-		if err := docker.ReadTarFromImageBuildResponse(w, response); err != nil {
+		if err := docker.ReadTarFromImageBuildResponse(w, logboek.Context(ctx).OutStream(), response); err != nil {
 			if closeErr := w.CloseWithError(err); closeErr != nil {
 				panic(closeErr)
 			}

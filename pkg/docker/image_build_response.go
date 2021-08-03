@@ -39,7 +39,7 @@ func DisplayFromImageBuildResponse(w io.Writer, response types.ImageBuildRespons
 	}
 }
 
-func ReadTarFromImageBuildResponse(w io.Writer, response types.ImageBuildResponse) error {
+func ReadTarFromImageBuildResponse(tarWriter io.Writer, buildLogWriter io.Writer, response types.ImageBuildResponse) error {
 	dec := json.NewDecoder(response.Body)
 	currentState := checkingStartCode
 	var codeCursor int
@@ -68,6 +68,11 @@ func ReadTarFromImageBuildResponse(w io.Writer, response types.ImageBuildRespons
 						currentState = processingStartCode
 						codeCursor++
 					}
+
+					if _, err := buildLogWriter.Write([]byte{b}); err != nil {
+						return fmt.Errorf("build log writer failed: %s", err)
+					}
+
 				case processingStartCode:
 					if b == artifactsTarStartReadCode[codeCursor] {
 						if len(artifactsTarStartReadCode) > codeCursor+1 {
@@ -80,6 +85,11 @@ func ReadTarFromImageBuildResponse(w io.Writer, response types.ImageBuildRespons
 						currentState = checkingStartCode
 						codeCursor = 0
 					}
+
+					if _, err := buildLogWriter.Write([]byte{b}); err != nil {
+						return fmt.Errorf("build log writer failed: %s", err)
+					}
+
 				case processingDataAndCheckingStopCode:
 					bufferedData = append(bufferedData, b)
 
@@ -89,8 +99,8 @@ func ReadTarFromImageBuildResponse(w io.Writer, response types.ImageBuildRespons
 						continue
 					}
 
-					if _, err := w.Write(bufferedData); err != nil {
-						return err
+					if _, err := tarWriter.Write(bufferedData); err != nil {
+						return fmt.Errorf("tar writer failed: %s", err)
 					}
 
 					bufferedData = nil

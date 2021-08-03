@@ -19,11 +19,11 @@ const (
 	fieldNameLimit            = "limit"
 	fieldNameOffset           = "offset"
 
-	fieldDefaultTaskTimeout      = "10m"
+	fieldDefaultTaskTimeout      = "30m"
 	fieldDefaultTaskHistoryLimit = 10
 	fieldDefaultLimit            = 500
 
-	defaultTaskTimeoutDuration = 10 * time.Minute
+	defaultTaskTimeoutDuration = 30 * time.Minute
 )
 
 var (
