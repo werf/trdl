@@ -30,8 +30,7 @@ build: vault/plugins/vault-plugin-secrets-trdl
 .run: vault/plugins/vault-plugin-secrets-trdl
 	# Run minio, create bucket
 	docker rm -f trdl_dev_minio || true
-	sudo rm -rf .minio_data
-	sudo chmod 0777 /var/run/docker.sock
+	docker run --rm --volume $$(pwd):/wrk alpine rm -rf /wrk/.minio_data
 	mkdir .minio_data
 	docker run --name trdl_dev_minio --detach --rm -p 9000:9000 -p 9001:9001 --volume $$(pwd)/.minio_data:/data minio/minio server /data --console-address ":9001"
 	( \
@@ -41,12 +40,13 @@ build: vault/plugins/vault-plugin-secrets-trdl
 		done ; \
 	)
 	docker run -ti --rm -e MC_HOST_main=http://minioadmin:minioadmin@$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 minio/mc mb main/trdl-test-project
+	docker run -ti --rm -e MC_HOST_main=http://minioadmin:minioadmin@$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 minio/mc mb main/werf
 
 	# Run vault dev server
 	docker rm -f trdl_dev_vault || true
 	rm -f trdl.log
 	touch trdl.log
-	docker run --workdir /app --privileged --name trdl_dev_vault --detach --volume /var/run/docker.sock:/var/run/docker.sock --volume $$(pwd):/app -p 8200:8200 vault:latest server -dev -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
+	docker run --workdir /app --privileged --name trdl_dev_vault --detach --volume /var/run/docker.sock:/var/run/docker.sock --volume $$(pwd):/app -p 8200:8200 ghcr.io/werf/trdl-dev-vault:latest server -dev -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
 	( \
 		while ! VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault status ; \
 		do \
@@ -59,7 +59,7 @@ build: vault/plugins/vault-plugin-secrets-trdl
 	VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault write trdl-test-project/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project
 
 	VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault secrets enable -path=werf vault-plugin-secrets-trdl
-	VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault write werf/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=werf s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf
+	VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 vault write werf/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=werf s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf git_trdl_channels_branch=multiwerf
 
 	touch .run
 
@@ -70,5 +70,5 @@ clean:
 	rm -f ./vault/plugins/vault-plugin-secrets-trdl
 	docker rm -f trdl_dev_minio || true
 	docker rm -f trdl_dev_vault || true
-	sudo rm -rf .minio_data
+	docker run --rm --volume $$(pwd):/wrk alpine rm -rf /wrk/.minio_data
 	rm -f trdl.log
