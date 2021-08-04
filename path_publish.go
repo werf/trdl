@@ -98,7 +98,9 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 	}
 
-	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, cfg.RepositoryOptions())
+	opts := cfg.RepositoryOptions()
+	opts.InitializeKeys = true
+	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
@@ -172,14 +174,14 @@ func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Publishing trdl channels config into the TUF repository\n")
 		hclog.L().Debug("Publishing trdl channels config into the TUF repository")
 
-		if err := b.Publisher.PublishChannelsConfig(ctx, publisherRepository, cfg); err != nil {
+		if err := b.Publisher.StageChannelsConfig(ctx, publisherRepository, cfg); err != nil {
 			return fmt.Errorf("error publishing trdl channels into the repository: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Committing TUF repository state\n")
 		hclog.L().Debug("Committing TUF repository state")
 
-		if err := publisherRepository.Commit(ctx); err != nil {
+		if err := publisherRepository.CommitStaged(ctx); err != nil {
 			return fmt.Errorf("unable to commit new tuf repository state: %s", err)
 		}
 

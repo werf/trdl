@@ -51,6 +51,7 @@ func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
 	hclog.L().Debug("-- S3Repository.SetPrivKeys")
 
 	repository.TufStore.PrivKeys = privKeys
+	hclog.L().Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys BEFORE AddPrivateKeyWithExpires: %#v\n", repository.TufStore.PrivKeys))
 
 	for _, desc := range []struct {
 		role string
@@ -65,6 +66,8 @@ func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
 			return fmt.Errorf("unable to add tuf repository private key for role %s: %s", desc.role, err)
 		}
 	}
+
+	hclog.L().Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys AFTER AddPrivateKeyWithExpires: %#v\n", repository.TufStore.PrivKeys))
 
 	return nil
 }
@@ -93,6 +96,12 @@ func (repository *S3Repository) GenPrivKeys() error {
 	return nil
 }
 
+func (repository *S3Repository) RotatePrivKeys(ctx context.Context) (bool, TufRepoPrivKeys, error) {
+	// TODO: Check priv keys expiration and generate new keys when necessary.
+
+	return false, TufRepoPrivKeys{}, nil
+}
+
 func (repository *S3Repository) Init() error {
 	err := repository.TufRepo.Init(false)
 
@@ -105,7 +114,7 @@ func (repository *S3Repository) Init() error {
 	return nil
 }
 
-func (repository *S3Repository) PublishTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error {
+func (repository *S3Repository) StageTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error {
 	if err := repository.TufStore.StageTargetFile(ctx, pathInsideTargets, data); err != nil {
 		return fmt.Errorf("unable to add staged file %q: %s", pathInsideTargets, err)
 	}
@@ -117,18 +126,31 @@ func (repository *S3Repository) PublishTarget(ctx context.Context, pathInsideTar
 	return nil
 }
 
-func (repository *S3Repository) Commit(_ context.Context) error {
-	if err := repository.TufRepo.Snapshot(tuf.CompressionTypeNone); err != nil {
-		return fmt.Errorf("tuf repo snapshot failed: %s", err)
-	}
+func (repository *S3Repository) UpdateTimestamps(_ context.Context) error {
+	// TODO: Update only timestamp, or timestamp with snapshot, or timestamp with snapshot with root
+	// TODO: based on expiration dates.
 
+	if err := repository.TufRepo.Snapshot(tuf.CompressionTypeNone); err != nil {
+		return fmt.Errorf("tuf repo timestamp failed: %s", err)
+	}
 	if err := repository.TufRepo.Timestamp(); err != nil {
 		return fmt.Errorf("tuf repo timestamp failed: %s", err)
 	}
-
 	if err := repository.TufRepo.Commit(); err != nil {
 		return fmt.Errorf("unable to commit staged changes into the repo: %s", err)
 	}
+	return nil
+}
 
+func (repository *S3Repository) CommitStaged(_ context.Context) error {
+	if err := repository.TufRepo.Snapshot(tuf.CompressionTypeNone); err != nil {
+		return fmt.Errorf("tuf repo snapshot failed: %s", err)
+	}
+	if err := repository.TufRepo.Timestamp(); err != nil {
+		return fmt.Errorf("tuf repo timestamp failed: %s", err)
+	}
+	if err := repository.TufRepo.Commit(); err != nil {
+		return fmt.Errorf("unable to commit staged changes into the repo: %s", err)
+	}
 	return nil
 }

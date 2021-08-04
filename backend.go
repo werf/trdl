@@ -18,10 +18,15 @@ type BackendModuleInterface interface {
 	PeriodicFunc(ctx context.Context, req *logical.Request) error
 }
 
+type BackendPeriodicInterface interface {
+	Periodic(ctx context.Context, req *logical.Request) error
+}
+
 type backend struct {
 	*framework.Backend
-	TasksManager tasks_manager.ActionsInterface
-	Publisher    publisher.Interface
+	TasksManager    tasks_manager.ActionsInterface
+	Publisher       publisher.Interface
+	BackendPeriodic BackendPeriodicInterface
 }
 
 var _ logical.Factory = Factory
@@ -51,6 +56,7 @@ func newBackend() (*backend, error) {
 		TasksManager: tasksManager,
 		Publisher:    publisherManager,
 	}
+	b.BackendPeriodic = b
 
 	b.Backend = &framework.Backend{
 		BackendType: logical.TypeLogical,
@@ -82,7 +88,13 @@ func (b *backend) InitPeriodicFunc(modules ...BackendModuleInterface) {
 	b.PeriodicFunc = func(ctx context.Context, request *logical.Request) error {
 		for _, module := range modules {
 			if err := module.PeriodicFunc(context.Background(), request); err != nil {
-				return err
+				return fmt.Errorf("backend module periodic task failed: %s", err)
+			}
+		}
+
+		if b.BackendPeriodic != nil {
+			if err := b.BackendPeriodic.Periodic(context.Background(), request); err != nil {
+				return fmt.Errorf("backend main periodic task failed: %s", err)
 			}
 		}
 

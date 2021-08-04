@@ -11,9 +11,12 @@ import (
 
 type Interface interface {
 	GetRepository(ctx context.Context, storage logical.Storage, options RepositoryOptions) (RepositoryInterface, error)
-	PublishReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, path string, data io.Reader) error
-	PublishChannelsConfig(ctx context.Context, repository RepositoryInterface, trdlChannelsConfig *config.TrdlChannels) error
-	PublishInMemoryFiles(ctx context.Context, repository RepositoryInterface, files []*InMemoryFile) error
+	RotateRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface) error
+	UpdateTimestamps(ctx context.Context, storage logical.Storage, repository RepositoryInterface) error
+
+	StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, path string, data io.Reader) error
+	StageChannelsConfig(ctx context.Context, repository RepositoryInterface, trdlChannelsConfig *config.TrdlChannels) error
+	StageInMemoryFiles(ctx context.Context, repository RepositoryInterface, files []*InMemoryFile) error
 }
 
 type RepositoryInterface interface {
@@ -22,6 +25,9 @@ type RepositoryInterface interface {
 	GetPrivKeys() TufRepoPrivKeys
 	GenPrivKeys() error
 
-	PublishTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error
-	Commit(ctx context.Context) error
+	RotatePrivKeys(ctx context.Context) (bool, TufRepoPrivKeys, error)
+	UpdateTimestamps(ctx context.Context) error
+
+	StageTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error
+	CommitStaged(ctx context.Context) error
 }

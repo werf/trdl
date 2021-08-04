@@ -60,33 +60,41 @@ func (m *MockedPublisher) PeriodicFunc(_ context.Context, _ *logical.Request) er
 	return nil
 }
 
-func (m *MockedPublisher) InitRepository(_ context.Context, _ logical.Storage, _ publisher.RepositoryOptions) error {
-	m.Called()
-	return nil
-}
-
 func (m *MockedPublisher) GetRepository(_ context.Context, _ logical.Storage, _ publisher.RepositoryOptions) (publisher.RepositoryInterface, error) {
 	m.Called()
 	return nil, nil
 }
 
+type MockedBackendPeriodic struct {
+	mock.Mock
+	BackendPeriodicInterface
+}
+
+func (m *MockedBackendPeriodic) Periodic(_ context.Context, _ *logical.Request) error {
+	m.Called()
+	return nil
+}
+
 type CommonSuite struct {
 	suite.Suite
-	ctx                context.Context
-	backend            *backend
-	req                *logical.Request
-	storage            logical.Storage
-	mockedTasksManager *MockedTasksManager
-	mockedPublisher    *MockedPublisher
+	ctx                   context.Context
+	backend               *backend
+	req                   *logical.Request
+	storage               logical.Storage
+	mockedTasksManager    *MockedTasksManager
+	mockedPublisher       *MockedPublisher
+	mockedBackendPeriodic *MockedBackendPeriodic
 }
 
 func (suite *CommonSuite) SetupTest() {
 	mockedTasksManager := &MockedTasksManager{}
 	mockedPublisher := &MockedPublisher{}
+	mockedBackendPeriodic := &MockedBackendPeriodic{}
 	b := &backend{
-		Backend:      &framework.Backend{},
-		TasksManager: mockedTasksManager,
-		Publisher:    mockedPublisher,
+		Backend:         &framework.Backend{},
+		TasksManager:    mockedTasksManager,
+		Publisher:       mockedPublisher,
+		BackendPeriodic: mockedBackendPeriodic,
 	}
 	b.InitPaths()
 
@@ -103,6 +111,7 @@ func (suite *CommonSuite) SetupTest() {
 	suite.storage = storage
 	suite.mockedTasksManager = mockedTasksManager
 	suite.mockedPublisher = mockedPublisher
+	suite.mockedBackendPeriodic = mockedBackendPeriodic
 }
 
 type BackendSuite struct {
@@ -125,6 +134,7 @@ func (suite *BackendSuite) TestInitPaths() {
 func (suite *BackendSuite) TestInitPeriodicFunc() {
 	suite.mockedTasksManager.On("PeriodicFunc").Return(nil)
 	suite.mockedPublisher.On("PeriodicFunc").Return(nil)
+	suite.mockedBackendPeriodic.On("Periodic").Return(nil)
 
 	suite.backend.InitPeriodicFunc(suite.mockedTasksManager, suite.mockedPublisher)
 	if assert.NotNil(suite.T(), suite.backend.PeriodicFunc) {
@@ -133,6 +143,7 @@ func (suite *BackendSuite) TestInitPeriodicFunc() {
 
 	suite.mockedTasksManager.AssertExpectations(suite.T())
 	suite.mockedPublisher.AssertExpectations(suite.T())
+	suite.mockedBackendPeriodic.AssertExpectations(suite.T())
 }
 
 func TestBackend(t *testing.T) {
