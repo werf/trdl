@@ -111,8 +111,8 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			return fmt.Errorf("unable to clone git repository: %s", err)
 		}
 
-		logboek.Context(ctx).Default().LogF("Verifying tag PGP signatures\n")
-		hclog.L().Debug("Verifying tag PGP signatures")
+		logboek.Context(ctx).Default().LogF("Verifying tag PGP signatures of the git tag %q\n", gitTag)
+		hclog.L().Debug("Verifying tag PGP signatures of the git tag %q", gitTag)
 
 		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
 		if err != nil {
@@ -124,6 +124,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Getting trdl.yaml configuration from the git tag %q\n", gitTag)
+		hclog.L().Debug(fmt.Sprintf("Getting trdl.yaml configuration from the git tag %q\n", gitTag))
 
 		trdlCfg, err := getTrdlConfig(gitRepo, gitTag)
 		if err != nil {
@@ -158,19 +159,19 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					if err := b.Publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
 						return fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
 					}
-
-					logboek.Context(ctx).Default().LogF("Published %q into the tuf repo\n", hdr.Name)
-					hclog.L().Debug(fmt.Sprintf("Published %q into the tuf repo", hdr.Name))
 				}
 			}
+
+			logboek.Context(ctx).Default().LogF("Committing TUF repository state\n")
+			hclog.L().Debug("Committing TUF repository state")
 
 			if err := publisherRepository.Commit(ctx); err != nil {
 				return fmt.Errorf("unable to commit new tuf repository state: %s", err)
 			}
-
-			logboek.Context(ctx).Default().LogF("Tuf repo commit done\n")
-			hclog.L().Debug("Tuf repo commit done")
 		}
+
+		logboek.Context(ctx).Default().LogF("Task finished\n")
+		hclog.L().Debug("Task finished")
 
 		return nil
 	})

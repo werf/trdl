@@ -78,17 +78,18 @@ func (fs *S3Filesystem) ReadFile(ctx context.Context, path string, writerAt io.W
 	return nil
 }
 
-type fakeWriterAt struct {
+// Use this writer only when Concurrency is set to 1
+type sequentialWriterAt struct {
 	Writer io.Writer
 }
 
-func (fw fakeWriterAt) WriteAt(p []byte, offset int64) (int, error) {
+func (fw sequentialWriterAt) WriteAt(p []byte, offset int64) (int, error) {
 	// ignore 'offset' because we forced sequential downloads
 
 	n, err := fw.Writer.Write(p)
 
 	// DEBUG
-	// hclog.L().Debug(fmt.Sprintf("-- fakeWriterAt.WriteAt(%p, %d) -> %d, %v", p, offset, n, err))
+	// hclog.L().Debug(fmt.Sprintf("-- sequentialWriterAt.WriteAt(%p, %d) -> %d, %v", p, offset, n, err))
 
 	return n, err
 }
@@ -100,9 +101,9 @@ func (fs *S3Filesystem) ReadFileStream(ctx context.Context, path string, writer 
 	}
 
 	downloader := s3manager.NewDownloader(sess)
-	downloader.Concurrency = 1
 
-	writerAt := fakeWriterAt{Writer: writer}
+	downloader.Concurrency = 1
+	writerAt := sequentialWriterAt{Writer: writer}
 
 	numBytes, err := downloader.Download(writerAt,
 		&s3.GetObjectInput{
@@ -164,11 +165,16 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 		Body: data,
 	}
 
-	// TODO: set file mode bits
-
 	result, err := uploader.UploadWithContext(ctx, upParams, func(u *s3manager.Uploader) {
-		u.PartSize = 10 * 1024 * 1024
-		u.LeavePartsOnError = false
+		if strings.Contains(*fs.AwsConfig.Endpoint, "storage.googleapis.com") {
+			u.LeavePartsOnError = true
+			u.PartSize = 1024 * 1024 * 1024 // 1Gi buffer will be allocated in the memory
+			u.MaxUploadParts = 1
+			u.Concurrency = 1
+		} else {
+			u.LeavePartsOnError = false
+			u.PartSize = 1024 * 1024 * 10
+		}
 	})
 	if err != nil {
 		return fmt.Errorf("error uploading %q: %s", path, err)

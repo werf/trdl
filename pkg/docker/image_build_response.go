@@ -59,6 +59,8 @@ func ReadTarFromImageBuildResponse(tarWriter io.Writer, buildLogWriter io.Writer
 			return jm.Error
 		}
 
+		var startReadCodeSuspectedBytes []byte
+
 		msg := jm.Stream
 		if msg != "" {
 			for _, b := range []byte(msg) {
@@ -67,9 +69,9 @@ func ReadTarFromImageBuildResponse(tarWriter io.Writer, buildLogWriter io.Writer
 					if b == artifactsTarStartReadCode[0] {
 						currentState = processingStartCode
 						codeCursor++
-					}
 
-					if _, err := buildLogWriter.Write([]byte{b}); err != nil {
+						startReadCodeSuspectedBytes = append(startReadCodeSuspectedBytes, b)
+					} else if _, err := buildLogWriter.Write([]byte{b}); err != nil {
 						return fmt.Errorf("build log writer failed: %s", err)
 					}
 
@@ -77,17 +79,22 @@ func ReadTarFromImageBuildResponse(tarWriter io.Writer, buildLogWriter io.Writer
 					if b == artifactsTarStartReadCode[codeCursor] {
 						if len(artifactsTarStartReadCode) > codeCursor+1 {
 							codeCursor++
+
+							startReadCodeSuspectedBytes = append(startReadCodeSuspectedBytes, b)
 						} else {
 							currentState = processingDataAndCheckingStopCode
 							codeCursor = 0
+
+							startReadCodeSuspectedBytes = nil
 						}
 					} else {
 						currentState = checkingStartCode
 						codeCursor = 0
-					}
 
-					if _, err := buildLogWriter.Write([]byte{b}); err != nil {
-						return fmt.Errorf("build log writer failed: %s", err)
+						if _, err := buildLogWriter.Write(append(startReadCodeSuspectedBytes, b)); err != nil {
+							return fmt.Errorf("build log writer failed: %s", err)
+						}
+						startReadCodeSuspectedBytes = nil
 					}
 
 				case processingDataAndCheckingStopCode:
