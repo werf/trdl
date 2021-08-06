@@ -32,6 +32,19 @@ const (
 )
 
 func (b *backend) Periodic(ctx context.Context, req *logical.Request) error {
+	entry, err := req.Storage.Get(ctx, lastPeriodicRunTimestampKey)
+	if err != nil {
+		return fmt.Errorf("unable to get key %q from storage: %s", lastPeriodicRunTimestampKey, err)
+	}
+
+	if entry != nil {
+		lastRunTimestamp, err := strconv.ParseInt(string(entry.Value), 10, 64)
+		if err == nil && systemClock.Since(time.Unix(lastRunTimestamp, 0)) < periodicRunPeriod {
+			b.Logger().Info("Waiting rotate repository keys period: skipping periodic task")
+			return nil
+		}
+	}
+
 	config, err := getConfiguration(ctx, req.Storage)
 	if err != nil {
 		return fmt.Errorf("unable to get configuration: %s", err)
@@ -44,19 +57,6 @@ func (b *backend) Periodic(ctx context.Context, req *logical.Request) error {
 	{
 		cfgData, err := json.MarshalIndent(config, "", "  ")
 		b.Logger().Debug(fmt.Sprintf("Got configuration (err=%v):\n%s", err, string(cfgData)))
-	}
-
-	entry, err := req.Storage.Get(ctx, lastPeriodicRunTimestampKey)
-	if err != nil {
-		return fmt.Errorf("unable to get key %q from storage: %s", lastPeriodicRunTimestampKey, err)
-	}
-
-	if entry != nil {
-		lastRunTimestamp, err := strconv.ParseInt(string(entry.Value), 10, 64)
-		if err == nil && systemClock.Since(time.Unix(lastRunTimestamp, 0)) < periodicRunPeriod {
-			b.Logger().Info("Waiting rotate repository keys period: skipping periodic task")
-			return nil
-		}
 	}
 
 	opts := config.RepositoryOptions()
