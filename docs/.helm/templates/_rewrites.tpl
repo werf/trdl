@@ -1,2 +1,0 @@
-{{- define "rewrites" }}
-{{- end }}
