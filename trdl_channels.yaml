@@ -1,4 +1,10 @@
-groups: []
+groups:
+- name: "0.1"
+  channels:
+  - name: alpha
+    version: 0.1.0
+
+## Example:
 #groups:
 # - name: "0.0"
 #   channels:
