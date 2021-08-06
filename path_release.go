@@ -93,8 +93,9 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		gitPassword = gitCredentialFromStorage.Password
 	}
 
-	hclog.L().Debug("Before publisher.GetRepository")
-	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, cfg.RepositoryOptions())
+	opts := cfg.RepositoryOptions()
+	opts.InitializeKeys = true
+	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)
 	}
@@ -156,7 +157,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", hdr.Name)
 					hclog.L().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", hdr.Name))
 
-					if err := b.Publisher.PublishReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
+					if err := b.Publisher.StageReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
 						return fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
 					}
 				}
@@ -165,7 +166,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			logboek.Context(ctx).Default().LogF("Committing TUF repository state\n")
 			hclog.L().Debug("Committing TUF repository state")
 
-			if err := publisherRepository.Commit(ctx); err != nil {
+			if err := publisherRepository.CommitStaged(ctx); err != nil {
 				return fmt.Errorf("unable to commit new tuf repository state: %s", err)
 			}
 		}

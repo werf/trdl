@@ -3,6 +3,7 @@ package publisher
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -24,12 +25,16 @@ const (
 	storageKeyTufRepositoryKeys = "tuf_repository_keys"
 )
 
+var ErrUninitializedRepositoryKeys = errors.New("uninitialized repository keys")
+
 type RepositoryOptions struct {
 	S3Endpoint        string
 	S3Region          string
 	S3AccessKeyID     string
 	S3SecretAccessKey string
 	S3BucketName      string
+
+	InitializeKeys bool
 }
 
 type InMemoryFile struct {
@@ -53,20 +58,54 @@ func NewPublisher() *Publisher {
 	return &Publisher{}
 }
 
-func (publisher *Publisher) initRepositoryKeys(ctx context.Context, storage logical.Storage, publisherRepository *S3Repository) error {
+func (publisher *Publisher) RotateRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface) error {
+	updated, updatedPrivKeys, err := repository.RotatePrivKeys(ctx)
+	if err != nil {
+		return fmt.Errorf("unable to rotate TUF repository keys: %s", err)
+	}
+
+	if updated {
+		entry, err := logical.StorageEntryJSON(storageKeyTufRepositoryKeys, updatedPrivKeys)
+		if err != nil {
+			return fmt.Errorf("error creating storage json entry by key %q: %s", storageKeyTufRepositoryKeys, err)
+		}
+
+		if err := storage.Put(ctx, entry); err != nil {
+			return fmt.Errorf("error putting private keys json entry by key %q into the storage: %s", storageKeyTufRepositoryKeys, err)
+		}
+
+		hclog.L().Info("Successfully rotated repository private keys")
+	}
+
+	return nil
+}
+
+func (publisher *Publisher) UpdateTimestamps(ctx context.Context, storage logical.Storage, repository RepositoryInterface) error {
+	return repository.UpdateTimestamps(ctx)
+}
+
+type initRepositoryKeysOptions struct {
+	InitializeKeys bool
+}
+
+func (publisher *Publisher) initRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface, opts initRepositoryKeysOptions) error {
 	entry, err := storage.Get(ctx, storageKeyTufRepositoryKeys)
 	if err != nil {
 		return fmt.Errorf("error getting storage private keys json entry by the key %q: %s", storageKeyTufRepositoryKeys, err)
 	}
 
 	if entry == nil {
+		if !opts.InitializeKeys {
+			return ErrUninitializedRepositoryKeys
+		}
+
 		hclog.L().Debug("Will generate new repository private keys")
 
-		if err := publisherRepository.GenPrivKeys(); err != nil {
+		if err := repository.GenPrivKeys(); err != nil {
 			return fmt.Errorf("error generating repository private keys: %s", err)
 		}
 
-		privKeys := publisherRepository.GetPrivKeys()
+		privKeys := repository.GetPrivKeys()
 
 		entry, err := logical.StorageEntryJSON(storageKeyTufRepositoryKeys, privKeys)
 		if err != nil {
@@ -87,7 +126,7 @@ func (publisher *Publisher) initRepositoryKeys(ctx context.Context, storage logi
 		return fmt.Errorf("unable to decode keys json by the %q storage key:\n%s---\n%s", storageKeyTufRepositoryKeys, entry.Value, err)
 	}
 
-	if err := publisherRepository.SetPrivKeys(privKeys); err != nil {
+	if err := repository.SetPrivKeys(privKeys); err != nil {
 		return fmt.Errorf("unable to set private keys into repository: %s", err)
 	}
 
@@ -106,7 +145,7 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 		Credentials: credentials.NewStaticCredentials(options.S3AccessKeyID, options.S3SecretAccessKey, ""),
 	}
 
-	publisherRepository, err := NewRepositoryWithOptions(
+	repository, err := NewRepositoryWithOptions(
 		S3Options{AwsConfig: awsConfig, BucketName: options.S3BucketName},
 		TufRepoOptions{},
 	)
@@ -114,18 +153,20 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 		return nil, fmt.Errorf("error initializing publisher repository handle: %s", err)
 	}
 
-	if err := publisherRepository.Init(); err != nil {
+	if err := repository.Init(); err != nil {
 		return nil, fmt.Errorf("error initializing repository: %s", err)
 	}
 
-	if err := publisher.initRepositoryKeys(ctx, storage, publisherRepository); err != nil {
+	if err := publisher.initRepositoryKeys(ctx, storage, repository, initRepositoryKeysOptions{InitializeKeys: options.InitializeKeys}); err == ErrUninitializedRepositoryKeys {
+		return nil, ErrUninitializedRepositoryKeys
+	} else if err != nil {
 		return nil, fmt.Errorf("error initializing repository keys: %s", err)
 	}
 
-	return publisherRepository, nil
+	return repository, nil
 }
 
-func (publisher *Publisher) PublishReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, path string, data io.Reader) error {
+func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, path string, data io.Reader) error {
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 
@@ -153,10 +194,10 @@ func (publisher *Publisher) PublishReleaseTarget(ctx context.Context, repository
 		return NewErrIncorrectTargetPath(path)
 	}
 
-	return repository.PublishTarget(ctx, filepath.Join("releases", releaseName, path), data)
+	return repository.StageTarget(ctx, filepath.Join("releases", releaseName, path), data)
 }
 
-func (publisher *Publisher) PublishChannelsConfig(ctx context.Context, repository RepositoryInterface, trdlChannelsConfig *config.TrdlChannels) error {
+func (publisher *Publisher) StageChannelsConfig(ctx context.Context, repository RepositoryInterface, trdlChannelsConfig *config.TrdlChannels) error {
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 
@@ -184,7 +225,7 @@ func (publisher *Publisher) PublishChannelsConfig(ctx context.Context, repositor
 		for _, chnl := range grp.Channels {
 			publishPath := filepath.Join("channels", grp.Name, chnl.Name)
 
-			if err := repository.PublishTarget(ctx, publishPath, bytes.NewBuffer([]byte(chnl.Version+"\n"))); err != nil {
+			if err := repository.StageTarget(ctx, publishPath, bytes.NewBuffer([]byte(chnl.Version+"\n"))); err != nil {
 				return fmt.Errorf("error publishing %q: %s", publishPath, err)
 			}
 		}
@@ -193,12 +234,12 @@ func (publisher *Publisher) PublishChannelsConfig(ctx context.Context, repositor
 	return nil
 }
 
-func (publisher *Publisher) PublishInMemoryFiles(ctx context.Context, repository RepositoryInterface, files []*InMemoryFile) error {
+func (publisher *Publisher) StageInMemoryFiles(ctx context.Context, repository RepositoryInterface, files []*InMemoryFile) error {
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 
 	for _, file := range files {
-		if err := repository.PublishTarget(ctx, file.Name, bytes.NewReader(file.Data)); err != nil {
+		if err := repository.StageTarget(ctx, file.Name, bytes.NewReader(file.Data)); err != nil {
 			return fmt.Errorf("error publishing %q: %s", file.Name, err)
 		}
 	}

@@ -31,6 +31,7 @@ func main() {
 	tlsProviderFunc := api.VaultPluginTLSProvider(tlsConfig)
 
 	if err := plugin.Serve(&plugin.ServeOpts{
+		Logger:             hclog.Default(),
 		BackendFactoryFunc: trdl.Factory,
 		TLSProviderFunc:    tlsProviderFunc,
 	}); err != nil {
