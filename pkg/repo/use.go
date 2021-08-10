@@ -81,7 +81,7 @@ IF %%ERRORLEVEL%% NEQ 0 (
 )
 
 FOR /F "tokens=*" %%%%g IN ('%[5]s bin-path %[1]s') do (SET TRDL_REPO_BIN_PATH=%%%%g)
-SET PATH=%%PATH%%;%%TRDL_REPO_BIN_PATH%%
+SET PATH=%%TRDL_REPO_BIN_PATH%%;%%PATH%%
 `, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, trdlBinaryPath)
 
 	return ext, content
@@ -99,7 +99,7 @@ if ((Invoke-Expression -Command "%[5]s bin-path %[1]s" 2> $null | Out-String -Ou
 
 $TRDL_REPO_BIN_PATH = $TRDL_REPO_BIN_PATH.Trim()
 $OLDPATH = [System.Environment]::GetEnvironmentVariable('PATH',[System.EnvironmentVariableTarget]::Process)
-$NEWPATH = "$OLDPATH;$TRDL_REPO_BIN_PATH"
+$NEWPATH = "$TRDL_REPO_BIN_PATH;$OLDPATH"
 [System.Environment]::SetEnvironmentVariable('Path',$NEWPATH,[System.EnvironmentVariableTarget]::Process);
 `, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, trdlBinaryPath)
 
@@ -115,7 +115,7 @@ else
 fi
 
 TRDL_REPO_BIN_PATH=$(%[5]q bin-path %[1]s)
-export PATH="${PATH:+${PATH}:}$TRDL_REPO_BIN_PATH"
+export PATH="$TRDL_REPO_BIN_PATH${PATH:+:${PATH}}"
 `, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, trdlBinaryPath)
 
 	return "", fileContent
