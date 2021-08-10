@@ -2,6 +2,8 @@ name: Tests
 on:
   push:
     paths:
+      - 'scripts/ci'
+      - 'scripts/minio'
       - '.github/workflows/tests.yml'
       - '**/*.go'
   schedule:

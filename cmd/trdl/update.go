@@ -57,6 +57,8 @@ func updateCmd() *cobra.Command {
 				if err := StartUpdateInBackground(trdlBinPath, backgroundUpdateArgs, backgroundOutputFile); err != nil {
 					return fmt.Errorf("unable to start update in background: %s", err)
 				}
+
+				return nil
 			}
 
 			if err := c.UpdateRepoChannel(repoName, group, optionalChannel); err != nil {
