@@ -3,6 +3,8 @@ groups:
   channels:
   - name: alpha
     version: v0.1.0+fix2
+  - name: beta
+    version: v0.1.0+fix2
 
 ## Example:
 #groups:
