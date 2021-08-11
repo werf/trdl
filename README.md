@@ -19,6 +19,11 @@
 │   └── repositories
 │       ├── ...
 │       └── <REPO>
+├── logs
+│   ├── ...
+│   └── repositories
+│       ├── ...
+│       └── <REPO>
 ├── .tmp
 │   ├── ...
 │   └── repositories
@@ -29,15 +34,20 @@
     └── <REPO>
         ├── channels
         │   ├── ...
-        │   └── <GROUP_NAME>
+        │   └── <GROUP>
         │       ├── ...
-        │       └── <alpha | beta | ea | stable | rock-solid>
+        │       └── <CHANNEL>
         ├── .meta
-        └── releases
+        ├── releases
+        │   ├── ...
+        │   └── <RELEASE_VERSION>
+        │       └── <OS>_<ARCH>
+        │           └── ...
+        └── scripts
             ├── ...
-            └── <RELEASE_VERSION>
-                └── <OS>_<ARCH>
-                    └── ...
+            └── <GROUP>-<CHANNEL>
+                ├── ...
+                └── source_script[.<ext>]
 ```
 
 ```shell
@@ -46,4 +56,5 @@ repositories:
   ...
   - name: <REPO>
     url: <URL>
+    defaultChannel: <CHANNEL>
 ```
