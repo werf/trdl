@@ -2,7 +2,7 @@ groups:
 - name: "0.1"
   channels:
   - name: alpha
-    version: 0.1.0+fix2
+    version: v0.1.0+fix2
 
 ## Example:
 #groups:
