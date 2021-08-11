@@ -13,7 +13,8 @@ import (
 
 func updateCmd() *cobra.Command {
 	var inBackground bool
-	var backgroundOutputFile string
+	var backgroundStdoutFile string
+	var backgroundStderrFile string
 
 	cmd := &cobra.Command{
 		Use:                   "update REPO GROUP [CHANNEL]",
@@ -54,7 +55,7 @@ func updateCmd() *cobra.Command {
 					backgroundUpdateArgs = append(backgroundUpdateArgs, arg)
 				}
 
-				if err := StartUpdateInBackground(trdlBinPath, backgroundUpdateArgs, backgroundOutputFile); err != nil {
+				if err := StartUpdateInBackground(trdlBinPath, backgroundUpdateArgs, backgroundStdoutFile, backgroundStderrFile); err != nil {
 					return fmt.Errorf("unable to start update in background: %s", err)
 				}
 
@@ -70,22 +71,32 @@ func updateCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&inBackground, "in-background", false, "Perform update in background")
-	cmd.Flags().StringVarP(&backgroundOutputFile, "background-output-file", "", "", "Redirect the output of the background update to a file")
+	cmd.Flags().StringVarP(&backgroundStdoutFile, "background-stdout-file", "", "", "Redirect the stdout of the background update to a file")
+	cmd.Flags().StringVarP(&backgroundStderrFile, "background-stderr-file", "", "", "Redirect the stderr of the background update to a file")
 
 	return cmd
 }
 
-func StartUpdateInBackground(name string, args []string, backgroundOutputFile string) error {
+func StartUpdateInBackground(name string, args []string, backgroundStdoutFile, backgroundStderrFile string) error {
 	cmd := exec.Command(name, args...)
 
-	if backgroundOutputFile != "" {
-		f, err := os.Create(backgroundOutputFile)
+	if backgroundStdoutFile != "" {
+		f, err := os.Create(backgroundStdoutFile)
 		if err != nil {
 			return err
 		}
 		defer func() { _ = f.Close() }()
 
 		cmd.Stdout = f
+	}
+
+	if backgroundStderrFile != "" {
+		f, err := os.Create(backgroundStderrFile)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = f.Close() }()
+
 		cmd.Stderr = f
 	}
 

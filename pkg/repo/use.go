@@ -31,31 +31,34 @@ func (c Client) UseChannelReleaseBinDir(group, channel, shell string, asFile boo
 func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string) (string, []byte) {
 	basename := fmt.Sprintf("use_%s_%s_%s", group, channel, shell)
 	logPathFirstBinPath := filepath.Join(c.logsDir, basename+"_first_bin_path.log")
-	logPathBackgroundUpdate := filepath.Join(c.logsDir, basename+"_background_update.log")
+	logPathBackgroundUpdateStdout := filepath.Join(c.logsDir, basename+"_background_update_stdout.log")
+	logPathBackgroundUpdateStderr := filepath.Join(c.logsDir, basename+"_background_update_stderr.log")
 
 	commonArgs := []string{c.repoName, group, channel}
 	foregroundUpdateArgs := commonArgs[0:]
 	backgroundUpdateArgs := append(
 		commonArgs[0:],
 		"--in-background",
-		fmt.Sprintf("--background-output-file=%q", logPathBackgroundUpdate),
+		fmt.Sprintf("--background-stdout-file=%q", logPathBackgroundUpdateStdout),
+		fmt.Sprintf("--background-stderr-file=%q", logPathBackgroundUpdateStderr),
 	)
 
 	common := strings.Join(commonArgs, " ")               // %[1]s: REPO GROUP CHANNEL
 	foreground := strings.Join(foregroundUpdateArgs, " ") // %[2]s: REPO GROUP CHANNEL [flag ...]
 	background := strings.Join(backgroundUpdateArgs, " ") // %[3]s: REPO GROUP CHANNEL [flag ...]
 	_ = logPathFirstBinPath                               // %[4]s: "*_first_bin_path.log"
-	trdlBinaryPath := os.Args[0]                          // %[5]s: trdl binary path
+	_ = logPathBackgroundUpdateStderr                     // %[5]s: "*_background_update_stderr.log"
+	trdlBinaryPath := os.Args[0]                          // %[6]s: trdl binary path
 
 	var content string
 	var ext string
 	switch shell {
 	case "cmd":
-		ext, content = cmdSourceScript(common, foreground, background, logPathFirstBinPath, trdlBinaryPath)
+		ext, content = cmdSourceScript(common, foreground, background, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
 	case "pwsh":
-		ext, content = pwshSourceScript(common, foreground, background, logPathFirstBinPath, trdlBinaryPath)
+		ext, content = pwshSourceScript(common, foreground, background, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
 	default: // unix shell
-		ext, content = unixSourceScript(common, foreground, background, logPathFirstBinPath, trdlBinaryPath)
+		ext, content = unixSourceScript(common, foreground, background, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
 	}
 
 	name := "source_script"
@@ -68,55 +71,77 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string)
 	return name, data
 }
 
-func cmdSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, trdlBinaryPath string) (string, string) {
+func cmdSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath string) (string, string) {
 	ext := "bat"
 	content := fmt.Sprintf(`
 @echo off
 
-%[5]s bin-path %[1]s 1>nul 2>&1
-IF %%ERRORLEVEL%% NEQ 0 (
-    %[5]s update %[2]s
-) ELSE (
-    %[5]s update %[3]s
+IF EXIST %[5]q (
+  FOR /f "delims=" %%%%S IN (%[5]q) DO (
+    IF %%%%~zS gtr 0 (
+      ECHO Previous run of "trdl update" in background generated following errors:
+      TYPE %[5]q
+    )
+  )
 )
 
-FOR /F "tokens=*" %%%%g IN ('%[5]s bin-path %[1]s') do (SET TRDL_REPO_BIN_PATH=%%%%g)
+%[6]s bin-path %[1]s 1>nul 2>&1
+IF %%ERRORLEVEL%% NEQ 0 (
+    %[6]s update %[2]s
+) ELSE (
+    %[6]s update %[3]s
+)
+
+FOR /F "tokens=*" %%%%g IN ('%[6]s bin-path %[1]s') do (SET TRDL_REPO_BIN_PATH=%%%%g)
 SET PATH=%%TRDL_REPO_BIN_PATH%%;%%PATH%%
-`, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, trdlBinaryPath)
+`, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
 
 	return ext, content
 }
 
-func pwshSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, trdlBinaryPath string) (string, string) {
+func pwshSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath string) (string, string) {
 	filenameExt := "ps1"
 	fileContent := fmt.Sprintf(`
-if ((Invoke-Expression -Command "%[5]s bin-path %[1]s" 2> $null | Out-String -OutVariable TRDL_REPO_BIN_PATH) -and ($LastExitCode -eq 0)) {
-   %[5]s update %[3]s
+if (Test-Path %[5]q -PathType Leaf) {
+  $trdlStderrLog = Get-Content %[5]q
+  if (!([String]::IsNullOrWhiteSpace($trdlStderrLog))) {
+    'Previous run of "trdl update" in background generated following errors:'
+    $trdlStderrLog
+  }
+}
+
+if ((Invoke-Expression -Command "%[6]s bin-path %[1]s" 2> $null | Out-String -OutVariable TRDL_REPO_BIN_PATH) -and ($LastExitCode -eq 0)) {
+   %[6]s update %[3]s
 } else {
-   %[5]s update %[2]s
-   $TRDL_REPO_BIN_PATH = %[5]s bin-path %[1]s
+   %[6]s update %[2]s
+   $TRDL_REPO_BIN_PATH = %[6]s bin-path %[1]s
 }
 
 $TRDL_REPO_BIN_PATH = $TRDL_REPO_BIN_PATH.Trim()
 $OLDPATH = [System.Environment]::GetEnvironmentVariable('PATH',[System.EnvironmentVariableTarget]::Process)
 $NEWPATH = "$TRDL_REPO_BIN_PATH;$OLDPATH"
 [System.Environment]::SetEnvironmentVariable('Path',$NEWPATH,[System.EnvironmentVariableTarget]::Process);
-`, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, trdlBinaryPath)
+`, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
 
 	return filenameExt, fileContent
 }
 
-func unixSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, trdlBinaryPath string) (string, string) {
+func unixSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath string) (string, string) {
 	fileContent := fmt.Sprintf(`
-if %[5]q bin-path %[1]s >%[4]q 2>&1; then
-   %[5]q update %[3]s
-else
-   %[5]q update %[2]s
+if [ -s %[5]q ]; then
+   echo Previous run of "trdl update" in background generated following errors:
+   cat %[5]q
 fi
 
-TRDL_REPO_BIN_PATH=$(%[5]q bin-path %[1]s)
+if %[6]q bin-path %[1]s >%[4]q 2>&1; then
+   %[6]q update %[3]s
+else
+   %[6]q update %[2]s
+fi
+
+TRDL_REPO_BIN_PATH=$(%[6]q bin-path %[1]s)
 export PATH="$TRDL_REPO_BIN_PATH${PATH:+:${PATH}}"
-`, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, trdlBinaryPath)
+`, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
 
 	return "", fileContent
 }
