@@ -42,7 +42,7 @@ func (c Client) UpdateChannel(group, channel string) error {
 			targetName := c.channelTargetName(group, channel)
 			targetMeta, ok := targets[targetName]
 			if !ok {
-				return fmt.Errorf("channel not found in the repository (group: %q, channel: %q)", group, channel)
+				return fmt.Errorf("channel %[2]q not found in the repository (group: %[1]q)", group, channel)
 			}
 
 			channelUpToDate, err = isLocalFileUpToDate(channelPath, targetMeta)
@@ -199,7 +199,7 @@ func (c Client) selectAppropriateReleaseTargets(release string) (targets data.Ta
 
 	if len(targets) == 0 {
 		return nil, "", fmt.Errorf(
-			"nothing found in the repository for release: %q, os: %q, arch: %q",
+			"channel release %q not found in the repository (os: %q, arch: %q)",
 			release, runtime.GOOS, runtime.GOARCH,
 		)
 	}

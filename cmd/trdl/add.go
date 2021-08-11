@@ -37,7 +37,7 @@ func addCmd() *cobra.Command {
 			}
 
 			if err := c.AddRepo(repoName, repoUrl, rootVersion, rootSha512); err != nil {
-				return fmt.Errorf("unable to add the repository: %s", err)
+				return err
 			}
 
 			return nil

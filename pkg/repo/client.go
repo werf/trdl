@@ -167,7 +167,7 @@ func (c Client) findChannelReleaseBinDir(group, channel string) (dir string, rel
 	}
 
 	if !exist {
-		return "", "", fmt.Errorf("bin directory not found in release directory (group: %q, channel: %q)", group, channel)
+		return "", "", fmt.Errorf("bin directory not found in the release %q directory (group: %q, channel: %q)", releaseName, group, channel)
 	}
 
 	return binDir, releaseName, nil
