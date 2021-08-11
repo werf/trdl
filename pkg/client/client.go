@@ -341,7 +341,7 @@ func (c *Client) repoTmpDir(repoName string) string {
 }
 
 func (c *Client) repoLogsDir(repoName string) string {
-	return filepath.Join(c.dir, "logs", repoName)
+	return filepath.Join(c.dir, "logs", "repositories", repoName)
 }
 
 func (c *Client) tmpDir() string {
