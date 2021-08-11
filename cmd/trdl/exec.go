@@ -43,7 +43,7 @@ func execCmd() *cobra.Command {
 				cmdData.repoName, cmdData.group, cmdData.optionalChannel,
 				cmdData.optionalBinaryName, cmdData.optionalBinaryArgs,
 			); err != nil {
-				return fmt.Errorf("unable to exec release bin: %s", err)
+				return err
 			}
 
 			return nil

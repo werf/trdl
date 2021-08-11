@@ -33,7 +33,7 @@ func setDefaultChannelCmd() *cobra.Command {
 			}
 
 			if err := c.SetRepoDefaultChannel(repoName, channel); err != nil {
-				return fmt.Errorf("unable to set default channel: %s", err)
+				return err
 			}
 
 			return nil

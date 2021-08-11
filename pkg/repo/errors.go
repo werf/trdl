@@ -17,7 +17,7 @@ func NewChannelNotFoundLocallyErr(repoName, group, channel string) error {
 }
 
 func (e ChannelNotFoundLocallyErr) Error() string {
-	return fmt.Sprintf("channel release not found locally (group: %q, channel: %q)", e.Group, e.Channel)
+	return fmt.Sprintf("channel %[2]q not found locally (group: %[1]q)", e.Group, e.Channel)
 }
 
 type ChannelReleaseNotFoundLocallyErr struct {

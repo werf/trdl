@@ -38,7 +38,7 @@ func dirPathCmd() *cobra.Command {
 
 			dir, err := c.GetRepoChannelReleaseDir(repoName, group, optionalChannel)
 			if err != nil {
-				return fmt.Errorf("unable to get channel release directory: %s", err)
+				return err
 			}
 
 			fmt.Println(dir)

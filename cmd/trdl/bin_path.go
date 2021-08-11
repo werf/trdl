@@ -38,7 +38,7 @@ func binPathCmd() *cobra.Command {
 
 			dir, err := c.GetRepoChannelReleaseBinDir(repoName, group, optionalChannel)
 			if err != nil {
-				return fmt.Errorf("unable to get channel release bin directory: %s", err)
+				return err
 			}
 
 			fmt.Println(dir)

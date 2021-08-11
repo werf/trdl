@@ -62,7 +62,7 @@ func updateCmd() *cobra.Command {
 			}
 
 			if err := c.UpdateRepoChannel(repoName, group, optionalChannel); err != nil {
-				return fmt.Errorf("unable to update channel: %s", err)
+				return err
 			}
 
 			return nil
