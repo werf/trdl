@@ -149,6 +149,7 @@ func (fs *S3Filesystem) WriteFileBytes(ctx context.Context, path string, data []
 
 func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data io.Reader) error {
 	// TODO: cache opened session
+	cacheControl := "no-store"
 
 	sess, err := session.NewSession(fs.AwsConfig)
 	if err != nil {
@@ -162,7 +163,8 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 		Key:    &path,
 		// DEBUG
 		// Body:   &debugReader{data},
-		Body: data,
+		Body:         data,
+		CacheControl: &cacheControl,
 	}
 
 	result, err := uploader.UploadWithContext(ctx, upParams, func(u *s3manager.Uploader) {
