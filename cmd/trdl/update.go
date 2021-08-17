@@ -62,6 +62,10 @@ func updateCmd() *cobra.Command {
 				return nil
 			}
 
+			if err := c.DoSelfUpdate(); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "WARNING: Self-update failed: %s\n", err)
+			}
+
 			if err := c.UpdateRepoChannel(repoName, group, optionalChannel); err != nil {
 				return err
 			}

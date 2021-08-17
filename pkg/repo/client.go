@@ -174,7 +174,7 @@ func (c Client) findChannelReleaseBinDir(group, channel string) (dir string, rel
 }
 
 func (c Client) findChannelReleaseDir(group, channel string) (dir string, release string, err error) {
-	release, err = c.getChannelRelease(group, channel)
+	release, err = c.GetChannelRelease(group, channel)
 	if err != nil {
 		return "", "", err
 	}
@@ -195,7 +195,7 @@ func (c Client) findChannelReleaseDir(group, channel string) (dir string, releas
 	return matches[0], release, nil
 }
 
-func (c Client) getChannelRelease(group, channel string) (string, error) {
+func (c Client) GetChannelRelease(group, channel string) (string, error) {
 	channelFilePath := c.channelPath(group, channel)
 	exist, err := util.IsRegularFileExist(channelFilePath)
 	if err != nil {

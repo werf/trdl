@@ -3,6 +3,7 @@ package client
 type Interface interface {
 	AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 string) error
 	SetRepoDefaultChannel(repoName, channel string) error
+	DoSelfUpdate() error
 	UpdateRepoChannel(repoName, group, optionalChannel string) error
 	UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, asFile bool) error
 	ExecRepoChannelReleaseBin(repoName, group, optionalChannel string, optionalBinName string, args []string) error
@@ -17,8 +18,10 @@ type RepoInterface interface {
 	UpdateChannel(group, channel string) error
 	UseChannelReleaseBinDir(group, channel, shell string, asFile bool) error
 	ExecChannelReleaseBin(group, channel string, optionalBinName string, args []string) error
+	GetChannelRelease(group, channel string) (string, error)
 	GetChannelReleaseDir(group, channel string) (string, error)
 	GetChannelReleaseBinDir(group, channel string) (string, error)
+	GetChannelReleaseBinPath(group, channel, optionalBinName string) (string, error)
 }
 
 type configurationInterface interface {
