@@ -12,6 +12,7 @@ require (
 	github.com/onsi/gomega v1.7.0
 	github.com/prashantv/gostub v1.0.0
 	github.com/rodaine/table v1.0.1
+	github.com/spaolacci/murmur3 v1.1.0
 	github.com/spf13/cobra v1.1.3
 	github.com/theupdateframework/go-tuf v0.0.0-20201230183259-aee6270feb55
 	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad // indirect

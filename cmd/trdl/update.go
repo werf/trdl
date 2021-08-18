@@ -12,6 +12,7 @@ import (
 )
 
 func updateCmd() *cobra.Command {
+	var noSelfUpdate bool
 	var inBackground bool
 	var backgroundStdoutFile string
 	var backgroundStderrFile string
@@ -62,8 +63,10 @@ func updateCmd() *cobra.Command {
 				return nil
 			}
 
-			if err := c.DoSelfUpdate(); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "WARNING: Self-update failed: %s\n", err)
+			if !noSelfUpdate {
+				if err := c.DoSelfUpdate(); err != nil {
+					_, _ = fmt.Fprintf(os.Stderr, "WARNING: Self-update failed: %s\n", err)
+				}
 			}
 
 			if err := c.UpdateRepoChannel(repoName, group, optionalChannel); err != nil {
@@ -74,6 +77,7 @@ func updateCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVar(&noSelfUpdate, "no-self-update", GetBoolEnvironmentDefaultFalse("TRDL_NO_SELF_UPDATE"), "Do not perform self-update")
 	cmd.Flags().BoolVar(&inBackground, "in-background", false, "Perform update in background")
 	cmd.Flags().StringVarP(&backgroundStdoutFile, "background-stdout-file", "", "", "Redirect the stdout of the background update to a file")
 	cmd.Flags().StringVarP(&backgroundStderrFile, "background-stderr-file", "", "", "Redirect the stderr of the background update to a file")

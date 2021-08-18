@@ -199,7 +199,7 @@ func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string) error
 	return repoClient.UpdateChannel(group, channel)
 }
 
-func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, asFile bool) error {
+func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, asFile bool, opts repo.UseSourceOptions) error {
 	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
 	if err != nil {
 		return err
@@ -210,7 +210,7 @@ func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, sh
 		return err
 	}
 
-	if err := repoClient.UseChannelReleaseBinDir(group, channel, shell, asFile); err != nil {
+	if err := repoClient.UseChannelReleaseBinDir(group, channel, shell, asFile, opts); err != nil {
 		return err
 	}
 

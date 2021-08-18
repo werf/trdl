@@ -1,11 +1,13 @@
 package client
 
+import "github.com/werf/trdl/pkg/repo"
+
 type Interface interface {
 	AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 string) error
 	SetRepoDefaultChannel(repoName, channel string) error
 	DoSelfUpdate() error
 	UpdateRepoChannel(repoName, group, optionalChannel string) error
-	UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, asFile bool) error
+	UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, asFile bool, opts repo.UseSourceOptions) error
 	ExecRepoChannelReleaseBin(repoName, group, optionalChannel string, optionalBinName string, args []string) error
 	GetRepoChannelReleaseDir(repoName, group, optionalChannel string) (string, error)
 	GetRepoChannelReleaseBinDir(repoName, group, optionalChannel string) (string, error)
@@ -16,7 +18,7 @@ type Interface interface {
 type RepoInterface interface {
 	Setup(rootVersion int64, rootSha512 string) error
 	UpdateChannel(group, channel string) error
-	UseChannelReleaseBinDir(group, channel, shell string, asFile bool) error
+	UseChannelReleaseBinDir(group, channel, shell string, asFile bool, opts repo.UseSourceOptions) error
 	ExecChannelReleaseBin(group, channel string, optionalBinName string, args []string) error
 	GetChannelRelease(group, channel string) (string, error)
 	GetChannelReleaseDir(group, channel string) (string, error)
