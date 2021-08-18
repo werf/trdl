@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	trdlClient "github.com/werf/trdl/pkg/client"
+	"github.com/werf/trdl/pkg/trdl"
 )
 
 func addCmd() *cobra.Command {
@@ -24,6 +25,11 @@ func addCmd() *cobra.Command {
 			repoUrl := args[1]
 			rootVersionArg := args[2]
 			rootSha512 := args[3]
+
+			if repoName == trdl.SelfUpdateDefaultRepo {
+				PrintHelp(cmd)
+				return fmt.Errorf("reserved repository name %q cannot be used", trdl.SelfUpdateDefaultRepo)
+			}
 
 			rootVersion, err := parseRootVersionArgument(rootVersionArg)
 			if err != nil {
