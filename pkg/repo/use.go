@@ -11,8 +11,8 @@ import (
 	"github.com/werf/trdl/pkg/util"
 )
 
-func (c Client) UseChannelReleaseBinDir(group, channel, shell string, asFile bool) error {
-	name, data := c.prepareSourceScriptFileNameAndData(group, channel, shell)
+func (c Client) UseChannelReleaseBinDir(group, channel, shell string, asFile bool, opts UseSourceOptions) error {
+	name, data := c.prepareSourceScriptFileNameAndData(group, channel, shell, opts)
 
 	if !asFile {
 		fmt.Print(string(data))
@@ -28,8 +28,12 @@ func (c Client) UseChannelReleaseBinDir(group, channel, shell string, asFile boo
 	return nil
 }
 
-func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string) (string, []byte) {
-	basename := fmt.Sprintf("use_%s_%s_%s", group, channel, shell)
+type UseSourceOptions struct {
+	NoSelfUpdate bool
+}
+
+func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string, opts UseSourceOptions) (string, []byte) {
+	basename := c.prepareSourceScriptBasename(group, channel, shell, opts)
 	logPathFirstBinPath := filepath.Join(c.logsDir, basename+"_first_bin_path.log")
 	logPathBackgroundUpdateStdout := filepath.Join(c.logsDir, basename+"_background_update_stdout.log")
 	logPathBackgroundUpdateStderr := filepath.Join(c.logsDir, basename+"_background_update_stderr.log")
@@ -42,6 +46,11 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string)
 		fmt.Sprintf("--background-stdout-file=%q", logPathBackgroundUpdateStdout),
 		fmt.Sprintf("--background-stderr-file=%q", logPathBackgroundUpdateStderr),
 	)
+
+	if opts.NoSelfUpdate {
+		foregroundUpdateArgs = append(foregroundUpdateArgs, "--no-self-update")
+		backgroundUpdateArgs = append(backgroundUpdateArgs, "--no-self-update")
+	}
 
 	common := strings.Join(commonArgs, " ")               // %[1]s: REPO GROUP CHANNEL
 	foreground := strings.Join(foregroundUpdateArgs, " ") // %[2]s: REPO GROUP CHANNEL [flag ...]
@@ -69,6 +78,16 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string)
 	data := []byte(fmt.Sprintln(strings.TrimSpace(content)))
 
 	return name, data
+}
+
+func (c Client) prepareSourceScriptBasename(group, channel, shell string, opts UseSourceOptions) string {
+	basename := fmt.Sprintf("use_%s_%s_%s", group, channel, shell)
+
+	if opts.NoSelfUpdate {
+		basename += "_" + util.MurmurHash(fmt.Sprintf("%+v", opts))
+	}
+
+	return basename
 }
 
 func cmdSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath string) (string, string) {

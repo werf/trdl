@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -18,6 +19,15 @@ func ValidateChannel(channel string) error {
 	}
 
 	return nil
+}
+
+func GetBoolEnvironmentDefaultFalse(environmentName string) bool {
+	switch os.Getenv(environmentName) {
+	case "1", "true", "yes":
+		return true
+	default:
+		return false
+	}
 }
 
 func PrintHelp(cmd *cobra.Command) {

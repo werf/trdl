@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/inconshreveable/go-update"
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
 
@@ -105,7 +106,7 @@ func (c Client) AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 
 func (c Client) SetRepoDefaultChannel(repoName, channel string) error {
 	if err := c.configuration.StageRepoDefaultChannel(repoName, channel); err != nil {
 		if err == repoConfigurationNotFoundErr {
-			return prepareRepositoryNotInitializedErr(repoName)
+			return newRepositoryNotInitializedErr(repoName)
 		}
 
 		return err
@@ -118,6 +119,70 @@ func (c Client) SetRepoDefaultChannel(repoName, channel string) error {
 
 		return nil
 	})
+}
+
+func (c Client) DoSelfUpdate() error {
+	return lockgate.WithAcquire(c.locker, "self-update", lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+		return c.doSelfUpdate()
+	})
+}
+
+func (c Client) doSelfUpdate() error {
+	channel, err := c.processRepoOptionalChannel(trdl.SelfUpdateDefaultRepo, "")
+	if err != nil {
+		if _, ok := err.(*RepositoryNotInitializedErr); !ok {
+			return err
+		}
+
+		if err := c.AddRepo(
+			trdl.SelfUpdateDefaultRepo,
+			trdl.SelfUpdateDefaultUrl,
+			trdl.SelfUpdateDefaultRootVersion,
+			trdl.SelfUpdateDefaultRootSha512,
+		); err != nil {
+			return err
+		}
+
+		channel, err = c.processRepoOptionalChannel(trdl.SelfUpdateDefaultRepo, "")
+		if err != nil {
+			return err
+		}
+	}
+
+	repoClient, err := c.GetRepoClient(trdl.SelfUpdateDefaultRepo)
+	if err != nil {
+		return err
+	}
+
+	if err = repoClient.UpdateChannel(trdl.SelfUpdateDefaultGroup, channel); err != nil {
+		return err
+	}
+
+	channelRelease, err := repoClient.GetChannelRelease(trdl.SelfUpdateDefaultGroup, channel)
+	if err != nil {
+		return err
+	}
+
+	if channelRelease == trdl.Version {
+		return nil
+	}
+
+	binPath, err := repoClient.GetChannelReleaseBinPath(trdl.SelfUpdateDefaultGroup, channel, "")
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Open(binPath)
+	if err != nil {
+		return fmt.Errorf("unable to open file %q: %s", binPath, err)
+	}
+	defer func() { _ = f.Close() }()
+
+	if err := update.Apply(f, update.Options{}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string) error {
@@ -134,7 +199,7 @@ func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string) error
 	return repoClient.UpdateChannel(group, channel)
 }
 
-func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, asFile bool) error {
+func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, asFile bool, opts repo.UseSourceOptions) error {
 	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
 	if err != nil {
 		return err
@@ -145,7 +210,7 @@ func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, sh
 		return err
 	}
 
-	if err := repoClient.UseChannelReleaseBinDir(group, channel, shell, asFile); err != nil {
+	if err := repoClient.UseChannelReleaseBinDir(group, channel, shell, asFile, opts); err != nil {
 		return err
 	}
 
@@ -314,14 +379,10 @@ func (c *Client) processRepoOptionalChannel(repoName, optionalChannel string) (s
 func (c *Client) getRepoConfiguration(repoName string) (*RepoConfiguration, error) {
 	repoConfiguration := c.configuration.GetRepoConfiguration(repoName)
 	if repoConfiguration == nil {
-		return nil, prepareRepositoryNotInitializedErr(repoName)
+		return nil, newRepositoryNotInitializedErr(repoName)
 	}
 
 	return repoConfiguration, nil
-}
-
-func prepareRepositoryNotInitializedErr(repoName string) error {
-	return fmt.Errorf("repository %q not initialized: configure it with \"trdl add\" command", repoName)
 }
 
 func (c *Client) configurationPath() string {
