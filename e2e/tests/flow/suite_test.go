@@ -41,6 +41,7 @@ var _ = BeforeEach(func() {
 	tmpDir = util.GetTempDir()
 	trdlHomeDir = tmpDir
 	stubs.SetEnv("TRDL_HOME_DIR", trdlHomeDir)
+	stubs.SetEnv("TRDL_NO_SELF_UPDATE", "1")
 })
 
 var _ = AfterEach(func() {

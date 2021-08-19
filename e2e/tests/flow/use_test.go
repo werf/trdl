@@ -37,7 +37,6 @@ var _ = Describe("Use", func() {
 		)
 	})
 
-	// check
 	DescribeTable("should print only shell script", func(shell string) {
 		useAsFileOutput := util.SucceedCommandOutputString(
 			"",
@@ -95,7 +94,7 @@ var _ = Describe("Use", func() {
 		)
 		Ω(output).Should(Equal(entry.expectedOutput))
 
-		By("Updating in background ...") // TODO: change channel release on this step
+		By("Updating in background ...") // TODO: improve test and change channel release on this step
 		output = util.SucceedCommandOutputString(
 			"",
 			shellCommandPath,
