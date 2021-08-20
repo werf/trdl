@@ -4,4 +4,4 @@ groups:
   - name: alpha
     version: v0.1.0+fix4
   - name: stable
-    version: v0.1.0+fix3
+    version: v0.1.0+fix4
