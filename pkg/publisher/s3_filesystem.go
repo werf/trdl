@@ -168,15 +168,8 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 	}
 
 	result, err := uploader.UploadWithContext(ctx, upParams, func(u *s3manager.Uploader) {
-		if strings.Contains(*fs.AwsConfig.Endpoint, "storage.googleapis.com") {
-			u.LeavePartsOnError = true
-			u.PartSize = 1024 * 1024 * 1024 // 1Gi buffer will be allocated in the memory
-			u.MaxUploadParts = 1
-			u.Concurrency = 1
-		} else {
-			u.LeavePartsOnError = false
-			u.PartSize = 1024 * 1024 * 10
-		}
+		u.LeavePartsOnError = false
+		u.PartSize = 1024 * 1024 * 10
 	})
 	if err != nil {
 		return fmt.Errorf("error uploading %q: %s", path, err)
