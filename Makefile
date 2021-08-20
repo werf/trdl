@@ -75,3 +75,24 @@ clean:
 	docker rm -f trdl_dev_vault || true
 	docker run --rm --volume $$(pwd):/wrk alpine rm -rf /wrk/.minio_data
 	rm -f trdl.log
+
+install-to-dev: build
+	: "$${VAULT_TOKEN:?not set}"
+	scp vault/plugins/vault-plugin-secrets-trdl ubuntu@34.140.198.54:/home/ubuntu/
+	ssh -tt ubuntu@34.140.198.54 " \
+		set -x && \
+		export VAULT_TOKEN="$$VAULT_TOKEN" && \
+		export VAULT_ADDR=http://127.0.0.1:8200 && \
+		export GO_VERSION='1.16' && \
+		export GOPATH='/opt/golang' && \
+		export GOROOT="\$$GOPATH/local/go\$${GO_VERSION}" && \
+		export PATH="\$$PATH:\$$GOROOT/bin:\$$GOPATH/bin" && \
+		sudo systemctl stop vault && \
+		sudo install -t /etc/vault.d/plugins vault-plugin-secrets-trdl && \
+		sudo systemctl start vault && \
+		until [[ \$$(vault status | awk '/^Initialized/ {print \$$2}') == "true" ]]; do sleep 1; done && \
+		vault plugin register -sha256=\$$(sha256sum /etc/vault.d/plugins/vault-plugin-secrets-trdl | awk '{print \$$1}') secret vault-plugin-secrets-trdl && \
+		sudo systemctl restart vault && \
+		until [[ \$$(vault status | awk '/^Initialized/ {print \$$2}') == "true" ]]; do sleep 1; done && \
+		systemctl status vault --no-pager \
+	"
