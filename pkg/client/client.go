@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/inconshreveable/go-update"
 	"github.com/werf/lockgate"
@@ -13,6 +14,12 @@ import (
 	"github.com/werf/trdl/pkg/repo"
 	"github.com/werf/trdl/pkg/trdl"
 	"github.com/werf/trdl/pkg/util"
+)
+
+const (
+	selfUpdateLockFilename  = "self-update"
+	selfUpdateDelayFilename = "self-update"
+	selfUpdateDelay         = time.Second * 30
 )
 
 type Client struct {
@@ -122,9 +129,41 @@ func (c Client) SetRepoDefaultChannel(repoName, channel string) error {
 }
 
 func (c Client) DoSelfUpdate() error {
-	return lockgate.WithAcquire(c.locker, "self-update", lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
-		return c.doSelfUpdate()
-	})
+	acquired, lock, err := c.locker.Acquire(selfUpdateLockFilename, lockgate.AcquireOptions{Shared: false, NonBlocking: true})
+	if err != nil {
+		return fmt.Errorf("unable to acquire lock: %s", err)
+	}
+
+	// skip due to execution in a parallel process
+	if !acquired {
+		return nil
+	}
+
+	// skip due to delay between updates has not passed yet
+	{
+		passed, err := c.selfUpdateDelayFile().IsDelayPassed()
+		if err != nil {
+			return fmt.Errorf("unable to check delay file: %s", err)
+		}
+
+		if !passed {
+			return nil
+		}
+	}
+
+	if err := c.doSelfUpdate(); err != nil {
+		return err
+	}
+
+	if err := c.selfUpdateDelayFile().UpdateTimestamp(); err != nil {
+		return fmt.Errorf("unable to update delay file timestamp: %s", err)
+	}
+
+	if err := c.locker.Release(lock); err != nil {
+		return fmt.Errorf("unable to release lock: %s", err)
+	}
+
+	return nil
 }
 
 func (c Client) doSelfUpdate() error {
@@ -407,4 +446,9 @@ func (c *Client) repoLogsDir(repoName string) string {
 
 func (c *Client) tmpDir() string {
 	return filepath.Join(c.dir, ".tmp")
+}
+
+func (c *Client) selfUpdateDelayFile() util.DelayFile {
+	filePath := filepath.Join(c.dir, ".delay", selfUpdateDelayFilename)
+	return util.NewDelayFile(c.locker, filePath, selfUpdateDelay)
 }
