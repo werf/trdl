@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+	uuid "github.com/satori/go.uuid"
 	"github.com/werf/logboek"
 
 	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
@@ -296,8 +297,12 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 	logboek.Context(ctx).Default().LogF("Building docker image with artifacts\n")
 	hclog.L().Debug("Building docker image with artifacts")
 
+	serviceLabels := map[string]string{
+		"vault-trdl-release-uuid": uuid.NewV4().String(),
+	}
 	response, err := cli.ImageBuild(ctx, contextReader, types.ImageBuildOptions{
 		Dockerfile:  serviceDockerfilePathInContext,
+		Labels:      serviceLabels,
 		PullParent:  true,
 		NoCache:     true,
 		Remove:      true,
@@ -309,6 +314,10 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 	}
 
 	handleFromImageBuildResponse(ctx, response, tarWriter)
+
+	if err := docker.RemoveImagesByLabels(ctx, cli, serviceLabels); err != nil {
+		return err
+	}
 
 	return nil
 }
