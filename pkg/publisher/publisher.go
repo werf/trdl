@@ -170,11 +170,6 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 
-	_, err := semver.NewVersion(releaseName)
-	if err != nil {
-		return fmt.Errorf("expected semver release name got %q: %s", releaseName, err)
-	}
-
 	pathParts := SplitFilepath(filepath.Clean(path))
 	if len(pathParts) == 0 {
 		return NewErrIncorrectTargetPath(path)
