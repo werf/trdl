@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strings"
 
+	"github.com/Masterminds/semver"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	git "github.com/go-git/go-git/v5"
@@ -66,6 +68,14 @@ func releasePath(b *backend) *framework.Path {
 	}
 }
 
+func ValidateGitTag(gitTag string) error {
+	_, err := semver.NewVersion(gitTag)
+	if err != nil {
+		return fmt.Errorf("expected semver release name got %q: %s", gitTag, err)
+	}
+	return nil
+}
+
 func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
 		return errResp, nil
@@ -86,6 +96,11 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 	}
 
 	gitTag := fields.Get(fieldNameGitTag).(string)
+	if err := ValidateGitTag(gitTag); err != nil {
+		return logical.ErrorResponse("%s validation failed: %s", fieldNameGitTag, err), nil
+	}
+	releaseName := strings.TrimPrefix(gitTag, "v")
+
 	gitUsername := fields.Get(fieldNameGitUsername).(string)
 	gitPassword := fields.Get(fieldNameGitPassword).(string)
 	if gitCredentialFromStorage != nil && gitUsername == "" && gitPassword == "" {
@@ -157,7 +172,7 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", hdr.Name)
 					hclog.L().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", hdr.Name))
 
-					if err := b.Publisher.StageReleaseTarget(ctx, publisherRepository, gitTag, hdr.Name, twArtifacts); err != nil {
+					if err := b.Publisher.StageReleaseTarget(ctx, publisherRepository, releaseName, hdr.Name, twArtifacts); err != nil {
 						return fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
 					}
 				}
