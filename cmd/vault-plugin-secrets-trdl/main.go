@@ -10,25 +10,38 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/plugin"
+	"github.com/werf/logboek"
+	logboekLevel "github.com/werf/logboek/pkg/level"
 
 	trdl "github.com/werf/vault-plugin-secrets-trdl"
+	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
 )
 
 func main() {
+	hclogOpts := &hclog.LoggerOptions{
+		IncludeLocation: true,
+	}
+
 	logFile, err := os.OpenFile("trdl.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
 	if err != nil {
 		panic(fmt.Sprintf("failed to open trdl.log file: %s", err))
 	}
+	hclogOpts.Output = logFile
 
-	hclog.DefaultOptions = &hclog.LoggerOptions{
-		Level:           hclog.Trace,
-		IncludeLocation: true,
-		Output:          logFile,
+	if util.IsEnvVarTrue("VAULT_PLUGIN_SECRETS_TRDL_DEBUG") {
+		hclogOpts.Level = hclog.Trace
+
+		logboek.DefaultLogger().SetAcceptedLevel(logboekLevel.Debug)
+		logboek.DefaultLogger().Streams().EnablePrefixWithTime()
+	} else {
+		hclogOpts.Level = hclog.Info
+
+		logboek.DefaultLogger().SetAcceptedLevel(logboekLevel.Info)
 	}
 
-	switch isPprofEnabled := os.Getenv("VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLED"); isPprofEnabled {
-	case "", "0", "false", "FALSE", "no", "NO":
-	default:
+	hclog.DefaultOptions = hclogOpts
+
+	if util.IsEnvVarTrue("VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE") {
 		go servePprof()
 	}
 
