@@ -152,9 +152,15 @@ func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		hclog.L().Debug("Starting release artifacts tar archive build")
 
 		tarReader, tarWriter := io.Pipe()
-		if err := buildReleaseArtifacts(ctx, tarWriter, gitRepo, trdlCfg.DockerImage, trdlCfg.Commands); err != nil {
+		err, cleanupFunc := buildReleaseArtifacts(ctx, tarWriter, gitRepo, trdlCfg.DockerImage, trdlCfg.Commands)
+		if err != nil {
 			return fmt.Errorf("unable to build release artifacts: %s", err)
 		}
+		defer func() {
+			if err := cleanupFunc(); err != nil {
+				hclog.L().Error(fmt.Sprintf("unable to remove service docker image: %s", err))
+			}
+		}()
 
 		{
 			twArtifacts := tar.NewReader(tarReader)
@@ -250,14 +256,17 @@ func getTrdlConfig(gitRepo *git.Repository, gitTag string) (*config.Trdl, error)
 	return cfg, nil
 }
 
-func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRepo *git.Repository, fromImage string, runCommands []string) error {
+func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRepo *git.Repository, fromImage string, runCommands []string) (error, func() error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return fmt.Errorf("unable to create docker client: %s", err)
+		return fmt.Errorf("unable to create docker client: %s", err), nil
 	}
 
 	serviceDirInContext := ".trdl"
 	serviceDockerfilePathInContext := path.Join(serviceDirInContext, "Dockerfile")
+	serviceLabels := map[string]string{
+		"vault-trdl-release-uuid": uuid.NewV4().String(),
+	}
 	contextReader, contextWriter := io.Pipe()
 	go func() {
 		if err := func() error {
@@ -272,6 +281,7 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 
 			dockerfileOpts := docker.DockerfileOpts{
 				WithArtifacts: true,
+				Labels:        serviceLabels,
 			}
 			if err := docker.GenerateAndAddDockerfileToTar(tw, serviceDockerfilePathInContext, fromImage, runCommands, dockerfileOpts); err != nil {
 				return fmt.Errorf("unable to add service dockerfile to tar: %s", err)
@@ -297,12 +307,8 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 	logboek.Context(ctx).Default().LogF("Building docker image with artifacts\n")
 	hclog.L().Debug("Building docker image with artifacts")
 
-	serviceLabels := map[string]string{
-		"vault-trdl-release-uuid": uuid.NewV4().String(),
-	}
 	response, err := cli.ImageBuild(ctx, contextReader, types.ImageBuildOptions{
 		Dockerfile:  serviceDockerfilePathInContext,
-		Labels:      serviceLabels,
 		PullParent:  true,
 		NoCache:     true,
 		Remove:      true,
@@ -310,16 +316,16 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 		Version:     types.BuilderV1,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to run docker image build: %s", err)
+		return fmt.Errorf("unable to run docker image build: %s", err), nil
 	}
 
 	handleFromImageBuildResponse(ctx, response, tarWriter)
 
-	if err := docker.RemoveImagesByLabels(ctx, cli, serviceLabels); err != nil {
-		return err
+	cleanupFunc := func() error {
+		return docker.RemoveImagesByLabels(ctx, cli, serviceLabels)
 	}
 
-	return nil
+	return nil, cleanupFunc
 }
 
 func handleFromImageBuildResponse(ctx context.Context, response types.ImageBuildResponse, tarWriter *io.PipeWriter) {

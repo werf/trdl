@@ -14,6 +14,7 @@ type DockerfileOpts struct {
 	ContainerArtifactsDir string
 	WithArtifacts         bool
 	EnvVars               map[string]string
+	Labels                map[string]string
 }
 
 func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, fromImage string, runCommands []string, dockerfileOpts DockerfileOpts) error {
@@ -54,6 +55,10 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	}
 
 	addLineFunc(fmt.Sprintf("FROM %s", fromImage))
+
+	for labelName, labelVal := range opts.Labels {
+		addLineFunc(fmt.Sprintf("LABEL %s=%q", labelName, labelVal))
+	}
 
 	for envVarName, envVarVal := range opts.EnvVars {
 		addLineFunc(fmt.Sprintf("ENV %s=%q", envVarName, envVarVal))
