@@ -11,21 +11,14 @@ import (
 	"github.com/werf/trdl/pkg/util"
 )
 
-func (c Client) UseChannelReleaseBinDir(group, channel, shell string, asFile bool, opts UseSourceOptions) error {
+func (c Client) UseChannelReleaseBinDir(group, channel, shell string, opts UseSourceOptions) (string, error) {
 	name, data := c.prepareSourceScriptFileNameAndData(group, channel, shell, opts)
-
-	if !asFile {
-		fmt.Print(string(data))
-		return nil
-	}
-
 	sourceScriptPath, err := c.syncSourceScriptFile(group, channel, name, data)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	fmt.Println(sourceScriptPath)
-	return nil
+	return sourceScriptPath, nil
 }
 
 type UseSourceOptions struct {

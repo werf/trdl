@@ -13,7 +13,6 @@ import (
 
 func useCmd() *cobra.Command {
 	var noSelfUpdate bool
-	var asFile bool
 	var shell string
 
 	cmd := &cobra.Command{
@@ -50,16 +49,18 @@ func useCmd() *cobra.Command {
 				return fmt.Errorf("unable to initialize trdl client: %s", err)
 			}
 
-			if err := c.UseRepoChannelReleaseBinDir(
+			scriptPath, err := c.UseRepoChannelReleaseBinDir(
 				repoName,
 				group,
 				optionalChannel,
 				shell,
-				asFile,
 				repo.UseSourceOptions{NoSelfUpdate: noSelfUpdate},
-			); err != nil {
+			)
+			if err != nil {
 				return err
 			}
+
+			fmt.Println(scriptPath)
 
 			return nil
 		},
@@ -72,7 +73,6 @@ func useCmd() *cobra.Command {
 
 	cmd.Flags().BoolVar(&noSelfUpdate, "no-self-update", GetBoolEnvironmentDefaultFalse("TRDL_NO_SELF_UPDATE"), "Do not perform self-update")
 	cmd.Flags().StringVar(&shell, "shell", defaultShell, "Select the shell for which to prepare the script. Supports 'cmd', 'pwsh' and 'unix' shells")
-	cmd.Flags().BoolVar(&asFile, "as-file", false, "Create the script and print the path for sourcing")
 
 	return cmd
 }
