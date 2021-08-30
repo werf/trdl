@@ -55,8 +55,6 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string,
 	var content string
 	var ext string
 	switch shell {
-	case "cmd":
-		ext, content = cmdSourceScript(common, foreground, background, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
 	case "pwsh":
 		ext, content = pwshSourceScript(common, foreground, background, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
 	default: // unix shell
@@ -81,34 +79,6 @@ func (c Client) prepareSourceScriptBasename(group, channel, shell string, opts U
 	}
 
 	return basename
-}
-
-func cmdSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath string) (string, string) {
-	ext := "bat"
-	content := fmt.Sprintf(`
-@echo off
-
-IF EXIST %[5]q (
-  FOR /f "delims=" %%%%S IN (%[5]q) DO (
-    IF %%%%~zS gtr 0 (
-      ECHO Previous run of "trdl update" in background generated following errors:
-      TYPE %[5]q
-    )
-  )
-)
-
-%[6]s bin-path %[1]s 1>nul 2>&1
-IF %%ERRORLEVEL%% NEQ 0 (
-    %[6]s update %[2]s
-) ELSE (
-    %[6]s update %[3]s
-)
-
-FOR /F "tokens=*" %%%%g IN ('%[6]s bin-path %[1]s') do (SET TRDL_REPO_BIN_PATH=%%%%g)
-SET PATH=%%TRDL_REPO_BIN_PATH%%;%%PATH%%
-`, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
-
-	return ext, content
 }
 
 func pwshSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath string) (string, string) {

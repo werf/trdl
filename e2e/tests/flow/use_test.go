@@ -38,7 +38,7 @@ var _ = Describe("Use", func() {
 
 	DescribeTable("should source script and run channel release binary", func(entry useEntry) {
 		switch entry.shell {
-		case trdl.ShellCmd, trdl.ShellPowerShell:
+		case trdl.ShellPowerShell:
 			if runtime.GOOS != "windows" {
 				Skip("windows test")
 			}
@@ -83,20 +83,6 @@ var _ = Describe("Use", func() {
 			time.Sleep(time.Millisecond * 500)
 		}
 	},
-		Entry(trdl.ShellCmd, useEntry{
-			shell:            trdl.ShellCmd,
-			shellCommandName: "cmd.exe",
-			shellCommandArgsFunc: func(testScriptPath string) []string {
-				return []string{"/C", fmt.Sprintf("CALL %s", testScriptPath)}
-			},
-			testScriptFormat: `
-@echo off
-FOR /F "tokens=*" %%%%g IN ('%[1]s') do (SET TRDL_USE_SCRIPT_PATH=%%%%g)
-%%TRDL_USE_SCRIPT_PATH%% && script.bat
-`,
-			testScriptBasename: "test_script.bat",
-			expectedOutput:     "\"v0.0.1\"\r\n",
-		}),
 		Entry(trdl.ShellPowerShell, useEntry{
 			shell:            trdl.ShellPowerShell,
 			shellCommandName: "powershell.exe",

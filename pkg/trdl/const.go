@@ -11,7 +11,6 @@ const (
 	DefaultChannel   = ChannelStable
 
 	ShellUnix       = "unix"
-	ShellCmd        = "cmd"
 	ShellPowerShell = "pwsh"
 
 	SelfUpdateDefaultRepo        = "trdl"
