@@ -38,7 +38,7 @@ func useCmd() *cobra.Command {
 			}
 
 			switch shell {
-			case trdl.ShellUnix, trdl.ShellCmd, trdl.ShellPowerShell:
+			case trdl.ShellUnix, trdl.ShellPowerShell:
 			default:
 				PrintHelp(cmd)
 				return fmt.Errorf("specified shell %q not supported", shell)
@@ -72,7 +72,7 @@ func useCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&noSelfUpdate, "no-self-update", GetBoolEnvironmentDefaultFalse("TRDL_NO_SELF_UPDATE"), "Do not perform self-update")
-	cmd.Flags().StringVar(&shell, "shell", defaultShell, "Select the shell for which to prepare the script. Supports 'cmd', 'pwsh' and 'unix' shells")
+	cmd.Flags().StringVar(&shell, "shell", defaultShell, "Select the shell for which to prepare the script. Supports 'pwsh' and 'unix' shells")
 
 	return cmd
 }
