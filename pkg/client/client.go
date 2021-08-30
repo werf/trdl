@@ -238,22 +238,23 @@ func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string) error
 	return repoClient.UpdateChannel(group, channel)
 }
 
-func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, asFile bool, opts repo.UseSourceOptions) error {
+func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, opts repo.UseSourceOptions) (string, error) {
 	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	repoClient, err := c.GetRepoClient(repoName)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	if err := repoClient.UseChannelReleaseBinDir(group, channel, shell, asFile, opts); err != nil {
-		return err
+	scriptPath, err := repoClient.UseChannelReleaseBinDir(group, channel, shell, opts)
+	if err != nil {
+		return "", err
 	}
 
-	return nil
+	return scriptPath, nil
 }
 
 func (c Client) ExecRepoChannelReleaseBin(repoName, group, optionalChannel, optionalBinName string, args []string) error {

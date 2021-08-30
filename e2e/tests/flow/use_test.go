@@ -1,7 +1,6 @@
 package flow
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -37,29 +36,6 @@ var _ = Describe("Use", func() {
 		)
 	})
 
-	DescribeTable("should print only shell script", func(shell string) {
-		useAsFileOutput := util.SucceedCommandOutputString(
-			"",
-			trdlBinPath,
-			"use", testRepoName, validGroup, "--as-file",
-		)
-		scriptPath := strings.TrimSpace(useAsFileOutput)
-
-		output := util.SucceedCommandOutputString(
-			"",
-			trdlBinPath,
-			"use", testRepoName, validGroup,
-		)
-
-		scriptData, err := ioutil.ReadFile(scriptPath)
-		Ω(err).ShouldNot(HaveOccurred())
-		Ω(bytes.Equal(scriptData, []byte(output))).Should(BeTrue())
-	},
-		Entry(trdl.ShellCmd, trdl.ShellCmd),
-		Entry(trdl.ShellPowerShell, trdl.ShellPowerShell),
-		Entry(trdl.ShellUnix, trdl.ShellUnix),
-	)
-
 	DescribeTable("should source script and run channel release binary", func(entry useEntry) {
 		switch entry.shell {
 		case trdl.ShellCmd, trdl.ShellPowerShell:
@@ -77,7 +53,7 @@ var _ = Describe("Use", func() {
 
 		trdlUseCommand := strings.Join(append(
 			[]string{trdlBinPath},
-			util.TrdlBinArgs("use", testRepoName, validGroup, "--as-file", "--shell", entry.shell)...,
+			util.TrdlBinArgs("use", testRepoName, validGroup, "--shell", entry.shell)...,
 		), " ")
 
 		testScriptPath := filepath.Join(tmpDir, entry.testScriptBasename)
