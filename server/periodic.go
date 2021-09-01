@@ -1,4 +1,4 @@
-package trdl
+package server
 
 import (
 	"context"
@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/werf/logboek"
 
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/publisher"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/util"
 )
 
 var systemClock util.Clock = util.NewSystemClock()

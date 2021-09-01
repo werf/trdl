@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/config"
 )
 
 const (

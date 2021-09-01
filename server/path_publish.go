@@ -1,4 +1,4 @@
-package trdl
+package server
 
 import (
 	"context"
@@ -12,11 +12,11 @@ import (
 	"github.com/werf/logboek"
 	"gopkg.in/yaml.v2"
 
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
-	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/config"
+	trdlGit "github.com/werf/vault-plugin-secrets-trdl/server/pkg/git"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/pgp"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/util"
 )
 
 const (

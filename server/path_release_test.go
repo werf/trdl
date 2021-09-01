@@ -1,4 +1,4 @@
-package trdl
+package server
 
 import (
 	"testing"
@@ -7,28 +7,40 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
 )
 
-type PathPublishCallbackSuite struct {
+const fieldGitTagValidValue = "v1.0.1"
+
+type PathReleaseCallbackSuite struct {
 	CommonSuite
 }
 
-func (suite *PathPublishCallbackSuite) SetupTest() {
+func (suite *PathReleaseCallbackSuite) SetupTest() {
 	suite.CommonSuite.SetupTest()
-	suite.req.Path = "publish"
+	suite.req.Path = "release"
 	suite.req.Operation = logical.CreateOperation
 }
 
-func (suite *PathPublishCallbackSuite) TestConfigurationNotFound() {
+func (suite *PathReleaseCallbackSuite) TestRequiredGitTagField() {
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), logical.ErrorResponse("Required field %q must be set", fieldNameGitTag), resp)
+}
+
+func (suite *PathReleaseCallbackSuite) TestConfigurationNotFound() {
+	suite.req.Data = map[string]interface{}{fieldNameGitTag: fieldGitTagValidValue}
+
 	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), errorResponseConfigurationNotFound, resp)
 }
 
-func (suite *PathPublishCallbackSuite) TestBasic() {
+func (suite *PathReleaseCallbackSuite) TestBasic() {
 	err := putConfiguration(suite.ctx, suite.storage, completeConfiguration())
 	assert.Nil(suite.T(), err)
+
+	suite.req.Data = map[string]interface{}{fieldNameGitTag: fieldGitTagValidValue}
 
 	suite.mockedPublisher.On("GetRepository").Return(nil)
 	suite.mockedTasksManager.On("RunTask").Return("UUID", nil)
@@ -49,12 +61,14 @@ func (suite *PathPublishCallbackSuite) TestBasic() {
 	suite.mockedTasksManager.AssertExpectations(suite.T())
 }
 
-func (suite *PathPublishCallbackSuite) TestBusy() {
+func (suite *PathReleaseCallbackSuite) TestBusy() {
 	err := putConfiguration(suite.ctx, suite.storage, completeConfiguration())
 	assert.Nil(suite.T(), err)
 
 	// tasks manager is busy
 	suite.mockedTasksManager.IsBusy = true
+
+	suite.req.Data = map[string]interface{}{fieldNameGitTag: fieldGitTagValidValue}
 
 	suite.mockedPublisher.On("GetRepository").Return(nil)
 	suite.mockedTasksManager.On("RunTask").Return("", tasks_manager.ErrBusy)
@@ -67,6 +81,6 @@ func (suite *PathPublishCallbackSuite) TestBusy() {
 	suite.mockedTasksManager.AssertExpectations(suite.T())
 }
 
-func TestBackendPathPublishCallback(t *testing.T) {
-	suite.Run(t, new(PathPublishCallbackSuite))
+func TestBackendPathReleaseCallback(t *testing.T) {
+	suite.Run(t, new(PathReleaseCallbackSuite))
 }

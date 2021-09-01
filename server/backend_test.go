@@ -1,4 +1,4 @@
-package trdl
+package server
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/publisher"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
 )
 
 var (

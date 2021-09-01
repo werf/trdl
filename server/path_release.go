@@ -1,4 +1,4 @@
-package trdl
+package server
 
 import (
 	"archive/tar"
@@ -20,12 +20,12 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/werf/logboek"
 
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/config"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/docker"
-	trdlGit "github.com/werf/vault-plugin-secrets-trdl/pkg/git"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/util"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/config"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/docker"
+	trdlGit "github.com/werf/vault-plugin-secrets-trdl/server/pkg/git"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/pgp"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/util"
 )
 
 const (

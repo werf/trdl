@@ -1,4 +1,4 @@
-package trdl
+package server
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/git"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/pgp"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/publisher"
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/git"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/pgp"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/publisher"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
 )
 
 type BackendModuleInterface interface {

@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/werf/vault-plugin-secrets-trdl/pkg/tasks_manager/worker"
+	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager/worker"
 )
 
 // check that Manager.RunTask queues task or returns the busy error
