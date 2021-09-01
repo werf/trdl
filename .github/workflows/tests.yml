@@ -2,12 +2,12 @@ name: Tests
 on:
   push:
     paths:
-      - 'scripts/ci'
-      - 'scripts/minio'
+      - 'client/scripts/ci'
+      - 'client/scripts/minio'
       - '.github/workflows/tests.yml'
       - '**/*.go'
   schedule:
-    - cron:  '0 8 * * *'
+    - cron: '0 8 * * *'
   repository_dispatch:
     types: [ tests ]
 
@@ -30,9 +30,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Compile tests binaries
+        working-directory: e2e
         run: |
           # e2e tests binaries
-          ./scripts/ci/precompiled_tests_binaries.sh ./e2e ./precompiled_tests_binaries/e2e
+          ./scripts/ci/precompiled_tests_binaries.sh
 
           # trdl with coverage binary
           ./scripts/ci/trdl_with_coverage.sh
@@ -42,14 +43,14 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: "${{ matrix.os }}_e2e_tests_binaries"
-          path: precompiled_tests_binaries/e2e
+          path: e2e/precompiled_tests_binaries
           if-no-files-found: error
 
       - name: Upload trdl with coverage binary
         uses: actions/upload-artifact@master
         with:
           name: "${{ matrix.os }}_trdl_with_coverage"
-          path: bin/tests/trdl_with_coverage
+          path: e2e/bin/tests/trdl_with_coverage
           if-no-files-found: error
 
   e2e_tests:
@@ -74,7 +75,7 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: "${{ matrix.os }}_e2e_tests_binaries"
-          path: .
+          path: e2e
 
       - name: Download trdl with coverage binary
         uses: actions/download-artifact@master
@@ -91,11 +92,14 @@ jobs:
           chmod +x trdl_with_coverage
           find e2e/tests -type f -name '*.test' -exec chmod +x {} \;
 
-          go install github.com/theupdateframework/go-tuf/cmd/tuf
-          make minio_up
-
-          go install github.com/onsi/ginkgo/ginkgo
+          go install github.com/onsi/ginkgo/ginkgo@latest
         shell: bash
+
+      - name: Up test tuf repo
+        working-directory: client
+        run: |
+          go install github.com/theupdateframework/go-tuf/cmd/tuf@latest
+          make minio_up
 
       - name: Test
         run: |
@@ -134,8 +138,7 @@ jobs:
           curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
           chmod +x ./cc-test-reporter
 
-          go build github.com/wadey/gocovmerge
-          chmod +x ./gocovmerge
+          go install github.com/wadey/gocovmerge@latest
 
           echo TRDL_TEST_COVERAGE_DIR=tests_coverage >> $GITHUB_ENV
 
@@ -145,7 +148,7 @@ jobs:
             sed -i -e "s|/home/ubuntu/actions-runner/_work/werf/trdl|github.com/werf/trdl|g" {} +
 
           coverage_files=$(find $TRDL_TEST_COVERAGE_DIR -name '*.out')
-          ./gocovmerge ${coverage_files[@]} > coverage.out
+          gocovmerge ${coverage_files[@]} > coverage.out
 
       - name: Format and upload
         run: |

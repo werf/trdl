@@ -29,7 +29,7 @@ func ComputeTrdlBinPath() []byte {
 	binPath := os.Getenv("TRDL_TEST_BINARY_PATH")
 	if binPath == "" {
 		var err error
-		binPath, err = gexec.Build("github.com/werf/trdl/cmd/trdl")
+		binPath, err = gexec.Build("github.com/werf/trdl/client/cmd/trdl")
 		Ω(err).ShouldNot(HaveOccurred())
 	}
 
