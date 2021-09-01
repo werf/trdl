@@ -20,7 +20,7 @@ fmt:
 	go fmt $$(go list ./...)
 
 lint:
-	GOOS=$(OS) GOARCH="$(GOARCH)" golangci-lint run ./... --config .golangci.yaml
+	GOOS=$(OS) GOARCH="$(GOARCH)" golangci-lint run ./... --config ../.golangci.yaml
 
 vault/plugins/vault-plugin-secrets-trdl: $(GOSRC)
 	CGO_ENABLED=0 GOOS=$(OS) GOARCH="$(GOARCH)" go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
