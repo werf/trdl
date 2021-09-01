@@ -14,8 +14,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/werf/trdl/client/pkg/trdl"
 	"github.com/werf/trdl/e2e/util"
-	"github.com/werf/trdl/pkg/trdl"
 )
 
 type useEntry struct {
