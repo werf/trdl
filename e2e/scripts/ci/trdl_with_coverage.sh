@@ -5,7 +5,7 @@ project_dir=$script_dir/../..
 project_bin_tests_dir=$project_dir/bin/tests
 
 mkdir -p "$project_bin_tests_dir"
-cd "$project_dir"
+cd "$project_dir"/../client
 
 unameOut="$(uname -s)"
 case "${unameOut}" in
@@ -13,6 +13,6 @@ case "${unameOut}" in
     *)                    binary_name=trdl_with_coverage
 esac
 
-go test -ldflags="-s -w" -tags "test_coverage" -coverpkg=./... -c client/cmd/trdl/*.go -o "$project_bin_tests_dir"/$binary_name
+go test -ldflags="-s -w" -tags "test_coverage" -coverpkg=./... -c ../client/cmd/trdl/*.go -o "$project_bin_tests_dir"/$binary_name
 
 chmod +x "$project_bin_tests_dir"/$binary_name

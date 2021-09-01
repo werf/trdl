@@ -7,3 +7,4 @@ tuf --dir "$SOURCE"/bucket_sandbox commit
 mkdir -p "$SOURCE"/.minio_data/test-project
 rsync -avu --delete "$SOURCE/bucket_sandbox/repository/" "$SOURCE/.minio_data/test-project/"
 docker-compose --file "$SOURCE"/docker-compose.yaml up --detach
+until $(curl --output /dev/null --silent --head --fail http://localhost:9000/test-project); do printf '.'; sleep 1; done
