@@ -12,13 +12,15 @@ on:
     types: [ tests ]
 
 jobs:
-  precompiled_tests_binaries:
-    name: Precompiled tests binaries
+
+  tests:
+    name: Tests
     strategy:
       fail-fast: false
       matrix:
+        directory: [ "client", "server" ]
         os: [ ubuntu-latest ]
-    runs-on: "${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
     steps:
 
       - name: Set up Go
@@ -28,84 +30,65 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Compile tests binaries
-        working-directory: e2e
-        run: |
-          # e2e tests binaries
-          ./scripts/ci/precompiled_tests_binaries.sh
-
-          # trdl with coverage binary
-          ./scripts/ci/trdl_with_coverage.sh
-        shell: bash
-
-      - name: Upload e2e tests binaries
-        uses: actions/upload-artifact@master
-        with:
-          name: "${{ matrix.os }}_e2e_tests_binaries"
-          path: e2e/precompiled_tests_binaries
-          if-no-files-found: error
-
-      - name: Upload trdl with coverage binary
-        uses: actions/upload-artifact@master
-        with:
-          name: "${{ matrix.os }}_trdl_with_coverage"
-          path: e2e/bin/tests/trdl_with_coverage
-          if-no-files-found: error
-
-  e2e_tests:
-    name: End-to-end tests
-    needs: precompiled_tests_binaries
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest ]
-    runs-on: "${{ matrix.os }}"
-    steps:
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.16
-
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Download tests binaries
-        uses: actions/download-artifact@master
-        with:
-          name: "${{ matrix.os }}_e2e_tests_binaries"
-          path: e2e
-
-      - name: Download trdl with coverage binary
-        uses: actions/download-artifact@master
-        with:
-          name: "${{ matrix.os }}_trdl_with_coverage"
-          path: .
 
       - name: Prepare environment
         run: |
+          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/${{ matrix.directory }}/${{ matrix.os }}
+          mkdir -p $TRDL_TEST_COVERAGE_DIR
+          echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
+
+      - name: Test
+        working-directory: ${{ matrix.directory }}
+        run: go test -vet=off -race -coverpkg=./... -coverprofile $TRDL_TEST_COVERAGE_DIR/coverage.out ./...
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: tests_coverage
+          path: tests_coverage
+
+  e2e_tests:
+    name: End-to-end tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Prepare environment
+        working-directory: e2e
+        run: |
+          # coverage directory
           export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/${{ matrix.os }}
           mkdir -p $TRDL_TEST_COVERAGE_DIR
           echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
 
-          chmod +x trdl_with_coverage
-          find e2e/tests -type f -name '*.test' -exec chmod +x {} \;
+          # coverage trdl binary
+          ./scripts/ci/trdl_with_coverage.sh
+          export TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/e2e/bin/tests/trdl_with_coverage
+          chmod +x $TRDL_TEST_BINARY_PATH
+          echo TRDL_TEST_BINARY_PATH=$TRDL_TEST_BINARY_PATH >> $GITHUB_ENV
 
           go install github.com/onsi/ginkgo/ginkgo@latest
-        shell: bash
 
-      - name: Up test tuf repo
+      - name: Up tuf repo with test data
         working-directory: client
         run: |
           go install github.com/theupdateframework/go-tuf/cmd/tuf@latest
           make minio_up
 
       - name: Test
-        run: |
-          test_binaries=$(find e2e/tests -type f -name '*.test')
-          TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/trdl_with_coverage ginkgo -p -keepGoing $test_binaries
-        shell: bash
+        working-directory: e2e
+        run: ginkgo -p -keepGoing ./...
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@master
@@ -115,7 +98,9 @@ jobs:
 
   upload_coverage:
     name: Upload coverage
-    needs: e2e_tests
+    needs:
+      - tests
+      - e2e_tests
     runs-on: ubuntu-latest
     steps:
 
