@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/docker"
+	"github.com/werf/trdl/server/pkg/docker"
 )
 
 const (

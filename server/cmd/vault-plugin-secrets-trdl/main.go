@@ -13,8 +13,8 @@ import (
 	"github.com/werf/logboek"
 	logboekLevel "github.com/werf/logboek/pkg/level"
 
-	trdl "github.com/werf/vault-plugin-secrets-trdl/server"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/util"
+	trdl "github.com/werf/trdl/server"
+	"github.com/werf/trdl/server/pkg/util"
 )
 
 func main() {

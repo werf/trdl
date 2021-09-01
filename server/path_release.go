@@ -20,12 +20,12 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/werf/logboek"
 
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/config"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/docker"
-	trdlGit "github.com/werf/vault-plugin-secrets-trdl/server/pkg/git"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/pgp"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/util"
+	"github.com/werf/trdl/server/pkg/config"
+	"github.com/werf/trdl/server/pkg/docker"
+	trdlGit "github.com/werf/trdl/server/pkg/git"
+	"github.com/werf/trdl/server/pkg/pgp"
+	"github.com/werf/trdl/server/pkg/tasks_manager"
+	"github.com/werf/trdl/server/pkg/util"
 )
 
 const (

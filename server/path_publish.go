@@ -12,11 +12,11 @@ import (
 	"github.com/werf/logboek"
 	"gopkg.in/yaml.v2"
 
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/config"
-	trdlGit "github.com/werf/vault-plugin-secrets-trdl/server/pkg/git"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/pgp"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/util"
+	"github.com/werf/trdl/server/pkg/config"
+	trdlGit "github.com/werf/trdl/server/pkg/git"
+	"github.com/werf/trdl/server/pkg/pgp"
+	"github.com/werf/trdl/server/pkg/tasks_manager"
+	"github.com/werf/trdl/server/pkg/util"
 )
 
 const (

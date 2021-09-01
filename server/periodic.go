@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/werf/logboek"
 
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/publisher"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/util"
+	"github.com/werf/trdl/server/pkg/publisher"
+	"github.com/werf/trdl/server/pkg/tasks_manager"
+	"github.com/werf/trdl/server/pkg/util"
 )
 
 var systemClock util.Clock = util.NewSystemClock()

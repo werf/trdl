@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
+	"github.com/werf/trdl/server/pkg/tasks_manager"
 )
 
 const fieldGitTagValidValue = "v1.0.1"

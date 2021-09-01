@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager/worker"
+	"github.com/werf/trdl/server/pkg/tasks_manager/worker"
 )
 
 const (

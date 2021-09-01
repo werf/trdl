@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/publisher"
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/tasks_manager"
+	"github.com/werf/trdl/server/pkg/publisher"
+	"github.com/werf/trdl/server/pkg/tasks_manager"
 )
 
 var (

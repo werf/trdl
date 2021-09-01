@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/util"
+	"github.com/werf/trdl/server/pkg/util"
 )
 
 const (

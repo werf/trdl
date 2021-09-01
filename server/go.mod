@@ -1,4 +1,4 @@
-module github.com/werf/vault-plugin-secrets-trdl/server
+module github.com/werf/trdl/server
 
 go 1.16
 

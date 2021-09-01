@@ -127,7 +127,7 @@ func dataCompleteConfiguration() map[string]interface{} {
 
 func completeConfiguration() *configuration {
 	return &configuration{
-		GitRepoUrl:                                 "https://github.com/werf/vault-plugin-secrets-trdl/server.git",
+		GitRepoUrl:                                 "https://github.com/werf/trdl/server.git",
 		GitTrdlChannelsBranch:                      "master",
 		InitialLastPublishedGitCommit:              "252da187d03e92369808718377f58b8333cf202a",
 		RequiredNumberOfVerifiedSignaturesOnCommit: 10,

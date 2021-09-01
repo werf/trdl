@@ -10,7 +10,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
-	"github.com/werf/vault-plugin-secrets-trdl/server/pkg/pgp"
+	"github.com/werf/trdl/server/pkg/pgp"
 )
 
 func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string, requiredNumberOfVerifiedSignatures int) error {
