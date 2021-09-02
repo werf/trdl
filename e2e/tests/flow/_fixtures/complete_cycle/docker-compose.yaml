@@ -1,0 +1,15 @@
+version: '2'
+
+services:
+  minio:
+    image: minio/minio
+    ports:
+      - "9000"
+    command: server /data
+
+  mc:
+    image: minio/mc
+    depends_on:
+      - minio
+    environment:
+      MC_HOST_main: http://minioadmin:minioadmin@minio:9000

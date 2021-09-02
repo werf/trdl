@@ -55,3 +55,10 @@ func isTrdlTestBinaryPath(path string) bool {
 	werfTestBinaryPath := os.Getenv("TRDL_TEST_BINARY_PATH")
 	return werfTestBinaryPath != "" && werfTestBinaryPath == path
 }
+
+func FixturePath(paths ...string) string {
+	absFixturesPath, err := filepath.Abs("_fixtures")
+	Ω(err).ShouldNot(HaveOccurred())
+	pathsToJoin := append([]string{absFixturesPath}, paths...)
+	return filepath.Join(pathsToJoin...)
+}
