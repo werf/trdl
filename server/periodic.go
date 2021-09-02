@@ -31,7 +31,7 @@ const (
 	periodicRunPeriod           = 1 * time.Hour
 )
 
-func (b *backend) Periodic(ctx context.Context, req *logical.Request) error {
+func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 	entry, err := req.Storage.Get(ctx, lastPeriodicRunTimestampKey)
 	if err != nil {
 		return fmt.Errorf("unable to get key %q from storage: %s", lastPeriodicRunTimestampKey, err)
@@ -99,7 +99,7 @@ func (b *backend) Periodic(ctx context.Context, req *logical.Request) error {
 	return nil
 }
 
-func (b *backend) periodicTask(ctx context.Context, storage logical.Storage, config *configuration, publisherRepository publisher.RepositoryInterface) error {
+func (b *Backend) periodicTask(ctx context.Context, storage logical.Storage, _ *configuration, publisherRepository publisher.RepositoryInterface) error {
 	logboek.Context(ctx).Default().LogF("Started TUF repository keys rotation\n")
 	b.Logger().Debug("Started TUF repository keys rotation")
 

@@ -78,7 +78,7 @@ func (m *MockedBackendPeriodic) Periodic(_ context.Context, _ *logical.Request) 
 type CommonSuite struct {
 	suite.Suite
 	ctx                   context.Context
-	backend               *backend
+	backend               *Backend
 	req                   *logical.Request
 	storage               logical.Storage
 	mockedTasksManager    *MockedTasksManager
@@ -90,7 +90,7 @@ func (suite *CommonSuite) SetupTest() {
 	mockedTasksManager := &MockedTasksManager{}
 	mockedPublisher := &MockedPublisher{}
 	mockedBackendPeriodic := &MockedBackendPeriodic{}
-	b := &backend{
+	b := &Backend{
 		Backend:         &framework.Backend{},
 		TasksManager:    mockedTasksManager,
 		Publisher:       mockedPublisher,
@@ -156,7 +156,7 @@ func TestFactory(t *testing.T) {
 	b, err := Factory(ctx, logical.TestBackendConfig())
 	assert.Nil(t, err)
 	if assert.NotNil(t, b) {
-		impl := b.(*backend)
+		impl := b.(*Backend)
 		assert.NotNil(t, impl.Backend)
 		assert.NotNil(t, impl.Publisher)
 		assert.NotNil(t, impl.TasksManager)
