@@ -117,11 +117,12 @@ fi
 
 if %[6]q bin-path %[1]s >%[4]q 2>&1; then
    %[6]q update %[3]s
+   TRDL_REPO_BIN_PATH=$(cat %[4]q)
 else
    %[6]q update %[2]s
+   TRDL_REPO_BIN_PATH=$(%[6]q bin-path %[1]s)
 fi
 
-TRDL_REPO_BIN_PATH=$(%[6]q bin-path %[1]s)
 export PATH="$TRDL_REPO_BIN_PATH${PATH:+:${PATH}}"
 `, common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath)
 
