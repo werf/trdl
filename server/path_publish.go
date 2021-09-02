@@ -25,7 +25,7 @@ const (
 	defaultGitTrdlChannelsBranch = "trdl"
 )
 
-func publishPath(b *backend) *framework.Path {
+func publishPath(b *Backend) *framework.Path {
 	return &framework.Path{
 		Pattern: `publish$`,
 		Fields: map[string]*framework.FieldSchema{
@@ -55,7 +55,7 @@ func publishPath(b *backend) *framework.Path {
 	}
 }
 
-func (b *backend) pathPublish(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
 		return errResp, nil
 	}

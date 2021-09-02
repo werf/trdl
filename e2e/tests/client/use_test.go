@@ -1,4 +1,4 @@
-package flow
+package client
 
 import (
 	"fmt"
@@ -70,7 +70,7 @@ var _ = Describe("Use", func() {
 		)
 		Ω(output).Should(Equal(entry.expectedOutput))
 
-		By("Updating in background ...") // TODO: improve test and change channel release on this step
+		By("Updating in background ...")
 		output = util.SucceedCommandOutputString(
 			"",
 			shellCommandPath,
@@ -79,9 +79,8 @@ var _ = Describe("Use", func() {
 		Ω(output).Should(Equal(entry.expectedOutput))
 
 		// Wait for the update in background is done on windows to prevent error: ...\.locks\repositories\test\tuf\ea3bd73e2b506e00527232b3ed743c066da83a8e3066f62a71e75eb9b4aa1db6: The process cannot access the file because it is being used by another process".
-		if runtime.GOOS == "windows" {
-			time.Sleep(time.Millisecond * 500)
-		}
+		// Wait for the update in background is done on unix to prevent error: unlinkat /tmp/trdl-e2e-tests-932831490: directory not empty occurred
+		time.Sleep(time.Millisecond * 500)
 	},
 		Entry(trdl.ShellPowerShell, useEntry{
 			shell:            trdl.ShellPowerShell,

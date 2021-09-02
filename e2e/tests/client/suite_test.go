@@ -1,8 +1,7 @@
-package flow
+package client
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -14,12 +13,20 @@ import (
 
 func Test(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Flow Suite")
+	RunSpecs(t, "Client Suite")
 }
+
+const (
+	testRepoName = "test"
+
+	validRepoUrl     = "http://localhost:9000/test-project"
+	validRootVersion = "4"
+	validRootSHA512  = "67afb6eb389e2ec89017ff19f94caf1c9a78d79565553d155d93d0525b28f86f6ffb6a96f3c20c4b062b7e4b2498f20050d31fd057998ec01ea625a84a93ec7e"
+	validGroup       = "v0"
+)
 
 var (
 	tmpDir      string
-	testDir     string
 	trdlHomeDir string
 	trdlBinPath string
 	stubs       *gostub.Stubs
@@ -32,11 +39,6 @@ var _ = SynchronizedBeforeSuite(util.ComputeTrdlBinPath, func(computedPathToWerf
 var _ = BeforeEach(func() {
 	stubs = gostub.New()
 	tmpDir = util.GetTempDir()
-
-	testDir = filepath.Join(tmpDir, "project")
-	Ω(os.Mkdir(testDir, os.ModePerm))
-
-	trdlHomeDir = filepath.Join(tmpDir, ".trdl")
 	trdlHomeDir = tmpDir
 	stubs.SetEnv("TRDL_HOME_DIR", trdlHomeDir)
 	stubs.SetEnv("TRDL_NO_SELF_UPDATE", "1")

@@ -28,7 +28,7 @@ const (
 
 var errorResponseConfigurationNotFound = logical.ErrorResponse("Configuration not found")
 
-func configurePath(b *backend) *framework.Path {
+func configurePath(b *Backend) *framework.Path {
 	return &framework.Path{
 		Pattern: "configure/?",
 		Fields: map[string]*framework.FieldSchema{
@@ -99,7 +99,7 @@ func configurePath(b *backend) *framework.Path {
 	}
 }
 
-func (b *backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
 		return errResp, nil
 	}
@@ -123,7 +123,7 @@ func (b *backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 	return nil, nil
 }
 
-func (b *backend) pathConfigureRead(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
+func (b *Backend) pathConfigureRead(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	cfg, err := getConfiguration(ctx, req.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get configuration: %s", err)
@@ -136,7 +136,7 @@ func (b *backend) pathConfigureRead(ctx context.Context, req *logical.Request, _
 	return &logical.Response{Data: structs.Map(cfg)}, nil
 }
 
-func (b *backend) pathConfigureDelete(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
+func (b *Backend) pathConfigureDelete(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	if err := deleteConfiguration(ctx, req.Storage); err != nil {
 		return nil, fmt.Errorf("unable to delete configuration: %s", err)
 	}

@@ -34,7 +34,7 @@ const (
 	fieldNameGitPassword = "git_password"
 )
 
-func releasePath(b *backend) *framework.Path {
+func releasePath(b *Backend) *framework.Path {
 	return &framework.Path{
 		Pattern: `release$`,
 		Fields: map[string]*framework.FieldSchema{
@@ -77,7 +77,7 @@ func ValidateGitTag(gitTag string) error {
 	return nil
 }
 
-func (b *backend) pathRelease(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
 		return errResp, nil
 	}

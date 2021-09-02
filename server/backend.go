@@ -22,7 +22,7 @@ type BackendPeriodicInterface interface {
 	Periodic(ctx context.Context, req *logical.Request) error
 }
 
-type backend struct {
+type Backend struct {
 	*framework.Backend
 	TasksManager    tasks_manager.ActionsInterface
 	Publisher       publisher.Interface
@@ -32,7 +32,7 @@ type backend struct {
 var _ logical.Factory = Factory
 
 func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend, error) {
-	b, err := newBackend()
+	b, err := NewBackend()
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +48,11 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 	return b, nil
 }
 
-func newBackend() (*backend, error) {
+func NewBackend() (*Backend, error) {
 	tasksManager := tasks_manager.NewManager()
 	publisherManager := publisher.NewPublisher()
 
-	b := &backend{
+	b := &Backend{
 		TasksManager: tasksManager,
 		Publisher:    publisherManager,
 	}
@@ -68,7 +68,7 @@ func newBackend() (*backend, error) {
 	return b, nil
 }
 
-func (b *backend) InitPaths(modules ...BackendModuleInterface) {
+func (b *Backend) InitPaths(modules ...BackendModuleInterface) {
 	b.Paths = framework.PathAppend(
 		[]*framework.Path{
 			configurePath(b),
@@ -84,7 +84,7 @@ func (b *backend) InitPaths(modules ...BackendModuleInterface) {
 	}
 }
 
-func (b *backend) InitPeriodicFunc(modules ...BackendModuleInterface) {
+func (b *Backend) InitPeriodicFunc(modules ...BackendModuleInterface) {
 	b.PeriodicFunc = func(ctx context.Context, request *logical.Request) error {
 		for _, module := range modules {
 			if err := module.PeriodicFunc(context.Background(), request); err != nil {
