@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         directory: [ "client", "server" ]
-        os: [ ubuntu-latest ]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -36,6 +36,7 @@ jobs:
           export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/${{ matrix.directory }}/${{ matrix.os }}
           mkdir -p $TRDL_TEST_COVERAGE_DIR
           echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
+        shell: bash
 
       - name: Test
         working-directory: ${{ matrix.directory }}
@@ -78,6 +79,9 @@ jobs:
           chmod +x $TRDL_TEST_BINARY_PATH
           echo TRDL_TEST_BINARY_PATH=$TRDL_TEST_BINARY_PATH >> $GITHUB_ENV
 
+          # git user
+          ./scripts/ci/git.sh
+
           go install github.com/onsi/ginkgo/ginkgo@latest
 
       - name: Up tuf repo with test data
@@ -88,7 +92,7 @@ jobs:
 
       - name: Test
         working-directory: e2e
-        run: ginkgo -p -keepGoing ./...
+        run: ginkgo -p -keepGoing -cover -coverpkg=../client,../server -outputdir=$TRDL_TEST_COVERAGE_DIR ./...
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@master
@@ -132,7 +136,7 @@ jobs:
           find $TRDL_TEST_COVERAGE_DIR -type f -exec \
             sed -i -e "s|/home/ubuntu/actions-runner/_work/werf/trdl|github.com/werf/trdl|g" {} +
 
-          coverage_files=$(find $TRDL_TEST_COVERAGE_DIR -name '*.out')
+          coverage_files=$(find $TRDL_TEST_COVERAGE_DIR -type f)
           gocovmerge ${coverage_files[@]} > coverage.out
 
       - name: Format and upload
