@@ -84,8 +84,6 @@ func (c Client) prepareSourceScriptBasename(group, channel, shell string, opts U
 func pwshSourceScript(common, foregroundUpdate, backgroundUpdate, logPathFirstBinPath, logPathBackgroundUpdateStderr, trdlBinaryPath string) (string, string) {
 	filenameExt := "ps1"
 	fileContent := fmt.Sprintf(`
-$ErrorActionPreference = "Stop"
-
 if (Test-Path %[5]q -PathType Leaf) {
   $trdlStderrLog = Get-Content %[5]q
   if (!([String]::IsNullOrWhiteSpace($trdlStderrLog))) {
