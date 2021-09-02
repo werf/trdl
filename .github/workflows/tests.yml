@@ -33,7 +33,7 @@ jobs:
 
       - name: Prepare environment
         run: |
-          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/${{ matrix.directory }}/${{ matrix.os }}
+          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/tests/${{ matrix.os }}/${{ matrix.directory }}
           mkdir -p $TRDL_TEST_COVERAGE_DIR
           echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
         shell: bash
@@ -69,7 +69,7 @@ jobs:
         working-directory: e2e
         run: |
           # coverage directory
-          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/${{ matrix.os }}
+          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/e2e/${{ matrix.os }}
           mkdir -p $TRDL_TEST_COVERAGE_DIR
           echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
 
@@ -92,7 +92,7 @@ jobs:
 
       - name: Test
         working-directory: e2e
-        run: ginkgo -p -keepGoing -cover -coverpkg=../client,../server -outputdir=$TRDL_TEST_COVERAGE_DIR ./...
+        run: ginkgo -p -keepGoing -cover -coverpkg=../client/...,../server/... -outputdir=$TRDL_TEST_COVERAGE_DIR ./...
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@master

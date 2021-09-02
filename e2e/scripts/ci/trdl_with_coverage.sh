@@ -13,6 +13,6 @@ case "${unameOut}" in
     *)                    binary_name=trdl_with_coverage
 esac
 
-go test -ldflags="-s -w" -tags "test_coverage" -coverpkg=./... -c ../client/cmd/trdl/*.go -o "$project_bin_tests_dir"/$binary_name
+go test -ldflags="-s -w" -tags "test_coverage" -covermode=atomic -coverpkg=./... -c ../client/cmd/trdl/*.go -o "$project_bin_tests_dir"/$binary_name
 
 chmod +x "$project_bin_tests_dir"/$binary_name
