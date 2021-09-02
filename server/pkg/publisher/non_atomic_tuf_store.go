@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"path/filepath"
+	"path"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/theupdateframework/go-tuf"
@@ -19,11 +19,6 @@ type TufRepoPrivKeys struct {
 	Snapshot  *sign.PrivateKey `json:"snapshot"`
 	Targets   *sign.PrivateKey `json:"targets"`
 	Timestamp *sign.PrivateKey `json:"timestamp"`
-}
-
-type stagedFileDesc struct {
-	Path string
-	Data []byte
 }
 
 type NonAtomicTufStore struct {
@@ -89,8 +84,8 @@ func (store *NonAtomicTufStore) SetMeta(name string, meta json.RawMessage) error
 	return nil
 }
 
-func (store *NonAtomicTufStore) WalkStagedTargets(paths []string, targetsFn tuf.TargetsWalkFunc) error {
-	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets %v", paths))
+func (store *NonAtomicTufStore) WalkStagedTargets(targetPathList []string, targetsFn tuf.TargetsWalkFunc) error {
+	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets %v", targetPathList))
 
 	ctx := context.Background()
 
@@ -115,9 +110,9 @@ func (store *NonAtomicTufStore) WalkStagedTargets(paths []string, targetsFn tuf.
 		return reader
 	}
 
-	if len(paths) == 0 {
-		for _, path := range store.stagedFiles {
-			if err := targetsFn(path, runPipedFileReader(filepath.Join("targets", path))); err != nil {
+	if len(targetPathList) == 0 {
+		for _, filePath := range store.stagedFiles {
+			if err := targetsFn(filePath, runPipedFileReader(path.Join("targets", filePath))); err != nil {
 				return err
 			}
 		}
@@ -126,10 +121,10 @@ func (store *NonAtomicTufStore) WalkStagedTargets(paths []string, targetsFn tuf.
 	}
 
 FilterStagedPaths:
-	for _, path := range paths {
+	for _, targetPath := range targetPathList {
 		for _, stagedPath := range store.stagedFiles {
-			if stagedPath == path {
-				if err := targetsFn(path, runPipedFileReader(filepath.Join("targets", path))); err != nil {
+			if stagedPath == targetPath {
+				if err := targetsFn(targetPath, runPipedFileReader(path.Join("targets", targetPath))); err != nil {
 					return err
 				}
 
@@ -137,22 +132,22 @@ FilterStagedPaths:
 			}
 		}
 
-		return tuf.ErrFileNotFound{Path: path}
+		return tuf.ErrFileNotFound{Path: targetPath}
 	}
 
 	return nil
 }
 
-func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, path string, data io.Reader) error {
-	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.StageTargetFile %q", path))
+func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, targetPath string, data io.Reader) error {
+	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.StageTargetFile %q", targetPath))
 
 	// NOTE: consistenSnapshot cannot be supported when adding staged files before commit stage
 
-	if err := store.Filesystem.WriteFileStream(ctx, filepath.Join("targets", path), data); err != nil {
-		return fmt.Errorf("error writing %q into the store filesystem: %s", path, err)
+	if err := store.Filesystem.WriteFileStream(ctx, path.Join("targets", targetPath), data); err != nil {
+		return fmt.Errorf("error writing %q into the store filesystem: %s", targetPath, err)
 	}
 
-	store.stagedFiles = append(store.stagedFiles, path)
+	store.stagedFiles = append(store.stagedFiles, targetPath)
 
 	return nil
 }
@@ -168,11 +163,11 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 	for name, data := range store.stagedMeta {
 		// TODO: perms 0644
 
-		for _, path := range computeMetadataPaths(consistentSnapshot, name, versions) {
-			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.Commit storing metadata path %q into the filesystem", path))
+		for _, metadataPath := range computeMetadataPaths(consistentSnapshot, name, versions) {
+			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.Commit storing metadata path %q into the filesystem", metadataPath))
 
-			if err := store.Filesystem.WriteFileBytes(ctx, path, data); err != nil {
-				return fmt.Errorf("error writing metadata path %q into the filesystem: %s", path, err)
+			if err := store.Filesystem.WriteFileBytes(ctx, metadataPath, data); err != nil {
+				return fmt.Errorf("error writing metadata path %q into the filesystem: %s", metadataPath, err)
 			}
 		}
 	}

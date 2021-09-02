@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -166,13 +167,13 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 	return repository, nil
 }
 
-func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, path string, data io.Reader) error {
+func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader) error {
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 
-	pathParts := SplitFilepath(filepath.Clean(path))
+	pathParts := SplitFilepath(filepath.Clean(releaseFilePath))
 	if len(pathParts) == 0 {
-		return NewErrIncorrectTargetPath(path)
+		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
 	osAndArchParts := strings.SplitN(pathParts[0], "-", 2)
@@ -180,16 +181,16 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 	switch osAndArchParts[0] {
 	case "any", "linux", "darwin", "windows":
 	default:
-		return NewErrIncorrectTargetPath(path)
+		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
 	switch osAndArchParts[1] {
 	case "any", "amd64", "arm64":
 	default:
-		return NewErrIncorrectTargetPath(path)
+		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
-	return repository.StageTarget(ctx, filepath.Join("releases", releaseName, path), data)
+	return repository.StageTarget(ctx, path.Join("releases", releaseName, releaseFilePath), data)
 }
 
 func (publisher *Publisher) StageChannelsConfig(ctx context.Context, repository RepositoryInterface, trdlChannelsConfig *config.TrdlChannels) error {
@@ -218,7 +219,7 @@ func (publisher *Publisher) StageChannelsConfig(ctx context.Context, repository 
 	// publish /channels/GROUP/CHANNEL -> VERSION
 	for _, grp := range trdlChannelsConfig.Groups {
 		for _, chnl := range grp.Channels {
-			publishPath := filepath.Join("channels", grp.Name, chnl.Name)
+			publishPath := path.Join("channels", grp.Name, chnl.Name)
 
 			if err := repository.StageTarget(ctx, publishPath, bytes.NewBuffer([]byte(chnl.Version+"\n"))); err != nil {
 				return fmt.Errorf("error publishing %q: %s", publishPath, err)
