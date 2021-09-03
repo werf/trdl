@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.3](https://www.github.com/werf/trdl/compare/v0.1.2...v0.1.3) (2021-09-03)
+
+
+### Bug Fixes
+
+* **client:** trdl release failed ([d0dd5c3](https://www.github.com/werf/trdl/commit/d0dd5c34f7dbe3deb716e532cf1ed7a8845b5ad1))
+
 ### [0.1.2](https://www.github.com/werf/trdl/compare/v0.1.1...v0.1.2) (2021-09-03)
 
 
