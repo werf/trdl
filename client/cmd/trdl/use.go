@@ -28,6 +28,11 @@ func useCmd() *cobra.Command {
 			repoName := args[0]
 			group := args[1]
 
+			if repoName == trdl.SelfUpdateDefaultRepo {
+				PrintHelp(cmd)
+				return fmt.Errorf("reserved repository name %q cannot be used", trdl.SelfUpdateDefaultRepo)
+			}
+
 			var optionalChannel string
 			if len(args) == 3 {
 				optionalChannel = args[2]
