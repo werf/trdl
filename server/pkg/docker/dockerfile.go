@@ -74,8 +74,8 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	}
 
 	// run user's build commands
-	for _, command := range runCommands {
-		addLineFunc(fmt.Sprintf("RUN %s", command))
+	if len(runCommands) != 0 {
+		addLineFunc(fmt.Sprintf("RUN %s", strings.Join(runCommands, " && ")))
 	}
 
 	if opts.WithArtifacts {
