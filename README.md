@@ -1,5 +1,35 @@
 # trdl
 
+## trdl client
+
+### Installation
+
+#### Windows
+
+TODO
+
+#### Linux
+
+```
+export PATH=$PATH:$HOME/bin
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+
+mkdir -p ~/bin
+cd ~/bin
+curl -L https://raw.githubusercontent.com/werf/trdl/main/client/get.sh | bash
+```
+
+#### MacOS
+
+```
+export PATH=$PATH:$HOME/bin
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bash_profile
+
+mkdir -p ~/bin
+cd ~/bin
+curl -L https://raw.githubusercontent.com/werf/trdl/main/client/get.sh | bash
+```
+
 [![maintainability][maintainability-badge]][maintainability-link]
 [![coverage][coverage-badge]][coverage-link]
 [![coc][coc-badge]][coc-link]
