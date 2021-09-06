@@ -59,6 +59,10 @@ func processExecArgs(cmd *cobra.Command, args []string) (*execCmdData, error) {
 	data.repoName = args[0]
 	data.group = args[1]
 
+	if data.repoName == trdl.SelfUpdateDefaultRepo {
+		return nil, fmt.Errorf("reserved repository name %q cannot be used", trdl.SelfUpdateDefaultRepo)
+	}
+
 	doubleDashInd := cmd.ArgsLenAtDash()
 	doubleDashExist := cmd.ArgsLenAtDash() != -1
 
