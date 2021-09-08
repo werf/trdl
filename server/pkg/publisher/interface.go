@@ -17,6 +17,8 @@ type Interface interface {
 	StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, path string, data io.Reader) error
 	StageChannelsConfig(ctx context.Context, repository RepositoryInterface, trdlChannelsConfig *config.TrdlChannels) error
 	StageInMemoryFiles(ctx context.Context, repository RepositoryInterface, files []*InMemoryFile) error
+
+	GetExistingReleases(ctx context.Context, repository RepositoryInterface) ([]string, error)
 }
 
 type RepositoryInterface interface {
@@ -30,4 +32,6 @@ type RepositoryInterface interface {
 
 	StageTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error
 	CommitStaged(ctx context.Context) error
+
+	GetTargets(ctx context.Context) ([]string, error)
 }
