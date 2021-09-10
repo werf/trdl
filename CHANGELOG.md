@@ -1,5 +1,14 @@
 # Changelog
 
+### [0.1.4](https://www.github.com/werf/trdl/compare/v0.1.3...v0.1.4) (2021-09-10)
+
+
+### Bug Fixes
+
+* **client:** prevent using self-update repository as repo ([1360ae9](https://www.github.com/werf/trdl/commit/1360ae9f4196197b31c6eedcd178d728a0f3a7e3))
+* **server:** publish procedure validation ([9ec466b](https://www.github.com/werf/trdl/commit/9ec466b58772a5ae7153f2a8426fd2c5f75acde9))
+* **server:** user's release commands are launched in separate RUN instructions ([e1d8468](https://www.github.com/werf/trdl/commit/e1d8468bcda69065758b0ac2611c2bd2037bd626))
+
 ### [0.1.3](https://www.github.com/werf/trdl/compare/v0.1.2...v0.1.3) (2021-09-03)
 
 
