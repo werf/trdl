@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/Masterminds/semver"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/go-hclog"
@@ -15,6 +17,7 @@ import (
 	"github.com/werf/trdl/server/pkg/config"
 	trdlGit "github.com/werf/trdl/server/pkg/git"
 	"github.com/werf/trdl/server/pkg/pgp"
+	"github.com/werf/trdl/server/pkg/publisher"
 	"github.com/werf/trdl/server/pkg/tasks_manager"
 	"github.com/werf/trdl/server/pkg/util"
 )
@@ -24,6 +27,10 @@ const (
 
 	defaultGitTrdlChannelsBranch = "trdl"
 )
+
+func NewErrPublishingNonExistingReleases(releases []string) error {
+	return util.NewLogicalError("publishing non existing releases: %v", releases)
+}
 
 func publishPath(b *Backend) *framework.Path {
 	return &framework.Path{
@@ -145,7 +152,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Verifying tag PGP signatures of the commit %q\n", headCommit)
-		hclog.L().Debug("Verifying tag PGP signatures of the commit %q", headCommit)
+		hclog.L().Debug(fmt.Sprintf("Verifying tag PGP signatures of the commit %q", headCommit))
 
 		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
 		if err != nil {
@@ -171,9 +178,12 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Got trdl channels config:\n%s\n---\n", cfgDump)
 		hclog.L().Debug(fmt.Sprintf("Got trdl channels config:\n%s\n---", cfgDump))
 
+		if err := ValidatePublishConfig(ctx, b.Publisher, publisherRepository, cfg); err != nil {
+			return fmt.Errorf("unable to publish bad config: %s", err)
+		}
+
 		logboek.Context(ctx).Default().LogF("Publishing trdl channels config into the TUF repository\n")
 		hclog.L().Debug("Publishing trdl channels config into the TUF repository")
-
 		if err := b.Publisher.StageChannelsConfig(ctx, publisherRepository, cfg); err != nil {
 			return fmt.Errorf("error publishing trdl channels into the repository: %s", err)
 		}
@@ -202,6 +212,10 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 			return logical.ErrorResponse("busy"), nil
 		}
 
+		if _, match := err.(util.LogicalError); match {
+			return logical.ErrorResponse(err.Error()), nil
+		}
+
 		return nil, err
 	}
 
@@ -210,6 +224,91 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 			"task_uuid": taskUUID,
 		},
 	}, nil
+}
+
+func ValidatePublishConfig(ctx context.Context, publisher publisher.Interface, publisherRepository publisher.RepositoryInterface, config *config.TrdlChannels) error {
+	existingReleases, err := publisher.GetExistingReleases(ctx, publisherRepository)
+	if err != nil {
+		return fmt.Errorf("error getting existing targets: %s", err)
+	}
+
+	logboek.Context(ctx).Default().LogF("Got existing releases list: %v\n", existingReleases)
+	hclog.L().Debug(fmt.Sprintf("Got existing releases list: %v\n", existingReleases))
+
+	var nonExistingReleases []string
+
+	processedGroups := map[string]bool{}
+
+	for _, group := range config.Groups {
+		if _, err := semver.NewVersion(group.Name); err != nil {
+			return fmt.Errorf("expected semver group got %q: %s", group.Name, err)
+		}
+
+		if _, hasKey := processedGroups[group.Name]; hasKey {
+			return fmt.Errorf("duplicate group %q found, expected unique group names", group.Name)
+		}
+
+		processedChannels := map[string]bool{}
+
+		for _, channel := range group.Channels {
+			logboek.Context(ctx).Default().LogF("Validating channel %q version %q\n", channel.Name, channel.Version)
+
+			if _, hasKey := processedChannels[channel.Name]; hasKey {
+				return fmt.Errorf("duplicate channel %q found within group %q", channel.Name, group.Name)
+			}
+
+			switch channel.Name {
+			case "alpha", "beta", "ea", "stable", "rock-solid":
+			default:
+				return NewErrIncorrectChannelName(channel.Name)
+			}
+
+			if err := ValidateReleaseVersion(channel.Version); err != nil {
+				return fmt.Errorf("bad version %q for channel %q, expected semver: %s", channel.Version, channel.Name, err)
+			}
+
+			if strings.HasPrefix(channel.Version, "v") {
+				return fmt.Errorf("bad version %q, expected semver without \"v\" prefix", channel.Version)
+			}
+
+			releaseExists := false
+			for _, release := range existingReleases {
+				if channel.Version == release {
+					releaseExists = true
+					break
+				}
+			}
+
+			if !releaseExists {
+				appendNonExistingRelease := true
+
+				for _, release := range nonExistingReleases {
+					if release == channel.Version {
+						appendNonExistingRelease = false
+						break
+					}
+				}
+
+				if appendNonExistingRelease {
+					nonExistingReleases = append(nonExistingReleases, channel.Version)
+				}
+			}
+
+			processedChannels[channel.Name] = true
+		}
+
+		processedGroups[group.Name] = true
+	}
+
+	if len(nonExistingReleases) > 0 {
+		return NewErrPublishingNonExistingReleases(nonExistingReleases)
+	}
+
+	return nil
+}
+
+func NewErrIncorrectChannelName(chnl string) error {
+	return fmt.Errorf(`got incorrect channel name %q: expected "alpha", "beta", "ea", "stable" or "rock-solid"`, chnl)
 }
 
 func cloneGitRepositoryBranch(url, gitBranch, username, password string) (*git.Repository, error) {

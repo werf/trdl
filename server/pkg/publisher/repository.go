@@ -154,3 +154,16 @@ func (repository *S3Repository) CommitStaged(_ context.Context) error {
 	}
 	return nil
 }
+
+func (repository *S3Repository) GetTargets(ctx context.Context) ([]string, error) {
+	targetsMeta, err := repository.TufRepo.Targets()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get TUF-repo targets metadata: %s", err)
+	}
+
+	var res []string
+	for path := range targetsMeta {
+		res = append(res, path)
+	}
+	return res, nil
+}

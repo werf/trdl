@@ -69,10 +69,10 @@ func releasePath(b *Backend) *framework.Path {
 	}
 }
 
-func ValidateGitTag(gitTag string) error {
-	_, err := semver.NewVersion(gitTag)
+func ValidateReleaseVersion(releaseVersion string) error {
+	_, err := semver.NewVersion(releaseVersion)
 	if err != nil {
-		return fmt.Errorf("expected semver release name got %q: %s", gitTag, err)
+		return fmt.Errorf("expected semver release version got %q: %s", releaseVersion, err)
 	}
 	return nil
 }
@@ -97,7 +97,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 	}
 
 	gitTag := fields.Get(fieldNameGitTag).(string)
-	if err := ValidateGitTag(gitTag); err != nil {
+	if err := ValidateReleaseVersion(gitTag); err != nil {
 		return logical.ErrorResponse("%s validation failed: %s", fieldNameGitTag, err), nil
 	}
 	releaseName := strings.TrimPrefix(gitTag, "v")

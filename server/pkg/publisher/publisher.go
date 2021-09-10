@@ -13,7 +13,6 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/Masterminds/semver"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/hashicorp/go-hclog"
@@ -45,10 +44,6 @@ type InMemoryFile struct {
 
 func NewErrIncorrectTargetPath(path string) error {
 	return fmt.Errorf(`got incorrect target path %q: expected path in format <os>-<arch>/... where os can be either "any", "linux", "darwin" or "windows", and arch can be either "any", "amd64" or "arm64"`, path)
-}
-
-func NewErrIncorrectChannelName(chnl string) error {
-	return fmt.Errorf(`got incorrect channel name %q: expected "alpha", "beta", "ea", "stable" or "rock-solid"`, chnl)
 }
 
 type Publisher struct {
@@ -197,25 +192,6 @@ func (publisher *Publisher) StageChannelsConfig(ctx context.Context, repository 
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 
-	// validate
-	for _, grp := range trdlChannelsConfig.Groups {
-		if _, err := semver.NewVersion(grp.Name); err != nil {
-			return fmt.Errorf("expected semver group got %q: %s", grp.Name, err)
-		}
-
-		for _, chnl := range grp.Channels {
-			switch chnl.Name {
-			case "alpha", "beta", "ea", "stable", "rock-solid":
-			default:
-				return NewErrIncorrectChannelName(chnl.Name)
-			}
-
-			if _, err := semver.NewVersion(chnl.Version); err != nil {
-				return fmt.Errorf("expected semver version map for group %q channel %q, got %q: %s", grp.Name, chnl.Name, chnl.Version, err)
-			}
-		}
-	}
-
 	// publish /channels/GROUP/CHANNEL -> VERSION
 	for _, grp := range trdlChannelsConfig.Groups {
 		for _, chnl := range grp.Channels {
@@ -241,6 +217,33 @@ func (publisher *Publisher) StageInMemoryFiles(ctx context.Context, repository R
 	}
 
 	return nil
+}
+
+func (publisher *Publisher) GetExistingReleases(ctx context.Context, repository RepositoryInterface) ([]string, error) {
+	existingTargets, err := repository.GetTargets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting existing targets: %s", err)
+	}
+
+	var releases []string
+
+ScanTargets:
+	for _, target := range existingTargets {
+		if strings.HasPrefix(target, "releases/") {
+			pathParts := strings.SplitN(strings.TrimPrefix(target, "releases/"), "/", 2)
+			releaseName := strings.TrimPrefix(pathParts[0], "v")
+
+			for _, r := range releases {
+				if r == releaseName {
+					continue ScanTargets
+				}
+			}
+
+			releases = append(releases, releaseName)
+		}
+	}
+
+	return releases, nil
 }
 
 // TODO: move this to the separate project in github.com/werf
