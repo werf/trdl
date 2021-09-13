@@ -5,6 +5,8 @@ go 1.16
 require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/aws/aws-sdk-go v1.30.27
+	github.com/djherbis/buffer v1.2.0
+	github.com/djherbis/nio/v3 v3.0.1
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v1.4.2-0.20200319182547-c7ad2b866182
 	github.com/fatih/structs v1.1.0
