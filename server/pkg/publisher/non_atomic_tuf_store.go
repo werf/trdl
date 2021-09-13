@@ -7,6 +7,8 @@ import (
 	"io"
 	"path"
 
+	"github.com/djherbis/buffer"
+	"github.com/djherbis/nio/v3"
 	"github.com/hashicorp/go-hclog"
 	"github.com/theupdateframework/go-tuf"
 	"github.com/theupdateframework/go-tuf/data"
@@ -90,7 +92,8 @@ func (store *NonAtomicTufStore) WalkStagedTargets(targetPathList []string, targe
 	ctx := context.Background()
 
 	runPipedFileReader := func(path string) io.Reader {
-		reader, writer := io.Pipe()
+		buf := buffer.New(64 * 1024 * 1024)
+		reader, writer := nio.Pipe(buf)
 
 		go func() {
 			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets before ReadFileStream %q", path))

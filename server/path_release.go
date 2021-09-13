@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver"
+	"github.com/djherbis/buffer"
+	"github.com/djherbis/nio/v3"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	git "github.com/go-git/go-git/v5"
@@ -151,7 +153,9 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Starting release artifacts tar archive build\n")
 		hclog.L().Debug("Starting release artifacts tar archive build")
 
-		tarReader, tarWriter := io.Pipe()
+		tarBuf := buffer.New(64 * 1024 * 1024)
+		tarReader, tarWriter := nio.Pipe(tarBuf)
+
 		err, cleanupFunc := buildReleaseArtifacts(ctx, tarWriter, gitRepo, trdlCfg.DockerImage, trdlCfg.Commands)
 		if err != nil {
 			return fmt.Errorf("unable to build release artifacts: %s", err)
@@ -256,7 +260,7 @@ func getTrdlConfig(gitRepo *git.Repository, gitTag string) (*config.Trdl, error)
 	return cfg, nil
 }
 
-func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRepo *git.Repository, fromImage string, runCommands []string) (error, func() error) {
+func buildReleaseArtifacts(ctx context.Context, tarWriter *nio.PipeWriter, gitRepo *git.Repository, fromImage string, runCommands []string) (error, func() error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return fmt.Errorf("unable to create docker client: %s", err), nil
@@ -267,7 +271,10 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 	serviceLabels := map[string]string{
 		"vault-trdl-release-uuid": uuid.NewV4().String(),
 	}
-	contextReader, contextWriter := io.Pipe()
+
+	contextBuf := buffer.New(64 * 1024 * 1024)
+	contextReader, contextWriter := nio.Pipe(contextBuf)
+
 	go func() {
 		if err := func() error {
 			tw := tar.NewWriter(contextWriter)
@@ -328,8 +335,10 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *io.PipeWriter, gitRep
 	return nil, cleanupFunc
 }
 
-func handleFromImageBuildResponse(ctx context.Context, response types.ImageBuildResponse, tarWriter *io.PipeWriter) {
-	r, w := io.Pipe()
+func handleFromImageBuildResponse(ctx context.Context, response types.ImageBuildResponse, tarWriter *nio.PipeWriter) {
+	buf := buffer.New(64 * 1024 * 1024)
+	r, w := nio.Pipe(buf)
+
 	go func() {
 		if err := docker.ReadTarFromImageBuildResponse(w, logboek.Context(ctx).OutStream(), response); err != nil {
 			if closeErr := w.CloseWithError(err); closeErr != nil {
