@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.5](https://www.github.com/werf/trdl/compare/v0.1.4...v0.1.5) (2021-09-14)
+
+
+### Bug Fixes
+
+* **server:** optimize data stream processing, use buffered streams ([393f9b0](https://www.github.com/werf/trdl/commit/393f9b0bfa97cb9bbd2d55587b7b85ec3aaeffd7))
+
 ### [0.1.4](https://www.github.com/werf/trdl/compare/v0.1.3...v0.1.4) (2021-09-10)
 
 
