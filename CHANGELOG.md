@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.6](https://www.github.com/werf/trdl/compare/v0.1.5...v0.1.6) (2021-09-16)
+
+
+### Bug Fixes
+
+* correction release ([d06a049](https://www.github.com/werf/trdl/commit/d06a049ce2e41cd5ff012d0855cf5442e754043a))
+
 ### [0.1.5](https://www.github.com/werf/trdl/compare/v0.1.4...v0.1.5) (2021-09-14)
 
 
