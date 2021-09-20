@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.7](https://www.github.com/werf/trdl/compare/v0.1.6...v0.1.7) (2021-09-20)
+
+
+### Bug Fixes
+
+* trigger release ([7d4e1f4](https://www.github.com/werf/trdl/commit/7d4e1f478489b4dbb1fdf5a628996146ad42e654))
+
 ### [0.1.6](https://www.github.com/werf/trdl/compare/v0.1.5...v0.1.6) (2021-09-16)
 
 
