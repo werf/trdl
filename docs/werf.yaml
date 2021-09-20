@@ -18,7 +18,7 @@ shell:
     - JEKYLL_ENV=production jekyll build -d /srv/jekyll-data/_site/ru/ --config /srv/jekyll-data/_config.yml,/srv/jekyll-data/_config_ru.yml
 git:
 - add: /docs
-  to: /srv/jekyll-data/
+  to: /srv/jekyll-data
   owner: jekyll
   group: jekyll
   excludePaths:
