@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="{% if page.lang == "ru" %}ru{% else %}en{% endif %}">
 <head>
+
   {%- include head.html %}
-  <script>
+
+  <!-- <script>
     $(document).ready(function() {
       // Initialize navgoco with default options
       $("#mysidebar").navgoco({
@@ -51,18 +53,12 @@
         });
     });
   </script>
-  {%- endif %}
+  {%- endif %} -->
 
 </head>
 <body>
-  <div class="page">
-    <div class="page__content">
-      {%- include topnav.html %}
-      <!-- Page Content -->
-      {{ content }}
-    </div>
 
-{%- include footer.html %}
-  </div>
+  {{ content }}
+
 </body>
 </html>

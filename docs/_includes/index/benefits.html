@@ -1,0 +1,65 @@
+<section class="benefits__section">
+  <div class="container">
+    <div class="benefits__wrap">
+      <div class="benefits__lines">
+        <svg width="1809" height="1864" viewBox="0 0 1809 1864" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1816 2H1310.93M1197.2 134V716C1197.2 735.882 1181.08 752 1161.2 752H599.598H277.666M2 1200V788C2 768.118 18.1177 752 38 752H125.375" stroke="#A41FE2" stroke-width="4"/>
+          <path d="M1884 56H1677M167.733 1802H91C71.1178 1802 55 1785.88 55 1766V1454M1577.87 56H1296.08C1276.2 56 1260.08 72.1177 1260.08 92V770C1260.08 789.882 1243.96 806 1224.08 806H657.54H84.1552M55 856V1353.5" stroke="black" stroke-width="4"/>
+          <path d="M1965 118H1408M117 1864V1215M1323 191V287M783 868H153C133.118 868 117 884.118 117 904V1117" stroke="#A41FE2" stroke-width="4"/>
+          <path d="M2 1690V1273" stroke="#A41FE2" stroke-width="4"/>
+        </svg>
+      </div>
+      <div class="benefits__title block__title">Преимущества</div>
+      <div class="benefits__grid">
+        <ul class="benefits__grid--list">
+          <li class="benefits__grid--item card card--gear">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#gear"></use>
+            </svg>
+            <div class="card__title block__subtitle">Каналы обновления вместо версий ПО</div>
+            <p>Пользователю не нужно скачивать конкретные версии пакетов. Вместо этого он выбирает канал обновления с&nbsp;необходимыми уровнями совместимости и&nbsp;стабильности: alpha, beta, early access, stable, rock solid. Через эти каналы разработчики распространяют нужные пользователю версии релизов. Частота обновлений не&nbsp;ограничена.</p>
+          </li>
+          <!-- item -->
+
+          <li class="benefits__grid--item card card--people">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#people"></use>
+            </svg>
+            <div class="card__title block__subtitle">Публикация релизов на основе GPG-кворума</div>
+            <p>В trdl реализован механизм «M of N»: каждый коммит в&nbsp;Git подписывается несколькими разработчиками. Чтобы добавить несколько подписей на&nbsp;один коммит, используются обычные Git-подписи или механизм notes. Кворум используется и&nbsp;для тегов (публикации версий), и&nbsp;для подписи trdl.json (публикации версий в&nbsp;канал обновления).</p>
+          </li>
+          <!-- item -->
+
+          <li class="benefits__grid--item card card--shield">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#shield"></use>
+            </svg>
+            <div class="card__title block__subtitle">Действительно безопасная доставка</div>
+            <p class="">В основе системы безопасности trdl два элемента: TUF-репозиторий для хранения релизов и&nbsp;плагин Vault (vault-plugin-secrets-trdl), который проверяет их&nbsp;аутентичность с&nbsp;помощью приватного ключа.</p>
+            <ul class="card__list">
+              <li class="card__item">Из преимуществ TUF: контрольные суммы и&nbsp;подписи у&nbsp;пакетов, возможность ротации ключей, защита от&nbsp;rollback-атак, защита от&nbsp;«заморозки».</li>
+              <li class="card__item">Vault можно настроить так, чтобы ни&nbsp;у&nbsp;кого не&nbsp;было доступа к&nbsp;приватному ключу, даже у&nbsp;администратора.</li>
+              <li class="card__item">Vault сам управляет и&nbsp;настраивает TUF-репозиторий: новые пакеты, темп обновлений, ротация ключей.</li>
+              <li class="card__item card__item--no-bul"><a href="#" class="card__item--link">Подробнее о&nbsp;системе безопасности trdl</a></li>
+            </ul>
+          </li>
+          <!-- item -->
+
+          <li class="benefits__grid--item card card--comp">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#comp"></use>
+            </svg>
+            <div class="card__title block__subtitle">Кроссплатформенность</div>
+            <ul class="card__list">
+              <li class="card__item">MacOS, Windows, Ubuntu, Red Hat и даже Gentoo.</li>
+              <li class="card__item">x86, x86-84, ARM.</li>
+              <li class="card__item">Доставка на сервер или на&nbsp;ноутбук разработчика.</li>
+              <li class="card__item">Все популярные shell-оболочки.</li>
+            </ul>
+          </li>
+          <!-- item -->
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>

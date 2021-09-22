@@ -1,0 +1,41 @@
+.header {
+  &__section {
+    position: fixed;
+    width: 100%;
+    z-index: 10;
+    background: $color-bg;
+    box-shadow: 0px 0px 20px rgba(51, 48, 55, 0.05);
+  }
+
+  &__wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: rem(100px);
+  }
+
+  &__menu {
+    display: flex;
+    align-items: center;
+
+    &--list {
+      display: flex;
+      align-items: center;
+    }
+
+    &--item {
+      padding-right: rem(75px);
+
+      // &:last-child {
+      //   padding-right: 0;
+      // }
+
+      & a {
+        @include montserrat(regular);
+        font-size: rem(14px);
+        line-height: rem(20px);
+        color: $text-color-title;
+      }
+    }
+  }
+}

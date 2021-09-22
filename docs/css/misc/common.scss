@@ -1,0 +1,126 @@
+body,
+html {
+  height: 100%;
+  @include montserrat(regular);
+  font-size: 16px;
+  background: $color-bg;
+
+  @include old-display {
+    font-size: rem(13px);
+  }
+
+  @include laptop {
+    font-size: rem(10px);
+  }
+}
+
+.overflow__container {
+  overflow-x: hidden;
+}
+
+.container {
+  box-sizing: border-box;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  padding: 0 50px;
+
+  @include old-display {
+    max-width: 940px;
+  }
+
+  @include laptop {
+    max-width: 100%;
+    padding: 0 20px;
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: normal;
+}
+
+a {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+ul {
+  padding: 0;
+  margin: 0;
+
+  li {
+    list-style: none;
+  }
+}
+
+p {
+  padding: 0;
+  margin: 0;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.block__title {
+  @include montserrat(bold);
+  font-size: rem(48px);
+  line-height: rem(72px);
+  letter-spacing: .05em;
+  color: $text-color-title;
+
+  &--invert {
+    color: $text-color-title-invert;
+  }
+}
+
+.block__subtitle {
+  @include montserrat(semi-bold);
+  font-size: rem(24px);
+  line-height: rem(36px);
+
+  &--invert {
+    color: $text-color-title-invert;
+
+    & span {
+      color: $text-color-accent;
+    }
+  }
+}
+
+.block__description {
+  @include montserrat(regular);
+  font-size: rem(18px);
+  line-height: rem(26px);
+  color: $text-color;
+}
+
+.button {
+  @include montserrat(semi-bold);
+  font-size: rem(18px);
+  line-height: rem(22px);
+  color: $text-color-title-invert;
+  box-sizing: border-box;
+  cursor: pointer;
+  padding: rem(pad(50, 22)) rem(30px);
+  background: $color-accent;
+  border-radius: rem(10px);
+  border: 1.5px solid transparent;
+
+  &--white {
+    border: 1.5px solid $color-accent;
+    background: transparent;
+    color: $text-color-accent;
+  }
+}

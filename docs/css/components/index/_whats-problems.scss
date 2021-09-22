@@ -1,0 +1,50 @@
+.whats-problems {
+  &__section {
+    padding-bottom: rem(100px);
+  }
+
+  &__title {
+    padding-bottom: rem(80px);
+  }
+
+  &__grid--list {
+    grid-template-rows: 1fr;
+    grid-template-areas:
+      "delivery ."
+      "delivery protection"
+      "pack protection"
+      "pack .";
+
+    & .card {
+      & > p {
+        padding-bottom: rem(30px);
+      }
+
+      &--delivery {
+        grid-area: delivery;
+      }
+
+      &--protection {
+        grid-area: protection;
+
+        & .card__list p {
+          @include montserrat(semi-bold);
+          font-size: rem(14px);
+          line-height: rem(20px);
+          padding-left: rem(30px);
+          color: $text-color-light;
+
+          & span {
+            color: $text-color-accent;
+          }
+        }
+      }
+
+      &--pack {
+        grid-area: pack;
+        max-height: 550px;
+        box-sizing: border-box;
+      }
+    }
+  }
+}

@@ -1,0 +1,64 @@
+@function rem($px) {
+  @return $px / 16px + 0rem;
+}
+
+@function pad($height, $lh) {
+  @return ($height - $lh)/2 + 0px;
+}
+
+@mixin montserrat($style: regular) {
+  font-family: 'Montserrat', sans-serif;
+
+  @if $style == regular {
+    font-weight: 400;
+  }
+
+  @if $style == regular-italic {
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  @if $style == semi-bold {
+    font-weight: 600;
+  }
+
+  @if $style == bold {
+    font-weight: 700;
+  }
+}
+
+@mixin four-k {
+  @media screen and (min-width: 1920px) {
+    @content;
+  }
+}
+
+@mixin old-display {
+  @media screen and (max-width: 1220px) {
+    @content;
+  }
+}
+
+@mixin laptop {
+  @media screen and (max-width: 960px) {
+    @content;
+  }
+}
+
+@mixin tablets {
+  @media screen and (max-width: 768px) {
+    @content;
+  }
+}
+
+@mixin phablet {
+  @media screen and (max-width: 600px) {
+    @content;
+  }
+}
+
+@mixin phones {
+  @media screen and (max-width: 480px) {
+    @content;
+  }
+}

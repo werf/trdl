@@ -1,0 +1,107 @@
+.benefits {
+  &__section {
+    padding-bottom: rem(130px);
+    position: relative;
+  }
+
+  &__lines {
+    position: absolute;
+    top: 145px;
+    right: -132px;
+    z-index: -1;
+  }
+
+  &__title {
+    padding-bottom: rem(90px);
+  }
+
+  &__grid--list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto;
+    grid-gap: rem(100px);
+    grid-template-areas: 
+      "gear ."
+      "gear people"
+      "shield people"
+      "shield comp";
+
+    & .card {
+      padding: rem(60px) rem(40px);
+      background: #fff;
+      border-radius: rem(20px);
+
+      &--gear {
+        grid-area: gear;
+      }
+
+      &--people {
+        grid-area: people;
+      }
+
+      &--shield {
+        grid-area: shield;
+      }
+
+      &--comp {
+        grid-area: comp;
+      }
+
+      &__pic {
+        width: rem(57px);
+        height: rem(59px);
+        fill: none;
+        padding-bottom: rem(20px);
+      }
+
+      &__title {
+        padding-bottom: rem(20px);
+      }
+
+      & p {
+        @include montserrat(regular);
+        font-size: rem(18px);
+        line-height: rem(26px);
+        color: $text-color;
+      }
+
+      &--shield p {
+        padding-bottom: rem(30px);
+      }
+
+      &__item {
+        @include montserrat(semi-bold);
+        font-size: rem(14px);
+        line-height: rem(20px);
+        color: $text-color;
+        padding-bottom: rem(30px);
+        padding-left: rem(30px);
+
+        &::before {
+          content: '';
+          display: inline-block;
+          width: rem(10px);
+          height: rem(10px);
+          border-radius: 50%;
+          background: $color-bullets;
+          margin-left: rem(-30px);
+          margin-right: rem(20px);
+        }
+
+        &--no-bul {
+          & a {
+            @include montserrat(regular-italic);
+            font-size: rem(14px);
+            line-height: rem(17px);
+            color: $text-color-accent;
+            text-decoration: underline;
+          }
+
+          &::before {
+            visibility: hidden;
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,22 +1,44 @@
-<div class="footer">
-    <div class="footer__credits">
-        {%- if page.lang == "ru" %}
-        Сделано с <span class="page__icon page__icon_heart"></span> в компании <a href="{{ site.company_url }}" target="_blank">{{ site.company_name }}</a>
-        {%- else %}
-        Made with <span class="page__icon page__icon_heart"></span> by <a href="{{ site.company_url }}" target="_blank">{{ site.company_name }}</a>
-        {%- endif %}
+<footer class="footer footer__section">
+  <div class="container">
+    <div class="footer__wrap">
+      <div class="footer__text">
+        <span>Made with</span>
+        <svg class="footer__heart">
+          <use xlink:href="images/icons/sprite.svg#heart"></use>
+        </svg>
+        <span>by <a href="flant.ru">Flant</a></span>
+      </div>
+      <div class="footer__github">
+        <svg class="footer__github--icon">
+          <use xlink:href="images/icons/sprite.svg#github"></use>
+        </svg>
+        <div class="footer__github--stars">
+          <span>2640</span>
+          <svg class="footer__github--star">
+            <use xlink:href="images/icons/sprite.svg#star"></use>
+          </svg>
+        </div>
+      </div>
     </div>
-    <div class="footer__github">
-        <span class="page__icon page__icon_github footer__github-icon"></span>
-        <a href="https://github.com{{ site.github_repo_path }}" class="footer__github-counter">
-            <span class="footer__github-counter-num"><span class="gh_counter">0</span></span>
-        </a>
-    </div>
-    <div class="footer__gen" id="siteGenerationTime" hidden>
-        {%- if page.lang == "ru" %}
-        Дата генерации сайта: {{ site.time | date: "%e.%m.%Y, %H:%M %z"  }}
-        {%- else %}
-        Site last generated: {{ site.time | date: "%b %-d, %Y at %H:%M %z"  }}
-        {%- endif %}
-    </div>
-</div>
+  </div>
+  <!-- <div class="footer__credits">
+      {%- if page.lang == "ru" %}
+      Сделано с <span class="page__icon page__icon_heart"></span> в компании <a href="{{ site.company_url }}" target="_blank">{{ site.company_name }}</a>
+      {%- else %}
+      Made with <span class="page__icon page__icon_heart"></span> by <a href="{{ site.company_url }}" target="_blank">{{ site.company_name }}</a>
+      {%- endif %}
+  </div>
+  <div class="footer__github">
+      <span class="page__icon page__icon_github footer__github-icon"></span>
+      <a href="https://github.com{{ site.github_repo_path }}" class="footer__github-counter">
+          <span class="footer__github-counter-num"><span class="gh_counter">0</span></span>
+      </a>
+  </div>
+  <div class="footer__gen" id="siteGenerationTime" hidden>
+      {%- if page.lang == "ru" %}
+      Дата генерации сайта: {{ site.time | date: "%e.%m.%Y, %H:%M %z"  }}
+      {%- else %}
+      Site last generated: {{ site.time | date: "%b %-d, %Y at %H:%M %z"  }}
+      {%- endif %}
+  </div> -->
+</footer>

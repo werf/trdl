@@ -1,0 +1,28 @@
+.solve-that {
+  &__section {
+    padding-bottom: rem(70px);
+  }
+  
+  &__container {
+    background: $color-accent;
+  }
+
+  &__wrap {
+    margin: rem(50px);
+  }
+
+  &__title {
+    padding-bottom: rem(35px);
+  }
+
+  &__button {
+    &--gh {
+      background: #fff;
+      margin-right: rem(40px);
+    }
+
+    &--doc {
+      border-color: #fff;
+    }
+  } 
+}

@@ -1,0 +1,67 @@
+.footer {
+  &__wrap {
+    padding-bottom: rem(80px);
+  }
+
+  &__wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__text {
+    @include montserrat(regular);
+    font-size: rem(14px);
+    line-height: rem(17px);
+    color: $text-color;
+  }
+
+  &__heart {
+    width: rem(11px);
+    height: rem(12px);
+  }
+
+  & span a {
+    color: $text-color-accent;
+  }
+
+  &__github {
+    display: flex;
+    align-items: center;
+
+    &--icon {
+      width: rem(29px);
+      height: rem(29px);
+      padding-right: rem(12px);
+    }
+
+    &--stars {
+      position: relative;
+      display: flex;
+      align-items: center;
+      border: 1.5px solid $color-border-github;
+      box-sizing: border-box;
+      border-radius: rem(10px);
+      padding: rem(pad(29, 17)) rem(9px);
+
+      &::after {
+        position: absolute;
+        top: -1px;
+        right: 32px;
+        content: '';
+        width: 1px;
+        height: 105%;
+        background: $color-border-github;
+      }
+      
+      & span {
+        padding-right: rem(15px);
+      }
+    }
+
+    &--star {
+      width: rem(16px);
+      height: rem(16px);
+    }
+  }
+}

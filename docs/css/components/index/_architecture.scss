@@ -1,0 +1,77 @@
+.architecture {
+  &__section {
+    padding-bottom: rem(140px);
+    color: $text-color-title-invert;
+  }
+
+  &__container {
+    box-sizing: content-box;
+    background: $color-dark;
+    border-radius: rem(20px);
+    padding: rem(20px) rem(80px);
+  }
+
+  &__wrap {
+    margin: rem(50px);
+  }
+
+  &__title {
+    padding-bottom: rem(60px);
+  }
+
+  &__cols {
+    display: flex;
+    // align-items: center;
+    justify-content: space-between;
+
+    &--item {
+      width: 40%;
+    }
+  
+    & .col {
+      &__title {
+        padding-bottom: rem(25px);
+      }
+    
+      &__text {
+        @include montserrat(regular);
+        font-size: rem(18px);
+        line-height: rem(22px);
+        min-height: 91px;
+        color: $text-color-lightest;
+        padding-bottom: rem(25px);
+      }
+    
+      &__subtitle {
+        @include montserrat(semi-bold);
+        font-size: rem(18px);
+        line-height: rem(22px);
+        padding-bottom: rem(30px);
+      }
+    
+      &__item {
+        display: flex;
+        align-items: center;
+        padding-bottom: rem(30px);
+
+        & .server__icon {
+          min-width: rem(20px);
+          width: rem(20px);
+          height: rem(25px);
+          fill: none;
+        }
+
+        // & .server__icon--client {
+        //   width: rem(28px);
+        // }
+
+        & p {
+          @include montserrat(semi-bold);
+          font-size: rem(14px);
+          line-height: rem(22px);
+          padding-left: rem(30px);
+        }
+      }
+    }
+  }
+}
