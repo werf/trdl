@@ -3,11 +3,10 @@ $(document).ready(function(){
   const nav = $('.slider__navigation');
 
   $('.slider__wrap').slick({
-    autoplay: true,
-    autoplaySpeed: 5000,
+    autoplay: false,
     infinite: true,
     dots: true,
-    speed: 300,
+    speed: 0,
     dotsClass: 'slider__dots',
     appendArrows: sel,
     appendDots: sel,
@@ -16,11 +15,10 @@ $(document).ready(function(){
   });
 
   $('.slider__wrapper').slick({
-    autoplay: true,
-    autoplaySpeed: 5000,
+    autoplay: false,
     infinite: true,
     dots: true,
-    speed: 300,
+    speed: 0,
     dotsClass: 'slider__dots',
     appendArrows: nav,
     appendDots: nav,
