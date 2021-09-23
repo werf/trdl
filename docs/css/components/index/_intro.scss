@@ -6,6 +6,10 @@
     z-index: 0;
   }
 
+  &__wrap {
+    position: relative;
+  }
+
   &__title {
     letter-spacing: .05em;
     padding-bottom: rem(105px);
@@ -37,9 +41,8 @@
 
   &__lines {
     position: absolute;
-    width: 100%;
-    bottom: -200px;
-    left: 1235px;
+    bottom: -400px;
+    right: -370px;
     z-index: -1;
   }
 }

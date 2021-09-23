@@ -137,3 +137,9 @@ table {
     background: $color-bg-footnote-dark;
   }
 }
+
+#tippy-2 a {
+  @include montserrat(regular-italic);
+  color: $text-color-title-invert;
+  text-decoration: underline;
+}

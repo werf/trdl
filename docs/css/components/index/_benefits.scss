@@ -4,11 +4,14 @@
     position: relative;
   }
 
+  &__wrap {
+    position: relative;
+  }
+
   &__lines {
     position: absolute;
-    width: 100%;
     top: 145px;
-    right: -132px;
+    right: -500px;
     z-index: -1;
   }
 

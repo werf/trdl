@@ -6,6 +6,7 @@
   }
 
   &__wrap {
+    position: relative;
     margin: rem(50px);
   }
 
@@ -36,9 +37,8 @@
 
   &__lines {
     position: absolute;
-    width: 100%;
-    top: 665px;
-    left: 995px;
+    top: 625px;
+    right: -95px;
     z-index: -1;
   }
 }

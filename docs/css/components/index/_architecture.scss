@@ -28,37 +28,37 @@
     &--item {
       width: 40%;
     }
-  
+
     & .col {
       &__title {
         padding-bottom: rem(25px);
       }
-    
+
       &__text {
         @include montserrat(regular);
         font-size: rem(18px);
         line-height: rem(26px);
         min-height: 91px;
-        color: $text-color-lightest;
+        color: $text-color-title-invert-light;
         padding-bottom: rem(25px);
       }
-    
+
       &__subtitle {
         @include montserrat(semi-bold);
         font-size: rem(18px);
         line-height: rem(22px);
         padding-bottom: rem(30px);
       }
-    
+
       &__item {
         display: flex;
         align-items: center;
         padding-bottom: rem(30px);
 
         & .server__icon {
-          min-width: rem(20px);
-          width: rem(20px);
-          height: rem(25px);
+          min-width: rem(28px);
+          width: rem(28px);
+          height: rem(28px);
           fill: none;
         }
 
