@@ -37,8 +37,9 @@
 
   &__lines {
     position: absolute;
+    width: 100%;
     bottom: -200px;
-    right: 0;
+    left: 1235px;
     z-index: -1;
   }
 }

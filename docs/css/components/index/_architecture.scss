@@ -1,5 +1,6 @@
 .architecture {
   &__section {
+    position: relative;
     padding-bottom: rem(140px);
     color: $text-color-title-invert;
   }
@@ -36,7 +37,7 @@
       &__text {
         @include montserrat(regular);
         font-size: rem(18px);
-        line-height: rem(22px);
+        line-height: rem(26px);
         min-height: 91px;
         color: $text-color-lightest;
         padding-bottom: rem(25px);
@@ -74,7 +75,7 @@
           & a {
             @include montserrat(regular-italic);
             text-decoration: underline;
-            color: $text-color-accent;
+            color: $text-color-title-invert;
           }
         }
       }

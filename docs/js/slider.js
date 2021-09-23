@@ -4,6 +4,7 @@ $(document).ready(function(){
 
   $('.slider__wrap').slick({
     autoplay: false,
+    draggable: false,
     infinite: true,
     dots: true,
     speed: 0,
@@ -16,6 +17,7 @@ $(document).ready(function(){
 
   $('.slider__wrapper').slick({
     autoplay: false,
+    draggable: false,
     infinite: true,
     dots: true,
     speed: 0,

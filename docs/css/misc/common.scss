@@ -4,18 +4,20 @@ html {
   @include montserrat(regular);
   font-size: 16px;
   background: $color-bg;
+  letter-spacing: 0.05em;
 
-  @include old-display {
-    font-size: rem(13px);
-  }
+  // @include old-display {
+  //   font-size: rem(13px);
+  // }
 
-  @include laptop {
-    font-size: rem(10px);
-  }
+  // @include laptop {
+  //   font-size: rem(10px);
+  // }
 }
 
 .overflow__container {
   overflow-x: hidden;
+  min-width: 1240px;
 }
 
 .container {
@@ -26,14 +28,14 @@ html {
   margin: 0 auto;
   padding: 0 50px;
 
-  @include old-display {
-    max-width: 940px;
-  }
+  // @include old-display {
+  //   max-width: 940px;
+  // }
 
-  @include laptop {
-    max-width: 100%;
-    padding: 0 20px;
-  }
+  // @include laptop {
+  //   max-width: 100%;
+  //   padding: 0 20px;
+  // }
 }
 
 h1,
@@ -125,7 +127,8 @@ table {
   }
 }
 
-.footnote__span {
+.footnote__div {
+  display: inline-block;
   background: $color-bg-footnote;
   padding: rem(3px);
   border-radius: rem(5px);
