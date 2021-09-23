@@ -1,0 +1,62 @@
+<section class="architecture__section">
+  <div class="container architecture__container">
+    <div class="architecture__wrap">
+      <div class="architecture__title block__title block__title--invert">Architecture</div>
+      <div class="architecture__cols">
+        <div class="architecture__cols--item col__server">
+          <div class="col__title block__subtitle block__subtitle--invert">trdl-<span>server</span></div>
+          <div class="col__text">implements the TUF repository and securely populates it.</div>
+          <!-- <div class="col__subtitle">Функции</div> -->
+          <ul class="col__list">
+            <li class="col__item">
+              <svg class="server__icon checked">
+                <use xlink:href="images/icons/sprite.svg#checked"></use>
+              </svg>
+              <p>Builds and publishes software releases.</p>
+            </li>
+            <li class="col__item">
+              <svg class="server__icon gears">
+                <use xlink:href="images/icons/sprite.svg#gears"></use>
+              </svg>
+              <p>Monitors for consistency between release channels and releases (<a href="https://github.com/werf/werf/blob/multiwerf/trdl_channels.yaml">example</a>).</p>
+            </li>
+            <li class="col__item">
+              <svg class="server__icon shield-2">
+                <use xlink:href="images/icons/sprite.svg#shield-2"></use>
+              </svg>
+              <p>Ensures repo security</p>
+            </li>
+          </ul>
+        </div>
+        <!-- col -->
+
+        <div class="architecture__cols--item col__client">
+          <div class="col__title block__subtitle block__subtitle--invert">trdl-<span>client</span></div>
+          <div class="col__text">delivers updates in a trusted and continuous fashion via channels with different stability levels.</div>
+          <!-- <div class="col__subtitle">Функции</div> -->
+          <ul class="col__list">
+            <li class="col__item">
+              <svg class="server__icon branching">
+                <use xlink:href="images/icons/sprite.svg#branching"></use>
+              </svg>
+              <p>Processes application files within the release channels.</p>
+            </li>
+            <li class="col__item">
+              <svg class="server__icon parachute">
+                <use xlink:href="images/icons/sprite.svg#parachute"></use>
+              </svg>
+              <p>Processes files in the TUF repository in a reliable fashion.</p>
+            </li>
+            <!-- <li class="col__item hidden">
+              <svg class="server__icon">
+                <use xlink:href="images/icons/sprite.svg#server"></use>
+              </svg>
+              <p>Безопасность репозитория</p>
+            </li> -->
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>

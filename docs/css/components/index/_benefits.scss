@@ -63,6 +63,12 @@
         font-size: rem(18px);
         line-height: rem(26px);
         color: $text-color;
+
+        & a {
+          @include montserrat(regular-italic);
+          text-decoration: underline;
+          color: $text-color-accent;
+        }
       }
 
       &--shield p {

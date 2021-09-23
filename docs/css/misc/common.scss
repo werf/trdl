@@ -124,3 +124,13 @@ table {
     color: $text-color-accent;
   }
 }
+
+.footnote__span {
+  background: $color-bg-footnote;
+  padding: rem(3px);
+  border-radius: rem(5px);
+
+  &--dark {
+    background: $color-bg-footnote-dark;
+  }
+}

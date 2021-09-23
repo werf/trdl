@@ -1,0 +1,49 @@
+<section class="whats-problems__section">
+  <div class="container">
+    <div class="whats-problems__wrap">
+      <div class="whats-problems__title block__title">What problems trdl fixes for you</div>
+      <div class="whats-problems__grid benefits__grid">
+        <ul class="whats-problems__grid--list benefits__grid--list">
+          <li class="benefits__grid--item card card--delivery">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#warning"></use>
+            </svg>
+            <div class="card__title block__subtitle">Continuous delivery limitations</div>
+            <p>Continuous delivery via the CI system works well for the SaaS model, that is, for software hosted on cloud servers. At the same time, you would be hard-pressed to find a tool that is as fast at delivering code to user devices.</p>
+          </li>
+          <!-- item -->
+
+          <li class="benefits__grid--item card card--protection">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#warning"></use>
+            </svg>
+            <div class="card__title block__subtitle">Challenges related to implementing a secure delivery</div>
+            <p>You may encounter the following challenges in trying to deliver software securely:</p>
+            <ul class="card__list">
+              <li class="card__item">A single GPG signature is not enough. (What if the developer's laptop has been hacked?) You will need a quorum-based system for accepting the code and signing the built binary files.</li>
+              <li class="card__item">The acceptance system should not depend on human errors, such as the bus factor, regulation violations, misclicks, etc.</li>
+              <li class="card__item">At the same time, even the most complex system can fail.</li>
+              <p><span>Example</span>:  The release must be approved by three developers: a product owner, a security officer, and some other person. However, the acceptance system's administrator has privileges to sign the release for all of them.</p>
+            </ul>
+          </li>
+          <!-- item -->
+
+          <li class="benefits__grid--item card card--pack">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#warning"></use>
+            </svg>
+            <div class="card__title block__subtitle">Package manager limitations</div>
+            <p class="">There are many package managers, but they all have common drawbacks:</p>
+            <ul class="card__list">
+              <li class="card__item">each platform requires its own manager;</li>
+              <li class="card__item">the package creation process is complicated;</li>
+              <li class="card__item">there is a lot of manual work involved: the user has to add the package source, find the package, and install/upgrade/uninstall it.</li>
+            </ul>
+          </li>
+          <!-- item -->
+
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
