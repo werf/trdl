@@ -2,16 +2,17 @@ $color-bg:                #F5F5F5;
 $color-accent:            #A41FE2;
 $color-dark:              #333037;
 $color-bg-footnote:       rgba(255, 255, 255, .1);
-$color-bg-footnote-dark:  rgba(51, 48, 55, 0.2);
+$color-bg-footnote-dark:  rgba(51, 48, 55, .075);
 
 $color-border-github:     #C4C4C4;
 
 $text-color:              rgba(51, 48, 55, 0.7);
-$text-color-light:        rgba(51, 48, 55, 0.2);
-$text-color-lightest:     rgba(255, 255, 255, 0.7);
+$text-color-light:        rgba(51, 48, 55, 0.4);
+$text-color-lightest:     rgba(51, 48, 55, 0.2);
 $text-color-title:        $color-dark;
 $text-color-title-invert: #fff;
+$text-color-title-invert-light: rgba(255, 255, 255, 0.7);
 $text-color-accent:       $color-accent;
 
-$color-bullets:           $text-color-light;
+$color-bullets:           $text-color-lightest;
 $color-bullets-invert:    $color-accent;
