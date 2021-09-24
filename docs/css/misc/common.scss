@@ -17,7 +17,7 @@ html {
 
 .overflow__container {
   overflow-x: hidden;
-  min-width: 1240px;
+  min-width: 1200px;
 }
 
 .container {
@@ -27,6 +27,21 @@ html {
   flex-direction: column;
   margin: 0 auto;
   padding: 0 50px;
+
+  &--wide {
+    box-sizing: content-box;
+    background: $color-dark;
+    border-radius: rem(20px);
+    padding: rem(20px) rem(80px);
+    min-width: 1200px;
+
+    @media screen and (max-width: 1375px) {
+      box-sizing: border-box;
+      padding: rem(20px)  0;
+      width: 100%;
+      border-radius: 0;
+    }
+  }
 
   // @include old-display {
   //   max-width: 940px;

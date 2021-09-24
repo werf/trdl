@@ -3,13 +3,10 @@
     position: relative;
     padding-bottom: rem(140px);
     color: $text-color-title-invert;
-  }
 
-  &__container {
-    box-sizing: content-box;
-    background: $color-dark;
-    border-radius: rem(20px);
-    padding: rem(20px) rem(80px);
+    @media screen and (max-width: 1375px) {
+      background: $color-dark;
+    }
   }
 
   &__wrap {
