@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=1260">
+<meta name="viewport" content="width=device-width">
 
 {%- if page.multilang %}
 <link data-proofer-ignore rel="canonical" href="https://{{ site.url }}{{ page.url | relative_url }}" />
@@ -54,26 +54,39 @@
 
 
 <link rel="apple-touch-icon" sizes="180x180" href="{{ "apple-touch-icon.png" | relative_url }}">
-<link rel="icon" type="image/png" sizes="32x32" href="{{ "favicon-32x32.png" | relative_url }}">
-<link rel="icon" type="image/png" sizes="16x16" href="{{ "favicon-16x16.png" | relative_url }}">
-<link rel="manifest" href="{{ "site.webmanifest" | relative_url }}">
+<!-- <link rel="icon" type="image/png" sizes="32x32" href="{{ "favicon-32x32.png" | relative_url }}"> -->
+<!-- <link rel="icon" type="image/png" sizes="16x16" href="{{ "favicon-16x16.png" | relative_url }}"> -->
+<!-- <link rel="manifest" href="{{ "site.webmanifest" | relative_url }}"> -->
 <link rel="mask-icon" href="{{ "safari-pinned-tab.svg" | relative_url }}" color="#5bbad5">
 <meta name="msapplication-TileColor" content="#ffc40d">
 <meta name="theme-color" content="#ffffff">
 
-<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i&display=swap&subset=cyrillic,cyrillic-ext" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
+ <!-- Fonts -->
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
+ <!-- Slick slider -->
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+
+<!-- Common CSS -->
 {% asset normalize.css %}
-{% asset syntax.css %}
+
+ <!-- Custom CSS -->
+{% asset main.css %}
+
+<!-- <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i&display=swap&subset=cyrillic,cyrillic-ext" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet"> -->
+
+<!-- {% asset syntax.css %}
 
 {% asset tab.css %}
 {% asset header.css %}
 {% asset submenu.css %}
 {% asset docs.css %}
 {% asset index.css %}
-{% asset featherlight.min.css %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.12.0/underscore-min.js"></script>
+{% asset featherlight.min.css %} -->
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.12.0/underscore-min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
@@ -92,7 +105,14 @@
 {% asset tab.js %}
 {% asset popup.js %}
 {% asset channels.js %}
-{% asset customscripts.js %}
+{% asset customscripts.js %} -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
+<script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.js"></script>
+<script src="{{ '/js/slider.js' }}"></script>
+<script src="{{ '/js/tippy.js' }}"></script>
 
 <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
 <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->

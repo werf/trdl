@@ -1,0 +1,81 @@
+.architecture {
+  &__section {
+    position: relative;
+    margin-bottom: rem(140px);
+    color: $text-color-title-invert;
+
+    @media screen and (max-width: 1375px) {
+      background: $color-dark;
+    }
+  }
+
+  &__wrap {
+    margin: rem(50px);
+  }
+
+  &__title {
+    padding-bottom: rem(60px);
+  }
+
+  &__cols {
+    display: flex;
+    // align-items: center;
+    justify-content: space-between;
+
+    &--item {
+      width: 40%;
+    }
+
+    & .col {
+      &__title {
+        padding-bottom: rem(25px);
+      }
+
+      &__text {
+        @include montserrat(regular);
+        font-size: rem(18px);
+        line-height: rem(26px);
+        // min-height: 91px;
+        color: $text-color-title-invert-light;
+        padding-bottom: rem(25px);
+      }
+
+      &__subtitle {
+        @include montserrat(semi-bold);
+        font-size: rem(18px);
+        line-height: rem(22px);
+        padding-bottom: rem(30px);
+      }
+
+      &__item {
+        display: flex;
+        align-items: center;
+        padding-bottom: rem(30px);
+
+        & .server__icon {
+          min-width: rem(28px);
+          width: rem(28px);
+          height: rem(28px);
+          fill: none;
+        }
+
+        // & .server__icon--client {
+        //   width: rem(28px);
+        // }
+
+        & p {
+          // @include montserrat(semi-bold);
+          font-size: rem(14px);
+          line-height: rem(22px);
+          padding-left: rem(30px);
+
+          & a {
+            @include montserrat(regular-italic);
+            text-decoration: underline;
+            color: $text-color-title-invert;
+          }
+        }
+      }
+    }
+  }
+}

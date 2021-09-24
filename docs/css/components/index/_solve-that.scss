@@ -1,0 +1,32 @@
+.solve-that {
+  &__section {
+    margin-bottom: rem(70px);
+
+    @media screen and (max-width: 1375px) {
+      background: $color-accent;
+    }
+  }
+  
+  &__container {
+    background: $color-accent;
+  }
+
+  &__wrap {
+    margin: rem(50px);
+  }
+
+  &__title {
+    padding-bottom: rem(35px);
+  }
+
+  &__button {
+    &--gh {
+      background: #fff;
+      margin-right: rem(40px);
+    }
+
+    &--doc {
+      border-color: #fff;
+    }
+  } 
+}

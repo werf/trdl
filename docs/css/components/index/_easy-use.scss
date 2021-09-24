@@ -1,0 +1,48 @@
+.easy-use {
+  &__section {
+    margin-bottom: rem(130px);
+    color: $text-color-title-invert;
+    position: relative;
+
+    @media screen and (max-width: 1375px) {
+      background: $color-dark;
+    }
+  }
+
+  &__wrap {
+    position: relative;
+    margin: rem(50px);
+  }
+
+  &__title {
+    padding-bottom: rem(60px);
+  }
+
+  &__cols {
+    & .col__item {
+      // @include montserrat(semi-bold);
+      font-size: rem(14px);
+      line-height: rem(20px);
+      display: block;
+      padding-left: rem(30px);
+
+      &::before {
+        content: '';
+        display: inline-block;
+        width: rem(10px);
+        height: rem(10px);
+        border-radius: 50%;
+        background: $color-bullets-invert;
+        margin-left: rem(-30px);
+        margin-right: rem(20px);
+      }
+    }
+  }
+
+  &__lines {
+    position: absolute;
+    top: 555px;
+    right: -95px;
+    z-index: -1;
+  }
+}

@@ -1,0 +1,26 @@
+.how-work {
+  &__wrap {
+    padding-bottom: rem(110px);
+  }
+
+  &__title {
+    padding-bottom: rem(30px);
+  }
+
+  &__desc {
+    max-width: 67%;
+    padding-bottom: rem(23px);
+  }
+
+  &__footnote {
+    @include montserrat(regular-italic);
+    font-size: rem(14px);
+    line-height: rem(30px);
+    color: $text-color;
+
+    & a {
+      color: $text-color-accent;
+      text-decoration: underline;
+    }
+  }
+}

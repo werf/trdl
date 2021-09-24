@@ -1,0 +1,150 @@
+.header {
+  &__section {
+    position: fixed;
+    width: 100%;
+    z-index: 10;
+    background: $color-bg;
+    box-shadow: 0px 0px 20px rgba(51, 48, 55, 0.05);
+  }
+
+  &__wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: rem(70px);
+  }
+
+  &__menu {
+    display: flex;
+    align-items: center;
+
+    &--list {
+      display: flex;
+      align-items: center;
+    }
+
+    &--item {
+      padding-right: rem(75px);
+
+      // &:last-child {
+      //   padding-right: 0;
+      // }
+
+      &_parent > a:after {
+          content: '';
+          width: 10px;
+          height: 10px;
+          background: url(../images/icons/dropdown.svg);
+          background-repeat: no-repeat;
+          background-size: contain;
+          margin-left: 5px;
+          display: inline-block;
+      }
+
+      & a {
+        @include montserrat(regular);
+        font-size: rem(14px);
+        line-height: rem(20px);
+        color: $text-color-title;
+      }
+    }
+  }
+}
+
+.submenu-container {
+  display: none;
+  position: absolute;
+  left: -20px;
+  top: 10px;
+  z-index: 1000;
+  padding-top: 10px;
+  min-width: 100%;
+}
+
+.submenu {
+  float: left;
+  box-sizing: border-box;
+  list-style-type: none;
+  padding: 15px 20px;
+  margin: 0;
+  min-width: 100%;
+  background: #FFFFFF;
+  box-shadow: 0 10px 40px 0 rgba(0,18,44,0.1);
+  border-radius: 10px;
+  line-height: 1.16;
+}
+
+.submenu-item-link {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  font-size: 14px;
+  white-space: nowrap;
+  color: #00122C !important;
+  text-decoration: none;
+  letter-spacing: -0.26px;
+  margin: 15px 0;
+}
+
+.submenu-item-link:hover {
+  color: #0066FF !important;
+}
+
+.submenu-item:first-child .submenu-item-link {
+  margin-top: 0px;
+}
+
+.submenu-item:last-child .submenu-item-link {
+  margin-bottom: 0px;
+}
+
+.submenu-item-channel {
+  display: inline-block;
+  width: 90px;
+}
+
+.submenu-item-link:hover .submenu-item-channel {
+  color: #0066FF !important;
+}
+
+.submenu-item-release {
+  color: #939fb1 !important;
+  font-size: 12px;
+}
+
+.submenu-item-link:hover .submenu-item-release {
+  color: #939fb1 !important;
+}
+
+.submenu-item-dot {
+  display: block;
+  margin: 0 10px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #939fb1 !important;
+  position: relative;
+  opacity: 0.5;
+}
+.submenu-item-dot_special::after {
+  content: '';
+  display: block;
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 1px;
+  height: 30px;
+  background: #939fb1 !important;
+}
+
+.submenu-item a:hover .submenu-item-release {
+  color: #0066FF !important;
+}
+
+.submenu-parent {
+  position: relative;
+}
+
+.submenu-parent:hover .submenu-container {
+  display: block;
+}

@@ -1,4 +1,4 @@
----
+<!-- ---
 title: trdl tool
 permalink: /
 sidebar: none
@@ -40,4 +40,4 @@ sidebar: none
 
 Подробнее.|
 
-
+ -->

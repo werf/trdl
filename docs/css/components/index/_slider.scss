@@ -1,0 +1,144 @@
+.slider {
+  &__section {
+    padding-bottom: rem(200px);
+  }
+
+  &__subtitle {
+    color: $text-color-accent;
+    text-align: center;
+  }
+
+  &__wrap,
+  &__wrapper {
+    position: relative;
+    overflow: hidden;
+  }
+
+  &__nav,
+  &__navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: rem(30px);
+    position: relative;
+    padding-bottom: rem(35px);
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      z-index: -1;
+      height: 1px;
+      background: $color-accent;
+    }
+  }
+
+  &__item p {
+    @include montserrat(semi-bold);
+    font-size: rem(14px);
+    line-height: rem(20px);
+    text-align: center;
+    margin-bottom: rem(35px);
+    // tmp
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: rem(20px*3);
+    max-width: 75%;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: rem(10px);
+    background: #fff;
+    padding: rem(20px);
+  }
+
+  &__item img {
+    border-radius: 20px;
+    width: 80%;
+    margin: 0 auto;
+  }
+
+  &__prev {
+    all: unset;
+    background: $color-bg;
+    order: 1;
+    cursor: pointer;
+    transition: all .3s ease;
+    fill: none;
+    stroke: $color-accent;
+    width: rem(9px);
+    height: rem(17px);
+    padding-left: rem(20px);
+
+    // &:hover {
+    //   fill: #6954e9;
+    // }
+  }
+
+  &__dots {
+    display: flex;
+    background: $color-bg;
+    order: 3;
+  }
+
+  &__dots li {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid $color-accent;
+    border-radius: 50%;
+    width: rem(21px);
+    height: rem(21px);
+    margin: rem(10px);
+    cursor: pointer;
+
+    &:first-child {
+      margin-left: rem(20px);
+    }
+
+    &:last-child {
+      margin-right: rem(20px);
+    }
+
+    &.slick-active {
+      background: $color-accent;
+      border-radius: 50%;
+
+      & button {
+        color: $text-color-title-invert;
+      }
+    }
+  }
+
+  &__dots li button {
+    all: unset;
+    font-size: rem(15px);
+    line-height: rem(21px);
+    color: $text-color-accent;
+    padding: rem(3px) rem(9px);
+    border-radius: 50%;
+  }
+
+  &__next {
+    all: unset;
+    background: $color-bg;
+    transform: rotateY(180deg);
+    order: 5;
+    cursor: pointer;
+    transition: all .3s ease;
+    fill: none;
+    stroke: $color-accent;
+    width: rem(9px);
+    height: rem(17px);
+    padding-left: rem(20px);
+
+    // &:hover {
+    //   fill: #6954e9;
+    // }
+  }
+
+  &__arrow {
+    width: 100%;
+    height: 100%;
+  }
+}

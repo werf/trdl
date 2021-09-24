@@ -1,0 +1,65 @@
+<section class="benefits__section">
+  <div class="container">
+    <div class="benefits__wrap">
+      <div class="benefits__lines">
+        <svg width="1809" height="1864" viewBox="0 0 1809 1864" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1816 2H1310.93M1197.2 134V716C1197.2 735.882 1181.08 752 1161.2 752H599.598H277.666M2 1200V788C2 768.118 18.1177 752 38 752H125.375" stroke="#A41FE2" stroke-width="4"/>
+          <path d="M1884 56H1677M167.733 1802H91C71.1178 1802 55 1785.88 55 1766V1454M1577.87 56H1296.08C1276.2 56 1260.08 72.1177 1260.08 92V770C1260.08 789.882 1243.96 806 1224.08 806H657.54H84.1552M55 856V1353.5" stroke="black" stroke-width="4"/>
+          <path d="M1965 118H1408M117 1864V1215M1323 191V287M783 868H153C133.118 868 117 884.118 117 904V1117" stroke="#A41FE2" stroke-width="4"/>
+          <path d="M2 1690V1273" stroke="#A41FE2" stroke-width="4"/>
+        </svg>
+      </div>
+      <div class="benefits__title block__title">Advantages</div>
+      <div class="benefits__grid">
+        <ul class="benefits__grid--list">
+          <li class="benefits__grid--item card card--gear">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#gear"></use>
+            </svg>
+            <div class="card__title block__subtitle">Release channels instead of software versions</div>
+            <p>The user doesn’t have to download specific package versions. Instead, (s)he simply chooses a release channel with the desired compatibility and stability levels: alpha, beta, early access, stable, or rock solid. Via these channels, developers distribute the appropriate release versions. The update frequency is not limited in any way.</p>
+          </li>
+          <!-- item -->
+
+          <li class="benefits__grid--item card card--people">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#people"></use>
+            </svg>
+            <div class="card__title block__subtitle">Publishing releases based in the GPG quorum</div>
+            <p>trdl implements the so-called “M of N” mechanism: each Git commit is signed by multiple developers. trdl supports regular Git signatures, or the <a href="https://github.com/hashbang/git-signatures">notes mechanism</a>, to attach any number of GPG signatures to a given commit. In addition, the quorum is used for both tagging (version distribution) and signing trdl.json (publishing versions to the release channel).</p>
+          </li>
+          <!-- item -->
+
+          <li class="benefits__grid--item card card--shield">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#shield"></use>
+            </svg>
+            <div class="card__title block__subtitle">Truly secure delivery</div>
+            <p class="">The trdl security system is based on the TUF repository for storing releases and the Vault plugin (vault-plugin-secrets-trdl) which verifies their authenticity and integrity using a private key.</p>
+            <ul class="card__list">
+              <li class="card__item">The Update Framework (TUF) has many advantages, such as calculating checksums on packages and signing them, rotating keys, and protecting against rollback/indefinite freeze attacks.</li>
+              <li class="card__item">Vault can be configured so that no one has access to the private key (even the administrator).</li>
+              <li class="card__item">Vault independently manages and configures the TUF repository: adds new packages, sets the update rate, and rotates keys.</li>
+              <!-- <li class="card__item card__item--no-bul"><a href="#" class="card__item--link">Learn more about the trdl security system here.</a></li> -->
+            </ul>
+          </li>
+          <!-- item -->
+
+          <li class="benefits__grid--item card card--comp">
+            <svg class="card__pic">
+              <use xlink:href="images/icons/sprite.svg#comp"></use>
+            </svg>
+            <div class="card__title block__subtitle">Support for various platforms</div>
+            <ul class="card__list">
+              <li class="card__item">MacOS, Windows, Ubuntu, Red Hat, and even Gentoo.</li>
+              <li class="card__item">x86, x86-84, and ARM.</li>
+              <li class="card__item">Delivery to the server or to the developer's laptop.</li>
+              <li class="card__item">All popular command shells are supported.</li>
+            </ul>
+          </li>
+          <!-- item -->
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
