@@ -28,6 +28,14 @@ html {
   margin: 0 auto;
   padding: 0 50px;
 
+  &--wide {
+    box-sizing: content-box;
+    background: $color-dark;
+    border-radius: rem(20px);
+    padding: rem(20px) rem(80px);
+    min-width: 1200px;
+  }
+
   // @include old-display {
   //   max-width: 940px;
   // }

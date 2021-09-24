@@ -5,13 +5,6 @@
     color: $text-color-title-invert;
   }
 
-  &__container {
-    box-sizing: content-box;
-    background: $color-dark;
-    border-radius: rem(20px);
-    padding: rem(20px) rem(80px);
-  }
-
   &__wrap {
     margin: rem(50px);
   }
