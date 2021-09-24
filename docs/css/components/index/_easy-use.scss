@@ -20,7 +20,7 @@
 
   &__cols {
     & .col__item {
-      @include montserrat(semi-bold);
+      // @include montserrat(semi-bold);
       font-size: rem(14px);
       line-height: rem(20px);
       display: block;
@@ -41,7 +41,7 @@
 
   &__lines {
     position: absolute;
-    top: 595px;
+    top: 555px;
     right: -95px;
     z-index: -1;
   }

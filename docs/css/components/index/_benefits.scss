@@ -80,7 +80,7 @@
       }
 
       &__item {
-        @include montserrat(semi-bold);
+        // @include montserrat(semi-bold);
         font-size: rem(14px);
         line-height: rem(20px);
         color: $text-color;
