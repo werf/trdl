@@ -1,8 +1,12 @@
 .easy-use {
   &__section {
-    padding-bottom: rem(130px);
+    margin-bottom: rem(130px);
     color: $text-color-title-invert;
     position: relative;
+
+    @media screen and (max-width: 1375px) {
+      background: $color-dark;
+    }
   }
 
   &__wrap {
@@ -37,7 +41,7 @@
 
   &__lines {
     position: absolute;
-    top: 625px;
+    top: 595px;
     right: -95px;
     z-index: -1;
   }

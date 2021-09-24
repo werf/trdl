@@ -1,6 +1,10 @@
 .solve-that {
   &__section {
-    padding-bottom: rem(70px);
+    margin-bottom: rem(70px);
+
+    @media screen and (max-width: 1375px) {
+      background: $color-accent;
+    }
   }
   
   &__container {
