@@ -6,7 +6,11 @@
         <svg class="footer__heart">
           <use xlink:href="images/icons/sprite.svg#heart"></use>
         </svg>
-        <span>by <a href="flant.ru">Flant</a></span>
+        {%- if page.lang == "ru" %}
+          <span>by <a href="http://flant.ru" target="_blank">Flant</a></span>
+        {%- else %}
+          <span>by <a href="http://flant.com" target="_blank">Flant</a></span>
+        {%- endif %}
       </div>
       <!-- <div class="footer__github">
         <svg class="footer__github--icon">

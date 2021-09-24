@@ -134,11 +134,17 @@ table {
   background: $color-accent;
   border-radius: rem(10px);
   border: 1.5px solid transparent;
+  transition: all 0.2s ease-in-out;
 
   &--white {
     border: 1.5px solid $color-accent;
     background: transparent;
     color: $text-color-accent;
+  }
+
+  &:hover {
+    background: $color-dark;
+    color: $text-color-title-invert;
   }
 }
 
