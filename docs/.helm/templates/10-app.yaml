@@ -53,8 +53,6 @@ spec:
   - name: http
     port: 80
     protocol: TCP
-{{- if ne .Values.global.env "production" }}
-{{- end }}
 ---
 apiVersion: autoscaling.k8s.io/v1beta2
 kind: VerticalPodAutoscaler

@@ -8,8 +8,7 @@ metadata:
     nginx.ingress.kubernetes.io/configuration-snippet: |
 {{- if eq .Values.global.env "production" }}
     nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
-{{- end }}
-{{- if ne .Values.global.env "production-stumb" }}
+{{- else }}
     nginx.ingress.kubernetes.io/auth-signin: https://$host/dex-authenticator/sign_in
     nginx.ingress.kubernetes.io/auth-url: https://{{ .Chart.Name }}-dex-authenticator.{{ .Chart.Name }}-{{ .Values.global.env }}.svc.cluster.local/dex-authenticator/auth
     nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email
@@ -40,8 +39,7 @@ metadata:
     nginx.ingress.kubernetes.io/configuration-snippet: |
 {{- if eq .Values.global.env "production" }}
     nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
-{{- end }}
-{{- if ne .Values.global.env "production-stumb" }}
+{{- else }}
     nginx.ingress.kubernetes.io/auth-signin: https://$host/dex-authenticator/sign_in
     nginx.ingress.kubernetes.io/auth-url: https://{{ .Chart.Name }}-ru-dex-authenticator.{{ .Chart.Name }}-{{ .Values.global.env }}.svc.cluster.local/dex-authenticator/auth
     nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email
@@ -87,7 +85,7 @@ spec:
       - ru.{{ $host }}
       - www.{{ $host }}
 ---
-{{- if ne .Values.global.env "production-stumb" }}
+{{- if ne .Values.global.env "production" }}
 apiVersion: deckhouse.io/v1alpha1
 kind: DexAuthenticator
 metadata:
