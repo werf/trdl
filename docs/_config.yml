@@ -6,7 +6,7 @@ site_lang: en
 site_urls:
   ru: ru.trdl.dev
   en: trdl.dev
-site_description: Tool to secure deliver your software to users.
+site_description: Deliver your software continuously & securely.
 github_repo_path: /werf/trdl
 
 exclude:
