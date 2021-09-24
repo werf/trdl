@@ -3,6 +3,10 @@
     position: relative;
     padding-bottom: rem(140px);
     color: $text-color-title-invert;
+
+    @media screen and (max-width: 1375px) {
+      background: $color-dark;
+    }
   }
 
   &__wrap {
