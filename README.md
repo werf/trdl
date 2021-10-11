@@ -33,7 +33,7 @@ trdl combines two key components: the server and the client.
 
 # Documentation
 
-Project's website and developers quickstart will follow soon.
+Project's website is [now available](https://trdl.dev/) with more information (including developers quickstart) to follow soon.
 
 # Community & support
 
