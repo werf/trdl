@@ -22,7 +22,14 @@ func main() {
 		IncludeLocation: true,
 	}
 
-	logFile, err := os.OpenFile("trdl.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
+	var logFilePath string
+	if v := os.Getenv("VAULT_PLUGIN_SECRETS_TRDL_LOG_FILE"); v != "" {
+		logFilePath = v
+	} else {
+		logFilePath = "trdl.log"
+	}
+
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
 	if err != nil {
 		panic(fmt.Sprintf("failed to open trdl.log file: %s", err))
 	}
