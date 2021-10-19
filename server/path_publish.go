@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver"
-	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
@@ -24,8 +24,6 @@ import (
 
 const (
 	storageKeyLastPublishedGitCommit = "last_published_git_commit"
-
-	defaultGitTrdlChannelsBranch = "trdl"
 )
 
 func NewErrPublishingNonExistingReleases(releases []string) error {
@@ -88,11 +86,6 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		gitPassword = gitCredentialFromStorage.Password
 	}
 
-	gitBranch := cfg.GitTrdlChannelsBranch
-	if gitBranch == "" {
-		gitBranch = defaultGitTrdlChannelsBranch
-	}
-
 	lastPublishedGitCommit := cfg.InitialLastPublishedGitCommit
 	{
 		entry, err := req.Storage.Get(ctx, storageKeyLastPublishedGitCommit)
@@ -119,6 +112,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Cloning git repo\n")
 		hclog.L().Debug("Cloning git repo")
 
+		gitBranch := cfg.GitTrdlChannelsBranch
 		gitRepo, err := cloneGitRepositoryBranch(cfg.GitRepoUrl, gitBranch, gitUsername, gitPassword)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %s", err)

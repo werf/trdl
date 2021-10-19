@@ -39,7 +39,7 @@ func configurePath(b *Backend) *framework.Path {
 			},
 			fieldNameGitTrdlChannelsBranch: {
 				Type:        framework.TypeString,
-				Description: "Git branch that contains trdl_channels.yaml configuration (trdl by default)",
+				Description: "Special git branch to store trdl_channels.yaml configuration",
 				Required:    false,
 			},
 			fieldNameInitialLastPublishedGitCommit: {
