@@ -23,13 +23,22 @@ trdl is already used as an update manager for [werf CI/CD tool](https://github.c
 trdl combines two key components: the server and the client.
 
 **trdl-server**:
-* builds and publishes software releases;
-* monitors for consistency between release channels and releases *(here is an [example from werf](https://github.com/werf/werf/blob/multiwerf/trdl_channels.yaml))*;
-* ensures repo security via saving data signed by keys to the TUF repository (no one has access to those keys) and continuously rotating keys and metadata.
+* builds and releases software versions;
+* publishes the release channels *(here is an [example configuration from werf](https://github.com/werf/werf/blob/multiwerf/trdl_channels.yaml))*;
+* ensures the release and the publication security via verifying the minimal number of valid GPG signatures associated with an action;
+* ensures the object storage security via saving data signed by keys (no one has access to those keys) and continuously rotating TUF keys and metadata.
 
 **trdl-client**:
-* processes application files within the release channels;
-* processes files in the TUF repository in a reliable fashion.
+* manages software repositories;
+* updates software version within the selected release channel;
+* provides easy operation with software version artifacts in the shell session;
+* ensures safe communication via working with the TUF repository in a reliable fashion.
+
+<img alt="Release" src="https://raw.githubusercontent.com/werf/trdl/master/docs/images/slider/release/6.svg" width="80%">
+
+___
+
+<img alt="Publication" src="https://raw.githubusercontent.com/werf/trdl/master/docs/images/slider/publish/7.svg" width="80%">
 
 # Documentation
 
