@@ -14,7 +14,7 @@
 [coc-badge]:                https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg
 [coc-link]:                 CODE_OF_CONDUCT.md
 
-trdl *(stands for "true delivery")* is an Open Source tool for implementing automatic updates. It is a universal package manager delivering new versions of your application from a trusted [TUF repository](https://github.com/theupdateframework/specification). You application might be distributed in any form of programming code, e.g., a binary file, a shell script, and even an Ansible playbook.
+trdl *(stands for "true delivery")* is an Open Source tool for implementing automatic updates. It is a universal package manager delivering new versions of your application from a trusted [TUF repository](https://github.com/theupdateframework/specification). Your application might be distributed in any form of programming code, e.g., a binary file, a shell script, and even an Ansible playbook.
 
 trdl is already used as an update manager for [werf CI/CD tool](https://github.com/werf/werf).
 
