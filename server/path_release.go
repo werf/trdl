@@ -131,7 +131,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Verifying tag PGP signatures of the git tag %q\n", gitTag)
-		b.Logger().Debug("Verifying tag PGP signatures of the git tag %q", gitTag)
+		b.Logger().Debug(fmt.Sprintf("Verifying tag PGP signatures of the git tag %q", gitTag))
 
 		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
 		if err != nil {

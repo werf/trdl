@@ -51,11 +51,11 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 
 func NewBackend(logger hclog.Logger) (*Backend, error) {
 	tasksManager := tasks_manager.NewManager(logger)
-	publisherManager := publisher.NewPublisher(logger)
+	publisher := publisher.NewPublisher(logger)
 
 	b := &Backend{
 		TasksManager: tasksManager,
-		Publisher:    publisherManager,
+		Publisher:    publisher,
 	}
 	b.BackendPeriodic = b
 
@@ -64,8 +64,8 @@ func NewBackend(logger hclog.Logger) (*Backend, error) {
 		Help:        backendHelp,
 	}
 
-	b.InitPaths(tasksManager)
-	b.InitPeriodicFunc(tasksManager, publisherManager)
+	b.InitPaths(tasksManager, publisher)
+	b.InitPeriodicFunc(tasksManager, publisher)
 	return b, nil
 }
 
