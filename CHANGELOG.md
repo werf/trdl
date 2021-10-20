@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.8](https://www.github.com/werf/trdl/compare/v0.1.7...v0.1.8) (2021-10-20)
+
+
+### Bug Fixes
+
+* **server:** allow custom log file path with VAULT_PLUGIN_SECRETS_TRDL_LOG_FILE=<path> variable ([587697a](https://www.github.com/werf/trdl/commit/587697a174071f289e17713711f014abfbeb1ef9))
+
 ### [0.1.7](https://www.github.com/werf/trdl/compare/v0.1.6...v0.1.7) (2021-09-20)
 
 
