@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
@@ -486,7 +487,7 @@ func assertAndAddCompletedTaskToStorage(t *testing.T, ctx context.Context, stora
 
 func pathTestSetup(t *testing.T) (context.Context, logical.Backend, *Manager, logical.Storage) {
 	ctx := context.Background()
-	m := NewManager() // TODO: use worker interface
+	m := NewManager(hclog.L()) // TODO: use worker interface
 	storage := &logical.InmemStorage{}
 
 	config := logical.TestBackendConfig()

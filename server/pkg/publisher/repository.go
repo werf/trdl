@@ -22,36 +22,39 @@ type TufRepoOptions struct {
 	PrivKeys TufRepoPrivKeys
 }
 
-func NewRepositoryWithOptions(s3Options S3Options, tufRepoOptions TufRepoOptions) (*S3Repository, error) {
-	s3fs := NewS3Filesystem(s3Options.AwsConfig, s3Options.BucketName)
-	tufStore := NewNonAtomicTufStore(tufRepoOptions.PrivKeys, s3fs)
+func NewRepositoryWithOptions(s3Options S3Options, tufRepoOptions TufRepoOptions, logger hclog.Logger) (*S3Repository, error) {
+	s3fs := NewS3Filesystem(s3Options.AwsConfig, s3Options.BucketName, logger)
+	tufStore := NewNonAtomicTufStore(tufRepoOptions.PrivKeys, s3fs, logger)
 	tufRepo, err := tuf.NewRepo(tufStore)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing tuf repo: %s", err)
 	}
 
-	return NewRepository(s3fs, tufStore, tufRepo), nil
+	return NewRepository(s3fs, tufStore, tufRepo, logger), nil
 }
 
 type S3Repository struct {
 	S3Filesystem *S3Filesystem
 	TufStore     *NonAtomicTufStore
 	TufRepo      *tuf.Repo
+
+	logger hclog.Logger
 }
 
-func NewRepository(s3Filesystem *S3Filesystem, tufStore *NonAtomicTufStore, tufRepo *tuf.Repo) *S3Repository {
+func NewRepository(s3Filesystem *S3Filesystem, tufStore *NonAtomicTufStore, tufRepo *tuf.Repo, logger hclog.Logger) *S3Repository {
 	return &S3Repository{
 		S3Filesystem: s3Filesystem,
 		TufStore:     tufStore,
 		TufRepo:      tufRepo,
+		logger:       logger,
 	}
 }
 
 func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
-	hclog.L().Debug("-- S3Repository.SetPrivKeys")
+	repository.logger.Debug("-- S3Repository.SetPrivKeys")
 
 	repository.TufStore.PrivKeys = privKeys
-	hclog.L().Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys BEFORE AddPrivateKeyWithExpires: %#v\n", repository.TufStore.PrivKeys))
+	repository.logger.Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys BEFORE AddPrivateKeyWithExpires: %#v\n", repository.TufStore.PrivKeys))
 
 	for _, desc := range []struct {
 		role string
@@ -67,7 +70,7 @@ func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
 		}
 	}
 
-	hclog.L().Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys AFTER AddPrivateKeyWithExpires: %#v\n", repository.TufStore.PrivKeys))
+	repository.logger.Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys AFTER AddPrivateKeyWithExpires: %#v\n", repository.TufStore.PrivKeys))
 
 	return nil
 }
@@ -106,7 +109,7 @@ func (repository *S3Repository) Init() error {
 	err := repository.TufRepo.Init(false)
 
 	if err == tuf.ErrInitNotAllowed {
-		hclog.L().Info("Tuf repository already initialized: skip initialization")
+		repository.logger.Info("Tuf repository already initialized: skip initialization")
 	} else if err != nil {
 		return fmt.Errorf("unable to init tuf repository: %s", err)
 	}

@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Masterminds/goutils v1.1.1
+	github.com/hashicorp/go-hclog v0.16.1 // indirect
 	github.com/hashicorp/vault/sdk v0.2.1
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.16.0

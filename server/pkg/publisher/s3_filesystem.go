@@ -19,16 +19,18 @@ type S3Filesystem struct {
 	AwsConfig  *aws.Config
 	BucketName string
 
+	logger hclog.Logger
+
 	// TODO: cache opened session
 }
 
-func NewS3Filesystem(awsConfig *aws.Config, bucketName string) *S3Filesystem {
+func NewS3Filesystem(awsConfig *aws.Config, bucketName string, logger hclog.Logger) *S3Filesystem {
 	if !strings.Contains(*awsConfig.Endpoint, "s3.amazonaws.com") {
 		awsConfig.S3ForcePathStyle = new(bool)
 		*awsConfig.S3ForcePathStyle = true
 	}
 
-	return &S3Filesystem{AwsConfig: awsConfig, BucketName: bucketName}
+	return &S3Filesystem{AwsConfig: awsConfig, BucketName: bucketName, logger: logger}
 }
 
 func (fs *S3Filesystem) IsFileExist(ctx context.Context, path string) (bool, error) {
@@ -43,7 +45,7 @@ func (fs *S3Filesystem) IsFileExist(ctx context.Context, path string) (bool, err
 		Bucket: &fs.BucketName,
 		Key:    &path,
 	})
-	hclog.L().Debug(fmt.Sprintf("-- S3Filesystem.IsFileExist %q err=%v", path, err))
+	fs.logger.Debug(fmt.Sprintf("-- S3Filesystem.IsFileExist %q err=%v", path, err))
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			if awsErr.Code() == "NotFound" {
@@ -73,7 +75,7 @@ func (fs *S3Filesystem) ReadFile(ctx context.Context, path string, writerAt io.W
 		return fmt.Errorf("unable to download item %q: %s", path, err)
 	}
 
-	hclog.L().Debug(fmt.Sprintf("Downloaded %q %d bytes", path, numBytes))
+	fs.logger.Debug(fmt.Sprintf("Downloaded %q %d bytes", path, numBytes))
 
 	return nil
 }
@@ -89,7 +91,7 @@ func (fw sequentialWriterAt) WriteAt(p []byte, offset int64) (int, error) {
 	n, err := fw.Writer.Write(p)
 
 	// DEBUG
-	// hclog.L().Debug(fmt.Sprintf("-- sequentialWriterAt.WriteAt(%p, %d) -> %d, %v", p, offset, n, err))
+	// fs.logger.Debug(fmt.Sprintf("-- sequentialWriterAt.WriteAt(%p, %d) -> %d, %v", p, offset, n, err))
 
 	return n, err
 }
@@ -114,7 +116,7 @@ func (fs *S3Filesystem) ReadFileStream(ctx context.Context, path string, writer 
 		return fmt.Errorf("unable to download item %q: %s", path, err)
 	}
 
-	hclog.L().Debug(fmt.Sprintf("-- S3Filesystem.ReadFileStream downloaded %q %d bytes", path, numBytes))
+	fs.logger.Debug(fmt.Sprintf("-- S3Filesystem.ReadFileStream downloaded %q %d bytes", path, numBytes))
 
 	return nil
 }
@@ -138,7 +140,7 @@ func (fs *S3Filesystem) ReadFileBytes(ctx context.Context, path string) ([]byte,
 		return nil, fmt.Errorf("unable to download item %q: %s", path, err)
 	}
 
-	hclog.L().Debug(fmt.Sprintf("-- S3Filesystem.ReadFileBytes downloaded %q %d bytes", path, numBytes))
+	fs.logger.Debug(fmt.Sprintf("-- S3Filesystem.ReadFileBytes downloaded %q %d bytes", path, numBytes))
 
 	return buf.Bytes(), nil
 }
@@ -162,7 +164,7 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 		Bucket: &fs.BucketName,
 		Key:    &path,
 		// DEBUG
-		// Body:   &debugReader{data},
+		// Body:   &debugReader{origReader: data, logger: fs.logger},
 		Body:         data,
 		CacheControl: &cacheControl,
 	}
@@ -175,19 +177,20 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 		return fmt.Errorf("error uploading %q: %s", path, err)
 	}
 
-	hclog.L().Debug(fmt.Sprintf("Uploaded %q", result.Location))
+	fs.logger.Debug(fmt.Sprintf("Uploaded %q", result.Location))
 
 	return nil
 }
 
 type debugReader struct {
 	origReader io.Reader
+	logger     hclog.Logger
 }
 
 func (o *debugReader) Read(p []byte) (int, error) {
 	n, err := o.origReader.Read(p)
 
-	hclog.L().Debug(fmt.Sprintf("-- debugReader Read(%p) -> %d, %v", p, n, err))
+	o.logger.Debug(fmt.Sprintf("-- debugReader Read(%p) -> %d, %v", p, n, err))
 
 	return n, err
 }

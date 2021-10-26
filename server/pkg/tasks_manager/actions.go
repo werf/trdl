@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 
 	"github.com/werf/trdl/server/pkg/tasks_manager/worker"
@@ -115,15 +114,15 @@ func (m *Manager) WrapTaskFunc(taskFunc func(context.Context, logical.Storage) e
 		select {
 		case <-ctxWithTimeout.Done():
 			close(resCh)
-			hclog.L().Debug("task failed: context canceled")
+			m.logger.Debug("task failed: context canceled")
 			return ErrContextCanceled
 		case err := <-resCh:
 			if err != nil {
-				hclog.L().Debug(fmt.Sprintf("task failed: %s", err))
+				m.logger.Debug(fmt.Sprintf("task failed: %s", err))
 				return err
 			}
 
-			hclog.L().Debug("task succeeded")
+			m.logger.Debug("task succeeded")
 			return nil
 		}
 	}

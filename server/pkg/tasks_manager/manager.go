@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 
 	"github.com/werf/trdl/server/pkg/tasks_manager/worker"
@@ -15,12 +16,13 @@ type Manager struct {
 	Storage logical.Storage
 	Worker  worker.Interface
 
+	logger   hclog.Logger
 	taskChan chan *worker.Task
 	mu       sync.Mutex
 }
 
-func NewManager() *Manager {
-	m := &Manager{taskChan: make(chan *worker.Task, taskChanSize)}
+func NewManager(logger hclog.Logger) *Manager {
+	m := &Manager{taskChan: make(chan *worker.Task, taskChanSize), logger: logger}
 	m.Worker = worker.NewWorker(context.Background(), m.taskChan, m)
 	go m.Worker.Start()
 

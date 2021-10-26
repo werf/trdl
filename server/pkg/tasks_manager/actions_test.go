@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
 
@@ -222,7 +223,7 @@ func TestManager_WrapTaskFunc(t *testing.T) {
 
 func initManagerWithoutWorker() *Manager {
 	taskChan := make(chan *worker.Task, taskChanSize)
-	m := &Manager{taskChan: taskChan}
+	m := &Manager{taskChan: taskChan, logger: hclog.L()}
 	return m
 }
 

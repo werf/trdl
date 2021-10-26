@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -40,7 +41,7 @@ var _ = Describe("Complete cycle", func() {
 
 	serverInitVariables := func() {
 		var err error
-		backend, err = server.NewBackend()
+		backend, err = server.NewBackend(hclog.L())
 		Ω(err).ShouldNot(HaveOccurred())
 		storage = &logical.InmemStorage{}
 

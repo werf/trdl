@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -21,19 +20,6 @@ func main() {
 	hclogOpts := &hclog.LoggerOptions{
 		IncludeLocation: true,
 	}
-
-	var logFilePath string
-	if v := os.Getenv("VAULT_PLUGIN_SECRETS_TRDL_LOG_FILE"); v != "" {
-		logFilePath = v
-	} else {
-		logFilePath = "trdl.log"
-	}
-
-	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o666)
-	if err != nil {
-		panic(fmt.Sprintf("failed to open trdl.log file: %s", err))
-	}
-	hclogOpts.Output = logFile
 
 	if util.IsEnvVarTrue("VAULT_PLUGIN_SECRETS_TRDL_DEBUG") {
 		hclogOpts.Level = hclog.Trace
@@ -60,11 +46,9 @@ func main() {
 	tlsProviderFunc := api.VaultPluginTLSProvider(tlsConfig)
 
 	if err := plugin.Serve(&plugin.ServeOpts{
-		Logger:             hclog.Default(),
 		BackendFactoryFunc: trdl.Factory,
 		TLSProviderFunc:    tlsProviderFunc,
 	}); err != nil {
-		hclog.L().Error("plugin shutting down", "error", err)
 		os.Exit(1)
 	}
 }
@@ -72,13 +56,13 @@ func main() {
 func servePprof() {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		hclog.L().Warn(fmt.Sprintf("can't serve pprof: %s", err))
+		// hclog.L().Warn(fmt.Sprintf("can't serve pprof: %s", err))
 		return
 	}
 
-	hclog.L().Info(fmt.Sprintf("pprof for PID %d will be available on http://127.0.0.1:%d/debug/pprof", os.Getpid(), listener.Addr().(*net.TCPAddr).Port))
+	// hclog.L().Info(fmt.Sprintf("pprof for PID %d will be available on http://127.0.0.1:%d/debug/pprof", os.Getpid(), listener.Addr().(*net.TCPAddr).Port))
 	if err := http.Serve(listener, nil); err != nil {
-		hclog.L().Warn(fmt.Sprintf("can't serve pprof: %s", err))
+		// hclog.L().Warn(fmt.Sprintf("can't serve pprof: %s", err))
 		return
 	}
 }
