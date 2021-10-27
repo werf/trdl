@@ -1,6 +1,7 @@
 ---
 layout: sidebar
 ---
+
 <div class="docs">
     {% unless page.without_auto_heading %}
     <h1 class="docs__title">{{ page.title }}</h1>
@@ -68,5 +69,7 @@ layout: sidebar
     </div>
 
     {{site.data.alerts.hr_shaded}}
+
+  {% include footer.html %}
 
 </div>

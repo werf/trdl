@@ -1,3 +1,9 @@
+
+cli: &cli
+
+  - title: Overview of command groups
+    url: /reference/cli/overview.html
+
 # This is your sidebar TOC. The sidebar code loops through sections here and provides the appropriate formatting.
 
 entries:
