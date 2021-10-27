@@ -1,7 +1,11 @@
 topnav:
   en:
+     - title: Getting Started
+       url: /getting_started.html
      - title: GitHub
        url: https://github.com/werf/trdl
   ru:
+     - title: Getting Started
+       url: /getting_started.html
      - title: GitHub
        url: https://github.com/werf/trdl
