@@ -3,8 +3,6 @@ title: Быстрый старт
 permalink: getting_started.html
 ---
 
-*Здесь будет table of contents*
-
 ## Для администратора
 
 ### Disclaimer
@@ -86,11 +84,13 @@ vault write trdl-test-project/configure s3_secret_access_key=FOO s3_access_key_i
 
 trdl.yaml:
 
+{% raw %}
 ```shell
 docker_image: alpine:3.13.6@sha256:e15947432b813e8ffa90165da919953e2ce850bef511a0ad1287d7cb86de84b5
 commands:
 - ./build.sh {{ .Tag }} && cp -a release-build/{{ .Tag }}/* /result
 ```
+{% endraw %}
 
 build.sh:
 

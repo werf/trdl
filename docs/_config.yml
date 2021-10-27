@@ -44,7 +44,7 @@ defaults:
     values:
       layout: "page"
       search: true
-      sidebar: documentation
+      sidebar: false
       topnav: topnav
       sitemap_include: true
       lang: en
