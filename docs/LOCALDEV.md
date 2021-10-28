@@ -9,9 +9,7 @@ Stop other service or make appropriate changes to the commands below.
 2. Open separate console and start container
 ```shell
 cd docs
-source $(multiwerf use 1.2 alpha --as-file)
-werf run --follow --docker-options="-d --name trdl"
+source $(dl use werf 1.2 ea)
+werf run --follow --docker-options="-d --name trdl -p 80:80" --dev web
 ```
-
-> Or run the container on the other port, for instanse `werf run --follow --docker-options="-p 82:80 -d --name trdl"
 
