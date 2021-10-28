@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
@@ -32,7 +33,7 @@ type Backend struct {
 var _ logical.Factory = Factory
 
 func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend, error) {
-	b, err := NewBackend()
+	b, err := NewBackend(conf.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +49,9 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 	return b, nil
 }
 
-func NewBackend() (*Backend, error) {
-	tasksManager := tasks_manager.NewManager()
-	publisherManager := publisher.NewPublisher()
+func NewBackend(logger hclog.Logger) (*Backend, error) {
+	tasksManager := tasks_manager.NewManager(logger)
+	publisherManager := publisher.NewPublisher(logger)
 
 	b := &Backend{
 		TasksManager: tasksManager,

@@ -47,11 +47,12 @@ func NewErrIncorrectTargetPath(path string) error {
 }
 
 type Publisher struct {
-	mu sync.Mutex
+	mu     sync.Mutex
+	logger hclog.Logger
 }
 
-func NewPublisher() *Publisher {
-	return &Publisher{}
+func NewPublisher(logger hclog.Logger) *Publisher {
+	return &Publisher{logger: logger}
 }
 
 func (publisher *Publisher) RotateRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface) error {
@@ -70,7 +71,7 @@ func (publisher *Publisher) RotateRepositoryKeys(ctx context.Context, storage lo
 			return fmt.Errorf("error putting private keys json entry by key %q into the storage: %s", storageKeyTufRepositoryKeys, err)
 		}
 
-		hclog.L().Info("Successfully rotated repository private keys")
+		publisher.logger.Info("Successfully rotated repository private keys")
 	}
 
 	return nil
@@ -95,7 +96,7 @@ func (publisher *Publisher) initRepositoryKeys(ctx context.Context, storage logi
 			return ErrUninitializedRepositoryKeys
 		}
 
-		hclog.L().Debug("Will generate new repository private keys")
+		publisher.logger.Debug("Will generate new repository private keys")
 
 		if err := repository.GenPrivKeys(); err != nil {
 			return fmt.Errorf("error generating repository private keys: %s", err)
@@ -112,7 +113,7 @@ func (publisher *Publisher) initRepositoryKeys(ctx context.Context, storage logi
 			return fmt.Errorf("error putting private keys json entry by key %q into the storage: %s", storageKeyTufRepositoryKeys, err)
 		}
 
-		hclog.L().Info("Generated new repository private keys")
+		publisher.logger.Info("Generated new repository private keys")
 
 		return nil
 	}
@@ -126,7 +127,7 @@ func (publisher *Publisher) initRepositoryKeys(ctx context.Context, storage logi
 		return fmt.Errorf("unable to set private keys into repository: %s", err)
 	}
 
-	hclog.L().Info("Loaded repository private keys from the storage")
+	publisher.logger.Info("Loaded repository private keys from the storage")
 
 	return nil
 }
@@ -144,6 +145,7 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 	repository, err := NewRepositoryWithOptions(
 		S3Options{AwsConfig: awsConfig, BucketName: options.S3BucketName},
 		TufRepoOptions{},
+		publisher.logger,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing publisher repository handle: %s", err)

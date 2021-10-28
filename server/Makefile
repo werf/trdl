@@ -28,9 +28,6 @@ vault/plugins/vault-plugin-secrets-trdl: $(GOSRC)
 build: vault/plugins/vault-plugin-secrets-trdl
 
 .run: vault/plugins/vault-plugin-secrets-trdl
-	rm -f trdl.log
-	touch trdl.log
-
 	# Run minio, create bucket
 	docker rm -f trdl_dev_minio || true
 	docker run --rm --volume $$(pwd):/wrk alpine rm -rf /wrk/.minio_data
@@ -77,14 +74,13 @@ build: vault/plugins/vault-plugin-secrets-trdl
 	touch .run
 
 tail:
-	tail -f trdl.log
+	docker logs -f trdl_dev_vault
 
 clean:
 	rm -f ./vault/plugins/vault-plugin-secrets-trdl
 	docker rm -f trdl_dev_minio || true
 	docker rm -f trdl_dev_vault || true
 	docker run --rm --volume $$(pwd):/wrk alpine rm -rf /wrk/.minio_data
-	rm -f trdl.log
 
 install-to-dev: build
 	: "$${TRDL_DEV_SSH_HOST:?not set}"

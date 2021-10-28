@@ -29,13 +29,15 @@ type NonAtomicTufStore struct {
 
 	stagedMeta  map[string]json.RawMessage
 	stagedFiles []string
+	logger      hclog.Logger
 }
 
-func NewNonAtomicTufStore(privKeys TufRepoPrivKeys, filesystem Filesystem) *NonAtomicTufStore {
+func NewNonAtomicTufStore(privKeys TufRepoPrivKeys, filesystem Filesystem, logger hclog.Logger) *NonAtomicTufStore {
 	return &NonAtomicTufStore{
 		PrivKeys:   privKeys,
 		Filesystem: filesystem,
 		stagedMeta: make(map[string]json.RawMessage),
+		logger:     logger,
 	}
 }
 
@@ -57,7 +59,7 @@ func (store *NonAtomicTufStore) GetMeta() (map[string]json.RawMessage, error) {
 			meta[name] = stagedData
 			continue
 		}
-		hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.GetMeta %q not found in staged meta!", name))
+		store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.GetMeta %q not found in staged meta!", name))
 
 		exists, err := store.Filesystem.IsFileExist(ctx, name)
 		if err != nil {
@@ -71,23 +73,23 @@ func (store *NonAtomicTufStore) GetMeta() (map[string]json.RawMessage, error) {
 			}
 			meta[name] = data
 		} else {
-			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.GetMeta %q not found in the store filesystem!", name))
+			store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.GetMeta %q not found in the store filesystem!", name))
 		}
 	}
 
-	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.GetMeta -> meta[targets]: %s", meta["targets.json"]))
+	store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.GetMeta -> meta[targets]: %s", meta["targets.json"]))
 
 	return meta, nil
 }
 
 func (store *NonAtomicTufStore) SetMeta(name string, meta json.RawMessage) error {
-	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.SetMeta %q", name))
+	store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.SetMeta %q", name))
 	store.stagedMeta[name] = meta
 	return nil
 }
 
 func (store *NonAtomicTufStore) WalkStagedTargets(targetPathList []string, targetsFn tuf.TargetsWalkFunc) error {
-	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets %v", targetPathList))
+	store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets %v", targetPathList))
 
 	ctx := context.Background()
 
@@ -96,7 +98,7 @@ func (store *NonAtomicTufStore) WalkStagedTargets(targetPathList []string, targe
 		reader, writer := nio.Pipe(buf)
 
 		go func() {
-			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets before ReadFileStream %q", path))
+			store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets before ReadFileStream %q", path))
 
 			if err := store.Filesystem.ReadFileStream(ctx, path, writer); err != nil {
 				if err := writer.CloseWithError(fmt.Errorf("error reading file %q stream: %s", path, err)); err != nil {
@@ -104,7 +106,7 @@ func (store *NonAtomicTufStore) WalkStagedTargets(targetPathList []string, targe
 				}
 			}
 
-			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets after ReadFileStream %q", path))
+			store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets after ReadFileStream %q", path))
 			if err := writer.Close(); err != nil {
 				panic(fmt.Sprintf("ERROR: failed to close pipe writer while reading file %q stream: %s\n", path, err))
 			}
@@ -142,7 +144,7 @@ FilterStagedPaths:
 }
 
 func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, targetPath string, data io.Reader) error {
-	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.StageTargetFile %q", targetPath))
+	store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.StageTargetFile %q", targetPath))
 
 	// NOTE: consistenSnapshot cannot be supported when adding staged files before commit stage
 
@@ -156,7 +158,7 @@ func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, targetPath 
 }
 
 func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[string]int, _ map[string]data.Hashes) error {
-	hclog.L().Debug("-- NonAtomicTufStore.Commit")
+	store.logger.Debug("-- NonAtomicTufStore.Commit")
 	if consistentSnapshot {
 		panic("not supported")
 	}
@@ -167,7 +169,7 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 		// TODO: perms 0644
 
 		for _, metadataPath := range computeMetadataPaths(consistentSnapshot, name, versions) {
-			hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.Commit storing metadata path %q into the filesystem", metadataPath))
+			store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.Commit storing metadata path %q into the filesystem", metadataPath))
 
 			if err := store.Filesystem.WriteFileBytes(ctx, metadataPath, data); err != nil {
 				return fmt.Errorf("error writing metadata path %q into the filesystem: %s", metadataPath, err)
@@ -182,7 +184,7 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 }
 
 func (store *NonAtomicTufStore) GetSigningKeys(role string) ([]sign.Signer, error) {
-	hclog.L().Debug(fmt.Sprintf("-- NonAtomicTufStore.GetSigningKeys(%q) store.PrivKeys=%#v", role, store.PrivKeys))
+	store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.GetSigningKeys(%q) store.PrivKeys=%#v", role, store.PrivKeys))
 
 	toSigners := func(key *sign.PrivateKey) []sign.Signer {
 		if key != nil {

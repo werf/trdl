@@ -107,10 +107,10 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 	taskUUID, err := b.TasksManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		logboek.Context(ctx).Default().LogF("Started task\n")
-		hclog.L().Debug("Started task")
+		b.Logger().Debug("Started task")
 
 		logboek.Context(ctx).Default().LogF("Cloning git repo\n")
-		hclog.L().Debug("Cloning git repo")
+		b.Logger().Debug("Cloning git repo")
 
 		gitBranch := cfg.GitTrdlChannelsBranch
 		gitRepo, err := cloneGitRepositoryBranch(cfg.GitRepoUrl, gitBranch, gitUsername, gitPassword)
@@ -126,14 +126,14 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 		if lastPublishedGitCommit == headCommit {
 			logboek.Context(ctx).Default().LogF("Head commit %q not changed: skipping publish task\n", headCommit)
-			hclog.L().Debug(fmt.Sprintf("Head commit %q not changed: skipping publish task", headCommit))
+			b.Logger().Debug(fmt.Sprintf("Head commit %q not changed: skipping publish task", headCommit))
 
 			return nil
 		}
 
 		if lastPublishedGitCommit != "" {
 			logboek.Context(ctx).Default().LogF("Checking previously published commit %q is ancestor to the current head commit %q\n", lastPublishedGitCommit, headCommit)
-			hclog.L().Debug(fmt.Sprintf("Checking previously published commit %q is ancestor to the current head commit %q", lastPublishedGitCommit, headCommit))
+			b.Logger().Debug(fmt.Sprintf("Checking previously published commit %q is ancestor to the current head commit %q", lastPublishedGitCommit, headCommit))
 
 			isAncestor, err := trdlGit.IsAncestor(gitRepo, lastPublishedGitCommit, headRef.Hash().String())
 			if err != nil {
@@ -146,7 +146,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Verifying tag PGP signatures of the commit %q\n", headCommit)
-		hclog.L().Debug(fmt.Sprintf("Verifying tag PGP signatures of the commit %q", headCommit))
+		b.Logger().Debug(fmt.Sprintf("Verifying tag PGP signatures of the commit %q", headCommit))
 
 		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
 		if err != nil {
@@ -158,10 +158,10 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		}
 
 		logboek.Context(ctx).Default().LogF("Verified commit signatures\n")
-		hclog.L().Debug("Verified commit signatures")
+		b.Logger().Debug("Verified commit signatures")
 
 		logboek.Context(ctx).Default().LogF("Getting trdl_channels.yaml configuration from the commit %q\n", headCommit)
-		hclog.L().Debug(fmt.Sprintf("Getting trdl_channels.yaml configuration from the commit %q\n", headCommit))
+		b.Logger().Debug(fmt.Sprintf("Getting trdl_channels.yaml configuration from the commit %q\n", headCommit))
 
 		cfg, err := GetTrdlChannelsConfig(gitRepo)
 		if err != nil {
@@ -170,34 +170,34 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 		cfgDump, _ := yaml.Marshal(cfg)
 		logboek.Context(ctx).Default().LogF("Got trdl channels config:\n%s\n---\n", cfgDump)
-		hclog.L().Debug(fmt.Sprintf("Got trdl channels config:\n%s\n---", cfgDump))
+		b.Logger().Debug(fmt.Sprintf("Got trdl channels config:\n%s\n---", cfgDump))
 
-		if err := ValidatePublishConfig(ctx, b.Publisher, publisherRepository, cfg); err != nil {
+		if err := ValidatePublishConfig(ctx, b.Publisher, publisherRepository, cfg, b.Logger()); err != nil {
 			return fmt.Errorf("unable to publish bad config: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Publishing trdl channels config into the TUF repository\n")
-		hclog.L().Debug("Publishing trdl channels config into the TUF repository")
+		b.Logger().Debug("Publishing trdl channels config into the TUF repository")
 		if err := b.Publisher.StageChannelsConfig(ctx, publisherRepository, cfg); err != nil {
 			return fmt.Errorf("error publishing trdl channels into the repository: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Committing TUF repository state\n")
-		hclog.L().Debug("Committing TUF repository state")
+		b.Logger().Debug("Committing TUF repository state")
 
 		if err := publisherRepository.CommitStaged(ctx); err != nil {
 			return fmt.Errorf("unable to commit new tuf repository state: %s", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Storing published commit record %q into the storage\n", headCommit)
-		hclog.L().Debug(fmt.Sprintf("Storing published commit record %q into the storage", headCommit))
+		b.Logger().Debug(fmt.Sprintf("Storing published commit record %q into the storage", headCommit))
 
 		if err := storage.Put(ctx, &logical.StorageEntry{Key: storageKeyLastPublishedGitCommit, Value: []byte(headCommit)}); err != nil {
 			return fmt.Errorf("unable to put %q into storage: %s", storageKeyLastPublishedGitCommit, err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Task finished\n")
-		hclog.L().Debug("Task finished")
+		b.Logger().Debug("Task finished")
 
 		return nil
 	})
@@ -220,14 +220,14 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 	}, nil
 }
 
-func ValidatePublishConfig(ctx context.Context, publisher publisher.Interface, publisherRepository publisher.RepositoryInterface, config *config.TrdlChannels) error {
+func ValidatePublishConfig(ctx context.Context, publisher publisher.Interface, publisherRepository publisher.RepositoryInterface, config *config.TrdlChannels, logger hclog.Logger) error {
 	existingReleases, err := publisher.GetExistingReleases(ctx, publisherRepository)
 	if err != nil {
 		return fmt.Errorf("error getting existing targets: %s", err)
 	}
 
 	logboek.Context(ctx).Default().LogF("Got existing releases list: %v\n", existingReleases)
-	hclog.L().Debug(fmt.Sprintf("Got existing releases list: %v\n", existingReleases))
+	logger.Debug(fmt.Sprintf("Got existing releases list: %v\n", existingReleases))
 
 	var nonExistingReleases []string
 
