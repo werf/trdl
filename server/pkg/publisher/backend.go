@@ -20,7 +20,7 @@ func (publisher *Publisher) Paths() []*framework.Path {
 					Callback:    publisher.pathConfigurePGPSigningKeyRead,
 				},
 				logical.DeleteOperation: &framework.PathOperation{
-					Description: "Delete current PGP signing key (new key will be generated automatically ondemand)",
+					Description: "Delete current PGP signing key (new key will be generated automatically on demand)",
 					Callback:    publisher.pathConfigurePGPSigningKeyDelete,
 				},
 			},
