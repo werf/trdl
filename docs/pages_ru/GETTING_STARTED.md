@@ -5,24 +5,22 @@ permalink: getting_started.html
 
 ## Для администратора
 
-> Мы предполагаем, что вы уже знакомы с Vault и умеете его использовать, поэтому опустим подробности его настройки. Будем считать, что Vault настроен по [официальной документации](https://learn.hashicorp.com/tutorials/vault/deployment-guide).
+> Мы предполагаем, что вы уже знакомы с Vault и умеете его использовать, поэтому опустим подробности его настройки. Будем считать, что Vault настроен согласно [официальной документации](https://learn.hashicorp.com/tutorials/vault/deployment-guide).
 
 ### Vault
-
-<div class="details">
-<a href="javascript:void(0)" class="details__summary">Отступление от документации</a>
-<div class="details__content" markdown="1">
-
-Параграф про отступление от официальной документации надо будет убрать, когда запись лога в файл будет отключена по умолчанию.
-
-</div>
-</div>
-
-Xxxx 
 
 Единственное отступление от официальной документации в том, что наш плагин пишет лог в файл. Поэтому файл `systemd unit` нужно добавить:
 * `WorkingDirectory=/etc/vault.d` — плагин пишет лог-файл в каталог, из которого был запущен Vault.
 * `ReadWriteDirectories=/etc/vault.d` — разрешаем писать в этот каталог свой лог-файл.
+
+<div class="details">
+<a href="javascript:void(0)" class="details__summary">Примечание</a>
+<div class="details__content" markdown="1">
+
+Параграф про отступление от официальной документации нужно будет убрать, когда запись лога в файл будет отключена по умолчанию.
+
+</div>
+</div>
 
 Установить Vault и trdl-плагин можно несколькими способами. Рассмотрим самый простой: использование уже готового бинарника Vault (например, скачанного с официального сайта или установленного пакетным менеджером дистрибутива) и trdl-плагина.
 
@@ -87,9 +85,9 @@ vault write trdl-test-project/configure s3_secret_access_key=FOO s3_access_key_i
 
 ## Для разработчика
 
-### Создание файла trdl.yaml со сборочными инструкциями
+### Создание сборочных инструкций
 
-Рассмотрим простой пример: скрипт на shell, который выполняет `echo foobar`.
+Рассмотрим простой пример: shell-скрипт, который выполняет `echo foobar`.
 
 trdl.yaml:
 
@@ -117,7 +115,7 @@ mkdir -p release-build/${VERSION}/any-any/bin && echo "echo foobar" > release-bu
 
 Оба файла добавляем и коммитим в Git.
 
-### Создание тега и выполнение release
+### Релиз новой версии
 
 После того, как `trdl.yaml` и `build.sh` закоммичены в Git, создайте Git-тег, например `v0.0.1`. Тег будет определять версию артефакта.
 
@@ -129,7 +127,7 @@ mkdir -p release-build/${VERSION}/any-any/bin && echo "echo foobar" > release-bu
 * `PROJECT_NAME` — имя проекта. В нашем случае это путь, по которому зарегистрирован плагин (см. параметр -path в разделе «Настройка плагина»);
 * `GIT_TAG` — git тег.
 
-### Создание файла trdl-channels.yaml
+### Организация каналов обновлений
 
 Чтобы сделать релиз доступным для клиента, релиз нужно опубликовать. Для этого переключитесь на основную ветку, добавьте в репозиторий файл с описанием каналов доставки и их соответствия релизам.
 
@@ -145,7 +143,7 @@ groups:
     version: 0.0.1
 ```
 
-### Publish
+### Публикация каналов обновлений
 
 После добавления `trdl_channels.yaml` в репозиторий можно опубликовать релиз при помощи скрипта [publish.sh](https://github.com/werf/trdl/tree/main/server/examples).
 
@@ -179,11 +177,14 @@ export PATH="$HOME/bin:$PATH"
 curl -Ls http://127.0.0.1:9000/trdl-test-project-tuf/1.root.json | sha512sum
 ```
 
-*Далее:
-trdl add test http://127.0.0.1:9000/trdl-test-project-tuf 10 bc74122561f18d2bad3fc7ae96cdd5673f1e0dd98bdb12d3717fe44d02f091b257d4c9b85deb591b0b342531d847a66edbe92824edbc93e9077d88cc45184d68*
+Далее (*этот пункт нужно доработать*):
+
+```shell
+trdl add test http://127.0.0.1:9000/trdl-test-project-tuf 10 bc74122561f18d2bad3fc7ae96cdd5673f1e0dd98bdb12d3717fe44d02f091b257d4c9b85deb591b0b342531d847a66edbe92824edbc93e9077d88cc45184d68
+```
 
 
-*Здесь test — это имя репозитория, 0 — имя группы из trdl_channels.yaml.*
+Здесь test — это имя репозитория, 0 — имя группы из trdl_channels.yaml.
 
 Далее:
 
