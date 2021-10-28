@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://www.github.com/werf/trdl/compare/v0.1.7...v0.2.0) (2021-10-28)
+
+
+### Features
+
+* **server:** auto sign all release targets ([c6221a8](https://www.github.com/werf/trdl/commit/c6221a8aa1cffef3d26049a819972cb680123c32))
+* **server:** store trdl-channels.yaml in the default branch by default ([e45ba9b](https://www.github.com/werf/trdl/commit/e45ba9b5a474b1c8b104a3e160bddcf355b3d508))
+
+
+### Bug Fixes
+
+* **server:** allow custom log file path with VAULT_PLUGIN_SECRETS_TRDL_LOG_FILE=<path> variable ([587697a](https://www.github.com/werf/trdl/commit/587697a174071f289e17713711f014abfbeb1ef9))
+* **server:** use default backend logger, stream logs to the vault server ([f787e23](https://www.github.com/werf/trdl/commit/f787e230b516ccd58ea59ef6fbbb5e96c4292831))
+
 ### [0.1.7](https://www.github.com/werf/trdl/compare/v0.1.6...v0.1.7) (2021-09-20)
 
 
