@@ -99,7 +99,8 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 	}
 
 	opts := cfg.RepositoryOptions()
-	opts.InitializeKeys = true
+	opts.InitializeTUFKeys = true
+	opts.InitializePGPSigningKey = true
 	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting publisher repository: %s", err)

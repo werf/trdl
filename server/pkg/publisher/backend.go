@@ -29,10 +29,7 @@ func (publisher *Publisher) Paths() []*framework.Path {
 }
 
 func (publisher *Publisher) pathConfigurePGPSigningKeyRead(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	key, err := publisher.fetchPGPSigningKey(ctx, req.Storage, false)
-	if err == ErrUninitializedPGPSigningKey {
-		return logical.ErrorResponse(ErrUninitializedPGPSigningKey.Error()), nil
-	}
+	key, err := publisher.fetchPGPSigningKey(ctx, req.Storage, true)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching pgp signing key: %s", err)
 	}
