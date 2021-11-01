@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.2.1](https://www.github.com/werf/trdl/compare/v0.2.0...v0.2.1) (2021-11-01)
+
+
+### Bug Fixes
+
+* **server:** fix error in the periodic task when pgp key not generated ([7a29a8e](https://www.github.com/werf/trdl/commit/7a29a8e2f1fa74e308f11c4922790b07ac052b2d))
+
 ## [0.2.0](https://www.github.com/werf/trdl/compare/v0.1.7...v0.2.0) (2021-10-28)
 
 
