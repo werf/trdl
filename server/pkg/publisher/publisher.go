@@ -40,7 +40,8 @@ type RepositoryOptions struct {
 	S3SecretAccessKey string
 	S3BucketName      string
 
-	InitializeKeys bool
+	InitializeTUFKeys       bool
+	InitializePGPSigningKey bool
 }
 
 type InMemoryFile struct {
@@ -211,13 +212,13 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 		return nil, fmt.Errorf("error initializing repository: %s", err)
 	}
 
-	if err := publisher.setRepositoryKeys(ctx, storage, repository, setRepositoryKeysOptions{InitializeKeys: options.InitializeKeys}); err == ErrUninitializedRepositoryKeys {
+	if err := publisher.setRepositoryKeys(ctx, storage, repository, setRepositoryKeysOptions{InitializeKeys: options.InitializeTUFKeys}); err == ErrUninitializedRepositoryKeys {
 		return nil, ErrUninitializedRepositoryKeys
 	} else if err != nil {
 		return nil, fmt.Errorf("error initializing repository keys: %s", err)
 	}
 
-	pgpSigningKey, err := publisher.fetchPGPSigningKey(ctx, storage, options.InitializeKeys)
+	pgpSigningKey, err := publisher.fetchPGPSigningKey(ctx, storage, options.InitializePGPSigningKey)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching pgp signing key: %s", err)
 	}

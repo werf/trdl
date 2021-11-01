@@ -60,7 +60,8 @@ func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 	}
 
 	opts := config.RepositoryOptions()
-	opts.InitializeKeys = false
+	opts.InitializeTUFKeys = false
+	opts.InitializePGPSigningKey = true
 	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, opts)
 	if err == publisher.ErrUninitializedRepositoryKeys {
 		b.Logger().Info("Repository is not initialized: skipping periodic task")
