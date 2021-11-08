@@ -6,6 +6,8 @@ import (
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
+
+	"github.com/werf/trdl/client/cmd/trdl/command"
 )
 
 var homeDir string
@@ -26,20 +28,37 @@ func rootCmd() *cobra.Command {
 	}
 
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-
-	rootCmd.AddCommand(
-		addCmd(),
-		setDefaultChannelCmd(),
-		updateCmd(),
-		useCmd(),
-		execCmd(),
-		dirPathCmd(),
-		binPathCmd(),
-		listCmd(),
-		versionCmd(),
-	)
-
 	SetupHomeDir(rootCmd)
+
+	groups := &command.Groups{}
+	*groups = append(*groups, command.Groups{
+		{
+			Message: "Configuration commands",
+			Commands: []*cobra.Command{
+				addCmd(),
+				listCmd(),
+				setDefaultChannelCmd(),
+			},
+		},
+		{
+			Message: "Main commands",
+			Commands: []*cobra.Command{
+				useCmd(),
+			},
+		},
+		{
+			Message: "Advanced commands",
+			Commands: []*cobra.Command{
+				updateCmd(),
+				execCmd(),
+				dirPathCmd(),
+				binPathCmd(),
+			},
+		},
+	}...)
+	groups.Add(rootCmd)
+
+	command.ActsAsRootCommand(rootCmd, *groups...)
 
 	return rootCmd
 }
