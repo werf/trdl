@@ -1,6 +1,9 @@
 #!/bin/bash -e
 
 SOURCE=$(dirname "${BASH_SOURCE[0]}")
+
+date > "$SOURCE"/bucket_sandbox/staged/targets/date
+tuf --dir "$SOURCE"/bucket_sandbox add date
 tuf --dir "$SOURCE"/bucket_sandbox snapshot
 tuf --dir "$SOURCE"/bucket_sandbox timestamp
 tuf --dir "$SOURCE"/bucket_sandbox commit
