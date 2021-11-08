@@ -2,6 +2,7 @@
 
 SOURCE=$(dirname "${BASH_SOURCE[0]}")
 
+mkdir -p "$SOURCE"/bucket_sandbox/staged/targets
 date > "$SOURCE"/bucket_sandbox/staged/targets/date
 tuf --dir "$SOURCE"/bucket_sandbox add date
 tuf --dir "$SOURCE"/bucket_sandbox snapshot
