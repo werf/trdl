@@ -23,6 +23,7 @@ func main() {
 func rootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "trdl",
+		Long:          "The universal package manager for delivering your software updates securely from a TUF repository (more details on https://trdl.dev)",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}

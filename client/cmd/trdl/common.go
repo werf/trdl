@@ -21,6 +21,10 @@ func ValidateChannel(channel string) error {
 	return nil
 }
 
+func SetupNoSelfUpdate(cmd *cobra.Command, noSelfUpdate *bool) {
+	cmd.Flags().BoolVar(noSelfUpdate, "no-self-update", GetBoolEnvironmentDefaultFalse("TRDL_NO_SELF_UPDATE"), "Do not perform self-update (default $TRDL_NO_SELF_UPDATE or false)")
+}
+
 func GetBoolEnvironmentDefaultFalse(environmentName string) bool {
 	switch os.Getenv(environmentName) {
 	case "1", "true", "yes":
