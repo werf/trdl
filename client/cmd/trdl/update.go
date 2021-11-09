@@ -20,7 +20,7 @@ func updateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:                   "update REPO GROUP [CHANNEL]",
-		Short:                 "Update channel",
+		Short:                 "Update software",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
@@ -83,7 +83,7 @@ func updateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&noSelfUpdate, "no-self-update", GetBoolEnvironmentDefaultFalse("TRDL_NO_SELF_UPDATE"), "Do not perform self-update")
+	SetupNoSelfUpdate(cmd, &noSelfUpdate)
 	cmd.Flags().BoolVar(&inBackground, "in-background", false, "Perform update in background")
 	cmd.Flags().StringVarP(&backgroundStdoutFile, "background-stdout-file", "", "", "Redirect the stdout of the background update to a file")
 	cmd.Flags().StringVarP(&backgroundStderrFile, "background-stderr-file", "", "", "Redirect the stderr of the background update to a file")

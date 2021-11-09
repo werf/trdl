@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 
 	"github.com/spf13/cobra"
@@ -16,8 +17,15 @@ func useCmd() *cobra.Command {
 	var shell string
 
 	cmd := &cobra.Command{
-		Use:                   "use REPO GROUP [CHANNEL]",
-		Short:                 "Generate script to use channel binaries in the current shell session",
+		Use:   "use REPO GROUP [CHANNEL]",
+		Short: "Generate script to use software binaries within a shell session",
+		Long:  `Generate script to update software binaries in the background and use local ones within a shell session`,
+		Example: `  # Source script in a shell
+  $ . $(trdl use repo_name 1.2 ea)
+
+  # Force script generation for a Unix shell on Windows
+  $ trdl use repo_name 1.2 ea --shell unix
+`,
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
@@ -71,13 +79,26 @@ func useCmd() *cobra.Command {
 		},
 	}
 
-	defaultShell := trdl.ShellUnix
-	if runtime.GOOS == "windows" {
-		defaultShell = trdl.ShellPowerShell
-	}
-
-	cmd.Flags().BoolVar(&noSelfUpdate, "no-self-update", GetBoolEnvironmentDefaultFalse("TRDL_NO_SELF_UPDATE"), "Do not perform self-update")
-	cmd.Flags().StringVar(&shell, "shell", defaultShell, "Select the shell for which to prepare the script. Supports 'pwsh' and 'unix' shells")
+	SetupNoSelfUpdate(cmd, &noSelfUpdate)
+	SetupShell(cmd, &shell)
 
 	return cmd
+}
+
+func SetupShell(cmd *cobra.Command, shell *string) {
+	cmd.Flags().StringVar(shell, "shell", defaultShell(), `Select the shell for which to prepare the script. 
+Supports 'pwsh' and 'unix' shells (default $TRDL_SHELL, 'pwsh' for Windows or 'unix')`)
+}
+
+func defaultShell() string {
+	envValue := os.Getenv("TRDL_SHELL")
+	if envValue != "" {
+		return envValue
+	}
+
+	if runtime.GOOS == "windows" {
+		return trdl.ShellPowerShell
+	}
+
+	return trdl.ShellUnix
 }

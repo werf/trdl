@@ -10,8 +10,10 @@ require (
 	github.com/rodaine/table v1.0.1
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/spf13/cobra v1.1.3
+	github.com/spf13/pflag v1.0.5
 	github.com/theupdateframework/go-tuf v0.0.0-20201230183259-aee6270feb55
 	github.com/werf/lockgate v0.0.0-20210423043214-fd4df31c9ab0
+	github.com/werf/logboek v0.5.4
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
 

@@ -20,7 +20,7 @@ type execCmdData struct {
 func execCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "exec REPO GROUP [CHANNEL] [BINARY_NAME] [--] [ARGS]",
-		Short:                 "Exec channel release binary",
+		Short:                 "Exec a software binary",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.MinimumNArgs(2)(cmd, args); err != nil {

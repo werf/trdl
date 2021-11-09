@@ -10,8 +10,10 @@ import (
 
 func setDefaultChannelCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "set-default-channel REPO CHANNEL",
-		Short:                 "Set default channel for the repository",
+		Use:   "set-default-channel REPO CHANNEL",
+		Short: "Set default channel for a managed repository",
+		Long: `Set default channel for a managed repository.
+The new channel will be used by default instead of stable`,
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
