@@ -1,0 +1,9 @@
+entries:
+  en:
+    f:
+      - title: Command line interface
+        f: *cli
+  ru:
+    f:
+      - title: Интерфейс командной строки
+        f: *cli
