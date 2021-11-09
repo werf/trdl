@@ -1,8 +1,5 @@
 topnav:
   en:
-    - title: Getting started
-      url: /getting_started.html
-
     - title: Reference
       url: /reference/cli/overview.html
 
@@ -11,7 +8,7 @@ topnav:
 
   ru:
     - title: Быстрый старт
-      url: /getting_started.html
+      url: /quickstart.html
 
     - title: Справочник
       url: /reference/cli/overview.html
