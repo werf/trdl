@@ -7,7 +7,7 @@ topnav:
       url: /reference/cli/overview.html
 
     - title: GitHub
-      url: https://github.com/werf/trdl
+      external_url: https://github.com/werf/trdl
 
   ru:
     - title: Быстрый старт
@@ -17,4 +17,4 @@ topnav:
       url: /reference/cli/overview.html
 
     - title: GitHub
-      url: https://github.com/werf/trdl
+      external_url: https://github.com/werf/trdl
