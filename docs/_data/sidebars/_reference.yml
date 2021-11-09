@@ -3,7 +3,13 @@ entries:
     f:
       - title: Command line interface
         f: *cli
+
+      - title: Vault plugin
+        f: *_vault_plugin
   ru:
     f:
       - title: Интерфейс командной строки
         f: *cli
+
+      - title: Плагин vault
+        f: *_vault_plugin

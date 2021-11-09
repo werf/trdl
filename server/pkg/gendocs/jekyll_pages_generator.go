@@ -85,7 +85,7 @@ permalink: %s
 		strings.TrimSuffix(markdownPagePath, ".md"),
 		pageRelativeUrl,
 		path.Join("/", includeRelativePath),
-	)), os.ModePerm); err != nil {
+	)), 0644); err != nil {
 		return fmt.Errorf("unable to write file %q: %s", f, err)
 	}
 
