@@ -80,7 +80,7 @@ func (s *JekyllSidebar) WriteFile(path string) error {
 		return fmt.Errorf("unable to mkdir %q: %s", filepath.Dir(path), err)
 	}
 
-	return os.WriteFile(path, append([]byte(strings.Join(lines, "\n")), '\n'), os.ModePerm)
+	return os.WriteFile(path, append([]byte(strings.Join(lines, "\n")), '\n'), 0644)
 }
 
 func (s *JekyllSidebar) appendNode(lines []string, node *JekyllSidebarNode, indent string) ([]string, error) {
