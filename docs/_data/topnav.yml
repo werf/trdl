@@ -1,20 +1,17 @@
 topnav:
   en:
-    - title: Getting started
-      url: /getting_started.html
-
     - title: Reference
       url: /reference/cli/overview.html
 
     - title: GitHub
-      url: https://github.com/werf/trdl
+      external_url: https://github.com/werf/trdl
 
   ru:
     - title: Быстрый старт
-      url: /getting_started.html
+      url: /quickstart.html
 
     - title: Справочник
       url: /reference/cli/overview.html
 
     - title: GitHub
-      url: https://github.com/werf/trdl
+      external_url: https://github.com/werf/trdl

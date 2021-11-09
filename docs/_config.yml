@@ -54,6 +54,7 @@ defaults:
       type: "pages"
     values:
       sidebar: reference
+      toc: false
   - scope:
       path: "pages_ru"
       type: "pages"

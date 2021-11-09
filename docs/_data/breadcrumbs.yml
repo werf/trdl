@@ -5,6 +5,24 @@ en:
   /reference/cli: &reference-cli
     title: Command line interface
     url: /reference/cli/overview.html
+  /reference/vault_plugin: &reference-vault_plugin
+    title: Vault plugin
+    url: /reference/vault_plugin/index.html
+  /reference/vault_plugin/configure: &reference-vault_plugin_configure
+    title: Configure
+    url: /reference/vault_plugin/configure.html
+  /reference/vault_plugin/configure/trusted_pgp_public_key: &reference-vault_plugin_configure_trusted_pgp_public_key
+    title: Trusted PGP public key
+    url: /reference/vault_plugin/configure.html
+  /reference/vault_plugin/task: &reference-vault_plugin_task
+    title: Task
+    url: /reference/vault_plugin/task/uuid_pattern.html
+  /reference/vault_plugin/task/uuid_pattern: &reference-vault_plugin_task_uuid_pattern
+    title: UUID
+    url: /reference/vault_plugin/task/uuid_pattern.html
+  /reference/vault_plugin/trusted_pgp_public_key: &reference-vault_plugin_trusted_pgp_public_key
+    title: Trusted PGP public key
+    url: /reference/vault_plugin/configure/trusted_pgp_public_key/name_pattern.html
 ru:
   /reference:
     << : *reference
@@ -12,3 +30,15 @@ ru:
   /reference/cli:
     << : *reference-cli
     title: Интерфейс командной строки
+  /reference/vault_plugin:
+    << : *reference-vault_plugin
+  /reference/vault_plugin/configure:
+    <<: *reference-vault_plugin_configure
+  /reference/vault_plugin/configure/trusted_pgp_public_key:
+    <<: *reference-vault_plugin_configure_trusted_pgp_public_key
+  /reference/vault_plugin/task:
+    <<: *reference-vault_plugin_task
+  /reference/vault_plugin/task/uuid_pattern:
+    <<: *reference-vault_plugin_task_uuid_pattern
+  /reference/vault_plugin/trusted_pgp_public_key:
+    <<: *reference-vault_plugin_trusted_pgp_public_key

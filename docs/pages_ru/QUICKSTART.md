@@ -1,6 +1,6 @@
 ---
 title: Быстрый старт
-permalink: getting_started.html
+permalink: quickstart.html
 ---
 
 ## Для администратора
