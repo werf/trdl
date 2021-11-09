@@ -27,7 +27,7 @@ trdl use REPO GROUP [CHANNEL] [options]
 ```shell
       --no-self-update=false
             Do not perform self-update (default $TRDL_NO_SELF_UPDATE or false)
-      --shell='pwsh'
+      --shell='unix'
             Select the shell for which to prepare the script. 
             Supports `pwsh` and `unix` shells (default $TRDL_SHELL, `pwsh` for Windows or `unix`)
 ```
