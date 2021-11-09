@@ -7,6 +7,9 @@ topnav:
       external_url: https://github.com/werf/trdl
 
   ru:
+    - title: Быстрый старт
+      url: /quickstart.html
+
     - title: Справочник
       url: /reference/cli/overview.html
 
