@@ -3,7 +3,7 @@
       {%- assign page_url_parts = page.url | split: '/' -%}
       {%- assign max_ind = page_url_parts.size | minus: 1 -%}
 
-      {%- for i in (2..max_ind) %}
+      {%- for i in (1..max_ind) %}
       {%- if forloop.last %}
       <li class="breadcrumbs__item">{{ page.title }}</li>
       {% else %}
