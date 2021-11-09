@@ -50,9 +50,15 @@ defaults:
       lang: en
       multilang: true
   - scope:
+      path: "pages_*/reference"
+      type: "pages"
+    values:
+      sidebar: reference
+  - scope:
       path: "pages_ru"
       type: "pages"
     values:
       lang: ru
+
 timezone: Etc/GMT-3
 output: web
