@@ -1,0 +1,10 @@
+<link rel="stylesheet" type="text/css" href="/css/configuration-table.css" />
+
+<div class="trdl-configuration-table">
+    <table aria-hidden=true>
+        {{ "tableLineCounter" | reset_shared_counter }}
+        {% for directive in site.data.trdl_channels.directives %}
+        {% include reference/configuration_table_directive.html directive=directive %}
+        {% endfor %}
+    </table>
+</div>

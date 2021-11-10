@@ -1,0 +1,13 @@
+directives:
+  - name: dockerImage
+    value: "string"
+    required: true
+    description:
+      en: Docker image name. Repository and digest are mandatory `REPO[:TAG]@DIGEST` (e.g. `ubuntu:18.04@sha256:538529c9d229fb55f50e6746b119e899775205d62c0fc1b7e679b30d02ecb6e8`)
+      ru: Имя docker образа. Репозиторий и digest обязательны `REPO[:TAG]@DIGEST` (к примеру, `ubuntu:18.04@sha256:538529c9d229fb55f50e6746b119e899775205d62c0fc1b7e679b30d02ecb6e8`)
+  - name: commands
+    value: "[ string, ... ]"
+    required: true
+    description:
+      en: Build instructions. The instructions can use the `{{ .Tag }}` pattern, which is replaced by a git tag
+      ru: Сборочные инструкции. В инструкциях можно использовать шаблон `{{ .Tag }}`, который заменяется на собираемый git-tag
