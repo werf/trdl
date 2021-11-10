@@ -3,7 +3,7 @@
 {% else %}
 {% assign header = "###" %}
 {% endif %}
-List managed repositories
+List registered repositories
 
 {{ header }} Syntax
 

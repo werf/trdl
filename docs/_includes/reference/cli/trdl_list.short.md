@@ -1,1 +1,1 @@
-list managed repositories
+list registered repositories

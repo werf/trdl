@@ -14,7 +14,7 @@ import (
 func listCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "list",
-		Short:                 "List managed repositories",
+		Short:                 "List registered repositories",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := trdlClient.NewClient(homeDir)
