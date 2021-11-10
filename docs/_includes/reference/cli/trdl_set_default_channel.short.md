@@ -1,1 +1,1 @@
-set default channel for a managed repository
+set default channel for a registered repository

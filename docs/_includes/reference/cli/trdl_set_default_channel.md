@@ -3,7 +3,7 @@
 {% else %}
 {% assign header = "###" %}
 {% endif %}
-Set default channel for a managed repository.
+Set default channel for a registered repository.
 The new channel will be used by default instead of stable
 
 {{ header }} Syntax
