@@ -44,11 +44,11 @@
     <td class="comment">
         <span markdown="1">
             #&nbsp;
-            {%- if page.lang == "en" %}
+            {%- if site.site_lang == "en" %}
             {% assign defaultText = "default" %}
             {% assign moreDetailsText = "More details" %}
             {% assign moreDetailsHereText = "here" %}
-            {% elsif page.lang == "ru" %}
+            {% elsif site.site_lang == "ru" %}
             {% assign defaultText = "значение по умолчанию" %}
             {% assign moreDetailsText = "Подробнее" %}
             {% assign moreDetailsHereText = "здесь" %}
