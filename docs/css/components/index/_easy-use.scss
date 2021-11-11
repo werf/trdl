@@ -12,6 +12,11 @@
   &__wrap {
     position: relative;
     margin: rem(50px);
+
+    @include phones {
+      margin-left: 15px;
+      margin-right: 15px;
+    }
   }
 
   &__title {
@@ -44,5 +49,9 @@
     top: 555px;
     right: -95px;
     z-index: -1;
+
+    @include old-display {
+      display: none;
+    }
   }
 }

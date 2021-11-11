@@ -1,0 +1,80 @@
+.security {
+  & .container--wide {
+    position: relative;
+
+    @media screen and (max-width: 1375px) {
+      position: unset;
+    }
+  }
+
+  .architecture {
+    &__wrap {
+      margin-bottom: rem(150px);
+
+      @include phones {
+        margin-left: 15px;
+        margin-right: 15px;
+      }
+    }
+
+    &__cols--item {
+      & .warning {
+        fill: none;
+        stroke: $text-color-title-invert-light;
+      }
+    }
+  
+    &__cols {
+      margin-bottom: rem(30px);
+
+      & .col {
+        &__item {
+          align-items: flex-start;
+        }
+      }
+
+      @include tablets {
+        flex-direction: column;
+
+        &--item {
+          width: 100%;
+
+          &:first-child {
+            margin-bottom: rem(50px);
+          }
+        }
+      }
+    }
+  }
+
+  &__more {
+    position: absolute;
+    left: 0;
+    border: 2px solid #A41FE2;
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+    padding: rem(25px);
+    padding-right: rem(75px);
+    padding-left: rem(130px);
+
+    @include old-display {
+      margin-left: 0;
+    }
+
+    @include phones {
+      padding-left: 50px;
+      padding-right: 30px;
+    }
+
+    &--text {
+      @include montserrat(regular-italic);
+      font-size: rem(14px);
+      line-height: rem(17px);
+    }
+
+    &--link {
+      color: $text-color-accent;
+      text-decoration: underline;
+    }
+  }
+}

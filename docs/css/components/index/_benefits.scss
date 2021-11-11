@@ -13,6 +13,10 @@
     top: 145px;
     right: -500px;
     z-index: -1;
+
+    @include old-display {
+      display: none;
+    }
   }
 
   &__title {
@@ -30,10 +34,25 @@
       "shield people"
       "shield comp";
 
+      @include tablets {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+          "gear"
+          "people"
+          "shield"
+          "comp";
+      }
+
     & .card {
-      padding: rem(60px) rem(40px);
+      // padding: rem(60px) rem(40px);
+      padding: rem(40px) rem(60px);
       background: #fff;
       border-radius: rem(20px);
+
+      @include phones {
+        padding-left: 15px;
+        padding-right: 15px;
+      }
 
       &--gear {
         grid-area: gear;
@@ -56,6 +75,7 @@
         height: rem(59px);
         fill: none;
         padding-bottom: rem(20px);
+        // stroke: $color-accent;
       }
 
       &__title {
@@ -78,40 +98,38 @@
       &--shield p {
         padding-bottom: rem(30px);
       }
+    }
+  }
+}
+.card__item {
+  font-size: rem(14px);
+  line-height: rem(20px);
+  color: $text-color;
+  padding-bottom: rem(30px);
+  padding-left: rem(30px);
 
-      &__item {
-        // @include montserrat(semi-bold);
-        font-size: rem(14px);
-        line-height: rem(20px);
-        color: $text-color;
-        padding-bottom: rem(30px);
-        padding-left: rem(30px);
+  &::before {
+    content: '';
+    display: inline-block;
+    width: rem(10px);
+    height: rem(10px);
+    border-radius: 50%;
+    background: $color-bullets;
+    margin-left: rem(-30px);
+    margin-right: rem(20px);
+  }
 
-        &::before {
-          content: '';
-          display: inline-block;
-          width: rem(10px);
-          height: rem(10px);
-          border-radius: 50%;
-          background: $color-bullets;
-          margin-left: rem(-30px);
-          margin-right: rem(20px);
-        }
+  &--no-bul {
+    & a {
+      @include montserrat(regular-italic);
+      font-size: rem(14px);
+      line-height: rem(17px);
+      color: $text-color-accent;
+      text-decoration: underline;
+    }
 
-        &--no-bul {
-          & a {
-            @include montserrat(regular-italic);
-            font-size: rem(14px);
-            line-height: rem(17px);
-            color: $text-color-accent;
-            text-decoration: underline;
-          }
-
-          &::before {
-            visibility: hidden;
-          }
-        }
-      }
+    &::before {
+      visibility: hidden;
     }
   }
 }

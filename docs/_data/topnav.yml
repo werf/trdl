@@ -5,3 +5,5 @@ topnav:
   ru:
      - title: GitHub
        url: https://github.com/werf/trdl
+     - title: Security
+       url: /security.html

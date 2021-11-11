@@ -18,13 +18,28 @@
     display: flex;
     align-items: center;
 
+    @include tablets {
+      display: block;
+    }
+
     &--list {
       display: flex;
       align-items: center;
+
+      @include tablets {
+        align-items: start;
+        flex-direction: column;
+        padding-left: 40px;
+        padding-top: 130px;
+      }
     }
 
     &--item {
       padding-right: rem(75px);
+
+      @include tablets {
+        padding-bottom: 30px;
+      }
 
       // &:last-child {
       //   padding-right: 0;
@@ -46,6 +61,10 @@
         font-size: rem(14px);
         line-height: rem(20px);
         color: $text-color-title;
+
+        @include tablets {
+          font-size: 15px;
+        }
       }
     }
   }

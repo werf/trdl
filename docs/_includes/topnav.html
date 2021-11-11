@@ -4,6 +4,7 @@
       <a data-proofer-ignore href="/">
           <img src="/images/logo.svg" alt="werf" height="30"/>
       </a>
+      {%- include menu-burger.html %}
       <div class="header__menu">
         <ul class="header__menu--list">
             <!-- toggle sidebar button -->
@@ -13,12 +14,6 @@
             {%- assign topnav_dropdowns = site.data[page.topnav].topnav_dropdowns %}
 
                 {%- for folder in topnav.topnav[page.lang] -%}
-                    {% comment %}
-                    Notice:
-                        Liquid engine is very poor in working with boolean logic.
-                        Also, somehow, it can not check equality of folder.url == '/' and page.url=='/' - something buggy here.
-                        That's why below lines of li class are such ugly.
-                    {% endcomment %}
                     <li class="header__menu--item submenu-parent
                         {%- if folder.folderitems %} header__menu--item_parent{% endif %}
                         {%- if folder.url.size>1 and page.url == folder.url %} header__menu--item_active{% endif %}

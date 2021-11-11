@@ -11,6 +11,11 @@
 
   &__wrap {
     margin: rem(50px);
+
+    @include phones {
+      margin-left: 15px;
+      margin-right: 15px;
+    }
   }
 
   &__title {
@@ -19,11 +24,22 @@
 
   &__cols {
     display: flex;
-    // align-items: center;
     justify-content: space-between;
 
+    @include tablets {
+      flex-direction: column;
+    }
+
     &--item {
-      width: 40%;
+      width: 45%;
+
+      @include tablets {
+        width: 100%;
+
+        &:first-child {
+          margin-bottom: 30px;
+        }
+      }
     }
 
     & .col {
@@ -59,9 +75,9 @@
           fill: none;
         }
 
-        // & .server__icon--client {
-        //   width: rem(28px);
-        // }
+        & .server__icon.parachute {
+          fill: $text-color-title-invert;
+        }
 
         & p {
           // @include montserrat(semi-bold);

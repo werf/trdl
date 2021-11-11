@@ -1,0 +1,38 @@
+.security {
+  &.solve-that {
+    &__section {
+      position: relative;
+      margin-top: rem(190px);
+      margin-bottom: rem(140px);
+      // padding-bottom: rem(140px);
+      z-index: 0;
+
+      @media screen and (max-width: 1375px) {
+        background: $color-accent;
+      }
+    }
+  }
+
+  & .solve-that__wrap {
+    @include phones {
+      margin-left: 15px;
+      margin-right: 15px;
+    }
+  }
+
+  &-bg__lines {
+    position: absolute;
+    top: rem(315px);
+    right: rem(15px);
+    z-index: -1;
+
+    @include old-display {
+      display: none;
+    }
+  }
+  
+  & .block__description {
+    color: $text-color-title-invert;
+    max-width: 80%;
+  }
+}
