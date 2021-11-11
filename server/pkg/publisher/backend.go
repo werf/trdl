@@ -12,14 +12,16 @@ import (
 func (publisher *Publisher) Paths() []*framework.Path {
 	return []*framework.Path{
 		{
-			Pattern: "configure/pgp_signing_key",
-			Fields:  map[string]*framework.FieldSchema{},
+			Pattern:      "configure/pgp_signing_key",
+			HelpSynopsis: "Configure server PGP signing keys",
+			Fields:       map[string]*framework.FieldSchema{},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
 					Description: "Get public part of PGP signing key",
 					Callback:    publisher.pathConfigurePGPSigningKeyRead,
 				},
 				logical.DeleteOperation: &framework.PathOperation{
+					Summary:     "Delete current PGP signing key",
 					Description: "Delete current PGP signing key (new key will be generated automatically on demand)",
 					Callback:    publisher.pathConfigurePGPSigningKeyDelete,
 				},

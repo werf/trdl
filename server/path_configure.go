@@ -30,7 +30,8 @@ var errorResponseConfigurationNotFound = logical.ErrorResponse("Configuration no
 
 func configurePath(b *Backend) *framework.Path {
 	return &framework.Path{
-		Pattern: "configure/?",
+		Pattern:      "configure/?",
+		HelpSynopsis: "Configure TRDL plugin",
 		Fields: map[string]*framework.FieldSchema{
 			fieldNameGitRepoUrl: {
 				Type:        framework.TypeString,

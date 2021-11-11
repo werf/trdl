@@ -1,10 +1,16 @@
-## PATH PATTERN
+## `/task`
 
-    ^task/?$
+Get tasks
 
-<no synopsis>
+### Get list of task UUIDs
 
 
-## DESCRIPTION
 
-<no description>
+| Method | Path |
+|--------|------|
+| `GET` | `/task` |
+
+
+#### Responses
+
+* 200 — OK.

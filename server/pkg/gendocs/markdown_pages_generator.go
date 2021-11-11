@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp/syntax"
 	"strings"
-
-	regen "github.com/zach-klippenstein/goregen"
 )
 
 type MarkdownPagesGenerator struct {
@@ -47,55 +44,16 @@ func PathPatternToFilesystemMarkdownPath(pattern string) (string, error) {
 		return "index.md", nil
 	}
 
-	cleanPattern := pattern
-	cleanPattern = strings.TrimPrefix(cleanPattern, "^")
-	cleanPattern = strings.TrimSuffix(cleanPattern, "$")
-	cleanPattern = strings.TrimPrefix(cleanPattern, "/")
-	cleanPattern = strings.TrimSuffix(cleanPattern, "/")
-	// fmt.Printf("CLEAN PATTERN: %q\n", cleanPattern)
+	parts := strings.Split(pattern, "/")
+	var newParts []string
 
-	generator, err := regen.NewGenerator(cleanPattern, generatorArgs())
-	if err != nil {
-		return "", fmt.Errorf("bad pattern given: %s", err)
-	}
-
-	path := generator.Generate()
-	// fmt.Printf("PATH: %q\n", path)
-	pathParts := strings.Split(path, "/")
-	// fmt.Printf("PATH PARTS: %#v\n", pathParts)
-
-	patternParts := strings.Split(cleanPattern, "/")
-	// fmt.Printf("PATTERN PARTS: %#v\n", patternParts)
-
-	regexp, err := syntax.Parse(cleanPattern, syntax.Perl)
-	if err != nil {
-		return "", fmt.Errorf("bad pattern %q: %s", pattern, err)
-	}
-
-	getPatternName := func(n int) string {
-		if n+1 < len(regexp.Sub) {
-			if regexp.Sub[n+1].Op == syntax.OpCapture {
-				return fmt.Sprintf("%s_pattern", regexp.Sub[n+1].Name)
-			}
-		}
-		return fmt.Sprintf("pattern_%d", n)
-	}
-
-	var resPathParts []string
-	patternNum := 0
-	for i := 0; i < len(pathParts); i++ {
-		if pathParts[i] == "" {
-			continue
-		}
-
-		if i >= len(patternParts) || pathParts[i] != patternParts[i] {
-			resPathParts = append(resPathParts, getPatternName(patternNum))
-			patternNum++
+	for _, part := range parts {
+		if strings.HasPrefix(part, ":") {
+			newParts = append(newParts, strings.TrimPrefix(part, ":"))
 		} else {
-			resPathParts = append(resPathParts, pathParts[i])
+			newParts = append(newParts, part)
 		}
 	}
 
-	resPath := fmt.Sprintf("%s.md", filepath.Join(resPathParts...))
-	return resPath, nil
+	return filepath.Join(newParts...) + ".md", nil
 }

@@ -1,23 +1,21 @@
-## PATH PATTERN
-
-    ^release$
+## `/release`
 
 Perform a release
 
-## PARAMETERS
+### Perform a release
 
-    git_password (string)
 
-        Git password
 
-    git_tag (string)
+| Method | Path |
+|--------|------|
+| `POST` | `/release` |
 
-        Git tag
+#### Parameters
 
-    git_username (string)
+* `git_tag` (`string: <required>`) — Git tag.
+* `git_username` (`string: <optional>`) — Git username.
+* `git_password` (`string: <optional>`) — Git password.
 
-        Git username
+#### Responses
 
-## DESCRIPTION
-
-Perform a release for the specified git tag
+* 200 — OK.
