@@ -39,7 +39,8 @@ var (
 func (m *Manager) Paths() []*framework.Path {
 	return []*framework.Path{
 		{
-			Pattern: pathPatternConfigure,
+			Pattern:      pathPatternConfigure,
+			HelpSynopsis: "Configure task manager",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameTaskTimeout: {
 					Type:        framework.TypeDurationSecond,
@@ -68,8 +69,10 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: pathPatternTaskList,
-			Fields:  map[string]*framework.FieldSchema{},
+			Pattern:         pathPatternTaskList,
+			HelpSynopsis:    "Get tasks",
+			HelpDescription: "Get tasks",
+			Fields:          map[string]*framework.FieldSchema{},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
 					Description: "Get list of task UUIDs",
@@ -78,7 +81,8 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: pathPatternTaskStatus,
+			Pattern:      pathPatternTaskStatus,
+			HelpSynopsis: "Get task status",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:        framework.TypeNameString,
@@ -94,7 +98,8 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: pathPatternTaskCancel,
+			Pattern:      pathPatternTaskCancel,
+			HelpSynopsis: "Cancel running task",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:        framework.TypeNameString,
@@ -114,7 +119,8 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: pathPatternTaskLog,
+			Pattern:      pathPatternTaskLog,
+			HelpSynopsis: "Get task log",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:        framework.TypeNameString,

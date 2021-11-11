@@ -1,19 +1,34 @@
-## PATH PATTERN
+## `/configure/git_credential`
 
-    ^configure/git_credential/?$
+Configure git credentials
 
-<no synopsis>
+### Configure git credential
 
-## PARAMETERS
 
-    password (string)
 
-        Git password. Required for CREATE, UPDATE.
+| Method | Path |
+|--------|------|
+| `POST` | `/configure/git_credential` |
 
-    username (string)
+#### Parameters
 
-        Git username. Required for CREATE, UPDATE.
+* `password` (`string: <optional>`) — Git password. Required for CREATE, UPDATE..
+* `username` (`string: <optional>`) — Git username. Required for CREATE, UPDATE..
 
-## DESCRIPTION
+#### Responses
 
-<no description>
+* 200 — OK. 
+
+
+### Reset git credential
+
+
+
+| Method | Path |
+|--------|------|
+| `DELETE` | `/configure/git_credential` |
+
+
+#### Responses
+
+* 204 — empty body.

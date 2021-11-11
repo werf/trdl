@@ -1,47 +1,55 @@
-## PATH PATTERN
+## `/configure`
 
-    ^configure/?$
+Configure TRDL plugin
 
-<no synopsis>
+### Read plugin configuration
 
-## PARAMETERS
 
-    git_repo_url (string)
 
-        Git repository url
+| Method | Path |
+|--------|------|
+| `GET` | `/configure` |
 
-    git_trdl_channels_branch (string)
 
-        Special git branch to store trdl_channels.yaml configuration
+#### Responses
 
-    initial_last_published_git_commit (string)
+* 200 — OK. 
 
-        Initial last published git commit
 
-    required_number_of_verified_signatures_on_commit (int)
+### Configure plugin
 
-        Required number of verified signatures on commit
 
-    s3_access_key_id (string)
 
-        S3 storage access key id
+| Method | Path |
+|--------|------|
+| `POST` | `/configure` |
 
-    s3_bucket_name (string)
+#### Parameters
 
-        S3 storage bucket name
+* `initial_last_published_git_commit` (`string: <optional>`) — Initial last published git commit.
+* `s3_region` (`string: <required>`) — S3 storage region.
+* `git_trdl_channels_branch` (`string: <optional>`) — Special git branch to store trdl_channels.yaml configuration.
+* `s3_bucket_name` (`string: <required>`) — S3 storage bucket name.
+* `s3_endpoint` (`string: <required>`) — S3 storage endpoint.
+* `s3_secret_access_key` (`string: <required>`) — S3 storage access key id.
+* `required_number_of_verified_signatures_on_commit` (`integer: <required>`) — Required number of verified signatures on commit.
+* `s3_access_key_id` (`string: <required>`) — S3 storage access key id.
+* `git_repo_url` (`string: <required>`) — Git repository url.
 
-    s3_endpoint (string)
+#### Responses
 
-        S3 storage endpoint
+* 200 — OK. 
 
-    s3_region (string)
 
-        S3 storage region
+### Reset plugin configuration
 
-    s3_secret_access_key (string)
 
-        S3 storage access key id
 
-## DESCRIPTION
+| Method | Path |
+|--------|------|
+| `DELETE` | `/configure` |
 
-<no description>
+
+#### Responses
+
+* 204 — empty body.

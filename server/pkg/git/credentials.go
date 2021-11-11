@@ -23,7 +23,10 @@ type GitCredential struct {
 func CredentialsPaths() []*framework.Path {
 	return []*framework.Path{
 		{
-			Pattern: "^configure/git_credential/?$",
+			Pattern:         "^configure/git_credential/?$",
+			HelpSynopsis:    "Configure git credentials",
+			HelpDescription: "Configure git credentials to perform clone operation",
+
 			Fields: map[string]*framework.FieldSchema{
 				FieldNameGitCredentialUsername: {
 					Type:        framework.TypeString,

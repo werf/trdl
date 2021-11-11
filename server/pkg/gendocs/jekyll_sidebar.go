@@ -57,7 +57,14 @@ func (s *JekyllSidebar) HandlePath(pathPattern string, _ []byte) error {
 }
 
 func (s *JekyllSidebar) getNodes() []*JekyllSidebarNode {
-	return []*JekyllSidebarNode{s.rootNode, s.nodesByPattern}
+	var res []*JekyllSidebarNode
+	if s.rootNode != nil {
+		res = append(res, s.rootNode)
+	}
+	if s.nodesByPattern != nil {
+		res = append(res, s.nodesByPattern)
+	}
+	return res
 }
 
 func (s *JekyllSidebar) WriteFile(path string) error {

@@ -1,19 +1,37 @@
-## PATH PATTERN
+## `/configure/trusted_pgp_public_key`
 
-    ^configure/trusted_pgp_public_key/?$
+Configure trusted PGP public keys
 
-<no synopsis>
+### Get list of trusted PGP public key
 
-## PARAMETERS
 
-    name (name string)
 
-        Key name
+| Method | Path |
+|--------|------|
+| `GET` | `/configure/trusted_pgp_public_key` |
 
-    public_key (string)
+#### Parameters
 
-        Key data
+* `list` (`string: <optional>`) — Return a list if `true`.
 
-## DESCRIPTION
+#### Responses
 
-<no description>
+* 200 — OK. 
+
+
+### Add trusted PGP public key
+
+
+
+| Method | Path |
+|--------|------|
+| `POST` | `/configure/trusted_pgp_public_key` |
+
+#### Parameters
+
+* `name` (`string: <required>`) — Key name.
+* `public_key` (`string: <required>`) — Key data.
+
+#### Responses
+
+* 200 — OK.

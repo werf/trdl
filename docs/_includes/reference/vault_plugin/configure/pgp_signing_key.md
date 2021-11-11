@@ -1,10 +1,31 @@
-## PATH PATTERN
+## `/configure/pgp_signing_key`
 
-    ^configure/pgp_signing_key$
+Configure server PGP signing keys
 
-<no synopsis>
+### Get public part of PGP signing key
 
 
-## DESCRIPTION
 
-<no description>
+| Method | Path |
+|--------|------|
+| `GET` | `/configure/pgp_signing_key` |
+
+
+#### Responses
+
+* 200 — OK. 
+
+
+### Delete current PGP signing key
+
+Delete current PGP signing key (new key will be generated automatically on demand)
+
+
+| Method | Path |
+|--------|------|
+| `DELETE` | `/configure/pgp_signing_key` |
+
+
+#### Responses
+
+* 204 — empty body.

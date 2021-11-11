@@ -1,19 +1,34 @@
-## PATH PATTERN
+## `/task/configure`
 
-    ^task/configure/?$
+Configure task manager
 
-<no synopsis>
+### Get task manager configuration
 
-## PARAMETERS
 
-    task_history_limit (int)
 
-        Task history limit
+| Method | Path |
+|--------|------|
+| `GET` | `/task/configure` |
 
-    task_timeout (duration (sec))
 
-        Task timeout
+#### Responses
 
-## DESCRIPTION
+* 200 — OK. 
 
-<no description>
+
+### Configure task manager
+
+
+
+| Method | Path |
+|--------|------|
+| `POST` | `/task/configure` |
+
+#### Parameters
+
+* `task_timeout` (`integer: 30m`) — Task timeout.
+* `task_history_limit` (`integer: 10`) — Task history limit.
+
+#### Responses
+
+* 200 — OK.
