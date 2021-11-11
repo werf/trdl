@@ -1,19 +1,20 @@
-## PATH PATTERN
-
-    ^publish$
+## `/publish`
 
 Publish release channels
 
-## PARAMETERS
+### Publish release channels
 
-    git_password (string)
 
-        Git password
 
-    git_username (string)
+| Method | Path |
+|--------|------|
+| `POST` | `/publish` |
 
-        Git username
+#### Parameters
 
-## DESCRIPTION
+* `git_password` (`string: <optional>`) — Git password.
+* `git_username` (`string: <optional>`) — Git username.
 
-Publish release channels based on trdl_channels.yaml configuration in the git repository
+#### Responses
+
+* 200 — OK.

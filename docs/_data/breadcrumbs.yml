@@ -16,13 +16,13 @@ en:
     url: /reference/vault_plugin/configure.html
   /reference/vault_plugin/task: &reference-vault_plugin_task
     title: Task
-    url: /reference/vault_plugin/task/uuid_pattern.html
-  /reference/vault_plugin/task/uuid_pattern: &reference-vault_plugin_task_uuid_pattern
+    url: /reference/vault_plugin/task.html
+  /reference/vault_plugin/task/uuid: &reference-vault_plugin_task_uuid
     title: UUID
-    url: /reference/vault_plugin/task/uuid_pattern.html
+    url: /reference/vault_plugin/task/uuid.html
   /reference/vault_plugin/trusted_pgp_public_key: &reference-vault_plugin_trusted_pgp_public_key
     title: Trusted PGP public key
-    url: /reference/vault_plugin/configure/trusted_pgp_public_key/name_pattern.html
+    url: /reference/vault_plugin/configure/trusted_pgp_public_key/name.html
 ru:
   /reference:
     << : *reference
@@ -38,7 +38,7 @@ ru:
     <<: *reference-vault_plugin_configure_trusted_pgp_public_key
   /reference/vault_plugin/task:
     <<: *reference-vault_plugin_task
-  /reference/vault_plugin/task/uuid_pattern:
-    <<: *reference-vault_plugin_task_uuid_pattern
+  /reference/vault_plugin/task/uuid:
+    <<: *reference-vault_plugin_task_uuid
   /reference/vault_plugin/trusted_pgp_public_key:
     <<: *reference-vault_plugin_trusted_pgp_public_key

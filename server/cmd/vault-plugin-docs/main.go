@@ -52,7 +52,7 @@ var generateJekyllData struct {
 }
 
 func generateJekyll(ctx context.Context) error {
-	backend, config, err := getTrdlBackend(ctx)
+	backendHandle, err := getTrdlBackendGendocsHandle(ctx)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func generateJekyll(ctx context.Context) error {
 		}
 	}
 
-	return gendocs.GeneratePagesForBackend(ctx, gendocs.NewJekyllPagesGenerator(generateJekyllData.BasePagesUrl, generateJekyllData.PagesDir, generateJekyllData.IncludesDir, generateJekyllData.SidebarYmlPath), backend, config.StorageView)
+	return gendocs.GeneratePagesForBackend(ctx, gendocs.NewJekyllPagesGenerator(generateJekyllData.BasePagesUrl, generateJekyllData.PagesDir, generateJekyllData.IncludesDir, generateJekyllData.SidebarYmlPath), backendHandle)
 }
 
 var generateMarkdownData struct {
@@ -90,7 +90,7 @@ func NewCmdGenerateMarkdown() *cobra.Command {
 }
 
 func generateMarkdown(ctx context.Context) error {
-	backend, config, err := getTrdlBackend(ctx)
+	backendHandle, err := getTrdlBackendGendocsHandle(ctx)
 	if err != nil {
 		return err
 	}
@@ -99,10 +99,10 @@ func generateMarkdown(ctx context.Context) error {
 		return fmt.Errorf("unable to clean %q: %s", generateMarkdownData.Dir, err)
 	}
 
-	return gendocs.GeneratePagesForBackend(ctx, gendocs.NewMarkdownPagesGenerator(generateMarkdownData.Dir), backend, config.StorageView)
+	return gendocs.GeneratePagesForBackend(ctx, gendocs.NewMarkdownPagesGenerator(generateMarkdownData.Dir), backendHandle)
 }
 
-func getTrdlBackend(ctx context.Context) (logical.Backend, *logical.BackendConfig, error) {
+func getTrdlBackendGendocsHandle(ctx context.Context) (gendocs.BackendHandle, error) {
 	config := &logical.BackendConfig{
 		Logger: nil,
 		System: &logical.StaticSystemView{
@@ -112,12 +112,16 @@ func getTrdlBackend(ctx context.Context) (logical.Backend, *logical.BackendConfi
 		StorageView: &logical.InmemStorage{},
 	}
 
-	backend, err := trdl.Factory(ctx, config)
+	b, err := trdl.NewBackend(config.Logger)
 	if err != nil {
-		return nil, nil, err
+		return gendocs.BackendHandle{}, err
 	}
 
-	return backend, config, nil
+	if err := b.Setup(ctx, config); err != nil {
+		return gendocs.BackendHandle{}, err
+	}
+
+	return gendocs.NewBackendHandle(b, b.Backend, config.StorageView), nil
 }
 
 func main() {

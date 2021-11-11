@@ -18,7 +18,9 @@ const (
 func Paths() []*framework.Path {
 	return []*framework.Path{
 		{
-			Pattern: "configure/trusted_pgp_public_key/?",
+			Pattern:         "configure/trusted_pgp_public_key/?",
+			HelpSynopsis:    "Configure trusted PGP public keys",
+			HelpDescription: "Configure trusted PGP public keys to check git repository commit signatures",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameTrustedPGPPublicKeyName: {
 					Type:        framework.TypeNameString,
@@ -51,7 +53,9 @@ func Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern: "configure/trusted_pgp_public_key/" + framework.GenericNameRegex(fieldNameTrustedPGPPublicKeyName) + "$",
+			Pattern:         "configure/trusted_pgp_public_key/" + framework.GenericNameRegex(fieldNameTrustedPGPPublicKeyName) + "$",
+			HelpSynopsis:    "Read or delete configured trusted PGP public key",
+			HelpDescription: "Read or delete configured trusted PGP public key",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameTrustedPGPPublicKeyName: {
 					Type:        framework.TypeNameString,
