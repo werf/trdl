@@ -1,17 +1,12 @@
-{% if include.header %}
-{% assign header = include.header %}
-{% else %}
-{% assign header = "###" %}
-{% endif %}
 Generate documentation as markdown
 
-{{ header }} Syntax
+## Syntax
 
 ```shell
 trdl docs JEKYLL_SITE_DIR [options]
 ```
 
-{{ header }} Options
+## Options
 
 ```shell
   -h, --help=false

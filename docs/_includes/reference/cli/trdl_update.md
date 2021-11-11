@@ -1,17 +1,12 @@
-{% if include.header %}
-{% assign header = include.header %}
-{% else %}
-{% assign header = "###" %}
-{% endif %}
 Update software
 
-{{ header }} Syntax
+## Syntax
 
 ```shell
 trdl update REPO GROUP [CHANNEL] [options]
 ```
 
-{{ header }} Options
+## Options
 
 ```shell
       --background-stderr-file=''
