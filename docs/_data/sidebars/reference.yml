@@ -85,6 +85,14 @@ entries:
 
       - title: Vault plugin
         f: *_vault_plugin
+
+      - &trdl_yaml
+        title: trdl.yaml
+        url: /reference/trdl_yaml.html
+
+      - &trdl_channels_yaml
+        title: trdl_channels.yaml
+        url: /reference/trdl_channels_yaml.html
   ru:
     f:
       - title: Интерфейс командной строки
@@ -92,3 +100,7 @@ entries:
 
       - title: Плагин vault
         f: *_vault_plugin
+
+      - *trdl_yaml
+
+      - *trdl_channels_yaml

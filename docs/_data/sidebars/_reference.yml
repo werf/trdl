@@ -9,11 +9,11 @@ entries:
 
       - &trdl_yaml
         title: trdl.yaml
-        url: /reference/cli/trdl_yaml.html
+        url: /reference/trdl_yaml.html
 
       - &trdl_channels_yaml
         title: trdl_channels.yaml
-        url: /reference/cli/trdl_channels.html
+        url: /reference/trdl_channels_yaml.html
   ru:
     f:
       - title: Интерфейс командной строки
