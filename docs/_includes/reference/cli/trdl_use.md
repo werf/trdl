@@ -1,17 +1,12 @@
-{% if include.header %}
-{% assign header = include.header %}
-{% else %}
-{% assign header = "###" %}
-{% endif %}
 Generate script to update software binaries in the background and use local ones within a shell session
 
-{{ header }} Syntax
+## Syntax
 
 ```shell
 trdl use REPO GROUP [CHANNEL] [options]
 ```
 
-{{ header }} Examples
+## Examples
 
 ```shell
   # Source script in a shell
@@ -22,7 +17,7 @@ trdl use REPO GROUP [CHANNEL] [options]
 
 ```
 
-{{ header }} Options
+## Options
 
 ```shell
       --no-self-update=false
