@@ -17,9 +17,11 @@ On release, trdl reads `trdl.yaml` from the git tag and performs the build:
 
 ## Example
 
+{% raw %}
 ```yaml
 dockerImage: golang:1.17-alpine@sha256:13919fb9091f6667cb375d5fdf016ecd6d3a5d5995603000d422b04583de4ef9
 commands:
   - ./scripts/build.sh {{ .Tag }} 
   - cp -a release/* /result
 ```
+{% endraw %}
