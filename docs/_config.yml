@@ -47,7 +47,6 @@ defaults:
       sidebar: false
       topnav: topnav
       sitemap_include: true
-      lang: en
       multilang: true
   - scope:
       path: "pages_*/reference"
@@ -55,11 +54,6 @@ defaults:
     values:
       sidebar: reference
       toc: false
-  - scope:
-      path: "pages_ru"
-      type: "pages"
-    values:
-      lang: ru
 
 timezone: Etc/GMT-3
 output: web
