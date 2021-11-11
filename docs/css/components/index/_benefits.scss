@@ -10,7 +10,7 @@
 
   &__lines {
     position: absolute;
-    top: 145px;
+    top: 100px;
     right: -500px;
     z-index: -1;
 
@@ -20,7 +20,8 @@
   }
 
   &__title {
-    padding-bottom: rem(90px);
+    // padding-bottom: rem(90px);
+    padding-bottom: rem(35px);
   }
 
   &__grid--list {
@@ -33,6 +34,10 @@
       "gear people"
       "shield people"
       "shield comp";
+
+      @include laptop {
+        gap: rem(50px);
+      }
 
       @include tablets {
         grid-template-columns: 1fr;
@@ -48,6 +53,11 @@
       padding: rem(40px) rem(60px);
       background: #fff;
       border-radius: rem(20px);
+
+      // @media (min-width: 769px) and (max-width: 960px) {
+      //   padding-left: 34px;
+      //   padding-right: 34px;
+      // }
 
       @include phones {
         padding-left: 15px;
@@ -101,6 +111,7 @@
     }
   }
 }
+
 .card__item {
   font-size: rem(14px);
   line-height: rem(20px);

@@ -20,7 +20,8 @@
   }
 
   &__title {
-    padding-bottom: rem(60px);
+    // padding-bottom: rem(60px);
+    padding-bottom: rem(35px);
   }
 
   &__cols {
@@ -46,7 +47,7 @@
 
   &__lines {
     position: absolute;
-    top: 555px;
+    top: 450px;
     right: -95px;
     z-index: -1;
 

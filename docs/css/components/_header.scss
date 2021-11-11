@@ -12,6 +12,16 @@
     align-items: center;
     justify-content: space-between;
     min-height: rem(70px);
+
+    & a img {
+      @include tablets {
+        max-width: 75%;
+      }
+
+      @include phones {
+        max-width: 60%;
+      }
+    }
   }
 
   &__menu {
@@ -37,8 +47,29 @@
     &--item {
       padding-right: rem(75px);
 
+      &.hidden {
+        display: none;
+      }
+
       @include tablets {
         padding-bottom: 30px;
+
+        &.lang {
+          display: none;
+        }
+
+        &.hidden {
+          display: flex;
+          align-items: center;
+          list-style: none;
+          padding: 0;
+          margin-right: 30px;
+
+          & a {
+            font-weight: 400;
+            color: $text-color;
+          }
+        }
       }
 
       // &:last-child {
@@ -63,9 +94,16 @@
         color: $text-color-title;
 
         @include tablets {
-          font-size: 15px;
+          font-size: 16px;
+          font-weight: 600;
+          color: $text-color-title-invert;
         }
       }
+    }
+
+    &--small {
+      display: flex;
+      align-items: center;
     }
   }
 }

@@ -4,11 +4,11 @@
       position: relative;
       margin-top: rem(190px);
       margin-bottom: rem(140px);
-      // padding-bottom: rem(140px);
       z-index: 0;
 
       @media screen and (max-width: 1375px) {
         background: $color-accent;
+        margin-top: rem(70px);
       }
     }
   }
@@ -22,7 +22,7 @@
 
   &-bg__lines {
     position: absolute;
-    top: rem(315px);
+    top: rem(255px);
     right: rem(15px);
     z-index: -1;
 
