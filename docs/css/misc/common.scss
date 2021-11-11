@@ -6,18 +6,22 @@ html {
   background: $color-bg;
   letter-spacing: 0.05em;
 
-  // @include old-display {
-  //   font-size: rem(13px);
-  // }
+  @include old-display {
+    font-size: rem(13px);
+  }
 
-  // @include laptop {
-  //   font-size: rem(10px);
-  // }
+  @include laptop {
+    font-size: rem(11px);
+  }
 }
 
 .overflow__container {
-  overflow-x: hidden;
+  overflow: hidden;
   min-width: 1200px;
+
+  @include old-display {
+    min-width: auto; // сделать только для страницы security
+  }
 }
 
 .container {
@@ -26,7 +30,28 @@ html {
   display: flex;
   flex-direction: column;
   margin: 0 auto;
-  padding: 0 50px;
+  padding: 0 rem(50px);
+
+  &--relative {
+    position: relative;
+  }
+
+  @include old-display {
+    max-width: 940px;
+  }
+
+  @include laptop {
+    max-width: 100%;
+    // padding: 0 50px;
+  }
+
+  @include tablets {
+    min-width: auto;
+  }
+
+  @include phones {
+    padding: 0 15px;
+  }
 
   &--wide {
     box-sizing: content-box;
@@ -41,16 +66,16 @@ html {
       width: 100%;
       border-radius: 0;
     }
+
+    @include old-display {
+      min-width: auto;
+    }
+
+    @include laptop {
+      margin-left: 0;
+      margin-right: 0;
+    }
   }
-
-  // @include old-display {
-  //   max-width: 940px;
-  // }
-
-  // @include laptop {
-  //   max-width: 100%;
-  //   padding: 0 20px;
-  // }
 }
 
 h1,
@@ -97,8 +122,17 @@ table {
   letter-spacing: .05em;
   color: $text-color-title;
 
+  & span {
+    color: $text-color-accent;
+  }
+
   &--invert {
     color: $text-color-title-invert;
+  }
+
+  @include phones {
+    font-size: 24px;
+    line-height: 30px;
   }
 }
 
@@ -133,11 +167,11 @@ table {
   padding: rem(pad(50, 22)) rem(30px);
   background: $color-accent;
   border-radius: rem(10px);
-  border: 1.5px solid transparent;
+  border: 2px solid transparent;
   transition: all 0.2s ease-in-out;
 
   &--white {
-    border: 1.5px solid $color-accent;
+    border: 2px solid $color-accent;
     background: transparent;
     color: $text-color-accent;
   }
@@ -145,6 +179,12 @@ table {
   &:hover {
     background: $color-dark;
     color: $text-color-title-invert;
+  }
+
+  &--hover-accent {
+    &:hover {
+      background: $color-accent;
+    }
   }
 }
 

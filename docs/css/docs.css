@@ -90,6 +90,7 @@
     width: 260px;
     margin-right: 40px;
     flex-shrink: 0;
+    word-break: break-word;
 }
 
 .layout-sidebar__content {

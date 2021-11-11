@@ -12,10 +12,16 @@
   &__wrap {
     position: relative;
     margin: rem(50px);
+
+    @include phones {
+      margin-left: 15px;
+      margin-right: 15px;
+    }
   }
 
   &__title {
-    padding-bottom: rem(60px);
+    // padding-bottom: rem(60px);
+    padding-bottom: rem(35px);
   }
 
   &__cols {
@@ -41,8 +47,12 @@
 
   &__lines {
     position: absolute;
-    top: 555px;
+    top: 450px;
     right: -95px;
     z-index: -1;
+
+    @include old-display {
+      display: none;
+    }
   }
 }

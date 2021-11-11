@@ -4,12 +4,17 @@
   }
 
   &__title {
-    padding-bottom: rem(30px);
+    // padding-bottom: rem(30px);
+    padding-bottom: rem(35px);
   }
 
   &__desc {
     max-width: 67%;
     padding-bottom: rem(23px);
+
+    @include tablets {
+      max-width: 100%;
+    }
   }
 
   &__footnote {

@@ -1,0 +1,119 @@
+.security {
+  & .container--wide {
+    position: relative;
+
+    @media screen and (max-width: 1375px) {
+      position: unset;
+    }
+  }
+
+  .architecture {
+    &__wrap {
+      & .col__text {
+        @include montserrat(regular);
+        font-size: rem(18px);
+        line-height: rem(26px);
+        color: $text-color-title-invert-light;
+        padding-bottom: rem(50px);
+        max-width: 75%;
+        
+        @include tablets {
+          max-width: 100%;
+        }
+      }
+
+      @include phones {
+        margin-left: 15px;
+        margin-right: 15px;
+      }
+    }
+
+    &__cols--item {
+      & .warning {
+        fill: none;
+        stroke: $text-color-title-invert-light;
+      }
+
+      @include laptop {
+        width: 48%;
+      }
+    }
+  
+    &__cols {
+      margin-bottom: rem(30px);
+
+      & .col {
+        &__item {
+          align-items: flex-start;
+          max-width: rem(380px);
+
+          @include laptop {
+            max-width: 85%;
+          }
+
+          @include tablets {
+            max-width: 100%;
+          }
+        }
+      }
+
+      @include tablets {
+        flex-direction: column;
+
+        &--item {
+          width: 100%;
+
+          &:first-child {
+            margin-bottom: rem(50px);
+          }
+        }
+      }
+    }
+  }
+
+  &__more {
+    position: absolute;
+    left: 0;
+    border: 2px solid #A41FE2;
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+    padding: rem(25px);
+    padding-right: rem(75px);
+    padding-left: rem(130px);
+
+    @include old-display {
+      margin-left: 0;
+    }
+
+    @include laptop {
+      padding-left: rem(50px);
+    }
+
+    @include phones {
+      padding-left: 15px;
+      padding-right: 30px;
+    }
+
+    &--text {
+      @include montserrat(regular-italic);
+      font-size: rem(14px);
+      line-height: rem(17px);
+    }
+
+    &--link {
+      color: $text-color-accent;
+      text-decoration: underline;
+    }
+  }
+
+  & .security-bg__lines--provide {
+    position: absolute;
+    top: rem(580px);
+    right: rem(30px);
+    z-index: -1;
+
+    @include old-display {
+      display: none;
+    }
+  }
+}

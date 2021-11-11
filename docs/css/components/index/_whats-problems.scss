@@ -4,7 +4,8 @@
   }
 
   &__title {
-    padding-bottom: rem(80px);
+    // padding-bottom: rem(80px);
+    padding-bottom: rem(35px);
   }
 
   &__grid--list {
@@ -15,7 +16,18 @@
       "pack protection"
       "pack .";
 
+    @include tablets {
+      grid-template-areas:
+        "delivery"
+        "protection"
+        "pack"
+    }
+
     & .card {
+      &__pic.warning {
+        stroke: $color-accent;
+      }
+
       & > p {
         padding-bottom: rem(30px);
       }
@@ -40,10 +52,17 @@
         }
       }
 
+      
       &--pack {
         grid-area: pack;
-        max-height: 550px;
+        height: fit-content;
         box-sizing: border-box;
+        
+        &:last-child {
+          & .card__item:last-child {
+            padding-bottom: 0;
+          }
+        }
       }
     }
   }

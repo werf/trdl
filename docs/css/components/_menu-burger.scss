@@ -1,0 +1,77 @@
+.header {
+  @include tablets {
+    .burger-menu {
+      display: block;
+      position: relative;
+      width: 24px;
+      height: 10px;
+      z-index: 3;
+
+      &::before,
+      &::after {
+        content: '';
+        display: block;
+        position: absolute;
+        background: $color-accent;
+        width: 100%;
+        height: 2px;
+        left: 0;
+        transition: all .3s ease;
+      }
+
+      &::before {
+        top: 0;
+      }
+
+      &::after {
+        bottom: 0;
+      }
+
+      &.active {
+        &::before {
+          transform: rotate(45deg);
+          top: 4px;
+        }
+
+        &::after {
+          transform: rotate(-45deg);
+          bottom: 4px;
+        }
+      }
+    }
+
+    .header__menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background: $color-dark;
+      opacity: 0;
+      margin-left: -100%;
+      transition: all .3s ease;
+
+      &.active {
+        opacity: 1;
+        margin-left: 0;
+      }
+
+      &__list {
+        flex-direction: column;
+        align-items: flex-start;
+        padding-top: 130px;
+        padding-left: 40px;
+      }
+
+      &__item {
+        padding-right: 0;
+        padding-bottom: 40px;
+      }
+    }
+  }
+}
+
+body.lock {
+  overflow: hidden;
+}
