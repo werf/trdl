@@ -157,7 +157,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		tarBuf := buffer.New(64 * 1024 * 1024)
 		tarReader, tarWriter := nio.Pipe(tarBuf)
 
-		err, cleanupFunc := buildReleaseArtifacts(ctx, tarWriter, gitRepo, trdlCfg.DockerImage, trdlCfg.Commands, b.Logger())
+		err, cleanupFunc := buildReleaseArtifacts(ctx, tarWriter, gitRepo, trdlCfg.GetDockerImage(), trdlCfg.Commands, b.Logger())
 		if err != nil {
 			return fmt.Errorf("unable to build release artifacts: %s", err)
 		}

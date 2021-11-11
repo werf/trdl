@@ -1,0 +1,28 @@
+directives:
+  - name: groups
+    description:
+      en: Groups
+      ru: Группы
+    directiveList:
+      - name: name
+        value: string
+        description:
+          en: "Group name, semver arbitrary part (`MAJOR.MINOR.PATCH`). E.g. `1`, `1.2` or `1.2.3`"
+          ru: "Имя группы, произвольная часть semver (`MAJOR.MINOR.PATCH`). К примеру: `1`, `1.2` или `1.2.3`"
+      - name: channels
+        description:
+          en: Group release channels
+          ru: Каналы обновлений группы
+        directiveList:
+          - name: name
+            value: "string"
+            required: true
+            description:
+              en: "Release channel name: alpha, beta, ea, stable or rock-solid"
+              ru: "Имя канала обновлений: alpha, beta, ea, stable или rock-solid"
+          - name: version
+            value: "string"
+            required: true
+            description:
+              en: Existing version
+              ru: Существующая версия

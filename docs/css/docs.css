@@ -153,7 +153,7 @@
 }
 
 .sidebar__submenu {
-    display: none;
+    /* FIXME: display: none;*/
     list-style-type: none;
     padding: 5px 0 0 10px;
     margin: 0;
