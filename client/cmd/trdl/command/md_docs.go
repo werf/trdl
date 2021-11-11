@@ -144,7 +144,7 @@ func GenCliSidebar(cmdGroups Groups, sidebarPath string) error {
 
 cli: &cli
   
-  - title: Overview of command groups
+  - title: Overview
     url: /reference/cli/overview.html
 `)
 
@@ -220,7 +220,7 @@ func genCliSidebar(cmd *cobra.Command, indent int, buf *bytes.Buffer) error {
 
 func GenCliOverview(cmdGroups Groups, pagesDir string) error {
 	indexPage := `---
-title: Overview of command groups
+title: Overview
 permalink: reference/cli/overview.html
 toc: false
 ---
