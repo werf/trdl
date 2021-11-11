@@ -1,5 +1,5 @@
 ---
-title: Overview of command groups
+title: Overview
 permalink: reference/cli/overview.html
 toc: false
 ---

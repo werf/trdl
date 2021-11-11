@@ -8,7 +8,7 @@
 
 cli: &cli
   
-  - title: Overview of command groups
+  - title: Overview
     url: /reference/cli/overview.html
 
   - title: Configuration commands
