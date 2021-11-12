@@ -52,30 +52,30 @@ _vault_plugin: &_vault_plugin
     url: /reference/vault_plugin/index.html
   - title: Paths
     f:
-    - title: release
-      url: /reference/vault_plugin/release.html
-    - title: configure/trusted_pgp_public_key/name
-      url: /reference/vault_plugin/configure/trusted_pgp_public_key/name.html
-    - title: task/configure
-      url: /reference/vault_plugin/task/configure.html
-    - title: task/uuid
-      url: /reference/vault_plugin/task/uuid.html
-    - title: task/uuid/cancel
-      url: /reference/vault_plugin/task/uuid/cancel.html
-    - title: task/uuid/log
-      url: /reference/vault_plugin/task/uuid/log.html
-    - title: configure
+    - title: /configure
       url: /reference/vault_plugin/configure.html
-    - title: configure/git_credential
+    - title: /configure/git_credential
       url: /reference/vault_plugin/configure/git_credential.html
-    - title: configure/trusted_pgp_public_key
-      url: /reference/vault_plugin/configure/trusted_pgp_public_key.html
-    - title: task
-      url: /reference/vault_plugin/task.html
-    - title: configure/pgp_signing_key
+    - title: /configure/pgp_signing_key
       url: /reference/vault_plugin/configure/pgp_signing_key.html
-    - title: publish
+    - title: /configure/trusted_pgp_public_key
+      url: /reference/vault_plugin/configure/trusted_pgp_public_key.html
+    - title: /configure/trusted_pgp_public_key/:name
+      url: /reference/vault_plugin/configure/trusted_pgp_public_key/name.html
+    - title: /publish
       url: /reference/vault_plugin/publish.html
+    - title: /release
+      url: /reference/vault_plugin/release.html
+    - title: /task
+      url: /reference/vault_plugin/task.html
+    - title: /task/configure
+      url: /reference/vault_plugin/task/configure.html
+    - title: /task/:uuid
+      url: /reference/vault_plugin/task/uuid.html
+    - title: /task/:uuid/cancel
+      url: /reference/vault_plugin/task/uuid/cancel.html
+    - title: /task/:uuid/log
+      url: /reference/vault_plugin/task/uuid/log.html
 
 entries:
   en:
@@ -97,6 +97,7 @@ entries:
       - &tuf_repository_layout
         title: TUF repository layout
         url: /reference/tuf_repository_layout.html
+
   ru:
     f:
       - title: Интерфейс командной строки

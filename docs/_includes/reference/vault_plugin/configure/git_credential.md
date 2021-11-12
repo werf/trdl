@@ -1,34 +1,28 @@
-## `/configure/git_credential`
+Configure git credentials.
 
-Configure git credentials
-
-### Configure git credential
-
-
+## Configure git credential
 
 | Method | Path |
 |--------|------|
 | `POST` | `/configure/git_credential` |
 
-#### Parameters
+### Parameters
 
-* `password` (`string: <optional>`) — Git password. Required for CREATE, UPDATE..
-* `username` (`string: <optional>`) — Git username. Required for CREATE, UPDATE..
+* `password` (string, optional) — Git password. Required for CREATE, UPDATE..
+* `username` (string, optional) — Git username. Required for CREATE, UPDATE..
 
-#### Responses
+### Responses
 
 * 200 — OK. 
 
 
-### Reset git credential
-
-
+## Reset git credential
 
 | Method | Path |
 |--------|------|
 | `DELETE` | `/configure/git_credential` |
 
 
-#### Responses
+### Responses
 
 * 204 — empty body.

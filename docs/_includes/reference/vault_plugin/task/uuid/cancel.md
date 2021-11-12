@@ -1,19 +1,15 @@
-## `/task/:uuid/cancel`
+Cancel running task.
 
-Cancel running task
-
-### Cancel running task
-
-
+## Cancel running task
 
 | Method | Path |
 |--------|------|
 | `POST` | `/task/:uuid/cancel` |
 
-#### Parameters
+### Parameters
 
-* `uuid` (`string: <required>`, url param) — Task UUID.
+* `uuid` (url pattern, required) — Task UUID.
 
-#### Responses
+### Responses
 
 * 200 — OK.

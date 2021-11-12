@@ -3,6 +3,8 @@ package gendocs
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -20,39 +22,41 @@ type MethodResponseTemplateData struct {
 }
 
 type MethodParameterTemplateData struct {
-	Name         string
-	Type         string
-	DefaultValue string // default value or <required> if requred
-	IsUrlParam   bool
-	Description  string
+	Name               string
+	Type               string
+	DefaultValue       string
+	RequiredOrOptional string
+	Description        string
 }
 
-func NewMethodParameterTemplateDataFromSchema(paramName, description string, isUrlParam, isRequired bool, schemaDesc *framework.OASSchema) *MethodParameterTemplateData {
+func NewMethodParameterTemplateDataFromSchema(paramName, description string, isUrlPattern, isRequired bool, schemaDesc *framework.OASSchema) *MethodParameterTemplateData {
 	parameter := &MethodParameterTemplateData{
 		Name:        paramName,
 		Description: description,
-		IsUrlParam:  isUrlParam,
 	}
 
-	parameter.Type = "<unknown>"
-	parameter.DefaultValue = "<optional>"
+	if isRequired {
+		parameter.RequiredOrOptional = "required"
+	} else {
+		parameter.RequiredOrOptional = "optional"
+	}
 
-	if schemaDesc != nil {
+	parameter.Type = "unknown type"
+
+	if isUrlPattern {
+		parameter.Type = "url pattern"
+	} else if schemaDesc != nil {
 		parameter.Type = schemaDesc.Type
 		if schemaDesc.Default != nil {
 			parameter.DefaultValue = fmt.Sprintf("%v", schemaDesc.Default)
 		}
 	}
 
-	if isRequired {
-		parameter.DefaultValue = "<required>"
-	}
-
 	return parameter
 }
 
-func NewMethodParameterTemplateData(paramDesc framework.OASParameter, isUrlParam bool) *MethodParameterTemplateData {
-	return NewMethodParameterTemplateDataFromSchema(paramDesc.Name, paramDesc.Description, isUrlParam, paramDesc.Required, paramDesc.Schema)
+func NewMethodParameterTemplateData(paramDesc framework.OASParameter, isUrlPattern bool) *MethodParameterTemplateData {
+	return NewMethodParameterTemplateDataFromSchema(paramDesc.Name, paramDesc.Description, isUrlPattern, paramDesc.Required, paramDesc.Schema)
 }
 
 type MethodTemplateData struct {
@@ -87,11 +91,25 @@ func NewMethodTemplateData(name, path string, urlParameters []framework.OASParam
 	}
 
 	if methodDesc.RequestBody != nil {
-		// TODO: order
-		for contentType, content := range methodDesc.RequestBody.Content {
+		keys := make([]string, 0, len(methodDesc.RequestBody.Content))
+		for k := range methodDesc.RequestBody.Content {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		for _, contentType := range keys {
+			content := methodDesc.RequestBody.Content[contentType]
+
 			if contentType == "application/json" && content.Schema != nil && content.Schema.Type == "object" {
-				// TODO: order
-				for propName, propSchema := range content.Schema.Properties {
+				props := make([]string, 0, len(content.Schema.Properties))
+				for k := range content.Schema.Properties {
+					props = append(props, k)
+				}
+				sort.Strings(props)
+
+				for _, propName := range props {
+					propSchema := content.Schema.Properties[propName]
+
 					isRequired := false
 					for _, name := range content.Schema.Required {
 						if name == propName {
@@ -105,11 +123,17 @@ func NewMethodTemplateData(name, path string, urlParameters []framework.OASParam
 		}
 	}
 
-	// TODO: order
-	for responseCode, responseDesc := range methodDesc.Responses {
+	keys := make([]int, 0, len(methodDesc.Responses))
+	for k := range methodDesc.Responses {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
+	for _, statusCode := range keys {
+		respDesc := methodDesc.Responses[statusCode]
 		method.Responses = append(method.Responses, &MethodResponseTemplateData{
-			StatusCode:  fmt.Sprintf("%d", responseCode),
-			Description: responseDesc.Description,
+			StatusCode:  fmt.Sprintf("%d", statusCode),
+			Description: respDesc.Description,
 		})
 	}
 
@@ -118,7 +142,9 @@ func NewMethodTemplateData(name, path string, urlParameters []framework.OASParam
 
 type PathTemplateData struct {
 	Name        string
+	Link        string
 	Description string
+	Synopsis    string
 	Methods     []*MethodTemplateData
 }
 
@@ -127,31 +153,55 @@ type BackendTemplateData struct {
 	Paths       []*PathTemplateData
 }
 
-func NewBackendTemplateData(backendDoc *framework.OASDocument, frameworkBackendRef *framework.Backend) (*BackendTemplateData, error) {
+func NewBackendTemplateData(backendDoc *framework.OASDocument, frameworkBackendRef *framework.Backend, formatPathLink func(markdownPagePath string) string) (*BackendTemplateData, error) {
 	backendTemplateData := &BackendTemplateData{}
 
 	if frameworkBackendRef != nil {
 		backendTemplateData.Description = strings.TrimSpace(frameworkBackendRef.Help)
 	}
 
-	for rawPathName, pathDesc := range backendDoc.Paths {
+	keys := make([]string, 0, len(backendDoc.Paths))
+	for k := range backendDoc.Paths {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, rawPathName := range keys {
 		pathName := FormatPathName(rawPathName)
+		pathDesc := backendDoc.Paths[rawPathName]
+
+		// FIXME: pathDesc.Description is actually a HelpSynopsis, where is HelpDescription?
+
+		descParts := strings.SplitN(pathDesc.Description, " ", 2)
+		descParts[0] = strings.Title(descParts[0])
+		description := strings.Join(descParts, " ")
+		description = strings.TrimSuffix(description, ".") + "."
 
 		path := &PathTemplateData{
 			Name:        pathName,
-			Description: pathDesc.Description,
+			Synopsis:    strings.ToLower(pathDesc.Description),
+			Description: description,
+		}
+
+		if formatPathLink != nil {
+			markdownPath, err := FormatPathPatternAsFilesystemMarkdownPath(pathName)
+			if err != nil {
+				return nil, fmt.Errorf("unable to format path pattern %q as filesystem markdown path: %s", pathName, err)
+			}
+
+			path.Link = formatPathLink(markdownPath)
 		}
 
 		if path.Description == "" {
 			return nil, fmt.Errorf("required path %q description", rawPathName)
 		}
 
-		if pathDesc.Get != nil {
-			path.Methods = append(path.Methods, NewMethodTemplateData("GET", pathName, pathDesc.Parameters, pathDesc.Get))
-		}
-
 		if pathDesc.Post != nil {
 			path.Methods = append(path.Methods, NewMethodTemplateData("POST", pathName, pathDesc.Parameters, pathDesc.Post))
+		}
+
+		if pathDesc.Get != nil {
+			path.Methods = append(path.Methods, NewMethodTemplateData("GET", pathName, pathDesc.Parameters, pathDesc.Get))
 		}
 
 		if pathDesc.Delete != nil {
@@ -162,6 +212,26 @@ func NewBackendTemplateData(backendDoc *framework.OASDocument, frameworkBackendR
 	}
 
 	return backendTemplateData, nil
+}
+
+func FormatPathPatternAsFilesystemMarkdownPath(pattern string) (string, error) {
+	// fmt.Printf("INPUT PATTERN: %q\n", pattern)
+	if pattern == "/" {
+		return "index.md", nil
+	}
+
+	parts := strings.Split(pattern, "/")
+	var newParts []string
+
+	for _, part := range parts {
+		if strings.HasPrefix(part, ":") {
+			newParts = append(newParts, strings.TrimPrefix(part, ":"))
+		} else {
+			newParts = append(newParts, part)
+		}
+	}
+
+	return filepath.Join(newParts...) + ".md", nil
 }
 
 func FormatPathName(pathName string) string {
@@ -182,52 +252,52 @@ func FormatPathName(pathName string) string {
 }
 
 var (
-	BackendOverviewTemplate = `### Description
-
-{{ .Description }}
+	BackendOverviewTemplate = `	{{ .Description }}
 
 {{ if .Paths -}}
-### Paths
+## Paths
 {{   range .Paths }}
-* ` + "`{{ .Name }}`" + `
+{{     if .Link -}}
+* ` + "[`{{ .Name }}`]({{ .Link }})" + ` — {{ .Synopsis }}.
+{{-     else -}}
+* ` + "`{{ .Name }}`" + ` — {{ .Synopsis }}.
+{{-     end }}
 {{   end }}
 {{ end }}
 `
 
-	PathTemplate = `## ` + "`{{ .Name }}`" + `
-
-{{ .Description }}
+	PathTemplate = `{{ .Description }}
 
 {{ range .Methods -}}
-### ` + "{{ .Summary }}" + `
+## ` + "{{ .Summary }}" + `
 
 {{   if .Description -}}
 {{ .Description }}
-{{   end }}
+{{   end -}}
 
 | Method | Path |
 |--------|------|
 | ` + "`{{ .Name }}`" + ` | ` + "`{{ .Path }}`" + ` |
 
 {{   if .Parameters -}}
-#### Parameters
+### Parameters
 
 {{     range .Parameters -}}
-* ` + "`{{ .Name }}`" + ` (` + "`{{ .Type }}{{ if .DefaultValue }}: {{ .DefaultValue }}{{ end }}`" + `{{ if .IsUrlParam }}, url param{{ end }}) — {{ .Description }}.
+* ` + "`{{ .Name }}`" + ` ({{ .Type }}, {{ .RequiredOrOptional }}{{ if .DefaultValue }}, default: ` + "`{{ .DefaultValue }}`" + `{{ end }}) — {{ .Description }}.
 {{     end -}}
 {{   end }}
 {{   if .Responses -}}
-#### Responses
+### Responses
 
 {{     range .Responses -}}
 * {{ .StatusCode }} — {{ .Description }}. 
 {{     end -}}
 {{   end }}
 {{   if .Examples -}}
-#### Examples
+### Examples
 
 {{     range .Examples -}}
-##### {{ .Description }}
+#### {{ .Description }}
 {{       if eq .Method "GET" }}
     curl  --header \"X-Vault-Token: ...\" http://127.0.0.1:8200/v1/PLUGIN_MOOUNT/{{ .Path }} 
 {{       else if eq .Method "POST" }}
@@ -235,7 +305,7 @@ var (
 {{       else if eq .Method "DELETE" }}
     curl  --header \"X-Vault-Token: ...\" --request DELETE http://127.0.0.1:8200/v1/PLUGIN_MOUNT/{{ .Path }} 
 {{       end }}
-{{     end }}
+{{     end -}}
 {{   end }}
 {{ end }}
 `
