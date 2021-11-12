@@ -56,13 +56,22 @@ func (g *JekyllPagesGenerator) getPagesIncludePrefix() string {
 	return filepath.Join(commonPathParts...)
 }
 
+func (g *JekyllPagesGenerator) HasFormatPathLink() bool {
+	return true
+}
+
+func (g *JekyllPagesGenerator) FormatPathLink(markdownPagePath string) string {
+	path := path.Join("/", strings.TrimPrefix(g.BasePagesUrl, "/"), strings.TrimSuffix(markdownPagePath, ".md")+".html")
+	return fmt.Sprintf("{{ %q | true_relative_url }}", path)
+}
+
 func (g *JekyllPagesGenerator) HandlePath(pathPattern string, doc []byte) error {
 	// Write markdown partial into includes dir
 	if err := g.markdownPagesGenerator.HandlePath(pathPattern, doc); err != nil {
 		return fmt.Errorf("unable to generate markdown includes: %s", err)
 	}
 
-	markdownPagePath, err := PathPatternToFilesystemMarkdownPath(pathPattern)
+	markdownPagePath, err := FormatPathPatternAsFilesystemMarkdownPath(pathPattern)
 	if err != nil {
 		return err
 	}
@@ -75,14 +84,22 @@ func (g *JekyllPagesGenerator) HandlePath(pathPattern string, doc []byte) error 
 	pageRelativeUrl := path.Join(strings.TrimPrefix(g.BasePagesUrl, "/"), strings.TrimSuffix(markdownPagePath, ".md")+".html")
 	includeRelativePath := path.Join(strings.TrimPrefix(g.getPagesIncludePrefix(), "/"), markdownPagePath)
 
+	var title string
+	if pathPattern == "/" {
+		title = "Overview"
+	} else {
+		title = pathPattern
+	}
+
 	if err := os.WriteFile(f, []byte(fmt.Sprintf(`---
 title: %s
 permalink: %s
+toc: true
 ---
 
 {%% include %s %%}
 `,
-		strings.TrimSuffix(markdownPagePath, ".md"),
+		title,
 		pageRelativeUrl,
 		path.Join("/", includeRelativePath),
 	)), 0644); err != nil {

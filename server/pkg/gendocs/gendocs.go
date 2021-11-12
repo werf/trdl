@@ -12,7 +12,12 @@ import (
 )
 
 func GeneratePagesForBackend(ctx context.Context, pagesGenerator PagesGenerator, backend BackendHandle) error {
-	pages, err := GetBackendReferencePages(ctx, backend)
+	var formatPathLink func(string) string
+	if pagesGenerator.HasFormatPathLink() {
+		formatPathLink = pagesGenerator.FormatPathLink
+	}
+
+	pages, err := GetBackendReferencePages(ctx, backend, formatPathLink)
 	if err != nil {
 		return fmt.Errorf("unable to generate backend pages: %s", err)
 	}
@@ -49,7 +54,7 @@ func NewBackendHandle(logicalBackendRef logical.Backend, frameworkBackendRef *fr
 	return BackendHandle{LogicalBackendRef: logicalBackendRef, FrameworkBackendRef: frameworkBackendRef, Storage: storage}
 }
 
-func GetBackendReferencePages(ctx context.Context, backend BackendHandle) ([]*BackendReferencePage, error) {
+func GetBackendReferencePages(ctx context.Context, backend BackendHandle, formatPathLink func(markdownPagePath string) string) ([]*BackendReferencePage, error) {
 	req := &logical.Request{
 		Operation:  logical.HelpOperation,
 		Storage:    backend.Storage,
@@ -76,7 +81,7 @@ func GetBackendReferencePages(ctx context.Context, backend BackendHandle) ([]*Ba
 		return nil, fmt.Errorf("no openapi backend docs found")
 	}
 
-	backendTemplateData, err := NewBackendTemplateData(backendDoc, backend.FrameworkBackendRef)
+	backendTemplateData, err := NewBackendTemplateData(backendDoc, backend.FrameworkBackendRef, formatPathLink)
 	if err != nil {
 		return nil, fmt.Errorf("unable to prepare backend template data: %s", err)
 	}
