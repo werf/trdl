@@ -2,6 +2,7 @@ Get task status.
 
 ## Get task status
 
+
 | Method | Path |
 |--------|------|
 | `GET` | `/task/:uuid` |

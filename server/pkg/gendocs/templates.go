@@ -270,10 +270,9 @@ var (
 
 {{ range .Methods -}}
 ## ` + "{{ .Summary }}" + `
-
-{{   if .Description -}}
+{{   if .Description }}
 {{ .Description }}
-{{   end -}}
+{{   end }}
 
 | Method | Path |
 |--------|------|
