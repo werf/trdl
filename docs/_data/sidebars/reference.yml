@@ -93,6 +93,10 @@ entries:
       - &trdl_channels_yaml
         title: trdl_channels.yaml
         url: /reference/trdl_channels_yaml.html
+
+      - &tuf_repository_layout
+        title: TUF repository layout
+        url: /reference/tuf_repository_layout.html
   ru:
     f:
       - title: Интерфейс командной строки
@@ -104,3 +108,6 @@ entries:
       - *trdl_yaml
 
       - *trdl_channels_yaml
+
+      - *tuf_repository_layout
+        title: Организация TUF-репозитория
