@@ -2,6 +2,7 @@ Get task log.
 
 ## Get task log
 
+
 | Method | Path |
 |--------|------|
 | `GET` | `/task/:uuid/log` |

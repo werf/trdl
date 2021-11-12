@@ -2,6 +2,7 @@ Configure trusted PGP public keys.
 
 ## Add trusted PGP public key
 
+
 | Method | Path |
 |--------|------|
 | `POST` | `/configure/trusted_pgp_public_key` |
@@ -17,6 +18,7 @@ Configure trusted PGP public keys.
 
 
 ## Get list of trusted PGP public key
+
 
 | Method | Path |
 |--------|------|

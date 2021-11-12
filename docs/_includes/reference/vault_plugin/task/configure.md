@@ -2,6 +2,7 @@ Configure task manager.
 
 ## Configure task manager
 
+
 | Method | Path |
 |--------|------|
 | `POST` | `/task/configure` |
@@ -17,6 +18,7 @@ Configure task manager.
 
 
 ## Get task manager configuration
+
 
 | Method | Path |
 |--------|------|

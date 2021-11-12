@@ -2,6 +2,7 @@ Read or delete configured trusted PGP public key.
 
 ## Get trusted PGP public key
 
+
 | Method | Path |
 |--------|------|
 | `GET` | `/configure/trusted_pgp_public_key/:name` |
@@ -17,6 +18,7 @@ Read or delete configured trusted PGP public key.
 
 
 ## Delete trusted PGP public key
+
 
 | Method | Path |
 |--------|------|

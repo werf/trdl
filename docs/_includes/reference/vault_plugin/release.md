@@ -2,6 +2,7 @@ Perform a release.
 
 ## Perform a release
 
+
 | Method | Path |
 |--------|------|
 | `POST` | `/release` |
