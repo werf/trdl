@@ -109,5 +109,5 @@ entries:
 
       - *trdl_channels_yaml
 
-      - *tuf_repository_layout
-        title: Организация TUF-репозитория
+      - <<: *tuf_repository_layout
+        title: "Организация TUF-репозитория"
