@@ -2,6 +2,7 @@ Get tasks.
 
 ## Get list of task UUIDs
 
+
 | Method | Path |
 |--------|------|
 | `GET` | `/task` |

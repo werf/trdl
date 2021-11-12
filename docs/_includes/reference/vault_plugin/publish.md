@@ -2,6 +2,7 @@ Publish release channels.
 
 ## Publish release channels
 
+
 | Method | Path |
 |--------|------|
 | `POST` | `/publish` |

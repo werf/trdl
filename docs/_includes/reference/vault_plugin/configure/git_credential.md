@@ -2,6 +2,7 @@ Configure git credentials.
 
 ## Configure git credential
 
+
 | Method | Path |
 |--------|------|
 | `POST` | `/configure/git_credential` |
@@ -17,6 +18,7 @@ Configure git credentials.
 
 
 ## Reset git credential
+
 
 | Method | Path |
 |--------|------|

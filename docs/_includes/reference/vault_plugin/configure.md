@@ -2,6 +2,7 @@ Configure TRDL plugin.
 
 ## Configure plugin
 
+
 | Method | Path |
 |--------|------|
 | `POST` | `/configure` |
@@ -25,6 +26,7 @@ Configure TRDL plugin.
 
 ## Read plugin configuration
 
+
 | Method | Path |
 |--------|------|
 | `GET` | `/configure` |
@@ -36,6 +38,7 @@ Configure TRDL plugin.
 
 
 ## Reset plugin configuration
+
 
 | Method | Path |
 |--------|------|

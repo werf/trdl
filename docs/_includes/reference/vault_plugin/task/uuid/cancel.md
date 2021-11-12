@@ -2,6 +2,7 @@ Cancel running task.
 
 ## Cancel running task
 
+
 | Method | Path |
 |--------|------|
 | `POST` | `/task/:uuid/cancel` |
