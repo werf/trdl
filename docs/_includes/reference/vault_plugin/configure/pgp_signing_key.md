@@ -1,31 +1,25 @@
-## `/configure/pgp_signing_key`
+Configure server PGP signing keys.
 
-Configure server PGP signing keys
-
-### Get public part of PGP signing key
-
-
+## Get public part of PGP signing key
 
 | Method | Path |
 |--------|------|
 | `GET` | `/configure/pgp_signing_key` |
 
 
-#### Responses
+### Responses
 
 * 200 — OK. 
 
 
-### Delete current PGP signing key
+## Delete current PGP signing key
 
 Delete current PGP signing key (new key will be generated automatically on demand)
-
-
 | Method | Path |
 |--------|------|
 | `DELETE` | `/configure/pgp_signing_key` |
 
 
-#### Responses
+### Responses
 
 * 204 — empty body.

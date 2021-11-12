@@ -30,7 +30,7 @@ func NewJekyllSidebar(name, basePagesUrl string) *JekyllSidebar {
 }
 
 func (s *JekyllSidebar) HandlePath(pathPattern string, _ []byte) error {
-	markdownPagePath, err := PathPatternToFilesystemMarkdownPath(pathPattern)
+	markdownPagePath, err := FormatPathPatternAsFilesystemMarkdownPath(pathPattern)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (s *JekyllSidebar) HandlePath(pathPattern string, _ []byte) error {
 		}
 
 		s.nodesByPattern.F = append(s.nodesByPattern.F, &JekyllSidebarNode{
-			Title: strings.TrimSuffix(markdownPagePath, ".md"),
+			Title: pathPattern,
 			URL:   fmt.Sprintf("/%s.html", path.Join(strings.TrimPrefix(s.BasePagesUrl, "/"), strings.TrimSuffix(markdownPagePath, ".md"))),
 		})
 	}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 type MarkdownPagesGenerator struct {
@@ -17,8 +16,16 @@ func NewMarkdownPagesGenerator(dir string) *MarkdownPagesGenerator {
 	}
 }
 
+func (w *MarkdownPagesGenerator) HasFormatPathLink() bool {
+	return false
+}
+
+func (w *MarkdownPagesGenerator) FormatPathLink(markdownPagePath string) string {
+	return ""
+}
+
 func (w *MarkdownPagesGenerator) HandlePath(pathPattern string, doc []byte) error {
-	fsPath, err := PathPatternToFilesystemMarkdownPath(pathPattern)
+	fsPath, err := FormatPathPatternAsFilesystemMarkdownPath(pathPattern)
 	if err != nil {
 		return err
 	}
@@ -36,24 +43,4 @@ func (w *MarkdownPagesGenerator) HandlePath(pathPattern string, doc []byte) erro
 
 func (w *MarkdownPagesGenerator) Close() error {
 	return nil
-}
-
-func PathPatternToFilesystemMarkdownPath(pattern string) (string, error) {
-	// fmt.Printf("INPUT PATTERN: %q\n", pattern)
-	if pattern == "/" {
-		return "index.md", nil
-	}
-
-	parts := strings.Split(pattern, "/")
-	var newParts []string
-
-	for _, part := range parts {
-		if strings.HasPrefix(part, ":") {
-			newParts = append(newParts, strings.TrimPrefix(part, ":"))
-		} else {
-			newParts = append(newParts, part)
-		}
-	}
-
-	return filepath.Join(newParts...) + ".md", nil
 }

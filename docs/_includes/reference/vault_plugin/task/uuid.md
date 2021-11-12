@@ -1,19 +1,15 @@
-## `/task/:uuid`
+Get task status.
 
-Get task status
-
-### Get task status
-
-
+## Get task status
 
 | Method | Path |
 |--------|------|
 | `GET` | `/task/:uuid` |
 
-#### Parameters
+### Parameters
 
-* `uuid` (`string: <required>`, url param) — Task UUID.
+* `uuid` (url pattern, required) — Task UUID.
 
-#### Responses
+### Responses
 
 * 200 — OK.
