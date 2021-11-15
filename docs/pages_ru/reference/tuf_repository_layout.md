@@ -56,7 +56,7 @@ targets
         │       └── werf
         └── windows-amd64
             └── bin
-                └── werf
+                └── werf.exe
 ````
 
 ### Хранение GPG-подписей артефактов релиза
@@ -101,7 +101,7 @@ targets
         │       └── werf.sig
         └── windows-amd64
             └── bin
-                └── werf.sig
+                └── werf.exe.sig
 ````
 
 ## Хранение каналов обновлений
@@ -121,3 +121,17 @@ targets
 
 - semver part — произвольная часть [semver](https://semver.org/lang);
 - channel — канал обновлений `alpha`, `beta`, `ea`, `stable` или `rock-solid`. 
+
+### Пример
+
+````
+targets
+└── channels
+    ├── ...
+    └── 1.2
+        ├── alpha
+        ├── beta
+        ├── ea
+        ├── stable
+        └── rock-solid
+````
