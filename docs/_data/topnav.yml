@@ -1,11 +1,11 @@
 topnav:
   en:
-     - title: GitHub
-       url: https://github.com/werf/trdl
      - title: Security
        url: /security.html
+     - title: GitHub
+       url: https://github.com/werf/trdl
   ru:
+     - title: Безопасность
+       url: /security.html
      - title: GitHub
        url: https://github.com/werf/trdl
-     - title: Security
-       url: /security.html
