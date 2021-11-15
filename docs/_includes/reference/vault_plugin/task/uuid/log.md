@@ -1,19 +1,16 @@
-## `/task/:uuid/log`
+Get task log.
 
-Get task log
-
-### Get task log
-
+## Get task log
 
 
 | Method | Path |
 |--------|------|
 | `GET` | `/task/:uuid/log` |
 
-#### Parameters
+### Parameters
 
-* `uuid` (`string: <required>`, url param) — Task UUID.
+* `uuid` (url pattern, required) — Task UUID.
 
-#### Responses
+### Responses
 
 * 200 — OK.

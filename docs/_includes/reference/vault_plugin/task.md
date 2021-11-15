@@ -1,9 +1,6 @@
-## `/task`
+Get tasks.
 
-Get tasks
-
-### Get list of task UUIDs
-
+## Get list of task UUIDs
 
 
 | Method | Path |
@@ -11,6 +8,6 @@ Get tasks
 | `GET` | `/task` |
 
 
-#### Responses
+### Responses
 
 * 200 — OK.
