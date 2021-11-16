@@ -1,0 +1,113 @@
+.section__wrapper {
+  margin-top: rem(70px);
+  margin-bottom: rem(30px);
+}
+
+.breadcrumbs-container {
+  margin: rem(25px) 0;
+  & .breadcrumbs__item:hover {
+    & > a {
+      color: $text-color-accent;
+    }
+  }
+}
+
+.layout-sidebar {
+  &__sidebar {
+    & .sidebar__item,
+    & .sidebar__submenu-item {
+      &:hover {
+        & > a {
+          color: $text-color-accent;
+        }
+      }
+
+      &.active {
+        & > a {
+          color: $text-color-accent;
+        }
+      }
+    }
+  }
+
+  &__content {
+    padding-left: rem(20px);
+
+    & .docs {
+      & .post-content > p {
+        padding: rem(15px) 0;
+      }
+
+      & blockquote {
+        border-color: $color-accent;
+      }
+
+      & a {
+        color: $text-color-accent;
+
+        &:hover {
+          text-decoration: none;
+        }
+      }
+  
+      & li {
+        &::before {
+          background: $color-accent;
+        }
+
+        & > a {
+          color: $color-accent;
+          text-decoration: underline;
+        }
+      }
+  
+      & h2 {
+        & a {
+          color: $text-color-accent;
+        }
+      }
+  
+      & h3 {
+        color: $text-color-accent;
+
+        & a {
+          color: $text-color-accent;
+        }
+      }
+  
+      & pre.highlight {
+        background: $color-dark;
+  
+        & code {
+          background: $color-dark;
+          color: $text-color-title-invert;
+        }
+      }
+
+      & code {
+        background: $color-bg-code;
+        color: #000;
+      }
+
+      & tr.directive {
+        border-top: 2px solid $color-bg-code;
+      }
+
+      & td {
+        border-bottom: 2px solid $color-bg-code;
+
+        &:first-child {
+          border-left: 2px solid $color-bg-code;
+        }
+
+        &:last-child {
+          border-right: 2px solid $color-bg-code;
+        }
+      }
+
+      & th {
+        background: $color-bg-accent;
+      }
+    }
+  }
+}

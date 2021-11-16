@@ -89,9 +89,9 @@
 {% asset docs.css %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/4.2.2/anchor.min.js"></script>
 
-<!-- {% asset syntax.css %}
+{% asset syntax.css %}
 
-{% asset tab.css %}
+<!-- {% asset tab.css %}
 {% asset header.css %}
 {% asset submenu.css %}
 {% asset index.css %}
@@ -112,9 +112,41 @@
 {% asset tab.js %}
 {% asset popup.js %}
 {% asset channels.js %}-->
+{% asset jquery.navgoco.min.js %}
 {% asset details.js %}
 {% asset customscripts.js %}
 {% asset toc.js %}
+<script>
+  $(document).ready(function() {
+      // Initialize navgoco with default options
+      $("#mysidebar").navgoco({
+          caretHtml: '',
+          accordion: true,
+          openClass: 'active', // open
+          save: false, // leave false or nav highlighting doesn't work right
+          cookie: {
+              name: 'navgoco',
+              expires: false,
+              path: '/'
+          },
+          slide: {
+              duration: 400,
+              easing: 'swing'
+          }
+      });
+
+      $("#collapseAll").click(function(e) {
+          e.preventDefault();
+          $("#mysidebar").navgoco('toggle', false);
+      });
+
+      $("#expandAll").click(function(e) {
+          e.preventDefault();
+          $("#mysidebar").navgoco('toggle', true);
+      });
+
+  });
+</script>
 
 <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
 <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
