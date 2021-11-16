@@ -1,3 +1,8 @@
+.section__wrapper {
+  margin-top: 70px;
+  margin-bottom: 30px;
+}
+
 .breadcrumbs-container {
     display: flex;
     flex-direction: row;
@@ -34,7 +39,7 @@
 }
 
 .breadcrumbs__item:hover > a {
-    color: #0066FF;
+    color: #a41fe2;
 }
 
 .breadcrumbs__item_parent > a:after {
@@ -60,7 +65,7 @@
 }
 
 .channel-menu:hover > a {
-    color: #0066FF;
+    color: #a41fe2;
 }
 
 .channel-menu > a:after {
@@ -84,10 +89,16 @@
 .layout-sidebar__sidebar {
     width: 260px;
     margin-right: 40px;
+    flex-shrink: 0;
 }
 
 .layout-sidebar__content {
     width: 860px;
+    padding-left: 20px;
+}
+
+.layout-sidebar__content .post-content > p {
+  padding: 15px 0;
 }
 
 .sidebar {
@@ -111,15 +122,11 @@
 }
 
 .sidebar__item > a:hover {
-    color: #0066FF;
+    color: #a41fe2;
 }
 
 .sidebar__item.active > a {
-    color: #0066FF;
-}
-
-.sidebar__item_parent > a {
-
+    color: #a41fe2;
 }
 
 .sidebar__item_parent > a:after {
@@ -141,7 +148,7 @@
     content: 'NEW!';
     font-size: 12px;
     color: #fff;
-    background: #0066FF;
+    background: #a41fe2;
     padding: 1px 4px;
     border-radius: 4px;
     margin-left: 10px;
@@ -174,11 +181,11 @@
 }
 
 .sidebar__submenu-item > a:hover {
-    color: #0066FF;
+    color: #a41fe2;
 }
 
 .sidebar__submenu-item.active > a {
-    color: #0066FF;
+    color: #a41fe2;
 }
 
 .sidebar__submenu-item_parent > a:after {
@@ -201,7 +208,7 @@
 }
 
 #toc a {
-    color: #0066FF;
+    color: #a41fe2;
     text-decoration: none;
 }
 
@@ -362,7 +369,7 @@
 .docs ul > li::before {
     content: '';
     display: block;
-    background: #0066FF;
+    background: #a41fe2;
     width: 6px;
     height: 6px;
     border-radius: 6px;
@@ -378,7 +385,7 @@
 .docs ul ul > li::before, .docs ol ol > li::before {
     content: '';
     display: block;
-    border: 1px solid #0066FF;
+    border: 1px solid #a41fe2;
     background: transparent;
     width: 5px;
     height: 5px;
@@ -391,7 +398,7 @@
 .docs ul ul ul li::before, .docs ol ol ol li::before {
     content: '';
     display: block;
-    background: #0066FF;
+    background: #a41fe2;
     width: 4px;
     height: 4px;
     position: absolute;
@@ -454,7 +461,7 @@
     font-stretch: normal;
     line-height: normal;
     letter-spacing: -0.4px;
-    color: #0066FF;
+    color: #a41fe2;
 }
 
 .docs h4 {
@@ -474,7 +481,7 @@
     font-stretch: normal;
     line-height: normal;
     letter-spacing: -0.3px;
-    color: #0066FF;
+    color: #a41fe2;
 }
 
 .docs h6 {
@@ -488,12 +495,20 @@
 }
 
 .docs a {
-    color: #0066FF;
+    color: #a41fe2;
     text-decoration: none;
 }
 
-.docs a:hover {
+.docs .post-content ul li > a {
     text-decoration: underline;
+}
+
+.docs a:hover {
+  text-decoration: underline;
+}
+
+.docs .post-content ul li p > a:hover {
+    text-decoration: none;
 }
 
 .docs hr {
@@ -504,7 +519,7 @@
 
 .docs__outdated {
     display: none;
-    background: #0066FF;
+    background: #a41fe2;
     padding: 15px;
     font-size: 16px;
     color: #FFFFFF;
@@ -530,7 +545,7 @@
 .docs code {
     padding: 2px 4px;
     font-size: 90%;
-    background: #eef2ff;
+    background: rgba(164, 31, 226, .1);
     white-space: nowrap;
     border-radius: 4px;
 }
@@ -594,7 +609,7 @@
 .docs blockquote {
     margin: 20px 0;
     padding: 5px 20px;
-    border-left: 4px solid #0066FF;
+    border-left: 4px solid #a41fe2;
 }
 
 .docs .anchorjs-link:hover {
@@ -614,7 +629,7 @@
 
 .docs table thead tr th {
     text-align: left;
-    background: #0066FF;
+    background: #a41fe2;
     color: #fff;
     font-size: 16px;
     height: 40px;
@@ -636,7 +651,7 @@
 
 .docs table tbody tr td {
     padding: 8px 10px;
-    border-bottom: 2px solid #eef2ff;
+    border-bottom: 2px solid rgba(164, 31, 226, .1);
     text-align: left;
     font-size: 16px;
     line-height: 24px;
@@ -647,11 +662,15 @@
 }
 
 .docs table tbody tr td:last-child {
-    border-right: 2px solid #eef2ff;
+    border-right: 2px solid rgba(164, 31, 226, .1);
 }
 
 .docs table tbody tr td:first-child {
-    border-left: 2px solid #eef2ff;
+    border-left: 2px solid rgba(164, 31, 226, .1);
+}
+
+.docs table tbody tr.directive {
+    border-top: 2px solid rgba(164, 31, 226, .1);
 }
 
 .docs img {
@@ -693,7 +712,7 @@
 .docs .btn_o {
   box-sizing: border-box;
   border: 2px solid rgba(0, 102, 255, 0.1);
-  color: #0066ff;
+  color: #a41fe2;
 }
 
 .docs .btn_o:hover {
