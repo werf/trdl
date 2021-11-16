@@ -29,7 +29,7 @@ ru:
     title: Справочник
   /reference/cli:
     << : *reference-cli
-    title: Интерфейс командной строки
+    title: CLI
   /reference/vault_plugin:
     << : *reference-vault_plugin
   /reference/vault_plugin/configure:

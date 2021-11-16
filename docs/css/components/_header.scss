@@ -46,6 +46,12 @@
         font-size: rem(14px);
         line-height: rem(20px);
         color: $text-color-title;
+        &:hover {
+          color: $color-accent;
+        }
+      }
+      &_active a {
+        color: $color-accent;
       }
     }
   }

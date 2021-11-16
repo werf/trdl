@@ -1,6 +1,7 @@
 ---
 title: Быстрый старт
 permalink: quickstart.html
+layout: page-nosidebar
 ---
 
 ## Для администратора
