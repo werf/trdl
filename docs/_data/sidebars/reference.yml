@@ -100,7 +100,7 @@ entries:
 
   ru:
     f:
-      - title: Интерфейс командной строки
+      - title: CLI
         f: *cli
 
       - title: Плагин vault
