@@ -24,8 +24,6 @@
                         {%- if folder.url.size>1 and page.url == folder.url %} header__menu--item_active{% endif %}
                         {%- if folder.url.size>1 and page.url != folder.url and page.url contains folder.url
                         and page.url != '/installation.html' %} header__menu--item_active{% endif %}
-                        {%- if folder.url.size>1 and page.url == '/publications_ru.html'
-                        and folder.url == '/publications.html' %} header__menu--item_active{% endif %}
                         {%- if folder.url.size<2 and page.url.size<2 %} header__menu--item_active{% endif %}
                         {%- if folder.title == 'Документация' or folder.title == 'Documentation'  %} header__menu--item_active{% endif %}">
                         {% capture folder_url %}
@@ -36,7 +34,7 @@
                         {%- endif %}
                         {% endcapture %}
 
-                        <a href="{{ folder_url }}">{{ folder.title }}</a>
+                        <a href="{{ folder_url }}" {%- if folder.external_url %}target="_blank"{% endif %}>{{ folder.title }}</a>
                         {%- if folder.folderitems %}
                         <div class="submenu-container">
                             <ul class="submenu">
