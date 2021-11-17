@@ -1,6 +1,7 @@
 ---
 title: Организация TUF-репозитория
 permalink: reference/tuf_repository_layout.html
+toc: true
 ---
 
 Информацию про TUF-репозиторий, назначение и стандартный набор файлов, можно прочитать [в документации TUF](https://theupdateframework.github.io/specification/latest/#the-repository), а в этой статье будет уделено внимание организации [_Target files_](https://theupdateframework.github.io/specification/latest/#target-files), способу хранения релиза, GPG-подписей артефактов релиза, а также каналов обновлений. 

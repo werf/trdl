@@ -1,7 +1,7 @@
 ---
 title: trdl_channels.yaml
 permalink: reference/trdl_channels_yaml.html
-toc: false
+toc: true
 ---
 
 Конфигурация `trdl_channels.yaml` содержит группы, каналы обновлений и версии.
