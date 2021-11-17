@@ -1,82 +1,82 @@
-.werf-configuration-table {
+.trdl-configuration-table {
     border-radius: 4px;
     color: #f8f8f2;
-    background-color: #272822;
+    background-color: #333037;
 }
 
-.werf-configuration-table table {
+.trdl-configuration-table table {
     font-family: 'Source Code Pro', monospace;
     border: none !important;
 }
 
-.werf-configuration-table table tr,
-.werf-configuration-table table tr td {
+.trdl-configuration-table table tr,
+.trdl-configuration-table table tr td {
     border: none !important;
 }
 
-.werf-configuration-table table tr td {
+.trdl-configuration-table table tr td {
     vertical-align: top;
     line-height: unset !important;
     font-size: 12px !important;
     padding: 5px 8px !important;
 }
 
-.werf-configuration-table table tr td:first-child {
+.trdl-configuration-table table tr td:first-child {
     padding-left: 15px !important;
     text-align: right;
     user-select: none;
 }
 
-.werf-configuration-table table tr:not(.dots) td:first-child {
+.trdl-configuration-table table tr:not(.dots) td:first-child {
     transition: all 0.1s ease-in-out;
     opacity: 0.5;
 }
 
-.werf-configuration-table table tr td:nth-child(2) {
+.trdl-configuration-table table tr td:nth-child(2) {
     width: 50%;
 }
 
-.werf-configuration-table table tr td:last-child {
+.trdl-configuration-table table tr td:last-child {
     padding-right: 15px !important;
 }
 
-.werf-configuration-table table tr:first-child td {
+.trdl-configuration-table table tr:first-child td {
     padding-top: 10px !important;
 }
 
-.werf-configuration-table table tr:last-child td {
+.trdl-configuration-table table tr:last-child td {
     padding-bottom: 10px !important;
 }
 
-.werf-configuration-table table tr td.comment {
+.trdl-configuration-table table tr td.comment {
     user-select: none;
 }
 
-.werf-configuration-table table tr {
+.trdl-configuration-table table tr {
     background: transparent;
     transition: all 0.1s ease-in-out;
 }
 
-.werf-configuration-table table tr.section {
+.trdl-configuration-table table tr.section {
     background: rgba(255,255,255,0.04);
 }
 
-.werf-configuration-table table tr.directive td:last-child {
+.trdl-configuration-table table tr.directive td:last-child {
     background: transparent;
     transition: all 0.1s ease-in-out;
     opacity: 0.5;
 }
 
-.werf-configuration-table table tr td span {
+.trdl-configuration-table table tr td span {
     font-size: 12px;
 }
 
-.werf-configuration-table table tr.dots td {
+.trdl-configuration-table table tr.dots td {
     padding: 5px 8px !important;
     user-select: none;
 }
 
-.werf-configuration-table span.btn {
+.trdl-configuration-table span.btn {
     vertical-align: middle;
     display: inline-flex;
     align-items: center;
@@ -92,11 +92,11 @@
     transition: all 0.1s ease-in-out;
 }
 
-.werf-configuration-table span.btn:hover {
+.trdl-configuration-table span.btn:hover {
     background: rgba(0,0,0,0.1);
 }
 
-.werf-configuration-table span.btn::after {
+.trdl-configuration-table span.btn::after {
     content: '';
     width: 8px;
     height: 8px;
@@ -106,20 +106,20 @@
     background-size: contain;
 }
 
-.werf-configuration-table table tr[class*="collapsed-"] {
+.trdl-configuration-table table tr[class*="collapsed-"] {
     display: none;
 }
 
-.werf-configuration-table table tr:not(.section):hover {
+.trdl-configuration-table table tr:not(.section):hover {
     background: rgba(255,255,255,0.04);
 }
 
-.werf-configuration-table table tr:hover td:last-child,
-.werf-configuration-table table tr:hover td:first-child {
+.trdl-configuration-table table tr:hover td:last-child,
+.trdl-configuration-table table tr:hover td:first-child {
     opacity: 1;
 }
 
-.werf-configuration-table .required {
+.trdl-configuration-table .required {
     font-size: 10px;
     font-family: 'Open Sans', sans-serif;
     vertical-align: middle;
@@ -136,11 +136,11 @@
     user-select: none;
 }
 
-.werf-configuration-table a {
-    color: #5f9fff !important;
+.trdl-configuration-table a {
+    color: #a41fe2 !important;
 }
 
-.werf-configuration-table code {
+.trdl-configuration-table code {
     background: #000;
 }
 

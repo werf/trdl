@@ -20,4 +20,9 @@ window.addEventListener('DOMContentLoaded', ()=> {
     allowHTML: true,
     content: "TUF (The Update Framework) is a framework for securing software update systems. TUF repository is any repository with your software (e.g., S3) that uses TUF security tools. <a href='https://theupdateframework.io/'>Learn more about TUF</a>."
   });
+
+  tippy('.required', {
+    allowHTML: true,
+    content: "Required"
+  });
 });
