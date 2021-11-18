@@ -52,6 +52,18 @@ func (c configuration) GetRepoConfiguration(name string) *RepoConfiguration {
 	return nil
 }
 
+func (c *configuration) RemoveRepoConfiguration(name string) error {
+	for i := len(c.Repositories) - 1; i >= 0; i-- {
+		repo := c.Repositories[i]
+		if repo.Name == name {
+			c.Repositories = append(c.Repositories[:i], c.Repositories[i+1:]...)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("repo %q not registered", name)
+}
+
 func (c *configuration) StageRepoConfiguration(name, url string) {
 	repo := c.GetRepoConfiguration(name)
 	if repo == nil {
