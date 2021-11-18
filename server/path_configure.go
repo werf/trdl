@@ -14,6 +14,8 @@ import (
 
 const (
 	fieldNameGitRepoUrl                                 = "git_repo_url"
+	fieldNameGitTrdlPath                                = "git_trdl_path"
+	fieldNameGitTrdlChannelsPath                        = "git_trdl_channels_path"
 	fieldNameGitTrdlChannelsBranch                      = "git_trdl_channels_branch"
 	fieldNameInitialLastPublishedGitCommit              = "initial_last_published_git_commit"
 	fieldNameRequiredNumberOfVerifiedSignaturesOnCommit = "required_number_of_verified_signatures_on_commit"
@@ -36,6 +38,16 @@ func configurePath(b *Backend) *framework.Path {
 				Type:        framework.TypeString,
 				Description: "Git repository url",
 				Required:    true,
+			},
+			fieldNameGitTrdlPath: {
+				Type:        framework.TypeString,
+				Description: "Path inside git repository to the release trdl configuration file (trdl.yaml by default)",
+				Required:    false,
+			},
+			fieldNameGitTrdlChannelsPath: {
+				Type:        framework.TypeString,
+				Description: "Path inside git repository to the trdl channels configuration file (trdl_channels.yaml by default)",
+				Required:    false,
 			},
 			fieldNameGitTrdlChannelsBranch: {
 				Type:        framework.TypeString,
@@ -105,15 +117,17 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 	}
 
 	cfg := &configuration{
-		GitRepoUrl:                                 fields.Get(fieldNameGitRepoUrl).(string),
-		GitTrdlChannelsBranch:                      fields.Get(fieldNameGitTrdlChannelsBranch).(string),
-		InitialLastPublishedGitCommit:              fields.Get(fieldNameInitialLastPublishedGitCommit).(string),
+		GitRepoUrl:                    fields.Get(fieldNameGitRepoUrl).(string),
+		GitTrdlPath:                   fields.Get(fieldNameGitTrdlPath).(string),
+		GitTrdlChannelsPath:           fields.Get(fieldNameGitTrdlChannelsPath).(string),
+		GitTrdlChannelsBranch:         fields.Get(fieldNameGitTrdlChannelsBranch).(string),
+		InitialLastPublishedGitCommit: fields.Get(fieldNameInitialLastPublishedGitCommit).(string),
 		RequiredNumberOfVerifiedSignaturesOnCommit: fields.Get(fieldNameRequiredNumberOfVerifiedSignaturesOnCommit).(int),
-		S3Endpoint:                                 fields.Get(fieldNameS3Endpoint).(string),
-		S3Region:                                   fields.Get(fieldNameS3Region).(string),
-		S3AccessKeyID:                              fields.Get(fieldNameS3AccessKeyID).(string),
-		S3SecretAccessKey:                          fields.Get(fieldNameS3SecretAccessKey).(string),
-		S3BucketName:                               fields.Get(fieldNameS3BucketName).(string),
+		S3Endpoint:        fields.Get(fieldNameS3Endpoint).(string),
+		S3Region:          fields.Get(fieldNameS3Region).(string),
+		S3AccessKeyID:     fields.Get(fieldNameS3AccessKeyID).(string),
+		S3SecretAccessKey: fields.Get(fieldNameS3SecretAccessKey).(string),
+		S3BucketName:      fields.Get(fieldNameS3BucketName).(string),
 	}
 
 	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
@@ -146,6 +160,8 @@ func (b *Backend) pathConfigureDelete(ctx context.Context, req *logical.Request,
 
 type configuration struct {
 	GitRepoUrl                                 string `structs:"git_repo_url" json:"git_repo_url"`
+	GitTrdlPath                                string `structs:"git_trdl_path" json:"git_trdl_path"`
+	GitTrdlChannelsPath                        string `structs:"git_trdl_channels_path" json:"git_trdl_channels_path"`
 	GitTrdlChannelsBranch                      string `structs:"git_trdl_channels_branch" json:"git_trdl_channels_branch"`
 	InitialLastPublishedGitCommit              string `structs:"initial_last_published_git_commit" json:"initial_last_published_git_commit"`
 	RequiredNumberOfVerifiedSignaturesOnCommit int    `structs:"required_number_of_verified_signatures_on_commit" json:"required_number_of_verified_signatures_on_commit"`

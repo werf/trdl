@@ -146,7 +146,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Getting trdl.yaml configuration from the git tag %q\n", gitTag)
 		b.Logger().Debug(fmt.Sprintf("Getting trdl.yaml configuration from the git tag %q\n", gitTag))
 
-		trdlCfg, err := getTrdlConfig(gitRepo, gitTag)
+		trdlCfg, err := getTrdlConfig(gitRepo, gitTag, cfg.GitTrdlPath)
 		if err != nil {
 			return fmt.Errorf("unable to get trdl configuration: %s", err)
 		}
@@ -239,10 +239,14 @@ func cloneGitRepositoryTag(url, gitTag, username, password string) (*git.Reposit
 	return gitRepo, nil
 }
 
-func getTrdlConfig(gitRepo *git.Repository, gitTag string) (*config.Trdl, error) {
-	data, err := trdlGit.ReadWorktreeFile(gitRepo, config.TrdlFileName)
+func getTrdlConfig(gitRepo *git.Repository, gitTag string, trdlPath string) (*config.Trdl, error) {
+	if trdlPath == "" {
+		trdlPath = config.DefaultTrdlPath
+	}
+
+	data, err := trdlGit.ReadWorktreeFile(gitRepo, trdlPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read worktree file %q: %s", config.TrdlFileName, err)
+		return nil, fmt.Errorf("unable to read worktree file %q: %s", trdlPath, err)
 	}
 
 	values := map[string]interface{}{
@@ -251,11 +255,11 @@ func getTrdlConfig(gitRepo *git.Repository, gitTag string) (*config.Trdl, error)
 
 	cfg, err := config.ParseTrdl(data, values)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing %q configuration file: %s", config.TrdlFileName, err)
+		return nil, fmt.Errorf("error parsing %q configuration file: %s", trdlPath, err)
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("error validation %q configuration file: %s", config.TrdlFileName, err)
+		return nil, fmt.Errorf("error validation %q configuration file: %s", trdlPath, err)
 	}
 
 	return cfg, nil

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	TrdlChannelsFileName = "trdl_channels.yaml"
+	DefaultTrdlChannelsPath = "trdl_channels.yaml"
 )
 
 type TrdlChannels struct {

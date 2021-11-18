@@ -114,6 +114,8 @@ func dataCompleteConfiguration() map[string]interface{} {
 
 	return map[string]interface{}{
 		fieldNameGitRepoUrl:                                 cfg.GitRepoUrl,
+		fieldNameGitTrdlPath:                                cfg.GitTrdlPath,
+		fieldNameGitTrdlChannelsPath:                        cfg.GitTrdlChannelsPath,
 		fieldNameGitTrdlChannelsBranch:                      cfg.GitTrdlChannelsBranch,
 		fieldNameInitialLastPublishedGitCommit:              cfg.InitialLastPublishedGitCommit,
 		fieldNameRequiredNumberOfVerifiedSignaturesOnCommit: cfg.RequiredNumberOfVerifiedSignaturesOnCommit,
