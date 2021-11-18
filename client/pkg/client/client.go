@@ -110,6 +110,34 @@ func (c Client) AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 
 	})
 }
 
+func (c Client) RemoveRepo(repoName string) error {
+	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+		if err := c.configuration.Reload(); err != nil {
+			return err
+		}
+
+		for _, dir := range []string{
+			c.repoDir(repoName),
+			c.repoLogsDir(repoName),
+			c.repoLocksDir(repoName),
+		} {
+			if err := os.RemoveAll(dir); err != nil {
+				return fmt.Errorf("unable to remove repo %q directory %q: %s", repoName, dir, err)
+			}
+		}
+
+		if err := c.configuration.RemoveRepoConfiguration(repoName); err != nil {
+			return fmt.Errorf("unable to remove %q from trdl configuration: %s", repoName, err)
+		}
+
+		if err := c.configuration.Save(c.configurationPath()); err != nil {
+			return fmt.Errorf("unable to save trdl configuration: %s", err)
+		}
+
+		return nil
+	})
+}
+
 func (c Client) SetRepoDefaultChannel(repoName, channel string) error {
 	if err := c.configuration.StageRepoDefaultChannel(repoName, channel); err != nil {
 		if err == repoConfigurationNotFoundErr {
