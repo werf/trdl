@@ -22,9 +22,9 @@ $( document ).ready(function() {
         $( "#mysidebar" ).parent().addClass("layout-sidebar__sidebar_a");
     }
     // activate tooltips. although this is a bootstrap js function, it must be activated this way in your theme.
-    $('[data-toggle="tooltip"]').tooltip({
-        placement : 'top'
-    });
+    // $('[data-toggle="tooltip"]').tooltip({
+    //     placement : 'top'
+    // });
 
 });
 
@@ -148,32 +148,3 @@ $(document).ready(function() {
   });
 });
 
-$(document).ready(function(){
-  // waint untill fonts are loaded
-  setTimeout(function() {
-    $('.publications__list').masonry({
-      itemSelector: '.publications__post',
-      columnWidth: '.publications__sizer'
-    })
-  }, 500)
-});
-
-$(document).ready(function(){
-
-  $('h1:contains("Installation")').each(function( index ) {
-    var $title = $(this);
-    var $btn1 = $title.next('p');
-    var $btn2 = $btn1.next('p');
-    var $btn3 = $btn2.next('p');
-
-    var new_btns = $('<div class="publications__install-btns">');
-    new_btns.append($($btn1.html()).addClass('releases__btn'));
-    new_btns.append($($btn2.html()).addClass('releases__btn'));
-    new_btns.append($($btn3.html()).addClass('releases__btn'));
-
-    $btn1.remove();
-    $btn2.remove();
-    $btn3.remove();
-    $title.after(new_btns);
-  });
-});

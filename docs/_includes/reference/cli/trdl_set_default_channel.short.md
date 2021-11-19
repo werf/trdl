@@ -1,0 +1,1 @@
+set default channel for a registered repository

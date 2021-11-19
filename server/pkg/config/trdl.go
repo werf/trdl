@@ -16,15 +16,24 @@ const (
 )
 
 type Trdl struct {
-	DockerImage string   `yaml:"docker_image,omitempty"`
-	Commands    []string `yaml:"commands,omitempty"`
+	DockerImage    string   `yaml:"dockerImage,omitempty"`
+	DockerImageOld string   `yaml:"docker_image,omitempty"` // legacy
+	Commands       []string `yaml:"commands,omitempty"`
+}
+
+func (c *Trdl) GetDockerImage() string {
+	if c.DockerImage != "" {
+		return c.DockerImage
+	}
+
+	return c.DockerImageOld
 }
 
 func (c *Trdl) Validate() error {
-	if c.DockerImage == "" {
-		return errors.New(`"docker_image" field must be set`)
-	} else if err := docker.ValidateImageNameWithDigest(c.DockerImage); err != nil {
-		return fmt.Errorf(`"docker_image" field validation failed: %s'`, err)
+	if c.GetDockerImage() == "" {
+		return errors.New("\"dockerImage\" field must be set")
+	} else if err := docker.ValidateImageNameWithDigest(c.GetDockerImage()); err != nil {
+		return fmt.Errorf(`"dockerImage" field validation failed: %s'`, err)
 	}
 
 	if len(c.Commands) == 0 {

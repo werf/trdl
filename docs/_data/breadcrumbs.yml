@@ -1,14 +1,44 @@
 en:
-  /documentation: &documentation
-    title: Documentation
-    url: /documentation/index.html
-  /reference/cli: &documentation-reference-cli
+  /reference: &reference
+    title: Reference
+    url: /reference/cli/overview.html
+  /reference/cli: &reference-cli
     title: Command line interface
     url: /reference/cli/overview.html
+  /reference/vault_plugin: &reference-vault_plugin
+    title: Vault plugin
+    url: /reference/vault_plugin/index.html
+  /reference/vault_plugin/configure: &reference-vault_plugin_configure
+    title: Configure
+    url: /reference/vault_plugin/configure.html
+  /reference/vault_plugin/configure/trusted_pgp_public_key: &reference-vault_plugin_configure_trusted_pgp_public_key
+    title: Trusted PGP public key
+    url: /reference/vault_plugin/configure.html
+  /reference/vault_plugin/task: &reference-vault_plugin_task
+    title: Task
+    url: /reference/vault_plugin/task.html
+  /reference/vault_plugin/task/uuid: &reference-vault_plugin_task_uuid
+    title: UUID
+    url: /reference/vault_plugin/task/uuid.html
+  /reference/vault_plugin/trusted_pgp_public_key: &reference-vault_plugin_trusted_pgp_public_key
+    title: Trusted PGP public key
+    url: /reference/vault_plugin/configure/trusted_pgp_public_key/name.html
 ru:
-  /documentation:
-    << : *documentation
-    title: Документация
+  /reference:
+    << : *reference
+    title: Справочник
   /reference/cli:
-    << : *documentation-reference-cli
-    title: Интерфейс командной строки
+    << : *reference-cli
+    title: CLI
+  /reference/vault_plugin:
+    << : *reference-vault_plugin
+  /reference/vault_plugin/configure:
+    <<: *reference-vault_plugin_configure
+  /reference/vault_plugin/configure/trusted_pgp_public_key:
+    <<: *reference-vault_plugin_configure_trusted_pgp_public_key
+  /reference/vault_plugin/task:
+    <<: *reference-vault_plugin_task
+  /reference/vault_plugin/task/uuid:
+    <<: *reference-vault_plugin_task_uuid
+  /reference/vault_plugin/trusted_pgp_public_key:
+    <<: *reference-vault_plugin_trusted_pgp_public_key

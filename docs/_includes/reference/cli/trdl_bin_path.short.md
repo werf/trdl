@@ -1,0 +1,1 @@
+get directory with software binaries

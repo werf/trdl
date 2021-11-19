@@ -15,7 +15,7 @@ module Jekyll
 
     # get_lang_field_or_raise_error filter returns a field from argument hash
     # returns nil if hash is empty
-    # returns hash[page.lang] if hash has the field
+    # returns hash[site.site_lang] if hash has the field
     # returns hash["all"] if hash has the field
     # otherwise, raise an error
     def get_lang_field_or_raise_error(hash)
@@ -27,7 +27,7 @@ module Jekyll
             return
         end
 
-        lang = @context.registers[:page]["lang"]
+        lang = @context.registers[:site].config["site_lang"]
         if hash.has_key?(lang)
             return hash[lang]
         elsif hash.has_key?("all")

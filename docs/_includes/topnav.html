@@ -2,7 +2,7 @@
   <div class="container">
     <div class="header__wrap">
       <a data-proofer-ignore href="/">
-          <img src="/images/logo.svg" alt="werf" height="30"/>
+          <img src="/images/logo.svg" alt="trdl" height="30"/>
       </a>
       <div class="header__menu">
         <ul class="header__menu--list">
@@ -12,7 +12,7 @@
             {%- assign topnav = site.data[page.topnav] %}
             {%- assign topnav_dropdowns = site.data[page.topnav].topnav_dropdowns %}
 
-                {%- for folder in topnav.topnav[page.lang] -%}
+                {%- for folder in topnav.topnav[site.site_lang] -%}
                     {% comment %}
                     Notice:
                         Liquid engine is very poor in working with boolean logic.
@@ -24,11 +24,17 @@
                         {%- if folder.url.size>1 and page.url == folder.url %} header__menu--item_active{% endif %}
                         {%- if folder.url.size>1 and page.url != folder.url and page.url contains folder.url
                         and page.url != '/installation.html' %} header__menu--item_active{% endif %}
-                        {%- if folder.url.size>1 and page.url == '/publications_ru.html'
-                        and folder.url == '/publications.html' %} header__menu--item_active{% endif %}
                         {%- if folder.url.size<2 and page.url.size<2 %} header__menu--item_active{% endif %}
                         {%- if folder.title == 'Документация' or folder.title == 'Documentation'  %} header__menu--item_active{% endif %}">
-                        <a href="{{ folder.url | true_relative_url }}">{{ folder.title }}</a>
+                        {% capture folder_url %}
+                        {%- if folder.external_url %}
+                        {{ folder.external_url }}
+                        {%- else %}
+                        {{ folder.url | true_relative_url }}
+                        {%- endif %}
+                        {% endcapture %}
+
+                        <a href="{{ folder_url }}" {%- if folder.external_url %}target="_blank"{% endif %}>{{ folder.title }}</a>
                         {%- if folder.folderitems %}
                         <div class="submenu-container">
                             <ul class="submenu">
@@ -68,7 +74,7 @@
             {%- endfor %}
             <li class="header__menu--item header__menu--item_parent submenu-parent">
                 <a href="#">
-                    {%- if page.lang == "ru" %}
+                    {%- if site.site_lang == "ru" %}
                         Русский
                     {%- else %}
                         English
@@ -89,7 +95,7 @@
                   </ul>
                 </div>
             </li>
-           
+
             <!--
             <li class="header__menu-icon"><a href="https://github.com{{ site.github_repo_path }}" rel="noopener noreferrer" target="_blank" class="page__icon page__icon_github" title="GitHub"></a></li>
             <li class="header__menu-icon"><a href="https://github.com{{ site.github_repo_path }}/discussions" rel="noopener noreferrer" target="_blank" class="page__icon page__icon_discussions" title="GitHub Discussions"></a></li>
@@ -104,8 +110,8 @@
 <div class="topsearch">
     <div class="page__container">
         <form action="https://www.google.com/search" class="topsearch__form" method="get" name="searchform" target="_blank">
-            <input name="sitesearch" type="hidden" value="{{ site.site_urls[page.lang] }}">
-            <input autocomplete="on" class="page__input topsearch__input" name="q" placeholder="{% if page.lang == "ru" %}Поиск по документации{% else %}Search the documentation{% endif %}" required="required"  type="text">
+            <input name="sitesearch" type="hidden" value="{{ site.site_urls[site.site_lang] }}">
+            <input autocomplete="on" class="page__input topsearch__input" name="q" placeholder="{% if site.site_lang == "ru" %}Поиск по документации{% else %}Search the documentation{% endif %}" required="required"  type="text">
             <button type="submit" class="page__icon page__icon_search topsearch__btn"></button>
         </form>
     </div>

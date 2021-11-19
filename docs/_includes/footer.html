@@ -4,9 +4,9 @@
       <div class="footer__text">
         <span>Made with</span>
         <svg class="footer__heart">
-          <use xlink:href="images/icons/sprite.svg#heart"></use>
+          <use xlink:href="{% asset icons/sprite.svg @path %}#heart"></use>
         </svg>
-        {%- if page.lang == "ru" %}
+        {%- if site.site_lang == "ru" %}
           <span>by <a href="http://flant.ru" target="_blank">Flant</a></span>
         {%- else %}
           <span>by <a href="http://flant.com" target="_blank">Flant</a></span>
@@ -26,7 +26,7 @@
     </div>
   </div>
   <!-- <div class="footer__credits">
-      {%- if page.lang == "ru" %}
+      {%- if site.site_lang == "ru" %}
       Сделано с <span class="page__icon page__icon_heart"></span> в компании <a href="{{ site.company_url }}" target="_blank">{{ site.company_name }}</a>
       {%- else %}
       Made with <span class="page__icon page__icon_heart"></span> by <a href="{{ site.company_url }}" target="_blank">{{ site.company_name }}</a>
@@ -39,7 +39,7 @@
       </a>
   </div>
   <div class="footer__gen" id="siteGenerationTime" hidden>
-      {%- if page.lang == "ru" %}
+      {%- if site.site_lang == "ru" %}
       Дата генерации сайта: {{ site.time | date: "%e.%m.%Y, %H:%M %z"  }}
       {%- else %}
       Site last generated: {{ site.time | date: "%b %-d, %Y at %H:%M %z"  }}

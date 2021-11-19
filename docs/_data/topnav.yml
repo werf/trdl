@@ -1,7 +1,14 @@
 topnav:
   en:
-     - title: GitHub
-       url: https://github.com/werf/trdl
+    - title: Reference
+      url: /reference/cli/overview.html
+
+    - title: GitHub
+      external_url: https://github.com/werf/trdl
+
   ru:
-     - title: GitHub
-       url: https://github.com/werf/trdl
+    - title: Справочник
+      url: /reference/cli/overview.html
+
+    - title: GitHub
+      external_url: https://github.com/werf/trdl

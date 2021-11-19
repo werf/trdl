@@ -44,15 +44,30 @@ defaults:
     values:
       layout: "page"
       search: true
-      sidebar: documentation
+      sidebar: false
       topnav: topnav
       sitemap_include: true
-      lang: en
       multilang: true
   - scope:
-      path: "pages_ru"
+      path: "pages_*/reference"
       type: "pages"
     values:
-      lang: ru
+      sidebar: reference
+  - scope:
+      path: "pages_*/reference/cli"
+      type: "pages"
+    values:
+      toc: false
+  - scope:
+      path: "pages_*/reference/vault_plugin/*"
+      type: "pages"
+    values:
+      toc: true
+  - scope:
+      path: "pages_*/reference/vault_plugin/index.md"
+      type: "pages"
+    values:
+      toc: false
+
 timezone: Etc/GMT-3
 output: web
