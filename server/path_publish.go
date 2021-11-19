@@ -164,7 +164,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Getting trdl_channels.yaml configuration from the commit %q\n", headCommit)
 		b.Logger().Debug(fmt.Sprintf("Getting trdl_channels.yaml configuration from the commit %q\n", headCommit))
 
-		cfg, err := GetTrdlChannelsConfig(gitRepo)
+		cfg, err := GetTrdlChannelsConfig(gitRepo, cfg.GitTrdlChannelsPath)
 		if err != nil {
 			return fmt.Errorf("error getting trdl channels config: %s", err)
 		}
@@ -327,15 +327,19 @@ func cloneGitRepositoryBranch(url, gitBranch, username, password string) (*git.R
 	return gitRepo, nil
 }
 
-func GetTrdlChannelsConfig(gitRepo *git.Repository) (*config.TrdlChannels, error) {
-	data, err := trdlGit.ReadWorktreeFile(gitRepo, config.TrdlChannelsFileName)
+func GetTrdlChannelsConfig(gitRepo *git.Repository, trdlChannelsPath string) (*config.TrdlChannels, error) {
+	if trdlChannelsPath == "" {
+		trdlChannelsPath = config.DefaultTrdlChannelsPath
+	}
+
+	data, err := trdlGit.ReadWorktreeFile(gitRepo, trdlChannelsPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read worktree file %s: %s", config.TrdlChannelsFileName, err)
+		return nil, fmt.Errorf("unable to read worktree file %s: %s", trdlChannelsPath, err)
 	}
 
 	cfg, err := config.ParseTrdlChannels(data)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing %s configuration file: %s", config.TrdlChannelsFileName, err)
+		return nil, fmt.Errorf("error parsing %s configuration file: %s", trdlChannelsPath, err)
 	}
 
 	return cfg, nil
