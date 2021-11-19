@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://www.github.com/werf/trdl/compare/v0.2.1...v0.3.0) (2021-11-19)
+
+
+### Features
+
+* **client:** add remove command ([dd32e1a](https://www.github.com/werf/trdl/commit/dd32e1aebfb2363688a7f0fa463813f583221c46))
+* **server:** support custom trdl.yaml and trdl_channels.yaml files ([aa5a986](https://www.github.com/werf/trdl/commit/aa5a9860757e2036467af8b958b71ca597d4e134))
+
 ### [0.2.1](https://www.github.com/werf/trdl/compare/v0.2.0...v0.2.1) (2021-11-01)
 
 
