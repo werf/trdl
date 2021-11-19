@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.3.1](https://www.github.com/werf/trdl/compare/v0.3.0...v0.3.1) (2021-11-19)
+
+
+### Bug Fixes
+
+* **client:** unknown command "version" for "trdl" ([702a7f0](https://www.github.com/werf/trdl/commit/702a7f091b5ab8a24ab7c9e1c2ad43a8675fe80d))
+
 ## [0.3.0](https://www.github.com/werf/trdl/compare/v0.2.1...v0.3.0) (2021-11-19)
 
 
