@@ -55,6 +55,7 @@ func rootCmd() *cobra.Command {
 				execCmd(),
 				dirPathCmd(),
 				binPathCmd(),
+				versionCmd(),
 			},
 		},
 	}...)
