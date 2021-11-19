@@ -2,6 +2,8 @@
 title: Быстрый старт
 permalink: quickstart.html
 layout: page-nosidebar
+toc: true
+toc_headers: h2
 ---
 
 ## Для администратора

@@ -1,7 +1,7 @@
 ---
 title: trdl.yaml
 permalink: reference/trdl_yaml.html
-toc: true
+toc: false
 ---
 
 Конфигурация `trdl.yaml` содержит инструкции, которые определяют окружение и набор команд необходимый для сборки артефактов релиза. 
