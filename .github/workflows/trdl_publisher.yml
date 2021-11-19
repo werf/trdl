@@ -1,0 +1,28 @@
+name: Trdl publisher
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  release:
+    name: Publish release channels using trdl server
+    runs-on: ubuntu-latest
+    steps:
+    - name: Publish client channels
+      uses: werf/trdl-vault-actions/publish@main
+      with:
+        vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
+        project-name: trdl
+        vault-auth-method: approle
+        vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID }}
+        vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID }}
+
+    - name: Publish server channels
+      uses: werf/trdl-vault-actions/publish@main
+      with:
+        vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
+        project-name: trdl-server
+        vault-auth-method: approle
+        vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_SERVER }}
+        vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_SERVER }}
