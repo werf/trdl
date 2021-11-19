@@ -94,10 +94,6 @@ entries:
         title: trdl_channels.yaml
         url: /reference/trdl_channels_yaml.html
 
-      - &tuf_repository_layout
-        title: TUF repository layout
-        url: /reference/tuf_repository_layout.html
-
   ru:
     f:
       - title: CLI
@@ -110,5 +106,5 @@ entries:
 
       - *trdl_channels_yaml
 
-      - <<: *tuf_repository_layout
-        title: "Организация TUF-репозитория"
+      - title: "Организация TUF-репозитория"
+        url: /reference/tuf_repository_layout.html

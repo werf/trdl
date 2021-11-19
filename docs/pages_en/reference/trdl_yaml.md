@@ -13,6 +13,8 @@ On release, trdl reads `trdl.yaml` from the git tag and performs the build:
 - Executes build instructions in the `/git` directory.
 - Saves release artifacts from the `/result` directory.
 
+<br />
+
 {% include reference/trdl_yaml/table.html %}
 
 ## Example

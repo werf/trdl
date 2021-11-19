@@ -6,7 +6,7 @@ toc: false
 
 The `trdl_channels.yaml` configuration contains groups, update channels and versions.
 
-On publish, trdl reads `trdl_channels.yaml` from the default git repository branch, unless explicitly overridden when configuring the vault plugin, and then applies the changes - updates come to users.
+On publish, trdl reads `trdl_channels.yaml` from the default git repository branch, unless explicitly overridden when configuring the vault plugin, and then applies the changes — updates become available to users.
 
 {% include reference/trdl_channels_yaml/table.html %}
 
