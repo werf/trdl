@@ -37,6 +37,7 @@ func rootCmd() *cobra.Command {
 			Message: "Configuration commands",
 			Commands: []*cobra.Command{
 				addCmd(),
+				removeCmd(),
 				listCmd(),
 				setDefaultChannelCmd(),
 			},

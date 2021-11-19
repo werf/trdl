@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	TrdlFileName = "trdl.yaml"
+	DefaultTrdlPath = "trdl.yaml"
 )
 
 type Trdl struct {

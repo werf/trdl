@@ -17,4 +17,6 @@ bin/tests
 *.out
 
 client/release-build
+server/release-build
+
 .jekyll-cache/

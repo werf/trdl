@@ -4,6 +4,7 @@ import "github.com/werf/trdl/client/pkg/repo"
 
 type Interface interface {
 	AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 string) error
+	RemoveRepo(repoName string) error
 	SetRepoDefaultChannel(repoName, channel string) error
 	DoSelfUpdate() error
 	UpdateRepoChannel(repoName, group, optionalChannel string) error
@@ -27,6 +28,7 @@ type RepoInterface interface {
 }
 
 type configurationInterface interface {
+	RemoveRepoConfiguration(name string) error
 	StageRepoConfiguration(name, url string)
 	StageRepoDefaultChannel(name, channel string) error
 	Reload() error
