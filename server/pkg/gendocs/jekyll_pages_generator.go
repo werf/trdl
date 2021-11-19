@@ -94,7 +94,6 @@ func (g *JekyllPagesGenerator) HandlePath(pathPattern string, doc []byte) error 
 	if err := os.WriteFile(f, []byte(fmt.Sprintf(`---
 title: %s
 permalink: %s
-toc: true
 ---
 
 {%% include %s %%}
@@ -102,7 +101,7 @@ toc: true
 		title,
 		pageRelativeUrl,
 		path.Join("/", includeRelativePath),
-	)), 0644); err != nil {
+	)), 0o644); err != nil {
 		return fmt.Errorf("unable to write file %q: %s", f, err)
 	}
 

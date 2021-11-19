@@ -53,6 +53,20 @@ defaults:
       type: "pages"
     values:
       sidebar: reference
+  - scope:
+      path: "pages_*/reference/cli"
+      type: "pages"
+    values:
+      toc: false
+  - scope:
+      path: "pages_*/reference/vault_plugin/*"
+      type: "pages"
+    values:
+      toc: true
+  - scope:
+      path: "pages_*/reference/vault_plugin/index.md"
+      type: "pages"
+    values:
       toc: false
 
 timezone: Etc/GMT-3

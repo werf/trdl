@@ -1,10 +1,17 @@
+{% capture toc_headers %}
+{%- if page.toc_headers != null && page.toc_headers != "" -%}
+{{- page.toc_headers -}}
+{% else %}
+{{- "h2,h3,h4" -}}
+{%- endif -%}
+{% endcapture %}
 
 <!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
 <script>
 $( document ).ready(function() {
   // Handler for .ready() called.
 
-$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: '{{ toc_headers }}' });
 
 if ($('#toc').is(':empty')) { $('#toc').hide(); }
 
