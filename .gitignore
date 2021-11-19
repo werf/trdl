@@ -18,3 +18,4 @@ bin/tests
 
 client/release-build
 server/release-build
+.jekyll-cache/
