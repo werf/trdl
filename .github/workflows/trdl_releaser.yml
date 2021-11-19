@@ -8,7 +8,7 @@ jobs:
     name: Perform trdl release using trdl server
     runs-on: ubuntu-latest
     steps:
-    - name: Release
+    - name: Release client
       uses: werf/trdl-vault-actions/release@main
       with:
         vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
@@ -17,3 +17,13 @@ jobs:
         vault-auth-method: approle
         vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID }}
         vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID }}
+
+    - name: Release server
+      uses: werf/trdl-vault-actions/release@main
+      with:
+        vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
+        project-name: trdl-server
+        git-tag: ${{ github.event.ref }}
+        vault-auth-method: approle
+        vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_SERVER }}
+        vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_SERVER }}
