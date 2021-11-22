@@ -31,7 +31,7 @@ targets
 
 **где:**
 
-- semver — [semver](https://semver.org/lang) версия релиза;
+- semver — [semver](https://semver.org/lang/ru) версия релиза;
 - os — операционная система (`darwin`, `linux`, `windows` или `any`, если артефакты релиза не зависят от системы);
 - arch — архитектура (`amd64`, `arm64` или `any`, если артефакты релиза не зависят от платформы);
 - release artifact — произвольный файл. 
@@ -76,7 +76,7 @@ targets
 
 **где:**
 
-- semver — [semver](https://semver.org/lang) версия релиза;
+- semver — [semver](https://semver.org/lang/ru) версия релиза;
 - os — операционная система (`darwin`, `linux`, `windows` или `any`, если артефакты релиза не зависят от системы);
 - arch — архитектура (`amd64`, `arm64` или `any`, если артефакты релиза не зависят от платформы);
 - release artifact — произвольный файл.
@@ -120,7 +120,7 @@ targets
 
 **где:**
 
-- semver part — произвольная часть [semver](https://semver.org/lang);
+- semver part — произвольная часть [semver](https://semver.org/lang/ru);
 - channel — канал обновлений `alpha`, `beta`, `ea`, `stable` или `rock-solid`. 
 
 ### Пример
