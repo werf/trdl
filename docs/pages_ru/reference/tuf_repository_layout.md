@@ -4,7 +4,7 @@ permalink: reference/tuf_repository_layout.html
 toc: true
 ---
 
-Информацию про TUF-репозиторий, назначение и стандартный набор файлов, можно прочитать [в документации TUF](https://theupdateframework.github.io/specification/latest/#the-repository), а в этой статье будет уделено внимание организации [_Target files_](https://theupdateframework.github.io/specification/latest/#target-files), способу хранения релиза, GPG-подписей артефактов релиза, а также каналов обновлений. 
+Информацию про TUF-репозиторий, назначение и стандартный набор файлов можно прочитать [в документации TUF](https://theupdateframework.github.io/specification/latest/#the-repository), а в этой статье будет уделено внимание организации [_Target files_](https://theupdateframework.github.io/specification/latest/#target-files), способу хранения релиза, GPG-подписей артефактов релиза, а также каналов обновлений. 
 
 ```
 targets
@@ -31,10 +31,10 @@ targets
 
 **где:**
 
-- semver — [semver](https://semver.org/lang/ru) версия релиза;
-- os — операционная система (`darwin`, `linux`, `windows` или `any`, если артефакты релиза не зависят от системы);
-- arch — архитектура (`amd64`, `arm64` или `any`, если артефакты релиза не зависят от платформы);
-- release artifact — произвольный файл. 
+- `semver` — [semver](https://semver.org/lang/ru) версия релиза;
+- `os` — операционная система (`darwin`, `linux`, `windows` или `any`, если артефакты релиза не зависят от системы);
+- `arch` — архитектура (`amd64`, `arm64` или `any`, если артефакты релиза не зависят от платформы);
+- `release artifact` — произвольный файл. 
 
 #### Пример
 
@@ -76,10 +76,10 @@ targets
 
 **где:**
 
-- semver — [semver](https://semver.org/lang/ru) версия релиза;
-- os — операционная система (`darwin`, `linux`, `windows` или `any`, если артефакты релиза не зависят от системы);
-- arch — архитектура (`amd64`, `arm64` или `any`, если артефакты релиза не зависят от платформы);
-- release artifact — произвольный файл.
+- `semver` — [semver](https://semver.org/lang/ru) версия релиза;
+- `os` — операционная система (`darwin`, `linux`, `windows` или `any`, если артефакты релиза не зависят от системы);
+- `arch` — архитектура (`amd64`, `arm64` или `any`, если артефакты релиза не зависят от платформы);
+- `release artifact` — произвольный файл.
 
 #### Пример
 
@@ -107,7 +107,7 @@ targets
 
 ## Хранение каналов обновлений
 
-При публикации trdl сохраняет каналы обновлений в соответствии с конфигурацией trdl_channels.yaml.
+При публикации trdl сохраняет каналы обновлений в соответствии с конфигурацией `trdl_channels.yaml`.
 
 ```
 targets
@@ -120,8 +120,8 @@ targets
 
 **где:**
 
-- semver part — произвольная часть [semver](https://semver.org/lang/ru);
-- channel — канал обновлений `alpha`, `beta`, `ea`, `stable` или `rock-solid`. 
+- `semver part` — произвольная часть [semver](https://semver.org/lang/ru);
+- `channel` — канал обновлений `alpha`, `beta`, `ea`, `stable` или `rock-solid`. 
 
 ### Пример
 
