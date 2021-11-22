@@ -1,5 +1,6 @@
 ---
 title: Организация TUF-репозитория
+title: Организация TUF-репозитория
 permalink: reference/tuf_repository_layout.html
 toc: true
 ---
@@ -38,7 +39,7 @@ targets
 
 #### Пример
 
-````
+```
 targets
 └── releases
     ├── ...
@@ -58,7 +59,7 @@ targets
         └── windows-amd64
             └── bin
                 └── werf.exe
-````
+```
 
 ### Хранение GPG-подписей артефактов релиза
 
@@ -83,7 +84,7 @@ targets
 
 #### Пример
 
-````
+```
 targets
 └── signatures
     ├── ...
@@ -103,7 +104,7 @@ targets
         └── windows-amd64
             └── bin
                 └── werf.exe.sig
-````
+```
 
 ## Хранение каналов обновлений
 
@@ -125,7 +126,7 @@ targets
 
 ### Пример
 
-````
+```
 targets
 └── channels
     ├── ...
@@ -135,4 +136,4 @@ targets
         ├── ea
         ├── stable
         └── rock-solid
-````
+```
