@@ -31,6 +31,11 @@ usermod -a -G docker vault
 
 Подойдет любой S3-совместимый бакет. Он должен быть публично доступен для чтения.
 
+{% offtopic title="GCP" %}
+FOO
+BAR
+{% endofftopic %}
+
 ### Установка плагина
 
 Скачайте [плагин trdl](https://github.com/werf/trdl/releases). Скопируйте его в `/etc/vault.d/plugins` или в другой каталог, где вы обычно храните плагины.
