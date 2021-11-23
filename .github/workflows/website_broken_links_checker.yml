@@ -1,0 +1,46 @@
+name: Broken links checker
+on:
+  push:
+    paths:
+      - 'docs/**'
+
+jobs:
+  check_links:
+    container: jekyll/builder:3
+    name: Links checker
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lang: [ru, en]
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v1
+
+      - name: Prepare environment
+        working-directory: docs
+        run: |
+          mkdir -m 777 .jekyll-cache _site
+          gem update bundler
+          bundle install
+
+      - name: Build (ru)
+        if: matrix.lang == 'ru'
+        working-directory: docs
+        run: bundle exec jekyll build --config _config.yml,_config_ru.yml
+
+      - name: Build (en)
+        if: matrix.lang == 'en'
+        working-directory: docs
+        run: bundle exec jekyll build --config _config.yml
+
+      - name: Check links
+        working-directory: docs
+        run: |
+          bundle exec htmlproofer \
+            --allow-hash-href \
+            --empty-alt-ignore \
+            --check_html \
+            --url_ignore "https://fonts.googleapis.com,https://fonts.gstatic.com" \
+            _site/

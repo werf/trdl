@@ -11,6 +11,8 @@ Configure TRDL plugin.
 
 * `git_repo_url` (string, required) — Git repository url.
 * `git_trdl_channels_branch` (string, optional) — Special git branch to store trdl_channels.yaml configuration.
+* `git_trdl_channels_path` (string, optional) — Path inside git repository to the trdl channels configuration file (trdl_channels.yaml by default).
+* `git_trdl_path` (string, optional) — Path inside git repository to the release trdl configuration file (trdl.yaml by default).
 * `initial_last_published_git_commit` (string, optional) — Initial last published git commit.
 * `required_number_of_verified_signatures_on_commit` (integer, required) — Required number of verified signatures on commit.
 * `s3_access_key_id` (string, required) — S3 storage access key id.

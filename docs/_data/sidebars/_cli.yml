@@ -12,6 +12,9 @@ cli: &cli
     - title: trdl add
       url: /reference/cli/trdl_add.html
 
+    - title: trdl remove
+      url: /reference/cli/trdl_remove.html
+
     - title: trdl list
       url: /reference/cli/trdl_list.html
 

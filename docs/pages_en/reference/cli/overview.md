@@ -6,6 +6,7 @@ toc: false
 
 Configuration commands:
  - [trdl add]({{ "/reference/cli/trdl_add.html" | true_relative_url }}) — {% include /reference/cli/trdl_add.short.md %}.
+ - [trdl remove]({{ "/reference/cli/trdl_remove.html" | true_relative_url }}) — {% include /reference/cli/trdl_remove.short.md %}.
  - [trdl list]({{ "/reference/cli/trdl_list.html" | true_relative_url }}) — {% include /reference/cli/trdl_list.short.md %}.
  - [trdl set-default-channel]({{ "/reference/cli/trdl_set_default_channel.html" | true_relative_url }}) — {% include /reference/cli/trdl_set_default_channel.short.md %}.
 
