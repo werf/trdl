@@ -34,6 +34,9 @@ git:
 ---
 image: web
 from: nginx:stable-alpine
+git:
+- add: /trdl.asc
+  to: /app/main/trdl.asc
 shell:
   setup:
   - |
