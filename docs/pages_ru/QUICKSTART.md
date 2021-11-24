@@ -31,6 +31,10 @@ usermod -a -G docker vault
 
 Подойдет любой S3-совместимый бакет. Он должен быть публично доступен для чтения.
 
+{% offtopic title="Особенности GCS (Google Cloud Storage)" %}
+При появлении ошибки `An error occurred (AccessDenied) when calling the CreateMultipartUpload operation: Access denied` необходимо убедиться, что у Service Account'а, который используется для доступа к бакету, имеется роль `Storage Admin`
+{% endofftopic %}
+
 ### Установка плагина
 
 Скачайте [плагин trdl](https://github.com/werf/trdl/releases). Скопируйте его в `/etc/vault.d/plugins` или в другой каталог, где вы обычно храните плагины.
