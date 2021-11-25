@@ -12,5 +12,19 @@ jobs:
       with:
         release-type: go
         token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-#        release-notes-header: ''
-#        release-notes-footer: ''
+        release-notes-header: "## Changelog"
+        release-notes-footer: |
+          ## Installation of trdl client
+          Download `trdl` client binaries from here:
+          * [Linux amd64](https://tuf.trdl.dev/targets/releases/{{> version }}/linux-amd64/bin/trdl) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/linux-amd64/bin/trdl.sig))
+          * [Linux arm64](https://tuf.trdl.dev/targets/releases/{{> version }}/linux-arm64/bin/trdl) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/linux-arm64/bin/trdl.sig))
+          * [macOS amd64](https://tuf.trdl.dev/targets/releases/{{> version }}/darwin-amd64/bin/trdl) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/darwin-amd64/bin/trdl.sig))
+          * [macOS arm64](https://tuf.trdl.dev/targets/releases/{{> version }}/darwin-arm64/bin/trdl) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/darwin-arm64/bin/trdl.sig))
+          * [Windows amd64](https://tuf.trdl.dev/targets/releases/{{> version }}/windows-amd64/bin/trdl.exe) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/windows-amd64/bin/trdl.exe.sig))
+
+          These binaries were signed with PGP and could be verified with the [trdl PGP public key](https://trdl.dev/trdl.asc). For example, `trdl` client binary can be downloaded and verified with `gpg` on Linux with these commands:
+          ```shell
+          curl -sSLO "https://tuf.trdl.dev/targets/releases/{{> version }}/linux-amd64/bin/trdl" -O "https://tuf.trdl.dev/targets/signatures/{{> version }}/linux-amd64/bin/trdl.sig"
+          curl -sSL https://trdl.dev/trdl.asc | gpg --import
+          gpg --verify trdl.sig trdl
+          ```

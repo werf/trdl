@@ -18,7 +18,7 @@ trdl *(stands for "true delivery")* is an Open Source tool for implementing auto
 
 trdl is already used as an update manager for [werf CI/CD tool](https://github.com/werf/werf).
 
-# Architecture
+## Architecture
 
 trdl combines two key components: the server and the client.
 
@@ -40,16 +40,22 @@ ___
 
 <img alt="Publication" src="https://raw.githubusercontent.com/werf/trdl/master/docs/images/slider/publish/7.svg" width="80%">
 
-# Documentation
+## Installation
+
+### trdl-client
+
+Download `trdl` client binaries from the [GitHub Releases page](https://github.com/werf/trdl/releases), optionally verifying the binary with the PGP signature.
+
+## Documentation
 
 Project's website is [now available](https://trdl.dev/) with more information (including developers quickstart) to follow soon.
 
-# Community & support
+## Community & support
 
 Please feel free to reach developers/maintainers and users via [GitHub Discussions](https://github.com/werf/trdl/discussions) for any questions regarding trdl.
 
 Your issues are processed carefully if posted to [issues at GitHub](https://github.com/werf/trdl/issues).
 
-# License
+## License
 
 Apache License 2.0, see [LICENSE](LICENSE).
