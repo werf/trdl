@@ -37,7 +37,7 @@ usermod -a -G docker vault
 
 ### Установка плагина
 
-Скачайте [плагин trdl](https://github.com/werf/trdl/releases). Скопируйте его в `/etc/vault.d/plugins` или в другой каталог, где вы обычно храните плагины.
+Скачайте плагин trdl, следуя инструкциям в сообщении [выбранного релиза](https://github.com/werf/trdl/releases). Скопируйте его в `/etc/vault.d/plugins` или в другой каталог, где вы обычно храните плагины.
 
 ### Настройка плагина
 
@@ -65,55 +65,56 @@ vault secrets enable -path=trdl-test-project vault-plugin-secrets-trdl
 
 Один и тот же плагин можно подключать множество раз, но каждый раз с уникальным путем. Подробнее об этом — в [официальной документации](https://www.vaultproject.io/docs/commands/secrets/enable).
 
-Теперь настроим сам плагин trdl. К подключенному плагину нужно обращаться по соответствующему пути, который мы указали в параметре `-path` при регистрации:
+Теперь настроим сам плагин trdl. Для конфигурации необходимо использовать метод API [/configure](/reference/vault_plugin/configure.html#configure-plugin):
 
 ```shell
-vault write trdl-test-project/configure s3_secret_access_key=FOO s3_access_key_id=BAR s3_bucket_name=trdl-test-project-tuf s3_region=europe-west1 s3_endpoint="https://storage.googleapis.com" required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project
+vault write trdl-test-project/configure @configuration.json
 ```
 
-Здесь мы указываем все необходимые настройки для работы плагина:
-* `s3_secret_access_key` и `s3_access_key_id` — данные для доступа к бакету;
-* `s3_bucket_name`, `s3_region` и `s3_endpoint` — имя бакета, его регион и адрес для подключения;
-* `required_number_of_verified_signatures_on_commit` — количество необходимых подписей Git-коммита;
-* `git_repo_url` — адрес репозитория.
+где `configuration.json`:
+```json
+{
+  "s3_secret_access_key": "FOO",
+  "s3_access_key_id": "BAR",
+  "s3_bucket_name": "trdl-test-project-tuf",
+  "s3_region": "europe-west1",
+  "s3_endpoint": "https://storage.googleapis.com",
+  "git_repo_url": "https://github.com/werf/trdl-test-project",
+  "required_number_of_verified_signatures_on_commit": 0
+}
+```
+
+> В текущей версии инструкции организация кворума GPG-подписей и сопутствующий процесс не рассматривается, при конфигурации плагина явно игнорируется (`"required_number_of_verified_signatures_on_commit": 0`).
+> 
+> При конфигурации плагина **крайне важно** указывать минимальное количество требуемых GPG-подписей у коммита (`required_number_of_verified_signatures_on_commit`) и загружать допустимый набор публичных GPG-ключей, используя метод API [/configure/trusted_pgp_public_key](/reference/vault_plugin/configure/trusted_pgp_public_key.html). В противном случае система обновлений становится уязвимой, так как выполнение операций контролируется не кворумом, определённым при конфигурации плагина, а любым пользователем получившим доступ.
 
 ## Для разработчика
 
-### Создание сборочных инструкций
+### Конфигурация сборки
 
-Рассмотрим простой пример: shell-скрипт, который выполняет `echo foobar`.
+Рассмотрим простой пример создания и организации артефактов релиза для нескольких платформ — организуем доставку скрипта, который при запуске будет выводить тег релиза.
 
-trdl.yaml:
+Вся конфигурация сборки, окружение и сборочные инструкции, описываются в файле [trdl.yaml](/reference/trdl_yaml.html).
 
-{% raw %}
-```shell
-dockerImage: alpine:3.13.6@sha256:e15947432b813e8ffa90165da919953e2ce850bef511a0ad1287d7cb86de84b5
-commands:
-- ./build.sh {{ .Tag }} && cp -a release-build/{{ .Tag }}/* /result
-```
-{% endraw %}
+Стоит отдельно отметить, что артефакты релиза должны иметь определённую организацию директорий для доставки на различные платформы и эффективной работы с исполняемыми файлами при использовании trdl-клиента пользователями (подробнее в [соответствующем разделе документации](/reference/trdl_yaml.html#организация-артефактов-релиза)).
 
-build.sh:
+#### trdl.yaml
 
-```shell
-#!/bin/sh -e
-VERSION=$1
-if [ -z "$VERSION" ] ; then
-    echo "Required version argument!" 1>&2
-    echo 1>&2
-    echo "Usage: $0 VERSION" 1>&2
-    exit 1
-fi
-mkdir -p release-build/${VERSION}/any-any/bin && echo "echo foobar" > release-build/${VERSION}/any-any/bin/trdl-example.sh
-```
+{% include reference/trdl_yaml/example_trdl_yaml.md.liquid %}
+
+#### build.sh
+
+{% include reference/trdl_yaml/example_build_sh.md.liquid %}
 
 Оба файла добавляем и коммитим в Git.
 
 ### Релиз новой версии
 
-После того, как `trdl.yaml` и `build.sh` закоммичены в Git, создайте Git-тег, например `v0.0.1`. Тег будет определять версию артефакта.
+После того как `trdl.yaml` и `build.sh` закоммичены в Git, создайте Git-тег с произвольным [semver](https://semver.org/lang/ru) и префиксом `v` (например, `v0.0.1`). Тег будет определять версию артефактов релиза.
 
-Для создания релиза можно воспользоваться нашим готовым скриптом `release.sh`, который находится в каталоге [server/examples](https://github.com/werf/trdl/tree/main/server/examples).
+Для создания релиза необходимо использовать метод API [/release](/reference/vault_plugin/release.html#perform-a-release), а проверка, контроль и логирование может организовываться с помощью методов API [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html) и [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
+
+Упрощённая версия релизного процесса представлена в скрипте `release.sh`, который находится в каталоге [server/examples](https://github.com/werf/trdl/tree/main/server/examples) репозитория проекта.
 
 Перед запуском скрипта необходимо установить четыре переменных окружения:
 * `VAULT_ADDR` — адрес, по которому доступен Vault;
@@ -121,11 +122,13 @@ mkdir -p release-build/${VERSION}/any-any/bin && echo "echo foobar" > release-bu
 * `PROJECT_NAME` — имя проекта. В нашем случае это путь, по которому зарегистрирован плагин (см. параметр -path в разделе «Настройка плагина»);
 * `GIT_TAG` — git тег.
 
+> При использовании GitHub Actions можно воспользоваться [нашим готовым набором actions](https://github.com/werf/trdl-vault-actions).
+
 ### Организация каналов обновлений
 
-Чтобы сделать релиз доступным для пользователя, релиз нужно опубликовать. Для этого переключитесь на основную ветку, добавьте в репозиторий файл с описанием каналов доставки и их соответствия релизам.
+Чтобы сделать релиз доступным для пользователя, релиз нужно опубликовать. Для этого переключитесь на основную ветку, добавьте в репозиторий файл с описанием каналов обновлений [trdl_channels.yaml](/reference/trdl_channels_yaml.html).
 
-trdl_channels.yaml:
+#### trdl_channels.yaml:
 
 ```yaml
 groups:
@@ -139,55 +142,72 @@ groups:
 
 ### Публикация каналов обновлений
 
-После добавления `trdl_channels.yaml` в репозиторий можно опубликовать релиз при помощи скрипта [publish.sh](https://github.com/werf/trdl/tree/main/server/examples).
+После того как `trdl_channels.yaml` находится в Git, можно переходить непосредственно к публикации.
 
-Так же, как и скрипту `release.sh`, релизу необходимо передать несколько переменных окружения:
+При публикации необходимо использовать метод API [/publish](/reference/vault_plugin/publish.html), а проверка, контроль и логирование может организовываться с помощью методов API [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html) и [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
+
+Упрощённая версия процесса публикации представлена в скрипте `publish.sh`, который находится в каталоге [server/examples](https://github.com/werf/trdl/tree/main/server/examples) репозитория проекта.
+
+Так же, как и скрипту `release.sh`, скрипту `publish.sh` требуются переменные окружения:
 * `VAULT_ADDR` — адрес, по которому доступен Vault;
 * `VAULT_TOKEN` — токен Vault с правами на обращение к endpoint’у, по которому зарегистрирован плагин;
 * `PROJECT_NAME` — имя проекта. В нашем случае это путь, по которому зарегистрирован плагин (см. параметр `-path` в разделе «Настройка плагина»).
 
-*Результатом работы скрипта будет…*
+> При использовании GitHub Actions можно воспользоваться [нашим готовым набором actions](https://github.com/werf/trdl-vault-actions).
 
 ## Для пользователя
 
+> Инструкция приведённая далее справедлива для операционных систем Linux, macOS и Windows. Команды можно выполнять в произвольной командной оболочке Unix или в PowerShell для Windows.
+
 ### Установка клиента
 
-Достаточно скачать готовый бинарный файл и положить его в каталог, доступный в `PATH` пользователя:
-
-```shell
-curl -L "https://tuf.trdl.dev/targets/releases/0.1.3/linux-amd64/bin/trdl" -o /tmp/trdl
-mkdir -p ~/bin
-install /tmp/trdl ~/bin/trdl
-rm /tmp/trdl
-echo 'export PATH=$HOME/bin:$PATH' >> ~/.bash_profile
-export PATH="$HOME/bin:$PATH"
-```
+Скачайте trdl-клиент, следуя инструкциям в сообщении [выбранного релиза](https://github.com/werf/trdl/releases). Положите его в каталог, доступный в `PATH` пользователя.
 
 ### Использование клиента
 
-Чтобы подключить репозиторий к клиенту trdl, нужно получить хеш-сумму файла `1.root.json`, который находится в бакете:
+При добавлении репозитория пользователю потребуются: произвольное имя (`REPO`), адрес TUF-репозитория (`URL`), номер доверенной версии (`ROOT_VERSION`) и хеш-сумма соответствующего файла `<VERSION>.root.json` (`ROOT_SHA512`), которые **вендор должен предоставить пользователю** для верификации TUF-репозитория при первичном обращении.
+
+Таким образом, пользователь получает от вендора следующие данные:
 
 ```shell
-curl -Ls http://127.0.0.1:9000/trdl-test-project-tuf/1.root.json | sha512sum
+URL=https://storage.googleapis.com/trdl-test-project-tuf
+ROOT_VERSION=1
+ROOT_SHA512=$(curl -Ls ${URL}/${ROOT_VERSION}.root.json | sha512sum)
 ```
 
-Далее (*этот пункт нужно доработать*):
+И добавляет репозиторий, указав произвольное имя:
 
 ```shell
-trdl add test http://127.0.0.1:9000/trdl-test-project-tuf 10 bc74122561f18d2bad3fc7ae96cdd5673f1e0dd98bdb12d3717fe44d02f091b257d4c9b85deb591b0b342531d847a66edbe92824edbc93e9077d88cc45184d68
+REPO=test
+trdl add $REPO $URL $ROOT_VERSION $ROOT_SHA512
 ```
 
-Здесь test — это имя репозитория, 0 — имя группы из trdl_channels.yaml.
-
-Далее:
+После того как репозиторий добавлен можно начинать использовать артефакты в рамках желаемого канала обновления:
 
 ```shell
-source $(trdl use test 0 stable)
+. $(trdl use test 0 stable)
 ```
 
-Теперь наш скрипт `trdl-example.sh` доступен в `$PATH`:
+Теперь скрипт доступен в `PATH` текущей shell-сессии.
+
+<div class="tabs">
+  <a href="javascript:void(0)" class="tabs__btn active" onclick="openTab(event, 'tabs__btn', 'tabs__content', 'linux_or_darwin')">Linux / macOS</a>
+  <a href="javascript:void(0)" class="tabs__btn" onclick="openTab(event, 'tabs__btn', 'tabs__content', 'windows')">Windows</a>
+</div>
+
+
+<div id="linux_or_darwin" class="tabs__content active" markdown="1">
 
 ```shell
 $ trdl-example.sh
-foobar
+v0.0.1
 ```
+</div>
+
+<div id="windows" class="tabs__content" markdown="1">
+
+```shell
+$ trdl-example.ps1
+v0.0.1
+```
+</div>
