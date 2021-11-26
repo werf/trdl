@@ -27,17 +27,17 @@
 }
 
 .tabs__btn:not(.active) {
-  border: 2px solid rgba(0,102,255,0.1);
-  color: #0066ff;
+  border: 2px solid rgba(164, 31, 226, 0.1);
+  color: #a41fe2;
 }
 
 .tabs__btn:not(.active):hover {
-  border: 2px solid rgba(0,102,255,0.5);
+  border: 2px solid rgba(164, 31, 226, 0.3);
 }
 
 .tabs__btn.active {
-  border: 2px solid #0066FF;
-  background-color: #0066FF;
+  border: 2px solid #a41fe2;
+  background-color: #a41fe2;
   color: white;
 }
 
