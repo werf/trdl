@@ -331,6 +331,7 @@
     font-size: 16px;
     line-height: 1.5;
     letter-spacing: -0.3px;
+    margin: 16px 0;
 }
 
 .docs ul p, .docs ol p {
@@ -345,6 +346,7 @@
     padding: 0;
     list-style-type: none;
     /* color: #00122c; */
+    margin: 16px 0;
 }
 
 .docs ul li {
@@ -461,12 +463,12 @@
     font-stretch: normal;
     line-height: normal;
     letter-spacing: -0.4px;
-    color: #a41fe2;
+    /* color: #a41fe2; */
 }
 
 .docs h4 {
     font-size: 18px;
-    font-weight: 500;
+    font-weight: 600;
     font-style: normal;
     font-stretch: normal;
     line-height: normal;
