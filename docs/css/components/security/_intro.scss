@@ -22,8 +22,8 @@
 
   &-bg__lines {
     position: absolute;
-    top: rem(255px);
-    right: rem(15px);
+    top: rem(220px);
+    right: rem(100px);
     z-index: -1;
 
     @include old-display {

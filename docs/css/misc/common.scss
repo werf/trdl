@@ -32,6 +32,10 @@ html {
   margin: 0 auto;
   padding: 0 rem(50px);
 
+  &--relative {
+    position: relative;
+  }
+
   @include old-display {
     max-width: 940px;
   }
@@ -117,6 +121,10 @@ table {
   line-height: rem(72px);
   letter-spacing: .05em;
   color: $text-color-title;
+
+  & span {
+    color: $text-color-accent;
+  }
 
   &--invert {
     color: $text-color-title-invert;

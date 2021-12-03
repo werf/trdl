@@ -23,6 +23,10 @@
     &__col {
       width: 45%;
 
+      @include laptop {
+        width: 48%;
+      }
+
       @include tablets {
         width: 100%;
       }
@@ -33,6 +37,10 @@
 
       &::before {
         background: $color-accent;
+      }
+
+      @include laptop {
+        max-width: 79%;
       }
 
       @include tablets {

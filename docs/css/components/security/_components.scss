@@ -1,5 +1,6 @@
 .security {
   &.benefits__section {
+    position: relative;
     padding-bottom: 0;
     margin-bottom: rem(100px);
   }
@@ -107,7 +108,17 @@
             }
           }
       }
+    }
+  }
 
+  & .security-bg__lines--components {
+    position: absolute;
+    top: rem(370px);
+    left: rem(240px);
+    z-index: -1;
+
+    @include old-display {
+      display: none;
     }
   }
 }

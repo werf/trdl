@@ -2,18 +2,21 @@
   <div class="container container--wide">
     <div class="architecture__wrap">
       <div class="architecture__title block__title block__subtitle--invert">
-        В итоге
+        Итого
       </div>
+      <p class="col__text">
+        trdl обеспечивает безопасный канал доставки обновлений от&nbsp;Git-репозитория до&nbsp;хоста пользователя и&nbsp;верификацию неизменности содержимого обновлений.
+      </p>
       <div class="architecture__cols">
         <div class="architecture__cols--item col__server">
-          <div class="col__title block__subtitle block__subtitle--invert">Что <span>обеспечивает</span> trdl</div>
+          <!-- <div class="col__title block__subtitle block__subtitle--invert">Что <span>обеспечивает</span> trdl</div> -->
           <ul class="col__list">
             <li class="col__item">
               <svg class="server__icon shield-2">
                 <use xlink:href="images/icons/sprite.svg#shield-2"></use>
               </svg>
               <p>
-                Безопасный канал доставки обновлений — от&nbsp;Git-репозитория до&nbsp;хоста пользователя.
+                Система защищает от подмены и&nbsp;компрометации Git-репозитория. Контроль достоверности и&nbsp;целостности релиза (release) и&nbsp;публикации (publish) основывается на&nbsp;Git-коммитах, что обеспечивает гарантию целостности всей истории изменений, включая все метаданные и&nbsp;всё содержимое хранилища, вплоть до&nbsp;начального коммита.
               </p>
             </li>
             <li class="col__item">
@@ -21,7 +24,7 @@
                 <use xlink:href="images/icons/sprite.svg#shield-2"></use>
               </svg>
               <p>
-                Верификацию неизменности содержимого обновлений.
+                Все операции (release и publish) верифицируются через проверку минимального набора GPG-подписей у&nbsp;коммита. Подписи хранятся в&nbsp;Git-репозитории, публичные части допустимых GPG-ключей и&nbsp;минимальный набор подписей — в&nbsp;Vault.
               </p>
             </li>
           </ul>
@@ -29,33 +32,40 @@
         <!-- col -->
 
         <div class="architecture__cols--item col__client">
-          <div class="col__title block__subtitle block__subtitle--invert">Что trdl не <span>обеспечивает</span></div>
+          <!-- <div class="col__title block__subtitle block__subtitle--invert">Что trdl не <span>обеспечивает</span></div> -->
           <ul class="col__list">
             <li class="col__item">
-              <svg class="server__icon warning">
-                <use xlink:href="images/icons/sprite.svg#warning"></use>
+              <svg class="server__icon shield-2">
+                <use xlink:href="images/icons/sprite.svg#shield-2"></use>
               </svg>
               <p>
-                Защиту от угроз, связанных с физическим доступом к хосту, на котором установлен trdl-клиент.
+                Система запрещает откат каналов обновлений на&nbsp;предыдущие версии с&nbsp;уязвимостями. При&nbsp;обновлении система проверяет родство коммита последней успешной публикации с&nbsp;текущим. Поэтому git push --force на&nbsp;предыдущий подписанный коммит ни&nbsp;к&nbsp;чему не&nbsp;приведёт.
               </p>
             </li>
             <li class="col__item">
-              <svg class="server__icon warning">
-                <use xlink:href="images/icons/sprite.svg#warning"></use>
+              <svg class="server__icon shield-2">
+                <use xlink:href="images/icons/sprite.svg#shield-2"></use>
               </svg>
               <p>
-                Защиту от ошибок, связанных с человеческим фактором, в частности — некорректной настройки кворума GPG-подписей, сборочных инструкций, самого Vault.
+                Ни у кого нет доступа к&nbsp;ключам шифрования, никто не&nbsp;работает с&nbsp;ними. Система автоматически создаёт необходимые ключи и&nbsp;хранит их&nbsp;в&nbsp;Vault.
               </p>
             </li>
           </ul>
         </div>
 
       </div>
-      <div class="security__more">
+      <!-- <div class="security__more">
         <p class="security__more--text">
           Подробнее о безопасной настройке<br /> компонентов trdl — <a href="#" class="security__more--link">в документации</a>
         </p>
-      </div>
+      </div> -->
+    </div>
+    <div class="security-bg__lines--provide">
+      <svg width="128" height="1372" viewBox="0 0 128 1372" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M64 304L64 673.067M64.0004 1520L64 779.733" stroke="#333037" stroke-width="4"/>
+        <path d="M126 0V260.988M126 1590V370.03M2 0V925.97" stroke="#A41FE2" stroke-width="4"/>
+        <path d="M2 1039L2 1582" stroke="#A41FE2" stroke-width="4"/>
+      </svg>
     </div>
   </div>
 </section>
