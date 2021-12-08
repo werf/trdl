@@ -80,15 +80,86 @@ vault write trdl-test-project/configure @configuration.json
   "s3_region": "europe-west1",
   "s3_endpoint": "https://storage.googleapis.com",
   "git_repo_url": "https://github.com/werf/trdl-test-project",
-  "required_number_of_verified_signatures_on_commit": 0
+  "required_number_of_verified_signatures_on_commit": 2
 }
 ```
 
-> В текущей версии инструкции организация кворума GPG-подписей и сопутствующий процесс не рассматривается, при конфигурации плагина явно игнорируется (`"required_number_of_verified_signatures_on_commit": 0`).
-> 
-> При конфигурации плагина **крайне важно** указывать минимальное количество требуемых GPG-подписей у коммита (`required_number_of_verified_signatures_on_commit`) и загружать допустимый набор публичных GPG-ключей, используя метод API [/configure/trusted_pgp_public_key](/reference/vault_plugin/configure/trusted_pgp_public_key.html). В противном случае система обновлений становится уязвимой, так как выполнение операций контролируется не кворумом, определённым при конфигурации плагина, а любым пользователем получившим доступ.
+> При конфигурации плагина **крайне важно** указывать минимальное количество требуемых GPG-подписей у коммита (`required_number_of_verified_signatures_on_commit`). В противном случае система обновлений становится уязвимой, так как выполнение операций контролируется не кворумом, определённым при конфигурации плагина, а любым пользователем получившим доступ.
+
+Минимальное количество требуемых GPG-подписей (`required_number_of_verified_signatures_on_commit`) зависит от таких факторов как размер и особенности команды, частота совершения операций и т.п.  
+
+#### Управления публичными частями доверенных GPG-ключей
+
+Вся работа с публичными частями доверенных GPG-ключей осуществляется группой методов API [/configure/trusted_pgp_public_key](/reference/vault_plugin/configure/trusted_pgp_public_key.html).
 
 ## Для разработчика
+
+### Настройка GPG-подписи в Git
+
+Стандартный механизм подписи Git позволяет подписывать Git-теги (при релизе) и Git-коммиты (при публикации) **при их создании**. В результате GPG-подпись становится неразрывной частью Git-тега или Git-коммита. При использовании этого подхода можно создать **только одну** единственную подпись.  
+
+Плагин [signatures](https://github.com/werf/third-party-git-signatures) позволяет подписывать Git-теги и Git-коммити, но уже постфактум, **после их создания**. В таком случае GPG-подписи сохраняются в [git-notes](https://git-scm.com/docs/git-notes). При использовании этого подхода можно создавать **произвольное количество** подписей, а также удалять раннее созданные без какого-либо влияния на связанный Git-тег или Git-коммит. 
+
+Обе процедуры требуют настроенного gpg и Git для создания GPG-подписей. Следуя [инструкции](https://git-scm.com/book/ru/v2/%D0%98%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B-Git-%D0%9F%D0%BE%D0%B4%D0%BF%D0%B8%D1%81%D1%8C#_%D0%B2%D0%B2%D0%B5%D0%B4%D0%B5%D0%BD%D0%B8%D0%B5_%D0%B2_gpg) выполните необходимые шаги.
+
+#### Установка плагина signatures
+
+Для использования плагина необходимо установить его в произвольную директорию `PATH` (например, в `~/bin`):
+```bash
+git clone https://github.com/werf/third-party-git-signatures.git
+cd third-party-git-signatures
+install bin/git-signatures ~/bin
+```
+
+При выполнении команды `git signatures` должно появиться описание плагина:
+
+```bash
+git signatures <command> [<args>]
+
+Git Signatures is a system for adding and verifying one or more PGP
+signatures to a given git reference.
+
+Git Signatures works by appending one of more signatures of a given
+ref hash to the git notes interface for that ref at 'refs/signatures'.
+
+In addition to built in commit signing that allows -authors- to sign,
+Git Signatures allows parties other than the author to issue "approval"
+signatures to a ref, allowing for decentralized cryptographic proof of
+code review. This is also useful for automation use cases where CI
+systems to be able to add a signatures to a repo if a repo if all tests
+pass successfully.
+
+In practice Git Signatures allows for tamper evident design and brings
+strong code attestations to a deployment process.
+
+Commands
+--------
+
+* git signatures init
+    Setup git to automatically include signatures on push/pull
+
+* git signatures import
+    Import all PGP keys specified in .gitsigners file to local
+    GnuPG keychain allowing for verifications.
+
+* git signatures show
+    Show signatures for a given ref.
+
+* git signatures add
+    Add a signature to a given ref.
+
+* git signatures verify
+    Verify signatures for a given ref.
+
+* git signatures pull
+    Pull all signatures for all refs from origin.
+
+* git signatures push
+    Push all signatures for all refs to origin.
+
+* git signatures version
+    Report the version number.
+```
 
 ### Конфигурация сборки
 
@@ -110,7 +181,27 @@ vault write trdl-test-project/configure @configuration.json
 
 ### Релиз новой версии
 
-После того как `trdl.yaml` и `build.sh` закоммичены в Git, создайте Git-тег с произвольным [semver](https://semver.org/lang/ru) и префиксом `v` (например, `v0.0.1`). Тег будет определять версию артефактов релиза.
+Создадим и опубликуем новый Git-тег с GPG-подписью:
+
+```shell
+git tag -s v0.0.1 -m 'Signed v0.0.1 tag'
+git push origin v0.0.1
+```
+
+> Тег определяет версию артефактов релиза и должен соответствовать определённому формату: произвольный [semver](https://semver.org/lang/ru) с префиксом `v`.
+
+После того как Git-тег опубликован, необходимо подписать его достаточным количеством доверенных GPG-ключей. **Каждый участник кворума**, определённого при [конфигурации плагина](#настройка-плагина), **должен подписать Git-тег и опубликовать свою GPG-подпись** с помощью Git-плагина [signatures](#установка-плагина-signatures):
+
+```shell
+git fetch --tags
+git signatures pull
+git signatures add v0.0.1
+git signatures push
+```
+
+> Процесс подписывания может выполняться в один шаг `git signatures add --push v0.0.1`.
+
+Тег создан, необходимое количество GPG-подписей есть и теперь можно переходить непосредственно к релизу.
 
 Для создания релиза необходимо использовать метод API [/release](/reference/vault_plugin/release.html#perform-a-release), а проверка, контроль и логирование может организовываться с помощью методов API [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html) и [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
 
@@ -124,7 +215,7 @@ vault write trdl-test-project/configure @configuration.json
 
 > При использовании GitHub Actions можно воспользоваться [нашим готовым набором actions](https://github.com/werf/trdl-vault-actions).
 
-### Организация каналов обновлений
+### Публикация каналов обновлений
 
 Чтобы сделать релиз доступным для пользователя, релиз нужно опубликовать. Для этого переключитесь на основную ветку, добавьте в репозиторий файл с описанием каналов обновлений [trdl_channels.yaml](/reference/trdl_channels_yaml.html).
 
@@ -140,9 +231,26 @@ groups:
     version: 0.0.1
 ```
 
-### Публикация каналов обновлений
+Далее необходимо добавить конфигурацию в Git и опубликовать Git-коммит c GPG-подписью:
 
-После того как `trdl_channels.yaml` находится в Git, можно переходить непосредственно к публикации.
+```shell
+git add trdl_channels.yaml
+git commit -S -m 'Signed release channels'
+git push 
+```
+
+После того как Git-коммит опубликован, необходимо подписать его достаточным количеством доверенных GPG-ключей. **Каждый участник кворума**, определённого при [конфигурации плагина](#настройка-плагина), **должен подписать Git-коммит и опубликовать свою GPG-подпись** с помощью Git-плагина [signatures](#установка-плагина-signatures):
+
+```shell
+git fetch
+git signatures pull
+git signatures add origin/main
+git signatures push
+```
+
+> Процесс подписывания может выполняться в один шаг `git signatures add --push origin/main`.
+
+Необходимое количество GPG-подписей добавлено и теперь можно переходить непосредственно к публикации каналов обновлений.
 
 При публикации необходимо использовать метод API [/publish](/reference/vault_plugin/publish.html), а проверка, контроль и логирование может организовываться с помощью методов API [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html) и [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
 
@@ -199,7 +307,7 @@ trdl add $REPO $URL $ROOT_VERSION $ROOT_SHA512
 <div id="linux_or_darwin" class="tabs__content active" markdown="1">
 
 ```shell
-$ trdl-example.sh
+trdl-example.sh
 v0.0.1
 ```
 </div>
@@ -207,7 +315,7 @@ v0.0.1
 <div id="windows" class="tabs__content" markdown="1">
 
 ```shell
-$ trdl-example.ps1
+trdl-example.ps1
 v0.0.1
 ```
 </div>
