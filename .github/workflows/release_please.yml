@@ -14,7 +14,16 @@ jobs:
         token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         release-notes-header: "## Changelog"
         release-notes-footer: |
-          ## Installation of trdl client
+          ## Installation
+          Download `trdl` Vault plugin binaries from here:
+          * [Linux amd64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/linux-amd64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/linux-amd64/bin/vault-plugin-secrets-trdl.sig))
+          * [Linux arm64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/linux-arm64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/linux-arm64/bin/vault-plugin-secrets-trdl.sig))
+          * [macOS amd64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/darwin-amd64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/darwin-amd64/bin/vault-plugin-secrets-trdl.sig))
+          * [macOS arm64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/darwin-arm64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/darwin-arm64/bin/vault-plugin-secrets-trdl.sig))
+          * [Windows amd64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/windows-amd64/bin/vault-plugin-secrets-trdl.exe) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/windows-amd64/bin/vault-plugin-secrets-trdl.exe.sig))
+
+          These binaries were signed with PGP and could be verified with [this PGP public key](https://trdl.dev/trdl-server.asc).
+
           Download `trdl` client binaries from here:
           * [Linux amd64](https://tuf.trdl.dev/targets/releases/{{> version }}/linux-amd64/bin/trdl) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/linux-amd64/bin/trdl.sig))
           * [Linux arm64](https://tuf.trdl.dev/targets/releases/{{> version }}/linux-arm64/bin/trdl) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/linux-arm64/bin/trdl.sig))
@@ -22,12 +31,12 @@ jobs:
           * [macOS arm64](https://tuf.trdl.dev/targets/releases/{{> version }}/darwin-arm64/bin/trdl) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/darwin-arm64/bin/trdl.sig))
           * [Windows amd64](https://tuf.trdl.dev/targets/releases/{{> version }}/windows-amd64/bin/trdl.exe) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/windows-amd64/bin/trdl.exe.sig))
 
-          These binaries were signed with PGP and could be verified with the [trdl PGP public key](https://trdl.dev/trdl.asc).
+          These binaries were signed with PGP and could be verified with [this PGP public key](https://trdl.dev/trdl-client.asc).
 
           For example, `trdl` client binary can be downloaded, verified with `gpg` and then installed to `~/bin/` on Linux with these commands:
           ```shell
           curl -sSLO "https://tuf.trdl.dev/targets/releases/{{> version }}/linux-amd64/bin/trdl" -O "https://tuf.trdl.dev/targets/signatures/{{> version }}/linux-amd64/bin/trdl.sig"
-          curl -sSL https://trdl.dev/trdl.asc | gpg --import
+          curl -sSL https://trdl.dev/trdl-client.asc | gpg --import
           gpg --verify trdl.sig trdl
           install -D trdl ~/bin/trdl
           ```
