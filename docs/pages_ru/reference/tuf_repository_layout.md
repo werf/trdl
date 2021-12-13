@@ -5,7 +5,7 @@ permalink: reference/tuf_repository_layout.html
 toc: true
 ---
 
-Информацию про TUF-репозиторий, назначение и стандартный набор файлов можно найти [в документации TUF](https://theupdateframework.github.io/specification/latest/#the-repository). Эта статья — про организацию [Target files](https://theupdateframework.github.io/specification/latest/#target-files), способ хранения релиза, GPG-подписи артефактов релиза, а также каналы обновлений.
+Информацию про TUF-репозиторий, его назначение и стандартный набор файлов можно найти [в документации TUF](https://theupdateframework.github.io/specification/latest/#the-repository). Эта статья — про организацию [target files](https://theupdateframework.github.io/specification/latest/#target-files), способ хранения релиза, GPG-подписей артефактов релиза, а также каналов обновлений. В нашем случае target files — это релизы, подписи и каналы обновлений.
 
 ```
 targets
