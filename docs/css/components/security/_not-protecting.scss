@@ -1,0 +1,15 @@
+.security {
+  & .architecture__cols {
+    &--item {
+      & .col__item .warning {
+        stroke: $color-accent;
+      }
+
+      // &:last-child {
+      //   & .col__item {
+      //     max-width: 95%;
+      //   }
+      // }
+    }
+  }
+}

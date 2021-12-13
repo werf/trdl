@@ -13,6 +13,11 @@
 
   &__wrap {
     margin: rem(50px);
+
+    @include phones {
+      margin-left: 15px;
+      margin-right: 15px;
+    }
   }
 
   &__title {

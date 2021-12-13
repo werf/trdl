@@ -4,6 +4,32 @@
       <a data-proofer-ignore href="/">
           <img src="/images/logo.svg" alt="trdl" height="30"/>
       </a>
+      <div class="header__menu--small">
+        <li class="header__menu--item header__menu--item_parent submenu-parent hidden">
+          <a href="#">
+              {%- if page.lang == "ru" %}
+                Рус
+              {%- else %}
+                Eng
+              {%- endif %}
+          </a>
+          <div class="submenu-container">
+            <ul class="submenu">
+              <li data-proofer-ignore class="submenu-item">
+                  <a data-proofer-ignore href="https://{{ site.site_urls.en }}{{ page.url }}" class="submenu-item-link">
+                      Eng
+                  </a>
+              </li>
+              <li data-proofer-ignore class="submenu-item">
+                  <a data-proofer-ignore href="https://{{ site.site_urls.ru }}{{ page.url }}" class="submenu-item-link">
+                    Рус
+                  </a>
+              </li>
+            </ul>
+          </div>
+        </li>
+        {%- include menu-burger.html %}
+      </div>
       <div class="header__menu">
         <ul class="header__menu--list">
             <!-- toggle sidebar button -->
@@ -13,12 +39,6 @@
             {%- assign topnav_dropdowns = site.data[page.topnav].topnav_dropdowns %}
 
                 {%- for folder in topnav.topnav[site.site_lang] -%}
-                    {% comment %}
-                    Notice:
-                        Liquid engine is very poor in working with boolean logic.
-                        Also, somehow, it can not check equality of folder.url == '/' and page.url=='/' - something buggy here.
-                        That's why below lines of li class are such ugly.
-                    {% endcomment %}
                     <li class="header__menu--item submenu-parent
                         {%- if folder.folderitems %} header__menu--item_parent{% endif %}
                         {%- if folder.url.size>1 and page.url == folder.url %} header__menu--item_active{% endif %}
@@ -72,7 +92,7 @@
             </li>
             {%- endfor %}
             {%- endfor %}
-            <li class="header__menu--item header__menu--item_parent submenu-parent">
+            <li class="header__menu--item header__menu--item_parent submenu-parent lang">
                 <a href="#">
                     {%- if site.site_lang == "ru" %}
                         Русский

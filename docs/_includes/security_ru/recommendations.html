@@ -1,0 +1,25 @@
+<section class="security how-work__section">
+  <div class="container">
+    <div class="how-work__wrap">
+      <div class="how-work__title block__title">Наши рекомендации</div>
+      <div class="recommendations">
+        <ul class="card__list recommendations__list">
+          <div class="recommendations__col">
+            <li class="card__item recommendations__item">Отказаться от использования root-токена Vault в&nbsp;пользу внешнего провайдера аутентификации.</li>
+            <!-- item -->
+            <li class="card__item recommendations__item">Организовать доступ к Vault через nginx, который обеспечивает HTTPS-соединение и&nbsp;предоставляет доступ только к&nbsp;определенным endpoint’ам Vault.</li>
+            <!-- item -->
+            <li class="card__item recommendations__item">Запускать Docker на&nbsp;том же&nbsp;хосте, что&nbsp;и&nbsp;Vault, без&nbsp;доступа к&nbsp;нему извне.</li>
+            <!-- item -->
+          </div>
+          <div class="recommendations__col">
+            <li class="card__item recommendations__item">Не устанавливать на&nbsp;виртуальной машине с&nbsp;Vault и&nbsp;плагином trdl какое-либо другое&nbsp;ПО.</li>
+            <!-- item -->
+            <li class="card__item recommendations__item">Не забывать про базовые методы защиты хоста&nbsp;и&nbsp;ОС.</li>
+            <!-- item -->
+          </div>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,133 @@
+.security {
+  &.benefits__section {
+    position: relative;
+    padding-bottom: 0;
+    margin-bottom: rem(100px);
+  }
+
+  .benefits {
+    &__title {
+      padding-bottom: rem(35px);
+    }
+
+    &__grid--list {
+      grid-template-areas: 
+        "gear ."
+        "gear people"
+        "gear people"
+        "shield people"
+        "shield comp"
+        "shield comp"
+        ". comp";
+  
+      & .card {
+        display: flex;
+        flex-direction: column;
+
+        &--gear {
+          & .card__list {
+            flex-grow: 1;
+          }
+        }
+
+        &--shield {
+          height: fit-content;
+        }
+  
+        &--comp {
+          height: fit-content;
+        }
+  
+        &__pic {
+          &.parachute {
+            fill: $color-dark;
+          }
+        }
+  
+        &__text {
+          padding-bottom: rem(30px);
+        }
+  
+        &__item {
+          color: $color-dark;
+          font-weight: 600;
+          
+          &--accent {
+            color: $text-color-accent;
+          }
+        }
+
+        & .button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          font-size: rem(14px);
+          line-height: rem(17px);
+          transition: all .3s;
+
+          &:hover {
+            border-color: transparent;
+
+            & .card__ext-link {
+              fill: $text-color-title-invert;
+            }
+          }
+        }
+
+        &__ext-link {
+          width: rem(16px);
+          height: rem(16px);
+          fill: $color-accent;
+          margin-top: rem(-3px);
+          margin-left: 10px;
+          transition: all 0.2s ease-in-out;
+        }
+      }
+    }
+
+    @include old-display {
+      &__grid--list {
+        grid-template-areas: 
+          "gear ."
+          "gear people"
+          "gear people"
+          "gear people"
+          "gear people"
+          "gear people"
+          "shield people"
+          "shield comp"
+          "shield comp"
+          ". comp";
+      }
+    }
+
+    @include tablets {
+      &__grid--list {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+          "gear"
+          "people"
+          "shield"
+          "comp";
+          
+          & .card {
+            & .button {
+              max-width: rem(380px);
+            }
+          }
+      }
+    }
+  }
+
+  & .security-bg__lines--components {
+    position: absolute;
+    top: rem(370px);
+    left: rem(240px);
+    z-index: -1;
+
+    @include old-display {
+      display: none;
+    }
+  }
+}
