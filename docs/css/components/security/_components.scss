@@ -21,6 +21,15 @@
         ". comp";
   
       & .card {
+        display: flex;
+        flex-direction: column;
+
+        &--gear {
+          & .card__list {
+            flex-grow: 1;
+          }
+        }
+
         &--shield {
           height: fit-content;
         }
