@@ -4,7 +4,7 @@ permalink: reference/tuf_repository_layout.html
 toc: true
 ---
 
-Please, refer to the [TUF documentation](https://theupdateframework.github.io/specification/latest/#the-repository) to learn more about the TUF repository, its purpose, and the standard set of files. This article will focus on the [_Target files_](https://theupdateframework.github.io/specification/latest/#target-files) organization, how the release is stored, GPG signatures of the release artifacts, and release channels. 
+To learn more about the TUF repository, its purpose and the standard set of files, see the [TUF Documentation](https://theupdateframework.github.io/specification/latest/#the-repository). This article discusses the layout of [_Target files_](https://theupdateframework.github.io/specification/latest/#target-files), how the release is stored, GPG signatures of the release artifacts, and release channels. In our case, the target files refer to releases, signatures, and release channels.
 
 ```
 targets
@@ -17,7 +17,7 @@ targets
 
 ### Storing release artifacts
 
-When releasing, trdl uses the path corresponding to the release version `targets/releases/<semver>/` and saves the build result unchanged.
+When releasing, trdl uses the path that corresponds to the release version `targets/releases/<semver>/` and saves the build result unchanged.
 
 ```
 targets
@@ -29,12 +29,12 @@ targets
             └── <release artifact>
 ```
 
-**where:**
+Here:
 
 - `semver` — release version in the [semver](https://semver.org/) format;
 - `os` — operating system (`darwin`, `linux`, `windows`, or `any`, if the release artifacts are system-independent);
 - `arch` — architecture (`amd64`, `arm64`, or `any`, if the release artifacts are platform-independent);
-- `release artifact` — an arbitrary file. 
+- `release artifact` — an arbitrary file.
 
 #### Example
 
@@ -62,7 +62,9 @@ targets
 
 ### Storing GPG signatures of the release artifacts
 
-When releasing, trdl signs all release artifacts (`targets/releases/<semver>/<os>-<arch>/<release artifact>`) and saves all signatures in `targets/signatures/` to the same path but with the `.sig` extension (`targets/signatures/<semver>/<os>-<arch>/<release artifact>.sig`).
+When releasing, trdl:
+* signs all release artifacts: `targets/releases/<semver>/<os>-<arch>/<release artifact>`;
+* saves all signatures in `targets/signatures/` to an identical path with the `.sig` extension: `targets/signatures/<semver>/<os>-<arch>/<release artifact>.sig`.
 
 ```
 targets
@@ -74,7 +76,7 @@ targets
             └── <release artifact>.sig
 ```
 
-**where:**
+Here:
 
 - `semver` — release version in the [semver](https://semver.org/) format;
 - `os` — operating system (`darwin`, `linux`, `windows`, or `any`, if the release artifacts are system-independent);
@@ -118,7 +120,7 @@ targets
         └── <channel>
 ```
 
-**where:**
+Here:
 
 - `semver part` — the [semver](https://semver.org/) part;
 - `channel` — `alpha`, `beta`, `ea`, `stable`, or `rock-solid` release channel. 
