@@ -58,7 +58,7 @@ spec:
           serviceName: {{ .Chart.Name }}
           servicePort: 80
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: {{ .Chart.Name }}
@@ -76,14 +76,6 @@ spec:
   - {{ $host }}
   - www.{{ $host }}
   - ru.{{ $host }}
-  acme:
-    config:
-    - http01:
-        ingressClass: nginx
-      domains:
-      - {{ $host }}
-      - ru.{{ $host }}
-      - www.{{ $host }}
 ---
 {{- if ne .Values.global.env "production" }}
 apiVersion: deckhouse.io/v1alpha1
