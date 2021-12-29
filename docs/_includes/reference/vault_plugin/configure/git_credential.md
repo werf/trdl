@@ -1,6 +1,6 @@
-Configure git credentials.
+Configure Git credentials.
 
-## Configure git credential
+## Configure Git credentials
 
 
 | Method | Path |
@@ -9,15 +9,15 @@ Configure git credentials.
 
 ### Parameters
 
-* `password` (string, optional) — Git password. Required for CREATE, UPDATE..
-* `username` (string, optional) — Git username. Required for CREATE, UPDATE..
+* `password` (string, optional) — A Git password; Required for CREATE, UPDATE..
+* `username` (string, optional) — A Git username; Required for CREATE, UPDATE..
 
 ### Responses
 
 * 200 — OK. 
 
 
-## Reset git credential
+## Reset Git credentials
 
 
 | Method | Path |

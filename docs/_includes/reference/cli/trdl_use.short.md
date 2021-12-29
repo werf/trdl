@@ -1,1 +1,1 @@
-generate script to use software binaries within a shell session
+generate a script to use the software binaries within a shell session

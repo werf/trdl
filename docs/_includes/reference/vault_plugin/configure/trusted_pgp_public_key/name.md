@@ -1,6 +1,6 @@
-Read or delete configured trusted PGP public key.
+Read or delete the configured trusted PGP public key.
 
-## Get trusted PGP public key
+## Get the trusted PGP public key
 
 
 | Method | Path |
@@ -17,7 +17,7 @@ Read or delete configured trusted PGP public key.
 * 200 — OK. 
 
 
-## Delete trusted PGP public key
+## Delete the trusted PGP public key
 
 
 | Method | Path |

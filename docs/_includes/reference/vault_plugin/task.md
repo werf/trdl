@@ -1,6 +1,6 @@
 Get tasks.
 
-## Get list of task UUIDs
+## Get a list of task UUIDs
 
 
 | Method | Path |

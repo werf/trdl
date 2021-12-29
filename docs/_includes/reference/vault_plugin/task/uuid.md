@@ -1,6 +1,6 @@
 Get task status.
 
-## Get task status
+## Get the task status
 
 
 | Method | Path |

@@ -1,6 +1,6 @@
-Configure server PGP signing keys.
+Configure a PGP key for signing release artifacts.
 
-## Get public part of PGP signing key
+## Get the public part of the current PGP signing key
 
 
 | Method | Path |
@@ -13,9 +13,9 @@ Configure server PGP signing keys.
 * 200 — OK. 
 
 
-## Delete current PGP signing key
+## Delete the current PGP signing key
 
-Delete current PGP signing key (new key will be generated automatically on demand)
+Delete the current PGP signing key (new key will be generated automatically on demand)
 
 
 | Method | Path |

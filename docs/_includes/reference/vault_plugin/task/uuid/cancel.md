@@ -1,6 +1,6 @@
-Cancel running task.
+Cancel the running task.
 
-## Cancel running task
+## Cancel the running task
 
 
 | Method | Path |

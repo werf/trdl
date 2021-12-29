@@ -1,6 +1,6 @@
-Get task log.
+Get the task log.
 
-## Get task log
+## Get the task log
 
 
 | Method | Path |
