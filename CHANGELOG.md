@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.3.2](https://www.github.com/werf/trdl/compare/v0.3.1...v0.3.2) (2021-12-29)
+
+
+### Bug Fixes
+
+* target files ([7b3ed38](https://www.github.com/werf/trdl/commit/7b3ed3877e8d7dd40ad260252a76dd9e09636cda))
+
 ### [0.3.1](https://www.github.com/werf/trdl/compare/v0.3.0...v0.3.1) (2021-11-19)
 
 
