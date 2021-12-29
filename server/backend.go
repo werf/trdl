@@ -105,6 +105,6 @@ func (b *Backend) InitPeriodicFunc(modules ...BackendModuleInterface) {
 
 const (
 	backendHelp = `
-The TRDL backend plugin publishes project releases into the TUF-compatible repository.
+The trdl plugin builds and releases software versions, publishes the release channels, and ensures object storage security via saving data signed by keys (no one has access to those keys) and continuously rotating TUF keys and metadata.
 `
 )
