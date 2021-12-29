@@ -12,7 +12,7 @@ import (
 func dirPathCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "dir-path REPO GROUP [CHANNEL]",
-		Short:                 "Get the  directory with software artifacts",
+		Short:                 "Get the directory with software artifacts",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
