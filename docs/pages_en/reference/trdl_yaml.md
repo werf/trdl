@@ -12,13 +12,11 @@ On release, trdl reads `trdl.yaml` from the Git tag and performs the build:
 - Executes build instructions in the `/git` directory.
 - Saves release artifacts from the `/result` directory.
 
-<br />
-
 {% include reference/trdl_yaml/table.html %}
 
 ## Release artifacts layout
 
-After completing the build instructions, the release artifacts must reside in the `/result` directory. Artifacts require a strict directory organization to integrate with the trdl-client, deliver to different platforms, and efficiently handle executable files.
+After completing the build instructions, the release artifacts must reside in the `/result` directory. Artifacts require a strict directory organization to integrate with the trdl client, deliver to different platforms, and efficiently handle executable files.
 
 Each release artifact must be saved to the directory of the platform for which it is designed.
 The name of the platform directory depends on the operating system and the `<os>-<arch>` parameter (system architecture).

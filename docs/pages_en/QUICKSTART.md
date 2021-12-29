@@ -15,6 +15,7 @@ toc_headers: h2
 There are a couple of ways to install Vault and the trdl plugin. The easiest one is to use the ready-made Vault binary (you can get one at the Vault website or install it using your distribution's package manager) and the ready-made trdl plugin binary.
 
 ### Docker
+
 Install Docker. Add a Vault user to the Docker group:
 
 ```shell
