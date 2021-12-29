@@ -17,7 +17,7 @@ func (publisher *Publisher) Paths() []*framework.Path {
 			Fields:       map[string]*framework.FieldSchema{},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
-					Description: "Get a public part of a PGP signing key",
+					Description: "Get the public part of the current PGP signing key",
 					Callback:    publisher.pathConfigurePGPSigningKeyRead,
 				},
 				logical.DeleteOperation: &framework.PathOperation{

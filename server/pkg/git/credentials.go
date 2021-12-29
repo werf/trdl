@@ -30,11 +30,11 @@ func CredentialsPaths() []*framework.Path {
 			Fields: map[string]*framework.FieldSchema{
 				FieldNameGitCredentialUsername: {
 					Type:        framework.TypeString,
-					Description: "a Git username; Required for CREATE, UPDATE.",
+					Description: "A Git username; Required for CREATE, UPDATE.",
 				},
 				FieldNameGitCredentialPassword: {
 					Type:        framework.TypeString,
-					Description: "a Git password; Required for CREATE, UPDATE.",
+					Description: "A Git password; Required for CREATE, UPDATE.",
 				},
 			},
 
