@@ -24,31 +24,31 @@ func CredentialsPaths() []*framework.Path {
 	return []*framework.Path{
 		{
 			Pattern:         "^configure/git_credential/?$",
-			HelpSynopsis:    "Configure git credentials",
-			HelpDescription: "Configure git credentials to perform clone operation",
+			HelpSynopsis:    "Configure Git credentials",
+			HelpDescription: "Configure Git credentials to perform clone operation",
 
 			Fields: map[string]*framework.FieldSchema{
 				FieldNameGitCredentialUsername: {
 					Type:        framework.TypeString,
-					Description: "Git username. Required for CREATE, UPDATE.",
+					Description: "a Git username; Required for CREATE, UPDATE.",
 				},
 				FieldNameGitCredentialPassword: {
 					Type:        framework.TypeString,
-					Description: "Git password. Required for CREATE, UPDATE.",
+					Description: "a Git password; Required for CREATE, UPDATE.",
 				},
 			},
 
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{
-					Description: "Configure git credential",
+					Description: "Configure Git credentials",
 					Callback:    pathConfigureGitCredentialCreateOrUpdate,
 				},
 				logical.UpdateOperation: &framework.PathOperation{
-					Description: "Configure git credential",
+					Description: "Configure Git credentials",
 					Callback:    pathConfigureGitCredentialCreateOrUpdate,
 				},
 				logical.DeleteOperation: &framework.PathOperation{
-					Description: "Reset git credential",
+					Description: "Reset Git credentials",
 					Callback:    pathConfigureGitCredentialDelete,
 				},
 			},
@@ -78,7 +78,7 @@ func pathConfigureGitCredentialCreateOrUpdate(ctx context.Context, req *logical.
 
 func pathConfigureGitCredentialDelete(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	if err := DeleteGitCredential(ctx, req.Storage); err != nil {
-		return nil, fmt.Errorf("unable to delete git credentials configuration: %s", err)
+		return nil, fmt.Errorf("unable to delete Git credentials configuration: %s", err)
 	}
 
 	return nil, nil

@@ -11,8 +11,8 @@ import (
 func setDefaultChannelCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-default-channel REPO CHANNEL",
-		Short: "Set default channel for a registered repository",
-		Long: `Set default channel for a registered repository.
+		Short: "Set a default channel for a registered repository",
+		Long: `Set a default channel for a registered repository.
 The new channel will be used by default instead of stable`,
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {

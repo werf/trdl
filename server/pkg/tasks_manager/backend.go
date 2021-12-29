@@ -40,7 +40,7 @@ func (m *Manager) Paths() []*framework.Path {
 	return []*framework.Path{
 		{
 			Pattern:      pathPatternConfigure,
-			HelpSynopsis: "Configure task manager",
+			HelpSynopsis: "Configure the task manager",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameTaskTimeout: {
 					Type:        framework.TypeDurationSecond,
@@ -55,15 +55,15 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{
-					Description: "Configure task manager",
+					Description: "Configure the task manager",
 					Callback:    m.pathConfigureCreateOrUpdate,
 				},
 				logical.UpdateOperation: &framework.PathOperation{
-					Description: "Configure task manager",
+					Description: "Configure the task manager",
 					Callback:    m.pathConfigureCreateOrUpdate,
 				},
 				logical.ReadOperation: &framework.PathOperation{
-					Description: "Get task manager configuration",
+					Description: "Get the task manager configuration",
 					Callback:    m.pathConfigureRead,
 				},
 			},
@@ -75,7 +75,7 @@ func (m *Manager) Paths() []*framework.Path {
 			Fields:          map[string]*framework.FieldSchema{},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
-					Description: "Get list of task UUIDs",
+					Description: "Get a list of task UUIDs",
 					Callback:    m.pathTaskList,
 				},
 			},
@@ -92,14 +92,14 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
-					Description: "Get task status",
+					Description: "Get the task status",
 					Callback:    m.pathTaskStatus,
 				},
 			},
 		},
 		{
 			Pattern:      pathPatternTaskCancel,
-			HelpSynopsis: "Cancel running task",
+			HelpSynopsis: "Cancel the running task",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:        framework.TypeNameString,
@@ -109,18 +109,18 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{
-					Description: "Cancel running task",
+					Description: "Cancel the running task",
 					Callback:    m.pathTaskCancel,
 				},
 				logical.UpdateOperation: &framework.PathOperation{
-					Description: "Cancel running task",
+					Description: "Cancel the running task",
 					Callback:    m.pathTaskCancel,
 				},
 			},
 		},
 		{
 			Pattern:      pathPatternTaskLog,
-			HelpSynopsis: "Get task log",
+			HelpSynopsis: "Get the task log",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameUUID: {
 					Type:        framework.TypeNameString,
@@ -140,7 +140,7 @@ func (m *Manager) Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
-					Description: "Get task log",
+					Description: "Get the task log",
 					Callback:    m.pathTaskLogRead,
 				},
 			},

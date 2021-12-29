@@ -105,6 +105,6 @@ func (b *Backend) InitPeriodicFunc(modules ...BackendModuleInterface) {
 
 const (
 	backendHelp = `
-The TRDL backend plugin allows publishing of project's releases into the TUF compatible repository.
+The TRDL backend plugin publishes project releases into the TUF-compatible repository.
 `
 )

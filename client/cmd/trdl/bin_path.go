@@ -12,7 +12,7 @@ import (
 func binPathCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                   "bin-path REPO GROUP [CHANNEL]",
-		Short:                 "Get directory with software binaries",
+		Short:                 "Get the directory with software binaries",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
