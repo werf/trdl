@@ -1,1 +1,1 @@
-get directory with software artifacts
+get the directory with software artifacts

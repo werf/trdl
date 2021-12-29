@@ -1,4 +1,4 @@
-Generate script to update software binaries in the background and use local ones within a shell session
+Generate a script to update the software binaries in the background and use local ones within a shell session
 
 ## Syntax
 

@@ -1,4 +1,4 @@
-Get directory with software artifacts
+Get the directory with software artifacts
 
 ## Syntax
 

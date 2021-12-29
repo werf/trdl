@@ -35,27 +35,27 @@ func Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{
-					Description: "Add trusted PGP public key",
+					Description: "Add a trusted PGP public key",
 					Callback:    pathConfigureTrustedPGPPublicKeyCreateOrUpdate,
 				},
 				logical.UpdateOperation: &framework.PathOperation{
-					Description: "Add trusted PGP public key",
+					Description: "Add a trusted PGP public key",
 					Callback:    pathConfigureTrustedPGPPublicKeyCreateOrUpdate,
 				},
 				logical.ReadOperation: &framework.PathOperation{
-					Description: "Get list of trusted PGP public key",
+					Description: "Get the list of trusted PGP public keys",
 					Callback:    pathConfigureTrustedPGPPublicKeyReadOrList,
 				},
 				logical.ListOperation: &framework.PathOperation{
-					Description: "Get list of trusted PGP public key",
+					Description: "Get the list of trusted PGP public keys",
 					Callback:    pathConfigureTrustedPGPPublicKeyReadOrList,
 				},
 			},
 		},
 		{
 			Pattern:         "configure/trusted_pgp_public_key/" + framework.GenericNameRegex(fieldNameTrustedPGPPublicKeyName) + "$",
-			HelpSynopsis:    "Read or delete configured trusted PGP public key",
-			HelpDescription: "Read or delete configured trusted PGP public key",
+			HelpSynopsis:    "Read or delete the configured trusted PGP public key",
+			HelpDescription: "Read or delete the configured trusted PGP public key",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameTrustedPGPPublicKeyName: {
 					Type:        framework.TypeNameString,
@@ -65,15 +65,15 @@ func Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
-					Description: "Get trusted PGP public key",
+					Description: "Get the trusted PGP public key",
 					Callback:    pathConfigureTrustedPGPPublicKeyRead,
 				},
 				logical.ListOperation: &framework.PathOperation{
-					Description: "Get trusted PGP public key",
+					Description: "Get the trusted PGP public key",
 					Callback:    pathConfigureTrustedPGPPublicKeyRead,
 				},
 				logical.DeleteOperation: &framework.PathOperation{
-					Description: "Delete trusted PGP public key",
+					Description: "Delete the trusted PGP public key",
 					Callback:    pathConfigureTrustedPGPPublicKeyDelete,
 				},
 			},

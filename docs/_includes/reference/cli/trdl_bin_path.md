@@ -1,4 +1,4 @@
-Get directory with software binaries
+Get the directory with software binaries
 
 ## Syntax
 

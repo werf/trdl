@@ -1,6 +1,6 @@
 Configure trusted PGP public keys.
 
-## Add trusted PGP public key
+## Add a trusted PGP public key
 
 
 | Method | Path |
@@ -17,7 +17,7 @@ Configure trusted PGP public keys.
 * 200 — OK. 
 
 
-## Get list of trusted PGP public key
+## Get the list of trusted PGP public keys
 
 
 | Method | Path |

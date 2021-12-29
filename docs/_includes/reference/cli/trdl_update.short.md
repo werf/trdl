@@ -1,1 +1,1 @@
-update software
+update the software

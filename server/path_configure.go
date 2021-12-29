@@ -33,61 +33,61 @@ var errorResponseConfigurationNotFound = logical.ErrorResponse("Configuration no
 func configurePath(b *Backend) *framework.Path {
 	return &framework.Path{
 		Pattern:      "configure/?",
-		HelpSynopsis: "Configure TRDL plugin",
+		HelpSynopsis: "Configure the plugin",
 		Fields: map[string]*framework.FieldSchema{
 			fieldNameGitRepoUrl: {
 				Type:        framework.TypeString,
-				Description: "Git repository url",
+				Description: "URL of the Git repository",
 				Required:    true,
 			},
 			fieldNameGitTrdlPath: {
 				Type:        framework.TypeString,
-				Description: "Path inside git repository to the release trdl configuration file (trdl.yaml by default)",
+				Description: "A path in the Git repository to the release trdl configuration file (trdl.yaml is used by default)",
 				Required:    false,
 			},
 			fieldNameGitTrdlChannelsPath: {
 				Type:        framework.TypeString,
-				Description: "Path inside git repository to the trdl channels configuration file (trdl_channels.yaml by default)",
+				Description: "A path in the Git repository to the trdl channels configuration file (trdl_channels.yaml is used by default)",
 				Required:    false,
 			},
 			fieldNameGitTrdlChannelsBranch: {
 				Type:        framework.TypeString,
-				Description: "Special git branch to store trdl_channels.yaml configuration",
+				Description: "A special Git branch to store the trdl channels configuration file",
 				Required:    false,
 			},
 			fieldNameInitialLastPublishedGitCommit: {
 				Type:        framework.TypeString,
-				Description: "Initial last published git commit",
+				Description: "The initial commit for the last successful publication",
 				Required:    false,
 			},
 			fieldNameRequiredNumberOfVerifiedSignaturesOnCommit: {
 				Type:        framework.TypeInt,
-				Description: "Required number of verified signatures on commit",
+				Description: "The required number of verified signatures for a commit",
 				Required:    true,
 			},
 			fieldNameS3BucketName: {
 				Type:        framework.TypeString,
-				Description: "S3 storage bucket name",
+				Description: "The S3 storage bucket name",
 				Required:    true,
 			},
 			fieldNameS3Endpoint: {
 				Type:        framework.TypeString,
-				Description: "S3 storage endpoint",
+				Description: "The S3 storage endpoint",
 				Required:    true,
 			},
 			fieldNameS3Region: {
 				Type:        framework.TypeString,
-				Description: "S3 storage region",
+				Description: "The S3 storage region",
 				Required:    true,
 			},
 			fieldNameS3AccessKeyID: {
 				Type:        framework.TypeString,
-				Description: "S3 storage access key id",
+				Description: "The S3 storage access key id",
 				Required:    true,
 			},
 			fieldNameS3SecretAccessKey: {
 				Type:        framework.TypeString,
-				Description: "S3 storage access key id",
+				Description: "The S3 storage access key id",
 				Required:    true,
 			},
 		},
@@ -101,11 +101,11 @@ func configurePath(b *Backend) *framework.Path {
 				Callback:    b.pathConfigureCreateOrUpdate,
 			},
 			logical.ReadOperation: &framework.PathOperation{
-				Description: "Read plugin configuration",
+				Description: "Read the plugin configuration",
 				Callback:    b.pathConfigureRead,
 			},
 			logical.DeleteOperation: &framework.PathOperation{
-				Description: "Reset plugin configuration",
+				Description: "Reset the plugin configuration",
 				Callback:    b.pathConfigureDelete,
 			},
 		},

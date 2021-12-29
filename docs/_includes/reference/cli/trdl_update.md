@@ -1,4 +1,4 @@
-Update software
+Update the software
 
 ## Syntax
 

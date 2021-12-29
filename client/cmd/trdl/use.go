@@ -18,8 +18,8 @@ func useCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "use REPO GROUP [CHANNEL]",
-		Short: "Generate script to use software binaries within a shell session",
-		Long:  `Generate script to update software binaries in the background and use local ones within a shell session`,
+		Short: "Generate a script to use the software binaries within a shell session",
+		Long:  `Generate a script to update the software binaries in the background and use local ones within a shell session`,
 		Example: `  # Source script in a shell
   $ . $(trdl use repo_name 1.2 ea)
 

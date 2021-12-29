@@ -1,6 +1,6 @@
-Configure task manager.
+Configure the task manager.
 
-## Configure task manager
+## Configure the task manager
 
 
 | Method | Path |
@@ -17,7 +17,7 @@ Configure task manager.
 * 200 — OK. 
 
 
-## Get task manager configuration
+## Get the task manager configuration
 
 
 | Method | Path |
