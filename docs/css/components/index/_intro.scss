@@ -25,6 +25,10 @@
     max-width: 65%;
     padding-bottom: rem(60px);
 
+    p:not(:last-child) {
+      padding-bottom: rem(35px);
+    }
+
     @include tablets {
       max-width: 100%;
     }

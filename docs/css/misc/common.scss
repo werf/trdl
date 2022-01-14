@@ -188,7 +188,7 @@ table {
   }
 }
 
-.footnote__div {
+.footnote {
   display: inline-block;
   background: $color-bg-footnote;
   padding: rem(3px);
@@ -199,10 +199,11 @@ table {
   }
 }
 
-#tippy-2 a {
+[data-tippy-root] a {
   @include montserrat(regular-italic);
   color: $text-color-title-invert;
   text-decoration: underline;
+
 }
 
 td .tippy-content {

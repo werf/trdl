@@ -5,26 +5,32 @@
       <div class="architecture__cols">
         <div class="architecture__cols--item col__server">
           <div class="col__title block__subtitle block__subtitle--invert">trdl-<span>сервер</span></div>
-          <div class="col__text">Отвечает за безопасное наполнение и&nbsp;организацию TUF-репозитория.</div>
+          <div class="col__text">Отвечает за безопасное наполнение и&nbsp;сопровождение TUF-репозитория.</div>
           <!-- <div class="col__subtitle">Функции</div> -->
           <ul class="col__list">
             <li class="col__item">
-              <svg class="server__icon checked">
-                <use xlink:href="images/icons/sprite.svg#checked"></use>
+              <svg class="server__icon gears">
+                <use xlink:href="images/icons/sprite.svg#gears"></use>
               </svg>
-              <p>Контроль соответствия каналов обновлений и&nbsp;релизов. <!--(<a href="https://github.com/werf/werf/blob/multiwerf/trdl_channels.yaml">пример</a>)--></p>
+              <p>Релиз новых версий ПО.</p>
             </li>
             <li class="col__item">
               <svg class="server__icon gears">
                 <use xlink:href="images/icons/sprite.svg#gears"></use>
               </svg>
-              <p>Сборка и публикация релизов проекта.</p>
+              <p>Публикация каналов обновлений.</p>
             </li>
             <li class="col__item">
               <svg class="server__icon shield-2">
                 <use xlink:href="images/icons/sprite.svg#shield-2"></use>
               </svg>
-              <p>Безопасность репозитория.</p>
+              <p>Верификация всех операций с&nbsp;помощью кворума GPG-подписей.</p>
+            </li>
+            <li class="col__item">
+              <svg class="server__icon shield-2">
+                <use xlink:href="images/icons/sprite.svg#shield-2"></use>
+              </svg>
+              <p>Непрерывная ротация ключей шифрования и&nbsp;метаданных TUF-репозитория.</p>
             </li>
           </ul>
         </div>
@@ -32,20 +38,26 @@
 
         <div class="architecture__cols--item col__client">
           <div class="col__title block__subtitle block__subtitle--invert">trdl-<span>клиент</span></div>
-          <div class="col__text">Отвечает за непрерывную доверенную доставку обновлений через&nbsp;каналы с&nbsp;разными уровнями стабильности.</div>
+          <div class="col__text">Отвечает за надёжную доставку обновлений и&nbsp;использование ПО.</div>
           <!-- <div class="col__subtitle">Функции</div> -->
           <ul class="col__list">
             <li class="col__item">
               <svg class="server__icon branching">
                 <use xlink:href="images/icons/sprite.svg#branching"></use>
               </svg>
-              <p>Работа с релизными файлами проекта в&nbsp;рамках каналов обновлений.</p>
+              <p>Обновление версий ПО через&nbsp;выбранные каналы.</p>
             </li>
             <li class="col__item">
               <svg class="server__icon parachute">
                 <use xlink:href="images/icons/sprite.svg#parachute"></use>
               </svg>
-              <p>Доверенная работа с&nbsp;файлами TUF-репозиториев.</p>
+              <p>Верификация обновлений из&nbsp;доверенного TUF-репозитория.</p>
+            </li>
+            <li class="col__item">
+              <svg class="server__icon gears">
+                <use xlink:href="images/icons/sprite.svg#gears"></use>
+              </svg>
+              <p>Различные варианты использования и&nbsp;обновления&nbsp;ПО.</p>
             </li>
           </ul>
         </div>
