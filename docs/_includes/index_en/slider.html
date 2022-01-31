@@ -5,31 +5,31 @@
     <div class="slider__wrapper">
       <div class="slider__item">
         <p class="slide__text">The developer makes changes to the release channels in Git and commits them while signing with a GPG signature.</p>
-        <img src="/images/slider/publish/1.svg" alt="">
+        <img src="/assets/images/slider/publish/1.svg" alt="">
       </div>
       <div class="slider__item">
         <p class="slide__text">The project quorum signs the commit with GPG signatures.</p>
-        <img src="/images/slider/publish/2.svg" alt="">
+        <img src="/assets/images/slider/publish/2.svg" alt="">
       </div>
       <div class="slider__item">
         <p class="slide__text">The channel publishing process begins. The CI system passes the commit to Vault.</p>
-        <img src="/images/slider/publish/3.svg" alt="">
+        <img src="/assets/images/slider/publish/3.svg" alt="">
       </div>
       <div class="slider__item">
         <p class="slide__text">Vault checks to see if the commit contains the minimum set of allowed GPG signatures. If all the necessary signatures are there, Vault forwards the release channels to the TUF repository.</p>
-        <img src="/images/slider/publish/4.svg" alt="">
+        <img src="/assets/images/slider/publish/4.svg" alt="">
       </div>
       <div class="slider__item">
         <p class="slide__text">Vault signs the updated list of channels and related releases. Note that Vault automatically generates keys to sign the build with. Those keys are stored in the Vault storage in encrypted form. No one can access them.</p>
-        <img src="/images/slider/publish/5.svg" alt="">
+        <img src="/assets/images/slider/publish/5.svg" alt="">
       </div>
       <div class="slider__item">
         <p class="slide__text">The updated channels (along with the metadata) get pushed to the TUF repository.</p>
-        <img src="/images/slider/publish/6.svg" alt="">
+        <img src="/assets/images/slider/publish/6.svg" alt="">
       </div>
       <div class="slider__item">
         <p class="slide__text">The trdl client pulls the update through the selected release channel. The previous artifact version becomes unavailable to the user.The trdl client pulls the update through the selected release channel. The previous artifact version becomes unavailable to the user.</p>
-        <img src="/images/slider/publish/7.svg" alt="">
+        <img src="/assets/images/slider/publish/7.svg" alt="">
       </div>
     </div>
   </div>
