@@ -18,8 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        directory: [ "client", "server" ]
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        directory: [ server ]
+        os: [ ubuntu-latest ]
     runs-on: ${{ matrix.os }}
     steps:
 
@@ -33,14 +33,31 @@ jobs:
 
       - name: Prepare environment
         run: |
+          # coverage directory
           export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/tests/${{ matrix.os }}/${{ matrix.directory }}
           mkdir -p $TRDL_TEST_COVERAGE_DIR
           echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
+          
+          # git user
+          ./e2e/scripts/ci/git.sh
+          
+          # install gpg
+          sudo apt-get update
+          sudo apt-get install gpg
+          
+          # install git-signatures
+          git clone https://github.com/werf/3p-git-signatures.git
+          cd 3p-git-signatures
+          make install
+          echo "~/.local/bin" >> $GITHUB_PATH
+          
+          # install ginkgo
+          go install github.com/onsi/ginkgo/ginkgo@latest
         shell: bash
 
       - name: Test
         working-directory: ${{ matrix.directory }}
-        run: go test -vet=off -race -coverpkg=./... -coverprofile $TRDL_TEST_COVERAGE_DIR/coverage.out ./...
+        run: ginkgo -vet=off -race -keepGoing -cover -coverpkg=./... -outputdir=$TRDL_TEST_COVERAGE_DIR ./...
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@master
@@ -81,6 +98,16 @@ jobs:
 
           # git user
           ./scripts/ci/git.sh
+          
+          # install gpg
+          sudo apt-get update
+          sudo apt-get install gpg
+          
+          # install git-signatures
+          git clone https://github.com/werf/3p-git-signatures.git
+          cd 3p-git-signatures
+          make install
+          echo "~/.local/bin" >> $GITHUB_PATH
 
           go install github.com/onsi/ginkgo/ginkgo@latest
 
