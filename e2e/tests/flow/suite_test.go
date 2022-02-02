@@ -9,10 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prashantv/gostub"
 
-	"github.com/werf/trdl/e2e/util"
+	"github.com/werf/trdl/server/pkg/testutil"
 )
 
 func Test(t *testing.T) {
+	testutil.MeetsRequirementTools([]string{"docker", "docker-compose", "git", "gpg"})
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Flow Suite")
 }
@@ -25,13 +26,13 @@ var (
 	stubs       *gostub.Stubs
 )
 
-var _ = SynchronizedBeforeSuite(util.ComputeTrdlBinPath, func(computedPathToWerf []byte) {
+var _ = SynchronizedBeforeSuite(testutil.ComputeTrdlBinPath, func(computedPathToWerf []byte) {
 	trdlBinPath = string(computedPathToWerf)
 })
 
 var _ = BeforeEach(func() {
 	stubs = gostub.New()
-	tmpDir = util.GetTempDir()
+	tmpDir = testutil.GetTempDir()
 
 	testDir = filepath.Join(tmpDir, "project")
 	Ω(os.Mkdir(testDir, os.ModePerm))

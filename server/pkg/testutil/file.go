@@ -1,4 +1,4 @@
-package util
+package testutil
 
 import (
 	. "github.com/onsi/gomega"
