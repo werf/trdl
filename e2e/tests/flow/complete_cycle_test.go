@@ -2,6 +2,7 @@ package flow
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -19,7 +20,7 @@ import (
 
 	clientUtil "github.com/werf/trdl/client/pkg/util"
 	"github.com/werf/trdl/server"
-	tasksManagerTestUtil "github.com/werf/trdl/server/pkg/tasks_manager/testutil"
+	tasksManagerTestutil "github.com/werf/trdl/server/pkg/tasks_manager/testutil"
 	"github.com/werf/trdl/server/pkg/testutil"
 )
 
@@ -37,6 +38,12 @@ var _ = Describe("Complete cycle", func() {
 		tag2     = "v1.0.2"
 		version1 = "1.0.1"
 		version2 = "1.0.2"
+
+		branchName = "main"
+
+		pgpSigningKeyDeveloper = "74E1259029B147CB4033E8B80D4C9C140E8A1030"
+		pgpSigningKeyTL        = "2BA55FD8158034EEBE92AA9ED9D79B63AFC30C7A"
+		pgpSigningKeyPM        = "C353F279F552B3EF16DAE0A64354E51BF178F735"
 	)
 
 	serverInitVariables := func() {
@@ -51,12 +58,24 @@ var _ = Describe("Complete cycle", func() {
 		Ω(err).ShouldNot(HaveOccurred())
 	}
 
+	gpgImportKeys := func() {
+		testutil.RunSucceedCommand(
+			testutil.FixturePath("pgp_keys"),
+			"gpg",
+			"--import",
+			"developer_private.pgp",
+			"tl_private.pgp",
+			"pm_private.pgp",
+		)
+	}
+
 	gitInitRepo := func() {
 		testutil.CopyIn(testutil.FixturePath("complete_cycle"), testDir)
 
 		testutil.RunSucceedCommand(
 			testDir,
 			"git",
+			"-c", "init.defaultBranch="+branchName,
 			"init",
 		)
 
@@ -71,19 +90,43 @@ var _ = Describe("Complete cycle", func() {
 			"git",
 			"commit", "-m", "Initial commit",
 		)
-
-		testutil.RunSucceedCommand(
-			testDir,
-			"git",
-			"checkout", "-b", "production",
-		)
 	}
 
 	gitTag := func(tag string) {
 		testutil.RunSucceedCommand(
 			testDir,
 			"git",
-			"tag", tag,
+			"-c", "tag.gpgsign=true",
+			"-c", "user.signingkey="+pgpSigningKeyDeveloper,
+			"tag", tag, "-m", "New version",
+		)
+	}
+
+	quorumSignTag := func(tag string) {
+		testutil.RunSucceedCommand(
+			testDir,
+			"git",
+			"signatures", "add", "--key", pgpSigningKeyTL, tag,
+		)
+
+		testutil.RunSucceedCommand(
+			testDir,
+			"git",
+			"signatures", "add", "--key", pgpSigningKeyPM, tag,
+		)
+	}
+
+	quorumSignCommit := func(_ string) {
+		testutil.RunSucceedCommand(
+			testDir,
+			"git",
+			"signatures", "add", "--key", pgpSigningKeyTL, branchName,
+		)
+
+		testutil.RunSucceedCommand(
+			testDir,
+			"git",
+			"signatures", "add", "--key", pgpSigningKeyPM, branchName,
 		)
 	}
 
@@ -131,9 +174,9 @@ var _ = Describe("Complete cycle", func() {
 		req.Operation = logical.CreateOperation
 		req.Data = map[string]interface{}{
 			"git_repo_url":                                     testDir,
-			"git_trdl_channels_branch":                         "production",
+			"git_trdl_channels_branch":                         branchName,
 			"initial_last_published_git_commit":                "",
-			"required_number_of_verified_signatures_on_commit": 0,
+			"required_number_of_verified_signatures_on_commit": 3,
 			"s3_endpoint":                                      minioAddress,
 			"s3_region":                                        "ru-central1",
 			"s3_access_key_id":                                 "minioadmin",
@@ -143,6 +186,25 @@ var _ = Describe("Complete cycle", func() {
 		resp, err := backend.HandleRequest(context.Background(), req)
 		Ω(err).ShouldNot(HaveOccurred())
 		Ω(resp).Should(BeNil())
+
+		for _, user := range []string{"developer", "tl", "pm"} {
+			fileName := fmt.Sprintf("%s_public.pgp", user)
+			filePath := testutil.FixturePath("pgp_keys", fileName)
+			data, err := ioutil.ReadFile(filePath)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			req = &logical.Request{Storage: storage}
+			req.Path = "configure/trusted_pgp_public_key"
+			req.Operation = logical.CreateOperation
+			req.Data = map[string]interface{}{
+				"name":       user,
+				"public_key": string(data),
+			}
+
+			resp, err = backend.HandleRequest(context.Background(), req)
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(resp).Should(BeNil())
+		}
 	}
 
 	serverRelease := func(tagName string) {
@@ -158,7 +220,7 @@ var _ = Describe("Complete cycle", func() {
 		Ω(ok).Should(BeTrue(), fmt.Sprintf("%+v", resp.Data))
 		taskUUID := val.(string)
 
-		tasksManagerTestUtil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
+		tasksManagerTestutil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
 	}
 
 	clientAdd := func() {
@@ -190,7 +252,7 @@ var _ = Describe("Complete cycle", func() {
 		Ω(ok).Should(BeTrue(), fmt.Sprintf("%+v", resp.Data))
 		taskUUID := val.(string)
 
-		tasksManagerTestUtil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
+		tasksManagerTestutil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
 	}
 
 	clientUse := func(group, channel, expectedVersion string) {
@@ -243,6 +305,7 @@ script.sh
 	}
 
 	BeforeEach(func() {
+		gpgImportKeys()
 		serverInitVariables()
 		gitInitRepo()
 		composeUpMinio()
@@ -253,7 +316,7 @@ script.sh
 		composeDownMinio()
 	})
 
-	gitAddTrdlChannelsConfiguration := func(group, channel, version string) {
+	gitAddTrdlChannelsConfiguration := func(group, channel, version string) string {
 		type configurationGroupChannel struct {
 			Name    string `yaml:"name"`
 			Version string `yaml:"version"`
@@ -297,8 +360,12 @@ script.sh
 		testutil.RunSucceedCommand(
 			testDir,
 			"git",
+			"-c", "commit.gpgsign=true",
+			"-c", "user.signingkey="+pgpSigningKeyDeveloper,
 			"commit", "-m", "Update trdl_channels.yaml",
 		)
+
+		return testutil.GetHeadCommit(testDir)
 	}
 
 	It("should perform all steps", func() {
@@ -308,6 +375,7 @@ script.sh
 		By(fmt.Sprintf("[server] Releasing tag %q ...", tag1))
 		{
 			gitTag(tag1)
+			quorumSignTag(tag1)
 			serverRelease(tag1)
 		}
 
@@ -316,7 +384,8 @@ script.sh
 
 		By("[server] Publishing channels ...")
 		{
-			gitAddTrdlChannelsConfiguration(group, channel, version1)
+			commit := gitAddTrdlChannelsConfiguration(group, channel, version1)
+			quorumSignCommit(commit)
 			serverPublish()
 		}
 
@@ -326,8 +395,10 @@ script.sh
 		By(fmt.Sprintf("[server] Releasing tag %q ...", tag2))
 		{
 			gitTag(tag2)
+			quorumSignTag(tag2)
 			serverRelease(tag2)
-			gitAddTrdlChannelsConfiguration(group, channel, version2)
+			commit := gitAddTrdlChannelsConfiguration(group, channel, version2)
+			quorumSignCommit(commit)
 			serverPublish()
 		}
 

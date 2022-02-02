@@ -13,7 +13,7 @@ import (
 )
 
 func Test(t *testing.T) {
-	testutil.MeetsRequirementTools([]string{"docker", "docker-compose", "git", "gpg"})
+	testutil.MeetsRequirementTools([]string{"docker", "docker-compose", "git", "git-signatures", "gpg"})
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Flow Suite")
 }
@@ -26,8 +26,8 @@ var (
 	stubs       *gostub.Stubs
 )
 
-var _ = SynchronizedBeforeSuite(testutil.ComputeTrdlBinPath, func(computedPathToWerf []byte) {
-	trdlBinPath = string(computedPathToWerf)
+var _ = SynchronizedBeforeSuite(testutil.ComputeTrdlBinPath, func(computedPathToTrdl []byte) {
+	trdlBinPath = string(computedPathToTrdl)
 })
 
 var _ = BeforeEach(func() {
