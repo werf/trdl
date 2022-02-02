@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prashantv/gostub"
 
-	"github.com/werf/trdl/e2e/util"
+	"github.com/werf/trdl/server/pkg/testutil"
 )
 
 func Test(t *testing.T) {
@@ -32,13 +32,13 @@ var (
 	stubs       *gostub.Stubs
 )
 
-var _ = SynchronizedBeforeSuite(util.ComputeTrdlBinPath, func(computedPathToWerf []byte) {
+var _ = SynchronizedBeforeSuite(testutil.ComputeTrdlBinPath, func(computedPathToWerf []byte) {
 	trdlBinPath = string(computedPathToWerf)
 })
 
 var _ = BeforeEach(func() {
 	stubs = gostub.New()
-	tmpDir = util.GetTempDir()
+	tmpDir = testutil.GetTempDir()
 	trdlHomeDir = tmpDir
 	stubs.SetEnv("TRDL_HOME_DIR", trdlHomeDir)
 	stubs.SetEnv("TRDL_NO_SELF_UPDATE", "1")

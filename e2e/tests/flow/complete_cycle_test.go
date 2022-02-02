@@ -18,9 +18,9 @@ import (
 	"gopkg.in/yaml.v2"
 
 	clientUtil "github.com/werf/trdl/client/pkg/util"
-	"github.com/werf/trdl/e2e/util"
 	"github.com/werf/trdl/server"
-	"github.com/werf/trdl/server/pkg/tasks_manager/testutil"
+	tasksManagerTestUtil "github.com/werf/trdl/server/pkg/tasks_manager/testutil"
+	"github.com/werf/trdl/server/pkg/testutil"
 )
 
 var _ = Describe("Complete cycle", func() {
@@ -52,27 +52,27 @@ var _ = Describe("Complete cycle", func() {
 	}
 
 	gitInitRepo := func() {
-		util.CopyIn(util.FixturePath("complete_cycle"), testDir)
+		testutil.CopyIn(testutil.FixturePath("complete_cycle"), testDir)
 
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"git",
 			"init",
 		)
 
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"git",
 			"add", "-A",
 		)
 
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"git",
 			"commit", "-m", "Initial commit",
 		)
 
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"git",
 			"checkout", "-b", "production",
@@ -80,7 +80,7 @@ var _ = Describe("Complete cycle", func() {
 	}
 
 	gitTag := func(tag string) {
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"git",
 			"tag", tag,
@@ -88,7 +88,7 @@ var _ = Describe("Complete cycle", func() {
 	}
 
 	composeUpMinio := func() {
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"docker-compose",
 			"up", "--detach",
@@ -96,19 +96,19 @@ var _ = Describe("Complete cycle", func() {
 	}
 
 	composeAddMinioRepo := func() {
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"docker-compose",
 			"run", "mc", "mb", "main/repo",
 		)
 
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"docker-compose",
 			"run", "mc", "policy", "set", "download", "main/repo",
 		)
 
-		output := util.SucceedCommandOutputString(
+		output := testutil.SucceedCommandOutputString(
 			testDir,
 			"docker-compose",
 			"port", "minio", "9000",
@@ -118,7 +118,7 @@ var _ = Describe("Complete cycle", func() {
 	}
 
 	composeDownMinio := func() {
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"docker-compose",
 			"down",
@@ -158,7 +158,7 @@ var _ = Describe("Complete cycle", func() {
 		Ω(ok).Should(BeTrue(), fmt.Sprintf("%+v", resp.Data))
 		taskUUID := val.(string)
 
-		testutil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
+		tasksManagerTestUtil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
 	}
 
 	clientAdd := func() {
@@ -170,7 +170,7 @@ var _ = Describe("Complete cycle", func() {
 		Ω(err).ShouldNot(HaveOccurred())
 		rootRoleSha512 := clientUtil.Sha512Checksum(data)
 
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			trdlBinPath,
 			"add", repo, minioRepoAddress, "1", rootRoleSha512,
@@ -190,7 +190,7 @@ var _ = Describe("Complete cycle", func() {
 		Ω(ok).Should(BeTrue(), fmt.Sprintf("%+v", resp.Data))
 		taskUUID := val.(string)
 
-		testutil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
+		tasksManagerTestUtil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
 	}
 
 	clientUse := func(group, channel, expectedVersion string) {
@@ -226,7 +226,7 @@ script.sh
 
 		trdlUseCommand := strings.Join(append(
 			[]string{trdlBinPath},
-			util.TrdlBinArgs("use", repo, group, channel)...,
+			testutil.TrdlBinArgs("use", repo, group, channel)...,
 		), " ")
 
 		scriptPath := filepath.Join(tmpDir, "script.ps1")
@@ -234,7 +234,7 @@ script.sh
 		Ω(err).ShouldNot(HaveOccurred())
 
 		shellCommandArgs := shellCommandArgsFunc(scriptPath)
-		output := util.SucceedCommandOutputString(
+		output := testutil.SucceedCommandOutputString(
 			"",
 			shellCommandPath,
 			shellCommandArgs...,
@@ -288,13 +288,13 @@ script.sh
 		err = ioutil.WriteFile(filepath.Join(testDir, "trdl_channels.yaml"), data, 0o755)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"git",
 			"add", "trdl_channels.yaml",
 		)
 
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			testDir,
 			"git",
 			"commit", "-m", "Update trdl_channels.yaml",

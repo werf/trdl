@@ -1,9 +1,10 @@
-package util
+package testutil
 
 import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -61,4 +62,17 @@ func FixturePath(paths ...string) string {
 	Ω(err).ShouldNot(HaveOccurred())
 	pathsToJoin := append([]string{absFixturesPath}, paths...)
 	return filepath.Join(pathsToJoin...)
+}
+
+func MeetsRequirementTools(requiredSuiteTools []string) bool {
+	hasRequirements := true
+	for _, tool := range requiredSuiteTools {
+		_, err := exec.LookPath(tool)
+		if err != nil {
+			fmt.Printf("You must have %s installed on your PATH\n", tool)
+			hasRequirements = false
+		}
+	}
+
+	return hasRequirements
 }

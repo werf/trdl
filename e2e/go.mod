@@ -1,14 +1,12 @@
 module github.com/werf/trdl/e2e
 
-go 1.15
+go 1.16
 
 require (
-	github.com/Masterminds/goutils v1.1.1
 	github.com/hashicorp/go-hclog v0.16.1
 	github.com/hashicorp/vault/sdk v0.2.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
-	github.com/otiai10/copy v1.6.0
 	github.com/prashantv/gostub v1.0.0
 	github.com/werf/trdl/client v0.0.0
 	github.com/werf/trdl/server v0.0.0

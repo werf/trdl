@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/werf/trdl/client/pkg/trdl"
-	"github.com/werf/trdl/e2e/util"
+	"github.com/werf/trdl/server/pkg/testutil"
 )
 
 type useEntry struct {
@@ -29,7 +29,7 @@ type useEntry struct {
 
 var _ = Describe("Use", func() {
 	BeforeEach(func() {
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			"",
 			trdlBinPath,
 			"add", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
@@ -53,7 +53,7 @@ var _ = Describe("Use", func() {
 
 		trdlUseCommand := strings.Join(append(
 			[]string{trdlBinPath},
-			util.TrdlBinArgs("use", testRepoName, validGroup, "--shell", entry.shell)...,
+			testutil.TrdlBinArgs("use", testRepoName, validGroup, "--shell", entry.shell)...,
 		), " ")
 
 		testScriptPath := filepath.Join(tmpDir, entry.testScriptBasename)
@@ -63,7 +63,7 @@ var _ = Describe("Use", func() {
 		shellCommandArgs := entry.shellCommandArgsFunc(testScriptPath)
 
 		By("Updating in foreground ...")
-		output := util.SucceedCommandOutputString(
+		output := testutil.SucceedCommandOutputString(
 			"",
 			shellCommandPath,
 			shellCommandArgs...,
@@ -71,7 +71,7 @@ var _ = Describe("Use", func() {
 		Ω(output).Should(Equal(entry.expectedOutput))
 
 		By("Updating in background ...")
-		output = util.SucceedCommandOutputString(
+		output = testutil.SucceedCommandOutputString(
 			"",
 			shellCommandPath,
 			shellCommandArgs...,

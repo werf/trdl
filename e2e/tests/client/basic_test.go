@@ -10,12 +10,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/werf/trdl/client/pkg/trdl"
-	"github.com/werf/trdl/e2e/util"
+	"github.com/werf/trdl/server/pkg/testutil"
 )
 
 var _ = Describe("Basic", func() {
 	It("add", func() {
-		util.RunSucceedCommand(
+		testutil.RunSucceedCommand(
 			"",
 			trdlBinPath,
 			"add", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
@@ -26,7 +26,7 @@ var _ = Describe("Basic", func() {
 
 	When("repo added", func() {
 		BeforeEach(func() {
-			util.RunSucceedCommand(
+			testutil.RunSucceedCommand(
 				"",
 				trdlBinPath,
 				"add", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
@@ -34,7 +34,7 @@ var _ = Describe("Basic", func() {
 		})
 
 		It("list", func() {
-			output := util.SucceedCommandOutputString(
+			output := testutil.SucceedCommandOutputString(
 				"",
 				trdlBinPath,
 				"list",
@@ -46,7 +46,7 @@ var _ = Describe("Basic", func() {
 		})
 
 		It("set-default-channel", func() {
-			util.RunSucceedCommand(
+			testutil.RunSucceedCommand(
 				"",
 				trdlBinPath,
 				"set-default-channel", testRepoName, "beta",
@@ -56,7 +56,7 @@ var _ = Describe("Basic", func() {
 		})
 
 		It("update", func() {
-			util.RunSucceedCommand(
+			testutil.RunSucceedCommand(
 				"",
 				trdlBinPath,
 				"update", testRepoName, validGroup,
@@ -65,7 +65,7 @@ var _ = Describe("Basic", func() {
 
 		When("stable channel updated", func() {
 			BeforeEach(func() {
-				util.RunSucceedCommand(
+				testutil.RunSucceedCommand(
 					"",
 					trdlBinPath,
 					"update", testRepoName, validGroup,
@@ -73,7 +73,7 @@ var _ = Describe("Basic", func() {
 			})
 
 			It("bin-path", func() {
-				output := util.SucceedCommandOutputString(
+				output := testutil.SucceedCommandOutputString(
 					"",
 					trdlBinPath,
 					"bin-path", testRepoName, validGroup,
@@ -87,7 +87,7 @@ var _ = Describe("Basic", func() {
 			})
 
 			It("dir-path", func() {
-				output := util.SucceedCommandOutputString(
+				output := testutil.SucceedCommandOutputString(
 					"",
 					trdlBinPath,
 					"dir-path", testRepoName, validGroup,
@@ -106,7 +106,7 @@ var _ = Describe("Basic", func() {
 					args = append(args, "script.bat")
 				}
 
-				output := util.SucceedCommandOutputString(
+				output := testutil.SucceedCommandOutputString(
 					"",
 					trdlBinPath,
 					args...,
@@ -123,7 +123,7 @@ var _ = Describe("Basic", func() {
 })
 
 func AssertRepoFieldsInListOutput(expectedFields []string) {
-	expectedOutput := util.SucceedCommandOutputString(
+	expectedOutput := testutil.SucceedCommandOutputString(
 		"",
 		trdlBinPath,
 		"list",

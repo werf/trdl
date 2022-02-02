@@ -3,6 +3,7 @@ module github.com/werf/trdl/server
 go 1.16
 
 require (
+	github.com/Masterminds/goutils v1.1.1
 	github.com/Masterminds/semver v1.5.0
 	github.com/aws/aws-sdk-go v1.30.27
 	github.com/djherbis/buffer v1.2.0
@@ -18,6 +19,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.2.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
+	github.com/otiai10/copy v1.7.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/smartystreets/goconvey v1.7.2 // indirect
 	github.com/spf13/cobra v0.0.2-0.20171109065643-2da4a54c5cee
