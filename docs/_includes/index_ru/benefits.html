@@ -17,7 +17,15 @@
               <use xlink:href="images/icons/sprite.svg#gear"></use>
             </svg>
             <div class="card__title block__subtitle">Каналы обновления вместо версий ПО</div>
-            <p>Пользователю не нужно скачивать конкретные версии пакетов. Вместо этого он выбирает канал обновления с&nbsp;необходимыми уровнями совместимости и&nbsp;стабильности: alpha, beta, early access, stable, rock solid. Через эти каналы разработчики распространяют нужные пользователю версии релизов. Частота обновлений не&nbsp;ограничена.</p>
+            <p>
+              Пользователю не нужно думать о конкретных версиях. Вместо этого он выбирает канал обновления с&nbsp;необходимым
+              <span class="footnote footnote--dark"
+              title="произвольная часть semver">уровнем совместимости</span>
+              и
+              <span class="footnote footnote--dark"
+              title="alpha, beta, early access, stable, rock solid">стабильности</span>.
+              Через эти каналы разработчики распространяют новые версии ПО так часто, как им&nbsp;требуется.
+            </p>
           </li>
           <!-- item -->
 
@@ -25,8 +33,8 @@
             <svg class="card__pic">
               <use xlink:href="images/icons/sprite.svg#people"></use>
             </svg>
-            <div class="card__title block__subtitle">Публикация релизов на основе GPG-кворума</div>
-            <p>В trdl реализован механизм «M of N»: каждый коммит в&nbsp;Git подписывается несколькими разработчиками. Чтобы добавить несколько подписей на&nbsp;один коммит, используются обычные Git-подписи или <a href="https://github.com/hashbang/git-signatures">механизм notes</a>. Кворум используется и&nbsp;для тегов (публикации версий), и&nbsp;для подписи trdl.yaml (публикации версий в&nbsp;канал обновления).</p>
+            <div class="card__title block__subtitle">Все операции подтверждаются GPG-кворумом</div>
+            <p>В trdl реализован механизм верификации «M of N»: каждый коммит в&nbsp;Git, связанный с релизом или&nbsp;публикацией каналов, должен быть подписан минимальным количеством доверенных GPG-ключей.</p>
           </li>
           <!-- item -->
 
@@ -35,13 +43,13 @@
               <use xlink:href="images/icons/sprite.svg#shield"></use>
             </svg>
             <div class="card__title block__subtitle">Действительно безопасная доставка</div>
-            <p class="">В основе системы безопасности trdl два элемента: TUF-репозиторий для хранения релизов и&nbsp;плагин Vault (vault-plugin-secrets-trdl), который проверяет их&nbsp;аутентичность с&nbsp;помощью приватного ключа.</p>
+            <p>В основе системы безопасности trdl три элемента: TUF-репозиторий, плагин Vault и&nbsp;Git.</p>
             <ul class="card__list">
-              <li class="card__item">Из преимуществ TUF: контрольные суммы и&nbsp;подписи у&nbsp;пакетов, возможность ротации ключей, защита от&nbsp;rollback-атак, защита от&nbsp;«заморозки».</li>
-              <li class="card__item">Vault можно настроить так, чтобы ни&nbsp;у&nbsp;кого не&nbsp;было доступа к&nbsp;приватному ключу, даже у&nbsp;администратора.</li>
-              <li class="card__item">Vault сам управляет и&nbsp;настраивает TUF-репозиторий: новые пакеты, темп обновлений, ротация ключей.</li>
-              <!-- <li class="card__item card__item--no-bul"><a href="#" class="card__item--link">Подробнее о&nbsp;системе безопасности trdl</a></li> -->
+              <li class="card__item"><b>TUF-репозиторий</b> защищает от несанкционированного доступа к&nbsp;ПО, от&nbsp;компрометации и&nbsp;потери ключей. Отвечает за&nbsp;актуальность, согласованность и&nbsp;целостность данных.</li>
+              <li class="card__item"><b>Vault</b> — платформа для безопасного запуска trdl-сервера, которая обеспечивает безопасное управление ключами шифрования.</li>
+              <li class="card__item"><b>Git</b> хранит код, конфигурации, а&nbsp;также GPG-подписи коммитов для&nbsp;верификации операций.</li>
             </ul>
+            <p>Подробнее о функциях каждого элемента — в разделе <a href="https://ru.trdl.dev/security.html">«Безопасность»</a>.</p>
           </li>
           <!-- item -->
 
@@ -49,11 +57,9 @@
             <svg class="card__pic">
               <use xlink:href="images/icons/sprite.svg#comp"></use>
             </svg>
-            <div class="card__title block__subtitle">Кроссплатформенность</div>
+            <div class="card__title block__subtitle">Кроссплатформенный клиент</div>
             <ul class="card__list">
-              <li class="card__item">MacOS, Windows, Ubuntu, Red Hat и даже Gentoo.</li>
-              <li class="card__item">x86, x86-84, ARM.</li>
-              <li class="card__item">Доставка на сервер или на&nbsp;ноутбук разработчика.</li>
+              <li class="card__item">Linux, macOS, Windows.</li>
               <li class="card__item">Все популярные shell-оболочки.</li>
             </ul>
           </li>
