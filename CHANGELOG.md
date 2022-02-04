@@ -1,5 +1,13 @@
 # Changelog
 
+### [0.3.3](https://www.github.com/werf/trdl/compare/v0.3.2...v0.3.3) (2022-02-04)
+
+
+### Bug Fixes
+
+* **server:** absence of signatures in git notes not handled properly ([2bea1f4](https://www.github.com/werf/trdl/commit/2bea1f4fcdc163a212052bbf8fa419272d4d6e1d))
+* **server:** requiredNumberOfVerifiedSignatures set to 0 incorrectly processed when signatures are present ([02e22de](https://www.github.com/werf/trdl/commit/02e22de923d439c87057c211adfbd49d5959435f))
+
 ### [0.3.2](https://www.github.com/werf/trdl/compare/v0.3.1...v0.3.2) (2021-12-26)
 
 ### [0.3.1](https://www.github.com/werf/trdl/compare/v0.3.0...v0.3.1) (2021-11-19)
