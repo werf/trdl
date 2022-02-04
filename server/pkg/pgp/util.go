@@ -32,7 +32,7 @@ func VerifyPGPSignatures(pgpSignatures []string, signedReaderFunc func() (io.Rea
 				return nil, 0, nil
 			}
 
-			pgpKeys = append(pgpKeys[:i], pgpKeys[i+1:]...)
+			pgpKeys = append(append([]string{}, pgpKeys[:i]...), pgpKeys[i+1:]...)
 			break
 		}
 	}
