@@ -92,6 +92,10 @@ func VerifyCommitSignatures(repo *git.Repository, commit string, trustedPGPPubli
 func verifyObjectSignatures(repo *git.Repository, objectID string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int) error {
 	signatures, err := objectSignaturesFromNotes(repo, objectID)
 	if err != nil {
+		if strings.HasSuffix(err.Error(), plumbing.ErrObjectNotFound.Error()) {
+			return NewNotEnoughVerifiedPGPSignaturesError(requiredNumberOfVerifiedSignatures)
+		}
+
 		return err
 	}
 
