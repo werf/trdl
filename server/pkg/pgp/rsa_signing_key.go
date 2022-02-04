@@ -76,7 +76,7 @@ func ParseRSASigningKey(in io.Reader) (*RSASigningKey, error) {
 	}
 
 	if len(el) == 0 {
-		return nil, fmt.Errorf("no private pgp signing key entities found")
+		return nil, fmt.Errorf("no private PGP signing key entities found")
 	}
 
 	return &RSASigningKey{Entity: el[0]}, nil

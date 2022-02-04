@@ -13,7 +13,19 @@ import (
 	"github.com/werf/trdl/server/pkg/pgp"
 )
 
-func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string, requiredNumberOfVerifiedSignatures int) error {
+type NotEnoughVerifiedPGPSignaturesError struct {
+	Number int
+}
+
+func (r *NotEnoughVerifiedPGPSignaturesError) Error() string {
+	return fmt.Sprintf("not enough verified PGP signatures: %d verified signature(s) required", r.Number)
+}
+
+func NewNotEnoughVerifiedPGPSignaturesError(number int) error {
+	return &NotEnoughVerifiedPGPSignaturesError{Number: number}
+}
+
+func VerifyTagSignatures(repo *git.Repository, tagName string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int) error {
 	tr, err := repo.Tag(tagName)
 	if err != nil {
 		return fmt.Errorf("unable to get tag: %s", err)
@@ -27,7 +39,7 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string,
 				return fmt.Errorf("resolve revision %s failed: %s", tr.Hash(), err)
 			}
 
-			return VerifyCommitSignatures(repo, revHash.String(), pgpKeys, requiredNumberOfVerifiedSignatures)
+			return VerifyCommitSignatures(repo, revHash.String(), trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
 		}
 
 		return fmt.Errorf("unable to get tag object: %s", err)
@@ -39,7 +51,7 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string,
 			return fmt.Errorf("unable to encode tag object: %s", err)
 		}
 
-		pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
+		trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
 		if err != nil {
 			return err
 		}
@@ -49,10 +61,10 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, pgpKeys []string,
 		return nil
 	}
 
-	return verifyObjectSignatures(repo, to.Hash.String(), pgpKeys, requiredNumberOfVerifiedSignatures)
+	return verifyObjectSignatures(repo, to.Hash.String(), trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
 }
 
-func VerifyCommitSignatures(repo *git.Repository, commit string, pgpKeys []string, requiredNumberOfVerifiedSignatures int) error {
+func VerifyCommitSignatures(repo *git.Repository, commit string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int) error {
 	co, err := repo.CommitObject(plumbing.NewHash(commit))
 	if err != nil {
 		return fmt.Errorf("unable to get commit %q: %s", commit, err)
@@ -64,7 +76,7 @@ func VerifyCommitSignatures(repo *git.Repository, commit string, pgpKeys []strin
 			return err
 		}
 
-		pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{co.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, pgpKeys, requiredNumberOfVerifiedSignatures)
+		trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{co.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
 		if err != nil {
 			return err
 		}
@@ -74,26 +86,26 @@ func VerifyCommitSignatures(repo *git.Repository, commit string, pgpKeys []strin
 		return nil
 	}
 
-	return verifyObjectSignatures(repo, commit, pgpKeys, requiredNumberOfVerifiedSignatures)
+	return verifyObjectSignatures(repo, commit, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
 }
 
-func verifyObjectSignatures(repo *git.Repository, objectID string, pgpKeys []string, requiredNumberOfVerifiedSignatures int) error {
+func verifyObjectSignatures(repo *git.Repository, objectID string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int) error {
 	signatures, err := objectSignaturesFromNotes(repo, objectID)
 	if err != nil {
 		return err
 	}
 
 	if len(signatures) == 0 {
-		return fmt.Errorf("not enough pgp signatures")
+		return NewNotEnoughVerifiedPGPSignaturesError(requiredNumberOfVerifiedSignatures)
 	}
 
-	pgpKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, pgpKeys, requiredNumberOfVerifiedSignatures)
+	trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
 	if err != nil {
 		return err
 	}
 
 	if requiredNumberOfVerifiedSignatures != 0 {
-		return fmt.Errorf("not enough verified pgp signatures: %d verified signature(s) required", requiredNumberOfVerifiedSignatures)
+		return NewNotEnoughVerifiedPGPSignaturesError(requiredNumberOfVerifiedSignatures)
 	}
 
 	return nil
