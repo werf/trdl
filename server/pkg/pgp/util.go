@@ -8,6 +8,10 @@ import (
 )
 
 func VerifyPGPSignatures(pgpSignatures []string, signedReaderFunc func() (io.Reader, error), pgpKeys []string, requiredNumberOfVerifiedSignatures int) ([]string, int, error) {
+	if requiredNumberOfVerifiedSignatures == 0 {
+		return pgpKeys, 0, nil
+	}
+
 	for _, pgpSignature := range pgpSignatures {
 		i := 0
 		l := len(pgpKeys)
@@ -29,7 +33,7 @@ func VerifyPGPSignatures(pgpSignatures []string, signedReaderFunc func() (io.Rea
 
 			requiredNumberOfVerifiedSignatures--
 			if requiredNumberOfVerifiedSignatures == 0 {
-				return nil, 0, nil
+				return pgpKeys, 0, nil
 			}
 
 			pgpKeys = append(append([]string{}, pgpKeys[:i]...), pgpKeys[i+1:]...)
