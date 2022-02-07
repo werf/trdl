@@ -33,7 +33,7 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string,
 	commonArgs := []string{c.repoName, group, channel}
 	foregroundUpdateArgs := commonArgs[0:]
 	backgroundUpdateArgs := append(
-		commonArgs[0:],
+		append([]string{}, commonArgs[0:]...),
 		"--in-background",
 		fmt.Sprintf("--background-stdout-file=%q", logPathBackgroundUpdateStdout),
 		fmt.Sprintf("--background-stderr-file=%q", logPathBackgroundUpdateStderr),

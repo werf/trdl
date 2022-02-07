@@ -20,7 +20,7 @@ func (w *MarkdownPagesGenerator) HasFormatPathLink() bool {
 	return false
 }
 
-func (w *MarkdownPagesGenerator) FormatPathLink(markdownPagePath string) string {
+func (w *MarkdownPagesGenerator) FormatPathLink(_ string) string {
 	return ""
 }
 
@@ -34,7 +34,7 @@ func (w *MarkdownPagesGenerator) HandlePath(pathPattern string, doc []byte) erro
 	if err := os.MkdirAll(filepath.Dir(f), os.ModePerm); err != nil {
 		return fmt.Errorf("unable to make dir %q: %s", filepath.Dir(f), err)
 	}
-	if err := os.WriteFile(f, append(doc, '\n'), 0644); err != nil {
+	if err := os.WriteFile(f, append(doc, '\n'), 0o644); err != nil {
 		return fmt.Errorf("unable to write file %q: %s", f, err)
 	}
 
