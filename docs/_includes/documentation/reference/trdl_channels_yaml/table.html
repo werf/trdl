@@ -3,8 +3,8 @@
 <div class="trdl-configuration-table">
     <table aria-hidden=true>
         {{ "tableLineCounter" | reset_shared_counter }}
-        {% for directive in site.data.trdl.directives %}
-        {% include reference/configuration_table_directive.html directive=directive %}
+        {% for directive in site.data.trdl_channels.directives %}
+        {% include documentation/reference/configuration_table_directive.html directive=directive %}
         {% endfor %}
     </table>
 </div>

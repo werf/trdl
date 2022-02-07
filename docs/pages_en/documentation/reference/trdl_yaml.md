@@ -1,6 +1,6 @@
 ---
 title: trdl.yaml
-permalink: reference/trdl_yaml.html
+permalink: documentation/reference/trdl_yaml.html
 toc: false
 ---
 
@@ -12,7 +12,7 @@ On release, trdl reads `trdl.yaml` from the Git tag and performs the build:
 - Executes build instructions in the `/git` directory.
 - Saves release artifacts from the `/result` directory.
 
-{% include reference/trdl_yaml/table.html %}
+{% include documentation/reference/trdl_yaml/table.html %}
 
 ## Release artifacts layout
 
@@ -58,12 +58,12 @@ Here:
 
 ### trdl.yaml
 
-{% include reference/trdl_yaml/example_trdl_yaml.md.liquid %}
+{% include documentation/reference/trdl_yaml/example_trdl_yaml.md.liquid %}
 
 ### build.sh
 
-{% include reference/trdl_yaml/example_build_sh.md.liquid %}
+{% include documentation/reference/trdl_yaml/example_build_sh.md.liquid %}
 
 ### Below is the structure of the /result directory after running assembly instructions
 
-{% include reference/trdl_yaml/example_result.md.liquid %}
+{% include documentation/reference/trdl_yaml/example_result.md.liquid %}

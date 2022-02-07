@@ -166,17 +166,17 @@ Commands
 
 As a basic example of creating and arranging release artifacts for multiple platforms, let's deliver the script that outputs a release tag when run.
 
-All build parameters, such as environment and build instructions, are defined in the [trdl.yaml](/reference/trdl_yaml.html) file.
+All build parameters, such as environment and build instructions, are defined in the [trdl.yaml](/documentation/reference/trdl_yaml.html) file.
 
-**Caution.** Release artifacts must have a specific directory structure to deliver to different platforms and handle the executable files efficiently when using trdl-client ([learn more about using artifacts](/reference/trdl_yaml.html#release-artifacts-layout)).
+**Caution.** Release artifacts must have a specific directory structure to deliver to different platforms and handle the executable files efficiently when using trdl-client ([learn more about using artifacts](/documentation/reference/trdl_yaml.html#release-artifacts-layout)).
 
 #### trdl.yaml
 
-{% include reference/trdl_yaml/example_trdl_yaml.md.liquid %}
+{% include documentation/reference/trdl_yaml/example_trdl_yaml.md.liquid %}
 
 #### build.sh
 
-{% include reference/trdl_yaml/example_build_sh.md.liquid %}
+{% include documentation/reference/trdl_yaml/example_build_sh.md.liquid %}
 
 Add both files and commit them to Git.
 
@@ -218,7 +218,7 @@ Four environment variables must be set before running the script:
 
 ### Publishing the release channels
 
-You must publish the release for the user to access it. To do this, switch to the main branch and add to the repository the [trdl_channels.yaml](/reference/trdl_channels_yaml.html) file that describes the release channels.
+You must publish the release for the user to access it. To do this, switch to the main branch and add to the repository the [trdl_channels.yaml](/documentation/reference/trdl_channels_yaml.html) file that describes the release channels.
 
 #### trdl_channels.yaml:
 

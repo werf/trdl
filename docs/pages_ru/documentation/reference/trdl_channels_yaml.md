@@ -1,6 +1,6 @@
 ---
 title: trdl_channels.yaml
-permalink: reference/trdl_channels_yaml.html
+permalink: documentation/reference/trdl_channels_yaml.html
 toc: false
 ---
 
@@ -8,7 +8,7 @@ toc: false
 
 При публикации trdl читает `trdl_channels.yaml` из ветки Git-репозитория по умолчанию, если это явно не переопределено при конфигурации vault-плагина, а затем применяет изменения. Обновления становятся доступными пользователям.
 
-{% include reference/trdl_channels_yaml/table.html %}
+{% include documentation/reference/trdl_channels_yaml/table.html %}
 
 ## Пример
 

@@ -1,6 +1,6 @@
 ---
 title: trdl_channels.yaml
-permalink: reference/trdl_channels_yaml.html
+permalink: documentation/reference/trdl_channels_yaml.html
 toc: false
 ---
 
@@ -8,7 +8,7 @@ The `trdl_channels.yaml` configuration contains groups, release channels, and ve
 
 When publishing, trdl reads `trdl_channels.yaml` from the default Git repository branch (unless explicitly overridden by the vault plugin configuration) and applies the changes. Updates then become available to users.
 
-{% include reference/trdl_channels_yaml/table.html %}
+{% include documentation/reference/trdl_channels_yaml/table.html %}
 
 ## Example
 

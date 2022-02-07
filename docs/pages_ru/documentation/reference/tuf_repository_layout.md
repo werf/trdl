@@ -1,7 +1,6 @@
 ---
 title: Организация TUF-репозитория
-title: Организация TUF-репозитория
-permalink: reference/tuf_repository_layout.html
+permalink: documentation/reference/tuf_repository_layout.html
 toc: true
 ---
 

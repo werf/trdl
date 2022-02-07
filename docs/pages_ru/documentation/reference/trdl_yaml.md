@@ -1,6 +1,6 @@
 ---
 title: trdl.yaml
-permalink: reference/trdl_yaml.html
+permalink: documentation/reference/trdl_yaml.html
 toc: false
 ---
 
@@ -12,7 +12,7 @@ toc: false
 - Выполняет сборочные инструкции в директории `/git`.
 - Сохраняет артефакты релиза из директории `/result`.
 
-{% include reference/trdl_yaml/table.html %}
+{% include documentation/reference/trdl_yaml/table.html %}
 
 ## Организация артефактов релиза
 
@@ -58,12 +58,12 @@ result
 
 ### trdl.yaml
 
-{% include reference/trdl_yaml/example_trdl_yaml.md.liquid %}
+{% include documentation/reference/trdl_yaml/example_trdl_yaml.md.liquid %}
 
 ### build.sh
 
-{% include reference/trdl_yaml/example_build_sh.md.liquid %}
+{% include documentation/reference/trdl_yaml/example_build_sh.md.liquid %}
 
 ### Директория /result после выполнения сборочных инструкций
 
-{% include reference/trdl_yaml/example_result.md.liquid %}
+{% include documentation/reference/trdl_yaml/example_result.md.liquid %}

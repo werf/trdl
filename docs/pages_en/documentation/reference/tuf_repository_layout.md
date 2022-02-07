@@ -1,6 +1,6 @@
 ---
 title: TUF repository layout
-permalink: reference/tuf_repository_layout.html
+permalink: documentation/reference/tuf_repository_layout.html
 toc: true
 ---
 
