@@ -22,7 +22,6 @@ var (
 )
 
 var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
-
 	const (
 		pgpSigningKeyDeveloper = "74E1259029B147CB4033E8B80D4C9C140E8A1030"
 		pgpSigningKeyTL        = "2BA55FD8158034EEBE92AA9ED9D79B63AFC30C7A"
@@ -169,19 +168,19 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 		kindNameCommit:         tableItBodyCommitFunc,
 	}
 
-	var addWithoutSignatureByKind = map[string]func(){
+	addWithoutSignatureByKind := map[string]func(){
 		kindNameLightweightTag: addLightweightTagWithoutSignature,
 		kindNameAnnotatedTag:   addAnnotatedTagWithoutSignature,
 		kindNameCommit:         addCommitWithoutSignature,
 	}
 
-	var addWithRegularSignatureByKind = map[string]func(pgpSigningKey string){
+	addWithRegularSignatureByKind := map[string]func(pgpSigningKey string){
 		kindNameLightweightTag: addLightweightTagWithRegularSignature,
 		kindNameAnnotatedTag:   addAnnotatedTagWithRegularSignature,
 		kindNameCommit:         addCommitWithRegularSignature,
 	}
 
-	var addSignatureToGitNotesByKind = map[string]func(pgpSigningKey string){
+	addSignatureToGitNotesByKind := map[string]func(pgpSigningKey string){
 		kindNameLightweightTag: addTagSignatureToGitNotes,
 		kindNameAnnotatedTag:   addTagSignatureToGitNotes,
 		kindNameCommit:         addCommitSignatureToGitNotes,
