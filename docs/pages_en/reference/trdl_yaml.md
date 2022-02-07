@@ -34,7 +34,7 @@ windows-any
 any-any
 ```
 
-To use the basic functions of the trdl client (e.g., the [trdl use](/reference/cli/trdl_use.html) command), you need to save the executables in the `bin` subdirectory.
+To use the basic functions of the trdl client (e.g., the [trdl use](/documentation/reference/cli/trdl_use.html) command), you need to save the executables in the `bin` subdirectory.
 
 As a result, for most projects, the `/result` directory after the build should have the following structure:
 ```

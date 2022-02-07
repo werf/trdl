@@ -10,7 +10,7 @@ _regen_reference_cli:
 
 _regen_reference_vault_plugin:
 	@cd ../server && go install github.com/werf/trdl/server/cmd/vault-plugin-docs
-	@vault-plugin-docs generate-jekyll --base-pages-url /reference/vault_plugin --includes-dir _includes/reference/vault_plugin --pages-dir pages_en/reference/vault_plugin --sidebar-yml-path _data/sidebars/_vault_plugin.yml
+	@vault-plugin-docs generate-jekyll --base-pages-url /documentation/reference/vault_plugin --includes-dir _includes/documentation/reference/vault_plugin --pages-dir pages_en/documentation/reference/vault_plugin --sidebar-yml-path _data/sidebars/_vault_plugin.yml
 
 _compile:
 	@( \

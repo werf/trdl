@@ -24,8 +24,8 @@ func docsCmd(commandGroups *command.Groups) *cobra.Command {
 
 			jekyllSiteDir := args[0]
 
-			partialsDir := filepath.Join(jekyllSiteDir, "_includes/reference/cli")
-			pagesDir := filepath.Join(jekyllSiteDir, "pages_en/reference/cli")
+			partialsDir := filepath.Join(jekyllSiteDir, "_includes/documentation/reference/cli")
+			pagesDir := filepath.Join(jekyllSiteDir, "pages_en/documentation/reference/cli")
 			sidebarPath := filepath.Join(jekyllSiteDir, "_data/sidebars/_cli.yml")
 
 			for _, path := range []string{partialsDir, pagesDir} {

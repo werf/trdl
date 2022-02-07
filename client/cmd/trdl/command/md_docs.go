@@ -113,10 +113,10 @@ func genCliPages(cmd *cobra.Command, pagesDir string) error {
 	fullCommandName := fullCommandFilesystemPath(cmd.CommandPath())
 	cmdPage := fmt.Sprintf(`---
 title: %s
-permalink: reference/cli/%s.html
+permalink: documentation/reference/cli/%s.html
 ---
 
-{%% include /reference/cli/%s.md %%}
+{%% include documentation/reference/cli/%s.md %%}
 `, cmd.CommandPath(), fullCommandName, fullCommandName)
 
 	path := filepath.Join(pagesDir, fmt.Sprintf("%s.md", fullCommandName))
@@ -145,7 +145,7 @@ func GenCliSidebar(cmdGroups Groups, sidebarPath string) error {
 cli: &cli
   
   - title: Overview
-    url: /reference/cli/overview.html
+    url: /documentation/reference/cli/overview.html
 `)
 
 	for _, group := range cmdGroups {
@@ -185,7 +185,7 @@ func genCliSidebar(cmd *cobra.Command, indent int, buf *bytes.Buffer) error {
 
 		commandRecord := fmt.Sprintf(`
 %[1]s- title: %[2]s
-%[1]s  url: /reference/cli/%[3]s.html
+%[1]s  url: /documentation/reference/cli/%[3]s.html
 `, strings.Repeat("  ", indent), cmd.CommandPath(), fullCommandName)
 
 		_, err := buf.WriteString(commandRecord)
@@ -221,7 +221,7 @@ func genCliSidebar(cmd *cobra.Command, indent int, buf *bytes.Buffer) error {
 func GenCliOverview(cmdGroups Groups, pagesDir string) error {
 	indexPage := `---
 title: Overview
-permalink: reference/cli/overview.html
+permalink: documentation/reference/cli/overview.html
 toc: false
 ---
 
@@ -247,7 +247,7 @@ toc: false
 				fullCommandName = fullCommandFilesystemPath(cmd.Commands()[0].CommandPath())
 			}
 
-			indexPage += fmt.Sprintf(" - [trdl %s]({{ \"/reference/cli/%s.html\" | true_relative_url }}) — {%% include /reference/cli/%s.short.md %%}.\n", cmd.Name(), fullCommandName, fullCommandName)
+			indexPage += fmt.Sprintf(" - [trdl %s]({{ \"/documentation/reference/cli/%s.html\" | true_relative_url }}) — {%% include /documentation/reference/cli/%s.short.md %%}.\n", cmd.Name(), fullCommandName, fullCommandName)
 		}
 
 		doNewline = true

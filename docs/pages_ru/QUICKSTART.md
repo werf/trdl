@@ -65,7 +65,7 @@ vault secrets enable -path=trdl-test-project vault-plugin-secrets-trdl
 
 Один и тот же плагин можно подключать множество раз, но каждый раз с уникальным путем. Подробнее об этом — [в официальной документации](https://www.vaultproject.io/docs/commands/secrets/enable).
 
-Теперь настроим сам плагин trdl. Для конфигурации необходимо использовать метод API [/configure](/reference/vault_plugin/configure.html#configure-plugin):
+Теперь настроим сам плагин trdl. Для конфигурации необходимо использовать метод API [/configure](/documentation/reference/vault_plugin/configure.html#configure-plugin):
 
 ```shell
 vault write trdl-test-project/configure @configuration.json
@@ -90,7 +90,7 @@ vault write trdl-test-project/configure @configuration.json
 
 #### Управление публичными частями доверенных GPG-ключей
 
-Для работы с публичными частями доверенных GPG-ключей используется группа методов API [/configure/trusted_pgp_public_key](/reference/vault_plugin/configure/trusted_pgp_public_key.html).
+Для работы с публичными частями доверенных GPG-ключей используется группа методов API [/configure/trusted_pgp_public_key](/documentation/reference/vault_plugin/configure/trusted_pgp_public_key.html).
 
 **Добавление ключа**
 
@@ -337,7 +337,7 @@ git signatures push
 
 Тег создан, необходимое количество GPG-подписей есть — можно переходить непосредственно к релизу.
 
-Для создания релиза используйте метод API [/release](/reference/vault_plugin/release.html#perform-a-release). Проверка, контроль и логирование можно организовывать с помощью методов API [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html) и [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
+Для создания релиза используйте метод API [/release](/documentation/reference/vault_plugin/release.html#perform-a-release). Проверка, контроль и логирование можно организовывать с помощью методов API [/task/:uuid](/documentation/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/documentation/reference/vault_plugin/task/uuid/cancel.html) и [/task/:uuid/log](/documentation/reference/vault_plugin/task/uuid/log.html).
 
 Упрощённая версия релизного процесса представлена в скрипте `release.sh`, который находится в каталоге [server/examples](https://github.com/werf/trdl/tree/main/server/examples) репозитория проекта.
 
@@ -386,7 +386,7 @@ git signatures push
 
 Необходимое количество GPG-подписей добавлено — можно переходить непосредственно к публикации каналов обновлений.
 
-При публикации используйте метод API [/publish](/reference/vault_plugin/publish.html). Проверку, контроль и логирование можно организовать с помощью методов API [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html) и [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
+При публикации используйте метод API [/publish](/documentation/reference/vault_plugin/publish.html). Проверку, контроль и логирование можно организовать с помощью методов API [/task/:uuid](/documentation/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/documentation/reference/vault_plugin/task/uuid/cancel.html) и [/task/:uuid/log](/documentation/reference/vault_plugin/task/uuid/log.html).
 
 Упрощённая версия процесса публикации представлена в скрипте `publish.sh`, который находится в каталоге [server/examples](https://github.com/werf/trdl/tree/main/server/examples) репозитория проекта.
 

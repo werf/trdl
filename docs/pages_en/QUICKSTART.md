@@ -66,7 +66,7 @@ vault secrets enable -path=trdl-test-project vault-plugin-secrets-trdl
 
 You can enable the same plugin many times; however, you must use a unique path each time. For more information, refer to the [official documentation](https://www.vaultproject.io/docs/commands/secrets/enable).
 
-Now let's configure the trdl plugin itself. We will use the [/configure](/reference/vault_plugin/configure.html#configure-plugin) API method to do this:
+Now let's configure the trdl plugin itself. We will use the [/configure](/documentation/reference/vault_plugin/configure.html#configure-plugin) API method to do this:
 
 ```shell
 vault write trdl-test-project/configure @configuration.json
@@ -91,7 +91,7 @@ The minimum number of GPG signatures required (`required_number_of_verified_sign
 
 #### Managing public parts of trusted GPG keys
 
-The [/configure/trusted_pgp_public_key](/reference/vault_plugin/configure/trusted_pgp_public_key.html) group of API methods is used to handle the public parts of trusted GPG keys.
+The [/configure/trusted_pgp_public_key](/documentation/reference/vault_plugin/configure/trusted_pgp_public_key.html) group of API methods is used to handle the public parts of trusted GPG keys.
 
 ## For a developer
 
@@ -204,7 +204,7 @@ git signatures push
 
 Now that the tag has been created and signed by the necessary number of GPG keys, you can proceed to the release.
 
-Use the [/release](/reference/vault_plugin/release.html#perform-a-release) API method to create a release. You can also use the following API methods for checking, controlling, and logging: [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html), and [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
+Use the [/release](/documentation/reference/vault_plugin/release.html#perform-a-release) API method to create a release. You can also use the following API methods for checking, controlling, and logging: [/task/:uuid](/documentation/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/documentation/reference/vault_plugin/task/uuid/cancel.html), and [/task/:uuid/log](/documentation/reference/vault_plugin/task/uuid/log.html).
 
 A simplified version of the release process is available in the `release.sh` script in the [server/examples](https://github.com/werf/trdl/tree/main/server/examples) directory of the project repository.
 
@@ -253,7 +253,7 @@ git signatures push
 
 Now that the commit has the required number of GPG signatures, you can publish the release channels.
 
-Use the [/publish](/reference/vault_plugin/publish.html) API method to do this. You can also use the following API methods for checking, controlling, and logging: [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html), and [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
+Use the [/publish](/documentation/reference/vault_plugin/publish.html) API method to do this. You can also use the following API methods for checking, controlling, and logging: [/task/:uuid](/documentation/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/documentation/reference/vault_plugin/task/uuid/cancel.html), and [/task/:uuid/log](/documentation/reference/vault_plugin/task/uuid/log.html).
 
 A streamlined version of the publishing process is available in the `publish.sh` script in the [server/examples](https://github.com/werf/trdl/tree/main/server/examples) directory of the project repository.
 

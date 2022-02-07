@@ -4,40 +4,40 @@
 cli: &cli
   
   - title: Overview
-    url: /reference/cli/overview.html
+    url: /documentation/reference/cli/overview.html
 
   - title: Configuration commands
     f:
 
     - title: trdl add
-      url: /reference/cli/trdl_add.html
+      url: /documentation/reference/cli/trdl_add.html
 
     - title: trdl remove
-      url: /reference/cli/trdl_remove.html
+      url: /documentation/reference/cli/trdl_remove.html
 
     - title: trdl list
-      url: /reference/cli/trdl_list.html
+      url: /documentation/reference/cli/trdl_list.html
 
     - title: trdl set-default-channel
-      url: /reference/cli/trdl_set_default_channel.html
+      url: /documentation/reference/cli/trdl_set_default_channel.html
 
   - title: Main commands
     f:
 
     - title: trdl use
-      url: /reference/cli/trdl_use.html
+      url: /documentation/reference/cli/trdl_use.html
 
   - title: Advanced commands
     f:
 
     - title: trdl update
-      url: /reference/cli/trdl_update.html
+      url: /documentation/reference/cli/trdl_update.html
 
     - title: trdl exec
-      url: /reference/cli/trdl_exec.html
+      url: /documentation/reference/cli/trdl_exec.html
 
     - title: trdl dir-path
-      url: /reference/cli/trdl_dir_path.html
+      url: /documentation/reference/cli/trdl_dir_path.html
 
     - title: trdl bin-path
-      url: /reference/cli/trdl_bin_path.html
+      url: /documentation/reference/cli/trdl_bin_path.html
