@@ -1,26 +1,20 @@
 topnav:
   en:
-    - title: Security
-      url: /security.html
-
     - title: Quickstart
       url: /quickstart.html
 
-    - title: Reference
-      url: /reference/cli/overview.html
+    - title: Documentation
+      url: /documentation/reference/cli/overview.html
 
     - title: GitHub
       external_url: https://github.com/werf/trdl
 
   ru:
-    - title: Безопасность
-      url: /security.html
-
     - title: Быстрый старт
       url: /quickstart.html
 
-    - title: Справочник
-      url: /reference/cli/overview.html
+    - title: Документация
+      url: /documentation/reference/cli/overview.html
 
     - title: GitHub
       external_url: https://github.com/werf/trdl
