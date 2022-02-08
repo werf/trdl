@@ -1,12 +1,12 @@
 ---
 title: Quickstart
-permalink: quickstart.html
+permalink: documentation/quickstart.html
 layout: page-nosidebar
 toc: true
 toc_headers: h2
 ---
 
-{% include quickstart_en/easy-use.html %}
+{% include documentation/quickstart_en/easy-use.html %}
 
 ## For an administrator
 

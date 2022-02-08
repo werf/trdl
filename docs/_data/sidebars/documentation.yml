@@ -83,9 +83,14 @@ _vault_plugin: &_vault_plugin
 entries:
   en:
     f:
+
       - &how_it_works
         title: How it works
         url: /documentation/how_it_works.html
+
+      - &quickstart
+        title: Quickstart
+        url: /documentation/quickstart.html
 
       - &security
         title: Security
@@ -117,6 +122,9 @@ entries:
 
       - <<: *how_it_works
         title: Как это работает
+
+      - <<: *quickstart
+        title: Быстрый старт
 
       - <<: *security
         title: "Безопасность"

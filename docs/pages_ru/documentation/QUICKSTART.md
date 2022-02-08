@@ -1,12 +1,12 @@
 ---
 title: Быстрый старт
-permalink: quickstart.html
+permalink: documentation/quickstart.html
 layout: page-nosidebar
 toc: true
 toc_headers: h2
 ---
 
-{% include quickstart_ru/easy-use.html %}
+{% include documentation/quickstart_ru/easy-use.html %}
 
 ## Для администратора
 

@@ -1,7 +1,5 @@
 topnav:
   en:
-    - title: Quickstart
-      url: /quickstart.html
 
     - title: Documentation
       url: /documentation/reference/cli/overview.html
@@ -10,8 +8,6 @@ topnav:
       external_url: https://github.com/werf/trdl
 
   ru:
-    - title: Быстрый старт
-      url: /quickstart.html
 
     - title: Документация
       url: /documentation/reference/cli/overview.html
