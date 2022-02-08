@@ -1,0 +1,42 @@
+entries:
+  en:
+    f:
+      - title: Reference
+        f:
+
+          - title: Command line interface
+            f: *cli
+
+          - title: Vault plugin
+            f: *_vault_plugin
+
+          - &trdl_yaml
+            title: trdl.yaml
+            url: /documentation/reference/trdl_yaml.html
+
+          - &trdl_channels_yaml
+            title: trdl_channels.yaml
+            url: /documentation/reference/trdl_channels_yaml.html
+
+          - &tuf_repository_layout
+            title: TUF repository layout
+            url: /documentation/reference/tuf_repository_layout.html
+
+  ru:
+    f:
+
+      - title: Reference
+        f:
+
+          - title: CLI
+            f: *cli
+
+          - title: Плагин vault
+            f: *_vault_plugin
+
+          - *trdl_yaml
+
+          - *trdl_channels_yaml
+
+          - <<: *tuf_repository_layout
+            title: "Организация TUF-репозитория"

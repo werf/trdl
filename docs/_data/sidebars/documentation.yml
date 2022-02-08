@@ -83,35 +83,42 @@ _vault_plugin: &_vault_plugin
 entries:
   en:
     f:
-      - title: Command line interface
-        f: *cli
+      - title: Reference
+        f:
 
-      - title: Vault plugin
-        f: *_vault_plugin
+          - title: Command line interface
+            f: *cli
 
-      - &trdl_yaml
-        title: trdl.yaml
-        url: /reference/trdl_yaml.html
+          - title: Vault plugin
+            f: *_vault_plugin
 
-      - &trdl_channels_yaml
-        title: trdl_channels.yaml
-        url: /reference/trdl_channels_yaml.html
+          - &trdl_yaml
+            title: trdl.yaml
+            url: /documentation/reference/trdl_yaml.html
 
-      - &tuf_repository_layout
-        title: TUF repository layout
-        url: /reference/tuf_repository_layout.html
+          - &trdl_channels_yaml
+            title: trdl_channels.yaml
+            url: /documentation/reference/trdl_channels_yaml.html
+
+          - &tuf_repository_layout
+            title: TUF repository layout
+            url: /documentation/reference/tuf_repository_layout.html
 
   ru:
     f:
-      - title: CLI
-        f: *cli
 
-      - title: Плагин vault
-        f: *_vault_plugin
+      - title: Справочник
+        f:
 
-      - *trdl_yaml
+          - title: CLI
+            f: *cli
 
-      - *trdl_channels_yaml
+          - title: Плагин vault
+            f: *_vault_plugin
 
-      - <<: *tuf_repository_layout
-        title: "Организация TUF-репозитория"
+          - *trdl_yaml
+
+          - *trdl_channels_yaml
+
+          - <<: *tuf_repository_layout
+            title: "Организация TUF-репозитория"

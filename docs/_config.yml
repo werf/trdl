@@ -49,22 +49,22 @@ defaults:
       sitemap_include: true
       multilang: true
   - scope:
-      path: "pages_*/reference"
+      path: "pages_*/documentation"
       type: "pages"
     values:
-      sidebar: reference
+      sidebar: documentation
   - scope:
-      path: "pages_*/reference/cli"
+      path: "pages_*/documentation/reference/cli"
       type: "pages"
     values:
       toc: false
   - scope:
-      path: "pages_*/reference/vault_plugin/*"
+      path: "pages_*/documentation/reference/vault_plugin/*"
       type: "pages"
     values:
       toc: true
   - scope:
-      path: "pages_*/reference/vault_plugin/index.md"
+      path: "pages_*/documentation/reference/vault_plugin/index.md"
       type: "pages"
     values:
       toc: false
