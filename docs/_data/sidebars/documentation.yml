@@ -83,6 +83,10 @@ _vault_plugin: &_vault_plugin
 entries:
   en:
     f:
+      - &how_it_works
+        title: How it works
+        url: /documentation/how_it_works.html
+
       - &security
         title: Security
         url: /documentation/security.html
@@ -110,6 +114,9 @@ entries:
 
   ru:
     f:
+
+      - <<: *how_it_works
+        title: Как это работает
 
       - <<: *security
         title: "Безопасность"
