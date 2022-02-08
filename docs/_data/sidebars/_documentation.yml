@@ -1,6 +1,10 @@
 entries:
   en:
     f:
+      - &security
+        title: Security
+        url: /documentation/security.html
+
       - title: Reference
         f:
 
@@ -24,6 +28,9 @@ entries:
 
   ru:
     f:
+
+      - <<: *security
+        title: "Безопасность"
 
       - title: Reference
         f:

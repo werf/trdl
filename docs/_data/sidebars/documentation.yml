@@ -83,6 +83,10 @@ _vault_plugin: &_vault_plugin
 entries:
   en:
     f:
+      - &security
+        title: Security
+        url: /documentation/security.html
+
       - title: Reference
         f:
 
@@ -107,7 +111,10 @@ entries:
   ru:
     f:
 
-      - title: Справочник
+      - <<: *security
+        title: "Безопасность"
+
+      - title: Reference
         f:
 
           - title: CLI
