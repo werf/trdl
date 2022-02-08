@@ -6,6 +6,8 @@ toc: true
 toc_headers: h2
 ---
 
+{% include quickstart_ru/easy-use.html %}
+
 ## Для администратора
 
 > Мы предполагаем, что вы уже знакомы с Vault и умеете его использовать, поэтому опустим подробности его настройки. Будем считать, что Vault настроен согласно [официальной документации](https://learn.hashicorp.com/tutorials/vault/deployment-guide).

@@ -6,6 +6,8 @@ toc: true
 toc_headers: h2
 ---
 
+{% include quickstart_en/easy-use.html %}
+
 ## For an administrator
 
 > We assume that you are already familiar with Vault and know how to use it, so let us skip the details of setting it up. We also assume that Vault is configured according to the [official documentation](https://learn.hashicorp.com/tutorials/vault/deployment-guide).
