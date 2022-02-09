@@ -19,3 +19,10 @@ trdl update REPO GROUP [CHANNEL] [options]
             Do not perform self-update (default $TRDL_NO_SELF_UPDATE or false)
 ```
 
+## Options inherited from parent commands
+
+```shell
+      --home-dir='~/.trdl'
+            Set trdl home directory (default $TRDL_HOME_DIR or ~/.trdl)
+```
+

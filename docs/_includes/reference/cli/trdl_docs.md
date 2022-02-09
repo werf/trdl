@@ -13,3 +13,10 @@ trdl docs JEKYLL_SITE_DIR [options]
             help for docs
 ```
 
+## Options inherited from parent commands
+
+```shell
+      --home-dir='~/.trdl'
+            Set trdl home directory (default $TRDL_HOME_DIR or ~/.trdl)
+```
+
