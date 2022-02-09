@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.3.4](https://www.github.com/werf/trdl/compare/v0.3.3...v0.3.4) (2022-02-09)
+
+
+### Bug Fixes
+
+* **client:** unknown flag --home-dir ([fcd8e49](https://www.github.com/werf/trdl/commit/fcd8e4949f6f46bce91f57aeae74e85786bc32df))
+
 ### [0.3.3](https://www.github.com/werf/trdl/compare/v0.3.2...v0.3.3) (2022-02-04)
 
 
