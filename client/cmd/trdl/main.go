@@ -73,5 +73,5 @@ func SetupHomeDir(cmd *cobra.Command) {
 		defaultHomeDir = "~/.trdl"
 	}
 
-	cmd.Flags().StringVarP(&homeDir, "home-dir", "", defaultHomeDir, "Set trdl home directory (default $TRDL_HOME_DIR or ~/.trdl)")
+	cmd.PersistentFlags().StringVarP(&homeDir, "home-dir", "", defaultHomeDir, "Set trdl home directory (default $TRDL_HOME_DIR or ~/.trdl)")
 }
