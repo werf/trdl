@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.3.6](https://www.github.com/werf/trdl/compare/v0.3.5...v0.3.6) (2022-02-09)
+
+
+### Bug Fixes
+
+* **client:** rebuild previous release, no changes ([59d3822](https://www.github.com/werf/trdl/commit/59d38224f1fde3452254a72070ee7d03ffd7120f))
+
 ### [0.3.5](https://www.github.com/werf/trdl/compare/v0.3.4...v0.3.5) (2022-02-09)
 
 
