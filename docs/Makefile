@@ -1,4 +1,4 @@
-BUILT_TRDL_BIN_PATH ?= go
+BUILT_TRDL_BIN_PATH ?= trdl
 
 all: regen_reference
 
@@ -6,7 +6,7 @@ regen_reference: _regen_reference_cli _regen_reference_vault_plugin _compile
 
 _regen_reference_cli:
 	@cd ../client && go install github.com/werf/trdl/client/cmd/trdl
-	@$$BUILT_TRDL_BIN_PATH docs .
+	@$(BUILT_TRDL_BIN_PATH) docs .
 
 _regen_reference_vault_plugin:
 	@cd ../server && go install github.com/werf/trdl/server/cmd/vault-plugin-docs
