@@ -1,6 +1,10 @@
 .whats-problems {
   &__section {
     padding-bottom: rem(100px);
+
+    & .card__pic {
+      stroke: $color-accent;
+    }
   }
 
   &__title {

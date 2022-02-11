@@ -9,6 +9,7 @@
   
   &__container {
     background: $color-accent;
+    padding: rem(20px) rem(80px);
   }
 
   &__wrap {
@@ -25,13 +26,17 @@
   }
 
   &__button {
-    &--gh {
+    &--accent {
       background: #fff;
-      margin-right: rem(40px);
+      // margin-right: rem(40px);
     }
 
     &--doc {
       border-color: #fff;
+
+      &:hover {
+        border-color: transparent;
+      }
     }
   } 
 }

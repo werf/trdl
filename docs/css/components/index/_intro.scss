@@ -39,8 +39,16 @@
     align-items: center;
   }
 
-  &__button--gh {
+  &__link {
     margin-right: rem(40px);
+
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+
+  &__button--accent {
+    // margin-right: rem(40px);
     color: $text-color-title-invert;
   }
 
@@ -51,7 +59,7 @@
   &__lines {
     position: absolute;
     bottom: -400px;
-    right: -370px;
+    right: -405px;
     z-index: -1;
 
     @include laptop {
