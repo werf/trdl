@@ -10,6 +10,7 @@
     @media screen and (max-width: 1375px) {
       background: $color-dark;
     }
+
   }
 
   &__wrap {
@@ -29,21 +30,22 @@
   &__cols {
     display: flex;
     justify-content: space-between;
+    flex-direction: column;
 
-    @include tablets {
-      flex-direction: column;
-    }
+    // @include tablets {
+    //   flex-direction: column;
+    // }
 
     &--item {
-      width: 45%;
+      // width: 45%;
+      width: 100%;
 
-      @include tablets {
-        width: 100%;
-
-        &:first-child {
-          margin-bottom: 30px;
-        }
+      &:first-child {
+        margin-bottom: 50px;
       }
+      // @include tablets {
+      //   width: 100%;
+      // }
     }
 
     & .col {
@@ -71,6 +73,7 @@
         display: flex;
         align-items: center;
         padding-bottom: rem(30px);
+        padding-left: 0;
 
         & .server__icon {
           min-width: rem(28px);
@@ -88,12 +91,18 @@
           font-size: rem(14px);
           line-height: rem(22px);
           padding-left: rem(30px);
+          color: $text-color-title-invert;
+          margin-top: 0;
 
           & a {
             @include montserrat(regular-italic);
             text-decoration: underline;
             color: $text-color-title-invert;
           }
+        }
+
+        &::before {
+          display: none;
         }
       }
     }

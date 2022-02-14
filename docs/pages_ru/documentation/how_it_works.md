@@ -1,7 +1,7 @@
 ---
 title: Как это работает
 permalink: /documentation/how_it_works.html
-layout: main-page
+layout: sidebar
 ---
 
 {% include documentation/how_it_works_ru/architecture.html %}

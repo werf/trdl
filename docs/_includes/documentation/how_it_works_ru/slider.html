@@ -1,36 +1,34 @@
-<section class="slider__section">
-  <div class="container">
-    <div class="slider__subtitle block__subtitle">Публикация каналов</div>
-    <div class="slider__navigation"></div>
-    <div class="slider__wrapper">
-      <div class="slider__item">
-        <p class="slide__text">Разработчик изменяет конфигурацию каналов обновлений в Git и делает коммит со своей GPG-подписью.</p>
-        <img src="/images/slider/publish/1.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Кворум проекта подписывает коммит своими GPG-подписями.</p>
-        <img src="/images/slider/publish/2.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Инициируется процесс публикации каналов. Из CI-системы коммит поступает в Vault.</p>
-        <img src="/images/slider/publish/3.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Vault проверяет, содержит ли коммит минимальный набор разрешённых GPG-подписей.</p>
-        <img src="/images/slider/publish/4.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Vault подписывает обновленный список каналов и связанных с ними релизов. Для подписи используются ключи, которые Vault сам же автоматически генерирует и хранит в зашифрованном виде в своём хранилище. Никто не может получить доступ к ключам.</p>
-        <img src="/images/slider/publish/5.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Обновленные каналы вместе с метаданными загружаются в TUF-репозиторий.</p>
-        <img src="/images/slider/publish/6.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Канал опубликован. Новая версия ПО становится доступной для клиента, использующего этот канал обновлений.</p>
-        <img src="/images/slider/publish/7.svg" alt="">
-      </div>
+<section class="slider__section ignore-sidebar">
+  <div class="slider__subtitle block__subtitle">Публикация каналов</div>
+  <div class="slider__navigation"></div>
+  <div class="slider__wrapper">
+    <div class="slider__item">
+      <p class="slide__text">Разработчик изменяет конфигурацию каналов обновлений в Git и делает коммит со своей GPG-подписью.</p>
+      <img src="/images/slider/publish/1.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Кворум проекта подписывает коммит своими GPG-подписями.</p>
+      <img src="/images/slider/publish/2.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Инициируется процесс публикации каналов. Из CI-системы коммит поступает в Vault.</p>
+      <img src="/images/slider/publish/3.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Vault проверяет, содержит ли коммит минимальный набор разрешённых GPG-подписей.</p>
+      <img src="/images/slider/publish/4.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Vault подписывает обновленный список каналов и связанных с ними релизов. Для подписи используются ключи, которые Vault сам же автоматически генерирует и хранит в зашифрованном виде в своём хранилище. Никто не может получить доступ к ключам.</p>
+      <img src="/images/slider/publish/5.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Обновленные каналы вместе с метаданными загружаются в TUF-репозиторий.</p>
+      <img src="/images/slider/publish/6.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Канал опубликован. Новая версия ПО становится доступной для клиента, использующего этот канал обновлений.</p>
+      <img src="/images/slider/publish/7.svg" alt="">
     </div>
   </div>
 </section>

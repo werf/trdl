@@ -1,32 +1,30 @@
-<section class="slider__section">
-  <div class="container">
-    <div class="slider__subtitle block__subtitle">Релиз новой версии</div>
-    <div class="slider__nav"></div>
-    <div class="slider__wrap">
-      <div class="slider__item">
-        <p class="slide__text">Разработчик создает Git-тег с новой версией ПО (v1.0.1) и подписывает его своей GPG-подписью.</p>
-        <img src="/images/slider/release/1.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Кворум проекта подписывает Git-тег своими GPG-подписями.</p>
-        <img src="/images/slider/release/2.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Инициируется процесс сборки релиза. Из CI-системы имя Git-тега поступает в Vault.</p>
-        <img src="/images/slider/release/3.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Vault проверяет, содержит ли Git-тег минимальный набор разрешённых GPG-подписей. Если все необходимые подписи есть, Vault инициирует сборку.</p>
-        <img src="/images/slider/release/4.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Vault подписывает результат сборки (артефакт). Для подписи используются ключи, которые Vault сам же автоматически генерирует и хранит в зашифрованном виде в своём хранилище. Никто не может получить доступ к этим ключам.</p>
-        <img src="/images/slider/release/5.svg" alt="">
-      </div>
-      <div class="slider__item">
-        <p class="slide__text">Результат сборки вместе с метаданными загружаются в TUF-репозиторий. Однако клиент продолжает работать со старой версией ПО (v1.0.0) до тех пор, пока новая версия не будет опубликована в выбранном канале обновлений.</p>
-        <img src="/images/slider/release/6.svg" alt="">
-      </div>
+<section class="slider__section ignore-sidebar">
+  <div class="slider__subtitle block__subtitle">Релиз новой версии</div>
+  <div class="slider__nav"></div>
+  <div class="slider__wrap">
+    <div class="slider__item">
+      <p class="slide__text">Разработчик создает Git-тег с новой версией ПО (v1.0.1) и подписывает его своей GPG-подписью.</p>
+      <img src="/images/slider/release/1.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Кворум проекта подписывает Git-тег своими GPG-подписями.</p>
+      <img src="/images/slider/release/2.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Инициируется процесс сборки релиза. Из CI-системы имя Git-тега поступает в Vault.</p>
+      <img src="/images/slider/release/3.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Vault проверяет, содержит ли Git-тег минимальный набор разрешённых GPG-подписей. Если все необходимые подписи есть, Vault инициирует сборку.</p>
+      <img src="/images/slider/release/4.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Vault подписывает результат сборки (артефакт). Для подписи используются ключи, которые Vault сам же автоматически генерирует и хранит в зашифрованном виде в своём хранилище. Никто не может получить доступ к этим ключам.</p>
+      <img src="/images/slider/release/5.svg" alt="">
+    </div>
+    <div class="slider__item">
+      <p class="slide__text">Результат сборки вместе с метаданными загружаются в TUF-репозиторий. Однако клиент продолжает работать со старой версией ПО (v1.0.0) до тех пор, пока новая версия не будет опубликована в выбранном канале обновлений.</p>
+      <img src="/images/slider/release/6.svg" alt="">
     </div>
   </div>
 </section>
