@@ -20,17 +20,16 @@
   }
 
   &__title {
-    // padding-bottom: rem(60px);
     padding-bottom: rem(35px);
   }
 
   &__cols {
     & .col__item {
-      // @include montserrat(semi-bold);
       font-size: rem(14px);
       line-height: rem(20px);
       display: block;
       padding-left: rem(30px);
+      color: #fff;
 
       &::before {
         content: '';
@@ -42,17 +41,6 @@
         margin-left: rem(-30px);
         margin-right: rem(20px);
       }
-    }
-  }
-
-  &__lines {
-    position: absolute;
-    top: 450px;
-    right: -95px;
-    z-index: -1;
-
-    @include old-display {
-      display: none;
     }
   }
 }

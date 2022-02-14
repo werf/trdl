@@ -57,8 +57,11 @@ html {
     box-sizing: content-box;
     background: $color-dark;
     border-radius: rem(20px);
-    padding: rem(20px) rem(80px);
-    min-width: 1200px;
+    // padding: rem(20px) rem(80px);
+    // min-width: 1200px;
+    padding: 0;
+    min-width: auto;
+    display: flex;
 
     @media screen and (max-width: 1375px) {
       box-sizing: border-box;
@@ -213,4 +216,8 @@ table {
 td .tippy-content {
   padding: 4px 8px;
   font-size: 12px;
+}
+
+.ignore-sidebar {
+  margin-left: rem(-320px);
 }

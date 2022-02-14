@@ -1,12 +1,14 @@
 ---
 title: Быстрый старт
 permalink: documentation/quickstart.html
-layout: page-nosidebar
+layout: sidebar
 toc: true
 toc_headers: h2
 ---
 
+{%comment%}
 {% include documentation/quickstart_ru/easy-use.html %}
+{%endcomment%}
 
 ## Для администратора
 

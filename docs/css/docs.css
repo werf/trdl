@@ -98,6 +98,11 @@
     padding-left: 20px;
 }
 
+.layout-sidebar__content.docs {
+    width: 780px;
+    padding-left: 20px;
+}
+
 /* .layout-sidebar__content .post-content > p {
   padding: 15px 0;
 } */
