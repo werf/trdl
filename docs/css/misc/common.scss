@@ -221,3 +221,9 @@ td .tippy-content {
 .ignore-sidebar {
   margin-left: rem(-320px);
 }
+
+.docs .security ul > li {
+  &::before {
+    display: none;
+  }
+}

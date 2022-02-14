@@ -1,14 +1,26 @@
 .security {
-  & .container--wide {
-    position: relative;
+  &.architecture__section {
+    &.ignore-sidebar {
+      margin-left: rem(-400px);
+      margin-right: rem(-80px);
+    }
 
-    @media screen and (max-width: 1375px) {
-      position: unset;
+    & .container--wide {
+      position: relative;
+      padding: rem(20px) rem(80px);
+  
+      @media screen and (max-width: 1375px) {
+        position: unset;
+      }
     }
   }
+  
 
   .architecture {
     &__wrap {
+      margin-left: 0;
+      margin-right: 0;
+
       & .col__text {
         @include montserrat(regular);
         font-size: rem(18px);
@@ -29,6 +41,10 @@
     }
 
     &__cols--item {
+      &:first-child {
+        margin-bottom: 0;
+      }
+      
       & .warning {
         fill: none;
         stroke: $text-color-title-invert-light;
@@ -40,6 +56,7 @@
     }
   
     &__cols {
+      flex-direction: row;
       margin-bottom: rem(30px);
 
       & .col {

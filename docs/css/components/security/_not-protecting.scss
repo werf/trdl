@@ -1,15 +1,23 @@
 .security {
-  & .architecture__cols {
-    &--item {
-      & .col__item .warning {
-        stroke: $color-accent;
+  &.how-work__section {
+    & .architecture__cols {
+      &--item {
+        & .col__item {
+          & .warning {
+            stroke: $color-accent;
+          }
+  
+          & p {
+            color: #000;
+          }
+        }
+  
+        // &:last-child {
+        //   & .col__item {
+        //     max-width: 95%;
+        //   }
+        // }
       }
-
-      // &:last-child {
-      //   & .col__item {
-      //     max-width: 95%;
-      //   }
-      // }
     }
   }
 }

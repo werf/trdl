@@ -11,18 +11,27 @@
     }
 
     &__grid--list {
+      grid-template-columns: rem(600px);
+      // max-width: rem(600px);
       grid-template-areas: 
-        "gear ."
-        "gear people"
-        "gear people"
-        "shield people"
-        "shield comp"
-        "shield comp"
-        ". comp";
+        "gear"
+        "people"
+        "shield"
+        "comp";
   
       & .card {
         display: flex;
         flex-direction: column;
+        padding: rem(40px) rem(60px);
+
+        &:nth-child(even) {
+          margin-right: rem(-180px);
+          margin-left: rem(180px);
+        }
+
+        &__item {
+          padding-left: 0;
+        }
 
         &--gear {
           & .card__list {

@@ -2,13 +2,16 @@
   &.solve-that {
     &__section {
       position: relative;
-      margin-top: rem(190px);
       margin-bottom: rem(140px);
       z-index: 0;
 
       @media screen and (max-width: 1375px) {
         background: $color-accent;
         margin-top: rem(70px);
+      }
+
+      & .solve-that__container {
+        padding: 0;
       }
     }
   }
