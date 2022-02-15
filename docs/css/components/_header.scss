@@ -51,6 +51,10 @@
         display: none;
       }
 
+      &:last-child {
+        padding-right: 0;
+      }
+
       @include tablets {
         padding-bottom: 30px;
 

@@ -45,7 +45,14 @@
                         {%- if folder.url.size>1 and page.url != folder.url and page.url contains folder.url
                         and page.url != '/installation.html' %} header__menu--item_active{% endif %}
                         {%- if folder.url.size<2 and page.url.size<2 %} header__menu--item_active{% endif %}
+                        {%- comment -%}
                         {%- if folder.title == 'Документация' or folder.title == 'Documentation'  %} header__menu--item_active{% endif %}">
+                        {%- endcomment -%}
+                        {%- if (folder.title == 'Документация' or folder.title == 'Documentation') %}
+                          {%- if page.url contains 'documentation'  %}
+                            header__menu--item_active
+                          {% endif %}
+                        {% endif %}">
                         {% capture folder_url %}
                         {%- if folder.external_url -%}
                         {{- folder.external_url -}}
