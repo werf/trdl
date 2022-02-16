@@ -43,4 +43,5 @@ jobs:
             --empty-alt-ignore \
             --check_html \
             --url_ignore "https://fonts.googleapis.com,https://fonts.gstatic.com" \
+            --http-status-ignore "0" \
             _site/
