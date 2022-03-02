@@ -27,7 +27,7 @@ const (
 type Client struct {
 	repoName  string
 	dir       string
-	tpmDir    string
+	tmpDir    string
 	logsDir   string
 	tufClient TufInterface
 	locker    lockgate.Locker
@@ -37,7 +37,7 @@ func NewClient(repoName, dir, repoUrl, locksPath, tmpDir, logsDir string) (Clien
 	c := Client{
 		repoName: repoName,
 		dir:      dir,
-		tpmDir:   tmpDir,
+		tmpDir:   tmpDir,
 		logsDir:  logsDir,
 	}
 
@@ -107,15 +107,15 @@ func (c Client) channelScriptsDir(group, channel string) string {
 }
 
 func (c Client) channelTmpPath(group, channel string) string {
-	return filepath.Join(c.tpmDir, channelsDir, group, channel)
+	return filepath.Join(c.tmpDir, channelsDir, group, channel)
 }
 
 func (c Client) channelReleaseTmpDir(releaseName string) string {
-	return filepath.Join(c.tpmDir, releasesDir, releaseName)
+	return filepath.Join(c.tmpDir, releasesDir, releaseName)
 }
 
 func (c Client) channelScriptsTmpDir(group, channel string) string {
-	return filepath.Join(c.tpmDir, scriptsDir, strings.Join([]string{group, channel}, "-"))
+	return filepath.Join(c.tmpDir, scriptsDir, strings.Join([]string{group, channel}, "-"))
 }
 
 func (c Client) findChannelReleaseBinPath(group, channel string, optionalBinName string) (string, error) {
