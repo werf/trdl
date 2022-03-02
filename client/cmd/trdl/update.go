@@ -14,6 +14,7 @@ import (
 
 func updateCmd() *cobra.Command {
 	var noSelfUpdate bool
+	var autoclean bool
 	var inBackground bool
 	var backgroundStdoutFile string
 	var backgroundStderrFile string
@@ -70,12 +71,12 @@ func updateCmd() *cobra.Command {
 			}
 
 			if !noSelfUpdate {
-				if err := c.DoSelfUpdate(); err != nil {
+				if err := c.DoSelfUpdate(autoclean); err != nil {
 					_, _ = fmt.Fprintf(os.Stderr, "WARNING: Self-update failed: %s\n", err)
 				}
 			}
 
-			if err := c.UpdateRepoChannel(repoName, group, optionalChannel); err != nil {
+			if err := c.UpdateRepoChannel(repoName, group, optionalChannel, autoclean); err != nil {
 				return err
 			}
 
@@ -84,6 +85,7 @@ func updateCmd() *cobra.Command {
 	}
 
 	SetupNoSelfUpdate(cmd, &noSelfUpdate)
+	cmd.Flags().BoolVar(&autoclean, "autoclean", true, "Erase old downloaded releases")
 	cmd.Flags().BoolVar(&inBackground, "in-background", false, "Perform update in background")
 	cmd.Flags().StringVarP(&backgroundStdoutFile, "background-stdout-file", "", "", "Redirect the stdout of the background update to a file")
 	cmd.Flags().StringVarP(&backgroundStderrFile, "background-stderr-file", "", "", "Redirect the stderr of the background update to a file")

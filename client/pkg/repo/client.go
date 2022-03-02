@@ -25,20 +25,22 @@ const (
 )
 
 type Client struct {
-	repoName  string
-	dir       string
-	tmpDir    string
-	logsDir   string
-	tufClient TufInterface
-	locker    lockgate.Locker
+	repoName    string
+	dir         string
+	tmpDir      string
+	logsDir     string
+	metafileDir string
+	tufClient   TufInterface
+	locker      lockgate.Locker
 }
 
-func NewClient(repoName, dir, repoUrl, locksPath, tmpDir, logsDir string) (Client, error) {
+func NewClient(repoName, dir, repoUrl, locksPath, tmpDir, logsDir, metafileDir string) (Client, error) {
 	c := Client{
-		repoName: repoName,
-		dir:      dir,
-		tmpDir:   tmpDir,
-		logsDir:  logsDir,
+		repoName:    repoName,
+		dir:         dir,
+		tmpDir:      tmpDir,
+		logsDir:     logsDir,
+		metafileDir: metafileDir,
 	}
 
 	if err := c.init(repoUrl, locksPath); err != nil {
@@ -206,7 +208,16 @@ func (c Client) GetChannelRelease(group, channel string) (string, error) {
 		return "", NewChannelNotFoundLocallyErr(c.repoName, group, channel)
 	}
 
-	return readChannelRelease(channelFilePath)
+	release, err := readChannelRelease(channelFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	if err := c.releaseMetafile(release).Reset(c.locker); err != nil {
+		return "", fmt.Errorf("unable to reset release metafile: %s", err)
+	}
+
+	return release, nil
 }
 
 func readChannelRelease(path string) (string, error) {
@@ -233,4 +244,9 @@ func (c Client) updateChannelLockName(group, channel string) string {
 
 func (c Client) updateReleaseLockName(release string) string {
 	return fmt.Sprintf("update-release-%s", release)
+}
+
+func (c Client) releaseMetafile(release string) util.Metafile {
+	filePath := filepath.Join(c.metafileDir, "releases", release)
+	return util.NewMetafile(filePath)
 }
