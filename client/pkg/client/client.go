@@ -156,7 +156,7 @@ func (c Client) SetRepoDefaultChannel(repoName, channel string) error {
 	})
 }
 
-func (c Client) DoSelfUpdate() error {
+func (c Client) DoSelfUpdate(autocleanReleases bool) error {
 	acquired, lock, err := c.locker.Acquire(selfUpdateLockFilename, lockgate.AcquireOptions{Shared: false, NonBlocking: true})
 	if err != nil {
 		return fmt.Errorf("unable to acquire lock: %s", err)
@@ -179,7 +179,7 @@ func (c Client) DoSelfUpdate() error {
 		}
 	}
 
-	if err := c.doSelfUpdate(); err != nil {
+	if err := c.doSelfUpdate(autocleanReleases); err != nil {
 		return err
 	}
 
@@ -194,7 +194,7 @@ func (c Client) DoSelfUpdate() error {
 	return nil
 }
 
-func (c Client) doSelfUpdate() error {
+func (c Client) doSelfUpdate(autocleanReleases bool) error {
 	channel, err := c.processRepoOptionalChannel(trdl.SelfUpdateDefaultRepo, "")
 	if err != nil {
 		if _, ok := err.(*RepositoryNotInitializedErr); !ok {
@@ -249,10 +249,16 @@ func (c Client) doSelfUpdate() error {
 		return err
 	}
 
+	if autocleanReleases {
+		if err := repoClient.CleanReleases(); err != nil {
+			return fmt.Errorf("unable to clean old releases: %s", err)
+		}
+	}
+
 	return nil
 }
 
-func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string) error {
+func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string, autocleanReleases bool) error {
 	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
 	if err != nil {
 		return err
@@ -263,7 +269,17 @@ func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string) error
 		return err
 	}
 
-	return repoClient.UpdateChannel(group, channel)
+	if err := repoClient.UpdateChannel(group, channel); err != nil {
+		return err
+	}
+
+	if autocleanReleases {
+		if err := repoClient.CleanReleases(); err != nil {
+			return fmt.Errorf("unable to clean old releases: %s", err)
+		}
+	}
+
+	return nil
 }
 
 func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, opts repo.UseSourceOptions) (string, error) {
@@ -411,7 +427,13 @@ func (c Client) repoClient(repoName string) (RepoInterface, error) {
 		return nil, err
 	}
 
-	return repo.NewClient(repoName, repoDir, repoUrl, c.repoLocksDir(repoName), c.repoTmpDir(repoName), c.repoLogsDir(repoName))
+	return repo.NewClient(
+		repoName, repoDir, repoUrl,
+		c.repoLocksDir(repoName),
+		c.repoTmpDir(repoName),
+		c.repoLogsDir(repoName),
+		c.repoMetafileDir(repoName),
+	)
 }
 
 func (c *Client) repoDir(repoName string) string {
@@ -464,6 +486,10 @@ func (c *Client) selfUpdateMetafile() util.Metafile {
 
 func (c *Client) repoLocksDir(repoName string) string {
 	return filepath.Join(c.locksDir(), "repositories", repoName)
+}
+
+func (c *Client) repoMetafileDir(repoName string) string {
+	return filepath.Join(c.metafileDir(), "repositories", repoName)
 }
 
 func (c *Client) repoTmpDir(repoName string) string {

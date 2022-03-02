@@ -9,6 +9,8 @@ trdl update REPO GROUP [CHANNEL] [options]
 ## Options
 
 ```shell
+      --autoclean=true
+            Erase old downloaded releases
       --background-stderr-file=''
             Redirect the stderr of the background update to a file
       --background-stdout-file=''
