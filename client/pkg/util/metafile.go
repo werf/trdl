@@ -30,10 +30,6 @@ func (f Metafile) HasBeenModifiedWithinPeriod(locker lockgate.Locker, period tim
 func (f Metafile) hasBeenModifiedWithinPeriod(period time.Duration) (bool, error) {
 	info, err := os.Stat(f.filePath)
 	if err != nil {
-		if isNotExistErr(err) {
-			return true, nil
-		}
-
 		return false, nil
 	}
 
