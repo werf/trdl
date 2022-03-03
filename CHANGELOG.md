@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.4.1](https://www.github.com/werf/trdl/compare/v0.4.0...v0.4.1) (2022-03-03)
+
+
+### Bug Fixes
+
+* **client:** autoclean ignores releases downloaded by previous trdl versions ([6e7b770](https://www.github.com/werf/trdl/commit/6e7b770b798385e5e15e396ed5da76f8161f6d1a))
+
 ## [0.4.0](https://www.github.com/werf/trdl/compare/v0.3.6...v0.4.0) (2022-03-03)
 
 
