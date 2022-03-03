@@ -1,7 +1,11 @@
 topnav_title: trdl
 site_title: trdl
-company_name: Flant
-company_url: https://flant.com
+company_url:
+  ru: https://flant.ru
+  en: https://flant.com
+company_name:
+  ru: Флант
+  en: Flant
 site_lang: en
 site_urls:
   ru: ru.trdl.dev
@@ -20,7 +24,14 @@ highlighter: rouge
 
 plugins:
 - jekyll-assets
+#- jekyll-remote-theme
 
+assets:
+#  precompile: ['**/*.*']
+  sources:
+    - assets/js
+    #- _tmp_dir/cc/js
+    #- /home/kar/.gem/bundle/ruby/2.7.0/bundler/gems/website-core-cafff16c4189/assets/js
 markdown: kramdown
 kramdown:
  input: GFM
@@ -36,6 +47,9 @@ breadcrumbs:
 collections:
   tooltips:
     output: false
+
+#remote_theme:  https://github.com/flant/website-core@dev
+theme:  flant-theme
 
 defaults:
   - scope:

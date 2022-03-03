@@ -34,11 +34,11 @@ trdl combines two key components: the server and the client.
 * provides easy operation with software version artifacts in the shell session;
 * ensures safe communication via working with the TUF repository in a reliable fashion.
 
-<img alt="Release" src="https://raw.githubusercontent.com/werf/trdl/master/docs/images/slider/release/6.svg" width="80%">
+<img alt="Release" src="https://raw.githubusercontent.com/werf/trdl/master/docs/assets/images/slider/release/6.svg" width="80%">
 
 ___
 
-<img alt="Publication" src="https://raw.githubusercontent.com/werf/trdl/master/docs/images/slider/publish/7.svg" width="80%">
+<img alt="Publication" src="https://raw.githubusercontent.com/werf/trdl/master/docs/assets/images/slider/publish/7.svg" width="80%">
 
 ## Installation
 

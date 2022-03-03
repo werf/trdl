@@ -43,7 +43,7 @@ shell:
 import:
 - artifact: asset
   add: /srv/jekyll-data/_site
-  to: /app/
+  to: /app
   before: setup
 ---
 image: tuf-router
