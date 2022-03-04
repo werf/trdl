@@ -2,7 +2,7 @@ name: Broken links checker
 on:
   push:
     paths:
-      - 'docs/**'
+      - docs
 
 jobs:
   check_links:
