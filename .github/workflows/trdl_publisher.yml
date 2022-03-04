@@ -2,7 +2,9 @@ name: Trdl publisher
 on:
   push:
     branches:
-    - main
+      - main
+    paths:
+      - "**/trdl_channels.yaml"
 
 jobs:
   release:
