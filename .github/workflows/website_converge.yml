@@ -2,6 +2,8 @@ name: Converge website
 on:
   push:
     branches: [main]
+    paths:
+      - docs
 
 env:
   WERF_REPO: "ghcr.io/${{ github.repository_owner }}/trdl"
