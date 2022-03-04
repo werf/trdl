@@ -2,6 +2,7 @@ package client
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -26,14 +27,23 @@ const (
 )
 
 var (
-	tmpDir      string
-	trdlHomeDir string
-	trdlBinPath string
-	stubs       *gostub.Stubs
+	tmpDir         string
+	trdlHomeDir    string
+	trdlBinPath    string
+	trdlBinVersion string
+	stubs          *gostub.Stubs
 )
 
 var _ = SynchronizedBeforeSuite(testutil.ComputeTrdlBinPath, func(computedPathToWerf []byte) {
 	trdlBinPath = string(computedPathToWerf)
+
+	output := testutil.SucceedCommandOutputString(
+		"",
+		trdlBinPath,
+		"version",
+	)
+	version := strings.TrimSpace(output)
+	trdlBinVersion = version
 })
 
 var _ = BeforeEach(func() {
@@ -42,6 +52,17 @@ var _ = BeforeEach(func() {
 	trdlHomeDir = tmpDir
 	stubs.SetEnv("TRDL_HOME_DIR", trdlHomeDir)
 	stubs.SetEnv("TRDL_NO_SELF_UPDATE", "1")
+
+	// check that the tested binary is not overwritten during self-update in previous tests by mistake
+	{
+		output := testutil.SucceedCommandOutputString(
+			"",
+			trdlBinPath,
+			"version",
+		)
+		version := strings.TrimSpace(output)
+		Ω(version).Should(Equal(trdlBinVersion))
+	}
 })
 
 var _ = AfterEach(func() {

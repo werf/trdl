@@ -63,6 +63,43 @@ var _ = Describe("Basic", func() {
 			)
 		})
 
+		It("self-update", func() {
+			trdlBinPathToOverride := filepath.Join(tmpDir, filepath.Base(trdlBinPath))
+			testutil.CopyIn(trdlBinPath, trdlBinPathToOverride)
+
+			By("check dev trdl version")
+			{
+				output := testutil.SucceedCommandOutputString(
+					"",
+					trdlBinPathToOverride,
+					"version",
+				)
+				version := strings.TrimSpace(output)
+				Ω(version).Should(Equal(trdlBinVersion))
+			}
+
+			By("run update command")
+			{
+				stubs.SetEnv("TRDL_NO_SELF_UPDATE", "0")
+				testutil.RunSucceedCommand(
+					"",
+					trdlBinPathToOverride,
+					"update", testRepoName, validGroup,
+				)
+			}
+
+			By("check changed trdl version")
+			{
+				output := testutil.SucceedCommandOutputString(
+					"",
+					trdlBinPathToOverride,
+					"version",
+				)
+				version := strings.TrimSpace(output)
+				Ω(version).ShouldNot(Equal(trdlBinVersion))
+			}
+		})
+
 		When("stable channel updated", func() {
 			BeforeEach(func() {
 				testutil.RunSucceedCommand(
