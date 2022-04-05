@@ -5,11 +5,12 @@
       <div class="easy-use__cols architecture__cols">
         <div class="architecture__cols--item">
           <div class="col__title block__subtitle block__subtitle--invert">Разработчикам</div>
-          <div class="col__text">Для работы с trdl не&nbsp;нужны дополнительные знания и&nbsp;инструменты:</div>
+          <div class="col__text">Привычные инструменты и готовый процесс.</div>
           <ul class="col__list">
-            <li class="col__item">Если ваша сборка работает в&nbsp;Docker, она заработает в&nbsp;trdl. Достаточно указать название образа и&nbsp;команду для build.</li>
-            <li class="col__item">Единственное условие: результаты сборки нужно разместить в&nbsp;определенной директории.</li>
-            <li class="col__item">Есть готовые GitHub Actions для важных workflows.</li>
+            <li class="col__item">Конфигурация сборки сводится к выбору базового образа и сборочных инструкций.</li>
+            <li class="col__item">Релиз, публикация каналов и верификация этих операций кворумом выполняются исключительно через Git.</li>
+            <li class="col__item">Код, конфигурация и GPG-подписи хранятся в Git -- пользователю не требуются дополнительные инструменты и знания для подтверждения и выполнения релизов и публикации каналов.</li>
+            <li class="col__item">Продуманный процесс доставки и готовая интеграция (GitHub Actions).</li>
           </ul>
           <!-- <a href="#" class="easy-use__col--link">
             <button class="easy-use__col--button button">Подробнее</button>
@@ -19,12 +20,11 @@
 
         <div class="architecture__cols--item">
           <div class="col__title block__subtitle block__subtitle--invert">Пользователям</div>
-          <div class="col__text">Одна команда, чтобы добавить источник пакетов на&nbsp;хост. Простые варианты:</div>
+          <div class="col__text">Один инструмент для работы и обновления артефактов ПО.</div>
           <ul class="col__list">
-            <li class="col__item">Автоматического получения последней версии ПО из&nbsp;канала.</li>
-            <li class="col__item">Ручного получения и&nbsp;активации последней версии ПО из&nbsp;канала.</li>
-            <li class="col__item">Активации только в&nbsp;рамках текущей bash-сессии.</li>
-            <li class="col__item">Работы с плейбуками и&nbsp;другой автоматизации.</li>
+            <li class="col__item">Различные варианты использования и обновления ПО.</li>
+            <li class="col__item">Обновление версий ПО через выбранные каналы.</li>
+            <li class="col__item">Верификация обновлений из доверенного TUF-репозитория.</li>
           </ul>
           <!-- <a href="#" class="easy-use__col--link">
             <button class="easy-use__col--button button">Подробнее</button>
