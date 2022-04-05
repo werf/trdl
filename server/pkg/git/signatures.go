@@ -9,6 +9,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/werf/trdl/server/pkg/pgp"
 )
@@ -25,7 +26,7 @@ func NewNotEnoughVerifiedPGPSignaturesError(number int) error {
 	return &NotEnoughVerifiedPGPSignaturesError{Number: number}
 }
 
-func VerifyTagSignatures(repo *git.Repository, tagName string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int) error {
+func VerifyTagSignatures(repo *git.Repository, tagName string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int, logger hclog.Logger) error {
 	tr, err := repo.Tag(tagName)
 	if err != nil {
 		return fmt.Errorf("unable to get tag: %s", err)
@@ -39,7 +40,7 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, trustedPGPPublicK
 				return fmt.Errorf("resolve revision %s failed: %s", tr.Hash(), err)
 			}
 
-			return VerifyCommitSignatures(repo, revHash.String(), trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
+			return VerifyCommitSignatures(repo, revHash.String(), trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
 		}
 
 		return fmt.Errorf("unable to get tag object: %s", err)
@@ -51,7 +52,7 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, trustedPGPPublicK
 			return fmt.Errorf("unable to encode tag object: %s", err)
 		}
 
-		trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
+		trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
 		if err != nil {
 			return err
 		}
@@ -61,10 +62,10 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, trustedPGPPublicK
 		return nil
 	}
 
-	return verifyObjectSignatures(repo, to.Hash.String(), trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
+	return verifyObjectSignatures(repo, to.Hash.String(), trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
 }
 
-func VerifyCommitSignatures(repo *git.Repository, commit string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int) error {
+func VerifyCommitSignatures(repo *git.Repository, commit string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int, logger hclog.Logger) error {
 	co, err := repo.CommitObject(plumbing.NewHash(commit))
 	if err != nil {
 		return fmt.Errorf("unable to get commit %q: %s", commit, err)
@@ -76,7 +77,7 @@ func VerifyCommitSignatures(repo *git.Repository, commit string, trustedPGPPubli
 			return err
 		}
 
-		trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{co.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
+		trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{co.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
 		if err != nil {
 			return err
 		}
@@ -86,29 +87,40 @@ func VerifyCommitSignatures(repo *git.Repository, commit string, trustedPGPPubli
 		return nil
 	}
 
-	return verifyObjectSignatures(repo, commit, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
+	return verifyObjectSignatures(repo, commit, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
 }
 
-func verifyObjectSignatures(repo *git.Repository, objectID string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int) error {
+func verifyObjectSignatures(repo *git.Repository, objectID string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int, logger hclog.Logger) error {
 	signatures, err := objectSignaturesFromNotes(repo, objectID)
 	if err != nil {
 		if strings.HasSuffix(err.Error(), plumbing.ErrObjectNotFound.Error()) {
+			logger.Debug(fmt.Sprintf("[DEBUG-SIGNATURES] git object not found (%s): exiting", err))
 			return NewNotEnoughVerifiedPGPSignaturesError(requiredNumberOfVerifiedSignatures)
 		}
 
 		return err
 	}
 
+	if logger != nil {
+		logger.Debug(fmt.Sprintf("[DEBUG-SIGNATURES] verifyObjectSignatures objectSignaturesFromNotes >%v<", signatures))
+	}
+
 	if len(signatures) == 0 {
+		if logger != nil {
+			logger.Debug("[DEBUG-SIGNATURES] no signatures: exiting")
+		}
 		return NewNotEnoughVerifiedPGPSignaturesError(requiredNumberOfVerifiedSignatures)
 	}
 
-	trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures)
+	trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
 	if err != nil {
 		return err
 	}
 
 	if requiredNumberOfVerifiedSignatures != 0 {
+		if logger != nil {
+			logger.Debug("[DEBUG-SIGNATURES] required number of verified signatures not met: exiting")
+		}
 		return NewNotEnoughVerifiedPGPSignaturesError(requiredNumberOfVerifiedSignatures)
 	}
 

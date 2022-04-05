@@ -1,13 +1,15 @@
 package pgp
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
+	"github.com/hashicorp/go-hclog"
 	"golang.org/x/crypto/openpgp"
 )
 
-func VerifyPGPSignatures(pgpSignatures []string, signedReaderFunc func() (io.Reader, error), pgpKeys []string, requiredNumberOfVerifiedSignatures int) ([]string, int, error) {
+func VerifyPGPSignatures(pgpSignatures []string, signedReaderFunc func() (io.Reader, error), pgpKeys []string, requiredNumberOfVerifiedSignatures int, logger hclog.Logger) ([]string, int, error) {
 	if requiredNumberOfVerifiedSignatures == 0 {
 		return pgpKeys, 0, nil
 	}
@@ -28,6 +30,9 @@ func VerifyPGPSignatures(pgpSignatures []string, signedReaderFunc func() (io.Rea
 
 			if _, err = openpgp.CheckArmoredDetachedSignature(keyring, signedReader, strings.NewReader(pgpSignature)); err != nil {
 				i++
+				if logger != nil {
+					logger.Debug(fmt.Sprintf("[DEBUG-SIGNATURES] VerifyPGPSignatures -- will skip pgpKey >%v<", pgpKeys[i]))
+				}
 				continue
 			}
 

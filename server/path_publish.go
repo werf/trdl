@@ -154,7 +154,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 			return fmt.Errorf("unable to get trusted PGP public keys: %s", err)
 		}
 
-		if err := trdlGit.VerifyCommitSignatures(gitRepo, headRef.Hash().String(), trustedPGPPublicKeys, cfg.RequiredNumberOfVerifiedSignaturesOnCommit); err != nil {
+		if err := trdlGit.VerifyCommitSignatures(gitRepo, headRef.Hash().String(), trustedPGPPublicKeys, cfg.RequiredNumberOfVerifiedSignaturesOnCommit, b.Logger()); err != nil {
 			return fmt.Errorf("signature verification failed: %s", err)
 		}
 
