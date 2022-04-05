@@ -129,6 +129,7 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 			tagName,
 			entry.trustedPGPPublicKeys,
 			entry.requiredNumberOfVerifiedSignatures,
+			nil,
 		)
 
 		if entry.expectedErrMsg != "" {
@@ -152,6 +153,7 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 			headCommit.String(),
 			entry.trustedPGPPublicKeys,
 			entry.requiredNumberOfVerifiedSignatures,
+			nil,
 		)
 
 		if entry.expectedErrMsg != "" {

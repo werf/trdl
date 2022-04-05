@@ -18,6 +18,7 @@ all: fmt lint .run tail
 
 fmt:
 	go fmt $$(go list ./...)
+	gci -w -local github.com/werf/trdl pkg/ cmd/
 
 lint:
 	GOOS=$(OS) GOARCH="$(GOARCH)" golangci-lint run ./... --config ../.golangci.yaml
