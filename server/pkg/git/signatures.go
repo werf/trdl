@@ -150,13 +150,24 @@ func objectSignaturesFromNotes(repo *git.Repository, objectID string) ([]string,
 		return nil, fmt.Errorf("unable to get objectID %q tree: %s", refHeadCommit, err)
 	}
 
-	file, err := tree.File(objectID)
-	if err != nil {
-		if err == object.ErrFileNotFound {
-			return nil, nil
-		}
+	var file *object.File
 
-		return nil, fmt.Errorf("unable to get objectID %q tree file %s: %s", refHeadCommit, objectID, err)
+FindObjectFile:
+	for _, path := range objectFanoutPaths(objectID) {
+		var err error
+		file, err = tree.File(path)
+		switch {
+		case err == object.ErrFileNotFound:
+			continue
+		case err != nil:
+			return nil, fmt.Errorf("unable to get objectID %q tree file %s: %s", refHeadCommit, path, err)
+		default:
+			break FindObjectFile
+		}
+	}
+
+	if file == nil {
+		return nil, nil
 	}
 
 	r, err := file.Reader()
