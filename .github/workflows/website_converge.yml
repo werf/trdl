@@ -3,7 +3,8 @@ on:
   push:
     branches: [main]
     paths:
-      - docs
+      - '.github/workflows/website_converge.yml'
+      - 'docs/**'
 
 env:
   WERF_REPO: "ghcr.io/${{ github.repository_owner }}/trdl"
