@@ -10,7 +10,7 @@ GIT
   revision: 8f979239dee5f2d4868ff0d6a03f24fd34a2f7da
   branch: dev-use-theme
   specs:
-    jekyll-assets (4.0.0.alpha.pre.theme.0)
+    jekyll-assets (4.0.0.alpha-theme.0)
       activesupport (>= 5, < 7)
       execjs (~> 2.7)
       extras (~> 0.2)
