@@ -29,10 +29,10 @@ func VerifyPGPSignatures(pgpSignatures []string, signedReaderFunc func() (io.Rea
 			}
 
 			if _, err = openpgp.CheckArmoredDetachedSignature(keyring, signedReader, strings.NewReader(pgpSignature)); err != nil {
-				i++
 				if logger != nil {
-					logger.Debug(fmt.Sprintf("[DEBUG-SIGNATURES] VerifyPGPSignatures -- will skip pgpKey >%v<", pgpKeys[i]))
+					logger.Debug(fmt.Sprintf("[DEBUG-SIGNATURES] VerifyPGPSignatures -- will skip pgpKey due to error: %s\n>%v<", err, pgpKeys[i]))
 				}
+				i++
 				continue
 			}
 
