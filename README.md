@@ -14,7 +14,7 @@
 [coc-badge]:                https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg
 [coc-link]:                 CODE_OF_CONDUCT.md
 
-trdl is an Open Source solution providing a secure channel for delivering updates from the Git repository to the end user.
+trdl *(stands for "true delivery")* is an Open Source solution providing a secure channel for delivering updates from the Git repository to the end user.
 
 The project team releases new versions of the software and switches them in the release channels. Git acts as the single source of truth while [Vault](https://www.vaultproject.io/) is used as a tool to verify operations as well as populate and maintain the [TUF repository](https://github.com/theupdateframework/specification). The user selects a release channel, continuously receives the latest software version from the TUF repository, and uses it.
 
