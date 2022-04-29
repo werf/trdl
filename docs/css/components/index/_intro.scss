@@ -8,6 +8,30 @@
 
   &__wrap {
     position: relative;
+    display: flex;
+
+    @include tablets {
+      flex-direction: column;
+    }
+  }
+
+  &__content {
+    padding-right: rem(100px);
+
+    @media screen and (max-width: 1420px) {
+      max-width: 60%;
+    }
+
+    @include old-display {
+      max-width: 63%;
+      padding-right: rem(30px);
+    }
+
+    @include tablets {
+      max-width: none;
+      padding-right: 0;
+      padding-bottom: rem(50px);
+    }
   }
 
   &__title {
@@ -22,7 +46,7 @@
   }
 
   &__desc {
-    max-width: 65%;
+    //max-width: 65%;
     padding-bottom: rem(60px);
 
     p:not(:last-child) {
@@ -56,6 +80,23 @@
 
     @include laptop {
       display: none;
+    }
+  }
+
+  &__scheme {
+    width: rem(508px);
+    margin-right: -135px;
+
+    @media screen and (max-width: 1420px) {
+      margin-right: rem(-45px);
+
+      & img {
+        max-width: 100%;
+      }
+    }
+
+    @include tablets {
+      margin-right: 0;
     }
   }
 }

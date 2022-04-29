@@ -1,48 +1,28 @@
 <section class="intro__section">
   <div class="container">
     <div class="intro__wrap">
-      <div class="intro__title block__title">Secure package manager for continuous delivery of binary files and scripts to servers and workstations</div>
-      <div class="intro__subtitle block__subtitle">Simple, reliable, and fast</div>
-      <div class="intro__desc block__description">
-        <p>
-          <b>trdl</b> is an Open Source tool for implementing automatic updates. It is a universal package manager delivering new versions of
-          <span class="footnote footnote--dark" title='In this case, "application" refers to any form of programming code, e.g.,
-          a binary file, a shell script, and even an Ansible playbook.'>your application</span> from a trusted
-          <span class="footnote footnote--dark" title="TUF (The Update Framework) is a framework for securing software update systems.
-          TUF repository is any repository with your software (e.g., S3) that uses TUF security tools.
-          <a href='https://theupdateframework.io/'>Learn more about TUF</a>.">repository</span>.
-        </p>
+      <div class="intro__content">
+        <div class="intro__title block__title">Secure and continuous delivery</div>
+        <div class="intro__subtitle block__subtitle">Simple, reliable, and fast</div>
+        <div class="intro__desc block__description">
+          <p>
+            <b>trdl</b> is an Open Source solution providing a secure channel for delivering updates from the Git repository to the end user.
+          </p>
+          <p>
+            The project team releases new versions of the software and switches them in the release channels. Git acts as the single source of truth while <span class="footnote footnote--dark" title="HashiCorp's Vault is a secret management tool. In trdl, we use a custom Vault plugin tailored for secure package delivery. <a href='https://www.hashicorp.com/products/vault' target='_blank'>Learn more about Vault</a>.">Vault</span> is used as a tool to verify operations as well as populate and maintain the <span class="footnote footnote--dark" title='TUF (The Update Framework) is a framework for securing software update systems. A TUF repository is any repository containing your software (e.g., S3) that uses TUF security tools. <a href="https://theupdateframework.io/" target="_blank">Learn more about TUF</a>.'>TUF repository</span>.
+          </p>
+          <p>
+            The user selects a release channel, continuously receives the latest <span class="footnote footnote--dark" title='In this case, "software" refers to any form of programming code, e.g., a binary file, a shell script, or even an Ansible playbook.'>software</span> version from the TUF repository, and uses it.
+          </p>
+        </div>
+        <div class="intro__buttons">
+          <a href="https://github.com/werf/trdl" target="_blank" class="intro__link">
+            <button class="intro__button--gh button">GitHub</button>
+          </a>
+        </div>
       </div>
-      <div class="intro__buttons">
-        <a href="https://github.com/werf/trdl" target="_blank" class="intro__link">
-          <button class="intro__button--gh button">GitHub</button>
-        </a>
-        <!-- <a href="#" class="intro__link">
-          <button class="intro__button--doc button button--white">Документация</button>
-        </a> -->
-      </div>
-      <div class="intro__lines">
-        <svg width="594" height="742" viewBox="0 0 594 742" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M209.104 596.619L241.145 625.51" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M99.0938 497.378L157.988 550.531" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M198.891 503.809L420.798 703.85" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M85.8018 401.791L130.756 442.374" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M358.391 563.977L553.607 740" stroke="#A41FE2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M63.8115 298.36L271.941 486.075" stroke="#A41FE2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M226.987 361.938L571.601 672.621" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M84.5063 233.466L157.449 299.237" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M511.516 534.843L594.346 609.53" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 75.42L424.419 456.308" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M340.776 297.336L753.469 669.406" stroke="#A41FE2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M158.529 132.958L254.381 219.434" stroke="#A41FE2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M420.905 285.936L687.442 526.268" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M148.751 40.537L345.75 218.168" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M269.131 65.4813L539.613 309.37" stroke="#A41FE2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M505.897 195.318L693.981 364.959" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M291.446 2L432.144 128.816" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M403.993 19.88L589.483 187.085" stroke="#A41FE2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M556.093 73.4225L587.107 101.339" stroke="#333037" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+      <div class="intro__scheme">
+        <img src="../../images/intro-scheme_en.svg" alt="">
       </div>
     </div>
   </div>

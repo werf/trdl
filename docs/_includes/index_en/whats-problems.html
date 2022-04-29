@@ -1,7 +1,7 @@
 <section class="whats-problems__section">
   <div class="container">
     <div class="whats-problems__wrap">
-      <div class="whats-problems__title block__title">What problems trdl fixes for you</div>
+      <div class="whats-problems__title block__title">Problems that trdl solves for you</div>
       <div class="whats-problems__grid benefits__grid">
         <ul class="whats-problems__grid--list benefits__grid--list">
           <li class="benefits__grid--item card card--delivery">
@@ -18,12 +18,11 @@
               <use xlink:href="images/icons/sprite.svg#warning"></use>
             </svg>
             <div class="card__title block__subtitle">Challenges related to implementing a secure delivery</div>
-            <p>You may encounter the following challenges in trying to deliver software securely:</p>
+            <p>What complicates things:</p>
             <ul class="card__list">
-              <li class="card__item">A single GPG signature is not enough. (What if the developer's laptop has been hacked?) You will need a quorum-based system for accepting the code and signing the built binary files.</li>
-              <li class="card__item">The acceptance system should not depend on human errors, such as the bus factor, regulation violations, misclicks, etc.</li>
-              <li class="card__item">At the same time, even the most complex system can fail.</li>
-              <p><span>Example</span>:  The release must be approved by three developers: a product owner, a security officer, and some other person. However, the acceptance system's administrator has privileges to sign the release for all of them.</p>
+              <li class="card__item">Software release and changes in release channels must only occur based on a collective decision of the team (quorum).</li>
+              <li class="card__item">The system must protect against unauthorized access and data compromise.</li>
+              <li class="card__item">The system must not be compromised by human mistakes, including regulation breaches.</li>
             </ul>
           </li>
           <!-- item -->

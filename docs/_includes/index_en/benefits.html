@@ -17,7 +17,7 @@
               <use xlink:href="images/icons/sprite.svg#gear"></use>
             </svg>
             <div class="card__title block__subtitle">Release channels instead of software versions</div>
-            <p>The user doesn’t have to download specific package versions. Instead, (s)he simply chooses a release channel with the desired compatibility and stability levels: alpha, beta, early access, stable, or rock solid. Via these channels, developers distribute the appropriate release versions. The update frequency is not limited in any way.</p>
+            <p>The user doesn’t have to download specific package versions. Instead, all (s)he has to do is choose a release channel with the desired compatibility (any SemVer combination) and stability levels (alpha, beta, early access, stable, or rock solid). Via these channels, developers distribute the appropriate release versions. There is no limit to the frequency of the updates.</p>
           </li>
           <!-- item -->
 
@@ -25,8 +25,8 @@
             <svg class="card__pic">
               <use xlink:href="images/icons/sprite.svg#people"></use>
             </svg>
-            <div class="card__title block__subtitle">Publishing releases based in the GPG quorum</div>
-            <p>trdl implements the so-called “M of N” mechanism: each Git commit is signed by multiple developers. trdl supports regular Git signatures, or the <a href="https://github.com/hashbang/git-signatures">notes mechanism</a>, to attach any number of GPG signatures to a given commit. In addition, the quorum is used for both tagging (version distribution) and signing trdl.yaml (publishing versions to the release channel).</p>
+            <div class="card__title block__subtitle">All operations are confirmed by a GPG quorum</div>
+            <p>trdl implements the so-called "M of N" verification mechanism: every commit in Git related to releasing or publishing channels must be signed using a set minimum number of trusted GPG keys.</p>
           </li>
           <!-- item -->
 
@@ -35,12 +35,11 @@
               <use xlink:href="images/icons/sprite.svg#shield"></use>
             </svg>
             <div class="card__title block__subtitle">Truly secure delivery</div>
-            <p class="">The trdl security system is based on the TUF repository for storing releases and the Vault plugin (vault-plugin-secrets-trdl) which verifies their authenticity and integrity using a private key.</p>
+            <p>The trdl security system is based on three components: the TUF repository, the Vault plugin, and Git.</p>
             <ul class="card__list">
-              <li class="card__item">The Update Framework (TUF) has many advantages, such as calculating checksums on packages and signing them, rotating keys, and protecting against rollback/indefinite freeze attacks.</li>
-              <li class="card__item">Vault can be configured so that no one has access to the private key (even the administrator).</li>
-              <li class="card__item">Vault independently manages and configures the TUF repository: adds new packages, sets the update rate, and rotates keys.</li>
-              <!-- <li class="card__item card__item--no-bul"><a href="#" class="card__item--link">Learn more about the trdl security system here.</a></li> -->
+              <li class="card__item">The TUF repository protects against unauthorized software access, key compromise and loss. It is responsible for the relevance, consistency, and integrity of the data.</li>
+              <li class="card__item">Vault is a secure platform for running a trdl server that enables secure management of encryption keys.</li>
+              <li class="card__item">Git stores commit code, configurations, and GPG signatures to verify operations.</li>
             </ul>
           </li>
           <!-- item -->
@@ -52,8 +51,6 @@
             <div class="card__title block__subtitle">Support for various platforms</div>
             <ul class="card__list">
               <li class="card__item">MacOS, Windows, Ubuntu, Red Hat, and even Gentoo.</li>
-              <li class="card__item">x86, x86-84, and ARM.</li>
-              <li class="card__item">Delivery to the server or to the developer's laptop.</li>
               <li class="card__item">All popular command shells are supported.</li>
             </ul>
           </li>
