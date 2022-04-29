@@ -85,7 +85,10 @@
         height: rem(59px);
         fill: none;
         padding-bottom: rem(20px);
-        stroke: $color-accent;
+
+        &--stroke {
+          stroke: $color-accent;
+        }
       }
 
       &__title {

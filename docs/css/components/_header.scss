@@ -93,9 +93,14 @@
 
       & a {
         @include montserrat(regular);
-        font-size: rem(14px);
+        //font-size: rem(14px);
+        font-size: 14px;
         line-height: rem(20px);
         color: $text-color-title;
+
+        @include laptop {
+          font-size: 13px;
+        }
 
         @include tablets {
           font-size: 16px;

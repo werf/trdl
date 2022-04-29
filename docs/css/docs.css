@@ -95,7 +95,6 @@
 
 .layout-sidebar__content {
     width: 860px;
-    padding-left: 20px;
 }
 
 /* .layout-sidebar__content .post-content > p {
@@ -103,6 +102,7 @@
 } */
 
 .sidebar {
+    font-size: 14px;
     list-style-type: none;
     margin: 0;
     padding: 0;
