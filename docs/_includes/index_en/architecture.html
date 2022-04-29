@@ -1,51 +1,61 @@
 <section class="architecture__section">
   <div class="container container--wide">
     <div class="architecture__wrap">
-      <div class="architecture__title block__title block__title--invert">Architecture</div>
+      <div class="architecture__title block__title block__title--invert">Components and their functions</div>
       <div class="architecture__cols">
         <div class="architecture__cols--item col__server">
-          <div class="col__title block__subtitle block__subtitle--invert">trdl-<span>server</span></div>
+          <div class="col__title block__subtitle block__subtitle--invert">The trdl <span>server</span></div>
           <div class="col__text">implements the TUF repository and securely populates it.</div>
-          <!-- <div class="col__subtitle">Functions</div> -->
           <ul class="col__list">
             <li class="col__item">
               <svg class="server__icon checked">
-                <use xlink:href="images/icons/sprite.svg#checked"></use>
+                <use xlink:href="images/icons/sprite.svg#gears"></use>
               </svg>
-              <p>Builds and publishes software releases.</p>
+              <p>Releases new software versions.</p>
             </li>
             <li class="col__item">
               <svg class="server__icon gears">
                 <use xlink:href="images/icons/sprite.svg#gears"></use>
               </svg>
-              <p>Monitors for consistency between release channels and releases (<a href="https://github.com/werf/werf/blob/multiwerf/trdl_channels.yaml">example</a>).</p>
+              <p>Publishes the release channels.</p>
             </li>
             <li class="col__item">
               <svg class="server__icon shield-2">
                 <use xlink:href="images/icons/sprite.svg#shield-2"></use>
               </svg>
-              <p>Ensures repo security.</p>
+              <p>Verifies all operations via a quorum of GPG signatures.</p>
+            </li>
+            <li class="col__item">
+              <svg class="server__icon shield-2">
+                <use xlink:href="images/icons/sprite.svg#shield-2"></use>
+              </svg>
+              <p>Ensures a continuous rotation of TUF repository encryption keys and metadata.</p>
             </li>
           </ul>
         </div>
         <!-- col -->
 
         <div class="architecture__cols--item col__client">
-          <div class="col__title block__subtitle block__subtitle--invert">trdl-<span>client</span></div>
-          <div class="col__text">delivers updates in a trusted and continuous fashion via channels with different stability levels.</div>
-          <!-- <div class="col__subtitle">Functions</div> -->
+          <div class="col__title block__subtitle block__subtitle--invert">The trdl <span>client</span></div>
+          <div class="col__text">ensures reliable updates delivery and the use of software securely.</div>
           <ul class="col__list">
             <li class="col__item">
               <svg class="server__icon branching">
                 <use xlink:href="images/icons/sprite.svg#branching"></use>
               </svg>
-              <p>Processes application files within the release channels.</p>
+              <p>Updates software versions through selected channels.</p>
             </li>
             <li class="col__item">
               <svg class="server__icon parachute">
                 <use xlink:href="images/icons/sprite.svg#parachute"></use>
               </svg>
-              <p>Processes files in the TUF repository in a reliable fashion.</p>
+              <p>Verifies updates pulled from a trusted TUF repository.</p>
+            </li>
+            <li class="col__item">
+              <svg class="server__icon parachute">
+                <use xlink:href="images/icons/sprite.svg#gears"></use>
+              </svg>
+              <p>Provides various options for using and updating the software.</p>
             </li>
           </ul>
         </div>
