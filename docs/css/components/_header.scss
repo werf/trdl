@@ -47,6 +47,10 @@
     &--item {
       padding-right: rem(75px);
 
+      &:last-child {
+        padding-right: 0;
+      }
+
       &.hidden {
         display: none;
       }
