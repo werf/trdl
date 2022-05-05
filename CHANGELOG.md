@@ -1,5 +1,13 @@
 # Changelog
 
+### [0.4.2](https://www.github.com/werf/trdl/compare/v0.4.1...v0.4.2) (2022-05-05)
+
+
+### Bug Fixes
+
+* **server:** panic when checking signatures ([8956c78](https://www.github.com/werf/trdl/commit/8956c788a39de7f4ae5cf763ef3eaf4d0ce14050))
+* **server:** fix signatures ignored when too many git notes exists for a repo ([6c50b6b](https://www.github.com/werf/trdl/commit/6c50b6bd24cd1aaf91a618233c252c05eb21022f))
+
 ### [0.4.1](https://www.github.com/werf/trdl/compare/v0.4.0...v0.4.1) (2022-03-03)
 
 
