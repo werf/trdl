@@ -18,7 +18,11 @@ trdl *(stands for "true delivery")* is an Open Source solution providing a secur
 
 The project team releases new versions of the software and switches them in the release channels. Git acts as the single source of truth while [Vault](https://www.vaultproject.io/) is used as a tool to verify operations as well as populate and maintain the [TUF repository](https://github.com/theupdateframework/specification). The user selects a release channel, continuously receives the latest software version from the TUF repository, and uses it.
 
-We already use trdl as an update manager for [werf CI/CD tool](https://github.com/werf/werf).
+<p align="center">
+  <img alt="Scheme" src="https://raw.githubusercontent.com/werf/trdl/main/docs/images/intro-scheme_en.svg" width="50%">
+</p>
+
+We have been successfully using trdl to continuously deliver our [werf CI/CD tool](https://github.com/werf/werf) to CI runners and user hosts.
 
 ## Architecture
 
@@ -36,11 +40,19 @@ trdl combines two key components: the server and the client.
 * provides easy operation with software version artifacts in the shell session;
 * ensures safe communication via working with the TUF repository in a reliable fashion.
 
-<img alt="Release" src="https://raw.githubusercontent.com/werf/trdl/master/docs/images/slider/release/6.svg" width="80%">
+## How it works
 
-___
+### Releasing
 
-<img alt="Publication" src="https://raw.githubusercontent.com/werf/trdl/master/docs/images/slider/publish/7.svg" width="80%">
+<p align="center">
+  <img alt="Release" src="https://raw.githubusercontent.com/werf/trdl/master/docs/images/slider/release/6.svg" width="80%">
+</p>
+  
+### Publishing the channels
+
+<p align="center">
+  <img alt="Publication" src="https://raw.githubusercontent.com/werf/trdl/master/docs/images/slider/publish/7.svg" width="80%">
+</p>
 
 ## Installation
 
