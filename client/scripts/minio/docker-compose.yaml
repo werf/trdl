@@ -2,16 +2,16 @@ version: '2'
 
 services:
   minio:
-    image: minio/minio
+    image: minio/minio@sha256:c19d7fe8a7f25a767df4c211ff02c9777306a3a2606fbd1bfd6ef22edc254b04
     container_name: trdl_minio
     ports:
-      - 9000:9000
+      - "9000:9000"
     command: server /data
     volumes:
       - ./.minio_data:/data
 
   mc:
-    image: minio/mc
+    image: minio/mc@sha256:76f22dba106471fda3c2377d6b537587b1bf5ba942d88f2e068307708203987e
     depends_on:
       - minio
     container_name: trdl_mc
