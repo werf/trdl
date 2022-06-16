@@ -14,7 +14,8 @@ GOSRC = $(shell find . -type f -name '*.go')
 .PHONY: fmt lint minio_up minio_down
 
 fmt:
-	gofumpt -l -w .
+	gci write -s Standard -s Default -s 'Prefix(github.com/werf)' pkg/ cmd/
+	gofumpt -extra -w cmd/ pkg/
 
 lint:
 	GOOS=$(OS) GOARCH="$(GOARCH)" golangci-lint run ./... --config ../.golangci.yaml
