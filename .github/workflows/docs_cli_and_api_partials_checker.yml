@@ -11,18 +11,17 @@ jobs:
     name: Partials checker
     runs-on: ubuntu-latest
     steps:
-
-      - name: Set up Go 1.17
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
-        id: go
-
       - name: Install werf build dependencies
         run: sudo apt-get install -y libbtrfs-dev
 
       - name: Checkout code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
+
+      - name: Set up Go 1.16
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.16
+        id: go
 
       - name: Prepare environment
         run: ./e2e/scripts/ci/git.sh
