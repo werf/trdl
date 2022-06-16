@@ -27,7 +27,7 @@ func NewRepositoryWithOptions(s3Options S3Options, tufRepoOptions TufRepoOptions
 	tufStore := NewNonAtomicTufStore(tufRepoOptions.PrivKeys, s3fs, logger)
 	tufRepo, err := tuf.NewRepo(tufStore)
 	if err != nil {
-		return nil, fmt.Errorf("error initializing tuf repo: %s", err)
+		return nil, fmt.Errorf("error initializing tuf repo: %w", err)
 	}
 
 	return NewRepository(s3fs, tufStore, tufRepo, logger), nil
@@ -66,7 +66,7 @@ func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
 		{"timestamp", privKeys.Timestamp},
 	} {
 		if err := repository.TufRepo.AddPrivateKeyWithExpires(desc.role, desc.key, data.DefaultExpires("root")); err != nil {
-			return fmt.Errorf("unable to add tuf repository private key for role %s: %s", desc.role, err)
+			return fmt.Errorf("unable to add tuf repository private key for role %s: %w", desc.role, err)
 		}
 	}
 
@@ -81,19 +81,19 @@ func (repository *S3Repository) GetPrivKeys() TufRepoPrivKeys {
 
 func (repository *S3Repository) GenPrivKeys() error {
 	if _, err := repository.TufRepo.GenKey("root"); err != nil {
-		return fmt.Errorf("error generating tuf repository root key: %s", err)
+		return fmt.Errorf("error generating tuf repository root key: %w", err)
 	}
 
 	if _, err := repository.TufRepo.GenKey("targets"); err != nil {
-		return fmt.Errorf("error generating tuf repository targets key: %s", err)
+		return fmt.Errorf("error generating tuf repository targets key: %w", err)
 	}
 
 	if _, err := repository.TufRepo.GenKey("snapshot"); err != nil {
-		return fmt.Errorf("error generating tuf repository snapshot key: %s", err)
+		return fmt.Errorf("error generating tuf repository snapshot key: %w", err)
 	}
 
 	if _, err := repository.TufRepo.GenKey("timestamp"); err != nil {
-		return fmt.Errorf("error generating tuf repository timestamp key: %s", err)
+		return fmt.Errorf("error generating tuf repository timestamp key: %w", err)
 	}
 
 	return nil
@@ -111,7 +111,7 @@ func (repository *S3Repository) Init() error {
 	if err == tuf.ErrInitNotAllowed {
 		repository.logger.Info("Tuf repository already initialized: skip initialization")
 	} else if err != nil {
-		return fmt.Errorf("unable to init tuf repository: %s", err)
+		return fmt.Errorf("unable to init tuf repository: %w", err)
 	}
 
 	return nil
@@ -119,11 +119,11 @@ func (repository *S3Repository) Init() error {
 
 func (repository *S3Repository) StageTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error {
 	if err := repository.TufStore.StageTargetFile(ctx, pathInsideTargets, data); err != nil {
-		return fmt.Errorf("unable to add staged file %q: %s", pathInsideTargets, err)
+		return fmt.Errorf("unable to add staged file %q: %w", pathInsideTargets, err)
 	}
 
 	if err := repository.TufRepo.AddTarget(pathInsideTargets, json.RawMessage("")); err != nil {
-		return fmt.Errorf("unable to register target file %q in the tuf repo: %s", pathInsideTargets, err)
+		return fmt.Errorf("unable to register target file %q in the tuf repo: %w", pathInsideTargets, err)
 	}
 
 	return nil
@@ -134,26 +134,26 @@ func (repository *S3Repository) UpdateTimestamps(_ context.Context) error {
 	// TODO: based on expiration dates.
 
 	if err := repository.TufRepo.Snapshot(tuf.CompressionTypeNone); err != nil {
-		return fmt.Errorf("tuf repo timestamp failed: %s", err)
+		return fmt.Errorf("tuf repo timestamp failed: %w", err)
 	}
 	if err := repository.TufRepo.Timestamp(); err != nil {
-		return fmt.Errorf("tuf repo timestamp failed: %s", err)
+		return fmt.Errorf("tuf repo timestamp failed: %w", err)
 	}
 	if err := repository.TufRepo.Commit(); err != nil {
-		return fmt.Errorf("unable to commit staged changes into the repo: %s", err)
+		return fmt.Errorf("unable to commit staged changes into the repo: %w", err)
 	}
 	return nil
 }
 
 func (repository *S3Repository) CommitStaged(_ context.Context) error {
 	if err := repository.TufRepo.Snapshot(tuf.CompressionTypeNone); err != nil {
-		return fmt.Errorf("tuf repo snapshot failed: %s", err)
+		return fmt.Errorf("tuf repo snapshot failed: %w", err)
 	}
 	if err := repository.TufRepo.Timestamp(); err != nil {
-		return fmt.Errorf("tuf repo timestamp failed: %s", err)
+		return fmt.Errorf("tuf repo timestamp failed: %w", err)
 	}
 	if err := repository.TufRepo.Commit(); err != nil {
-		return fmt.Errorf("unable to commit staged changes into the repo: %s", err)
+		return fmt.Errorf("unable to commit staged changes into the repo: %w", err)
 	}
 	return nil
 }
@@ -161,7 +161,7 @@ func (repository *S3Repository) CommitStaged(_ context.Context) error {
 func (repository *S3Repository) GetTargets(ctx context.Context) ([]string, error) {
 	targetsMeta, err := repository.TufRepo.Targets()
 	if err != nil {
-		return nil, fmt.Errorf("unable to get TUF-repo targets metadata: %s", err)
+		return nil, fmt.Errorf("unable to get TUF-repo targets metadata: %w", err)
 	}
 
 	var res []string

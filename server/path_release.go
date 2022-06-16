@@ -20,8 +20,8 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	uuid "github.com/satori/go.uuid"
-	"github.com/werf/logboek"
 
+	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/config"
 	"github.com/werf/trdl/server/pkg/docker"
 	trdlGit "github.com/werf/trdl/server/pkg/git"
@@ -74,7 +74,7 @@ func releasePath(b *Backend) *framework.Path {
 func ValidateReleaseVersion(releaseVersion string) error {
 	_, err := semver.NewVersion(releaseVersion)
 	if err != nil {
-		return fmt.Errorf("expected semver release version got %q: %s", releaseVersion, err)
+		return fmt.Errorf("expected semver release version got %q: %w", releaseVersion, err)
 	}
 	return nil
 }
@@ -86,7 +86,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 	cfg, err := getConfiguration(ctx, req.Storage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get configuration from storage: %s", err)
+		return nil, fmt.Errorf("unable to get configuration from storage: %w", err)
 	}
 
 	if cfg == nil {
@@ -95,7 +95,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 	gitCredentialFromStorage, err := trdlGit.GetGitCredential(ctx, req.Storage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get git credential from storage: %s", err)
+		return nil, fmt.Errorf("unable to get git credential from storage: %w", err)
 	}
 
 	gitTag := fields.Get(fieldNameGitTag).(string)
@@ -116,7 +116,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 	opts.InitializePGPSigningKey = true
 	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting publisher repository: %s", err)
+		return nil, fmt.Errorf("error getting publisher repository: %w", err)
 	}
 
 	taskUUID, err := b.TasksManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
@@ -128,7 +128,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 		gitRepo, err := cloneGitRepositoryTag(cfg.GitRepoUrl, gitTag, gitUsername, gitPassword)
 		if err != nil {
-			return fmt.Errorf("unable to clone git repository: %s", err)
+			return fmt.Errorf("unable to clone git repository: %w", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Verifying tag PGP signatures of the git tag %q\n", gitTag)
@@ -136,12 +136,12 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
 		if err != nil {
-			return fmt.Errorf("unable to get trusted PGP public keys: %s", err)
+			return fmt.Errorf("unable to get trusted PGP public keys: %w", err)
 		}
 
 		b.Logger().Debug(fmt.Sprintf("[DEBUG-SIGNATURES] trustedPGPPublicKeys >%v<", trustedPGPPublicKeys))
 		if err := trdlGit.VerifyTagSignatures(gitRepo, gitTag, trustedPGPPublicKeys, cfg.RequiredNumberOfVerifiedSignaturesOnCommit, b.Logger()); err != nil {
-			return fmt.Errorf("signature verification failed: %s", err)
+			return fmt.Errorf("signature verification failed: %w", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Getting trdl.yaml configuration from the git tag %q\n", gitTag)
@@ -149,7 +149,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 		trdlCfg, err := getTrdlConfig(gitRepo, gitTag, cfg.GitTrdlPath)
 		if err != nil {
-			return fmt.Errorf("unable to get trdl configuration: %s", err)
+			return fmt.Errorf("unable to get trdl configuration: %w", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Starting release artifacts tar archive build\n")
@@ -160,7 +160,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 		err, cleanupFunc := buildReleaseArtifacts(ctx, tarWriter, gitRepo, trdlCfg.GetDockerImage(), trdlCfg.Commands, b.Logger())
 		if err != nil {
-			return fmt.Errorf("unable to build release artifacts: %s", err)
+			return fmt.Errorf("unable to build release artifacts: %w", err)
 		}
 		defer func() {
 			if err := cleanupFunc(); err != nil {
@@ -178,7 +178,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 				}
 
 				if err != nil {
-					return fmt.Errorf("error reading next tar artifact header: %s", err)
+					return fmt.Errorf("error reading next tar artifact header: %w", err)
 				}
 
 				if hdr.Typeflag != tar.TypeDir {
@@ -186,7 +186,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					b.Logger().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", hdr.Name))
 
 					if err := b.Publisher.StageReleaseTarget(ctx, publisherRepository, releaseName, hdr.Name, twArtifacts); err != nil {
-						return fmt.Errorf("unable to publish release target %q: %s", hdr.Name, err)
+						return fmt.Errorf("unable to publish release target %q: %w", hdr.Name, err)
 					}
 				}
 			}
@@ -195,7 +195,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			b.Logger().Debug("Committing TUF repository state")
 
 			if err := publisherRepository.CommitStaged(ctx); err != nil {
-				return fmt.Errorf("unable to commit new tuf repository state: %s", err)
+				return fmt.Errorf("unable to commit new tuf repository state: %w", err)
 			}
 		}
 
@@ -240,14 +240,14 @@ func cloneGitRepositoryTag(url, gitTag, username, password string) (*git.Reposit
 	return gitRepo, nil
 }
 
-func getTrdlConfig(gitRepo *git.Repository, gitTag string, trdlPath string) (*config.Trdl, error) {
+func getTrdlConfig(gitRepo *git.Repository, gitTag, trdlPath string) (*config.Trdl, error) {
 	if trdlPath == "" {
 		trdlPath = config.DefaultTrdlPath
 	}
 
 	data, err := trdlGit.ReadWorktreeFile(gitRepo, trdlPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read worktree file %q: %s", trdlPath, err)
+		return nil, fmt.Errorf("unable to read worktree file %q: %w", trdlPath, err)
 	}
 
 	values := map[string]interface{}{
@@ -256,11 +256,11 @@ func getTrdlConfig(gitRepo *git.Repository, gitTag string, trdlPath string) (*co
 
 	cfg, err := config.ParseTrdl(data, values)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing %q configuration file: %s", trdlPath, err)
+		return nil, fmt.Errorf("error parsing %q configuration file: %w", trdlPath, err)
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("error validation %q configuration file: %s", trdlPath, err)
+		return nil, fmt.Errorf("error validation %q configuration file: %w", trdlPath, err)
 	}
 
 	return cfg, nil
@@ -269,7 +269,7 @@ func getTrdlConfig(gitRepo *git.Repository, gitTag string, trdlPath string) (*co
 func buildReleaseArtifacts(ctx context.Context, tarWriter *nio.PipeWriter, gitRepo *git.Repository, fromImage string, runCommands []string, logger hclog.Logger) (error, func() error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return fmt.Errorf("unable to create docker client: %s", err), nil
+		return fmt.Errorf("unable to create docker client: %w", err), nil
 	}
 
 	serviceDirInContext := ".trdl"
@@ -289,7 +289,7 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *nio.PipeWriter, gitRe
 			logger.Debug("Adding git worktree files to the build context")
 
 			if err := trdlGit.AddWorktreeFilesToTar(tw, gitRepo); err != nil {
-				return fmt.Errorf("unable to add git worktree files to tar: %s", err)
+				return fmt.Errorf("unable to add git worktree files to tar: %w", err)
 			}
 
 			dockerfileOpts := docker.DockerfileOpts{
@@ -297,11 +297,11 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *nio.PipeWriter, gitRe
 				Labels:        serviceLabels,
 			}
 			if err := docker.GenerateAndAddDockerfileToTar(tw, serviceDockerfilePathInContext, fromImage, runCommands, dockerfileOpts); err != nil {
-				return fmt.Errorf("unable to add service dockerfile to tar: %s", err)
+				return fmt.Errorf("unable to add service dockerfile to tar: %w", err)
 			}
 
 			if err := tw.Close(); err != nil {
-				return fmt.Errorf("unable to close tar writer: %s", err)
+				return fmt.Errorf("unable to close tar writer: %w", err)
 			}
 
 			return nil
@@ -329,7 +329,7 @@ func buildReleaseArtifacts(ctx context.Context, tarWriter *nio.PipeWriter, gitRe
 		Version:     types.BuilderV1,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to run docker image build: %s", err), nil
+		return fmt.Errorf("unable to run docker image build: %w", err), nil
 	}
 
 	handleFromImageBuildResponse(ctx, response, tarWriter)

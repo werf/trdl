@@ -89,13 +89,13 @@ func (b *Backend) InitPeriodicFunc(modules ...BackendModuleInterface) {
 	b.PeriodicFunc = func(ctx context.Context, request *logical.Request) error {
 		for _, module := range modules {
 			if err := module.PeriodicFunc(context.Background(), request); err != nil {
-				return fmt.Errorf("backend module periodic task failed: %s", err)
+				return fmt.Errorf("backend module periodic task failed: %w", err)
 			}
 		}
 
 		if b.BackendPeriodic != nil {
 			if err := b.BackendPeriodic.Periodic(context.Background(), request); err != nil {
-				return fmt.Errorf("backend main periodic task failed: %s", err)
+				return fmt.Errorf("backend main periodic task failed: %w", err)
 			}
 		}
 

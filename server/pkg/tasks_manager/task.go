@@ -59,11 +59,11 @@ func addNewTaskToStorage(ctx context.Context, storage logical.Storage) (string, 
 	storageKey := taskStorageKey(taskStateQueued, queuedTask.UUID)
 	entry, err := logical.StorageEntryJSON(storageKey, queuedTask)
 	if err != nil {
-		return "", fmt.Errorf("unable to prepare storage entry JSON: %s", err)
+		return "", fmt.Errorf("unable to prepare storage entry JSON: %w", err)
 	}
 
 	if err := storage.Put(ctx, entry); err != nil {
-		return "", fmt.Errorf("unable to put %q into storage: %s", storageKey, err)
+		return "", fmt.Errorf("unable to put %q into storage: %w", storageKey, err)
 	}
 
 	return queuedTask.UUID, nil
@@ -95,18 +95,18 @@ func switchTaskToRunningInStorage(ctx context.Context, storage logical.Storage, 
 		storageKey := taskStorageKey(runningTaskState, uuid)
 		entry, err := logical.StorageEntryJSON(storageKey, prevTask)
 		if err != nil {
-			return fmt.Errorf("unable to prepare storage entry JSON: %s", err)
+			return fmt.Errorf("unable to prepare storage entry JSON: %w", err)
 		}
 
 		if err := storage.Put(ctx, entry); err != nil {
-			return fmt.Errorf("unable to put %q into storage: %s", storageKey, err)
+			return fmt.Errorf("unable to put %q into storage: %w", storageKey, err)
 		}
 	}
 
 	// delete previous state from storage
 	prevStorageKey := taskStorageKey(taskStateQueued, uuid)
 	if err := storage.Delete(ctx, prevStorageKey); err != nil {
-		return fmt.Errorf("unable to delete %q from storage: %q", prevStorageKey, err)
+		return fmt.Errorf("unable to delete %q from storage: %w", prevStorageKey, err)
 	}
 
 	return nil
@@ -157,11 +157,11 @@ func switchTaskToCompletedInStorage(ctx context.Context, storage logical.Storage
 		storageKey := taskStorageKey(completedTaskState, uuid)
 		entry, err := logical.StorageEntryJSON(storageKey, completedTask)
 		if err != nil {
-			return fmt.Errorf("unable to prepare storage entry JSON: %s", err)
+			return fmt.Errorf("unable to prepare storage entry JSON: %w", err)
 		}
 
 		if err := storage.Put(ctx, entry); err != nil {
-			return fmt.Errorf("unable to put %q into storage: %s", storageKey, err)
+			return fmt.Errorf("unable to put %q into storage: %w", storageKey, err)
 		}
 
 		if len(opts.log) != 0 {
@@ -170,7 +170,7 @@ func switchTaskToCompletedInStorage(ctx context.Context, storage logical.Storage
 				Key:   logStorageKey,
 				Value: opts.log,
 			}); err != nil {
-				return fmt.Errorf("unable to put %q into the storage: %q", logStorageKey, err)
+				return fmt.Errorf("unable to put %q into the storage: %w", logStorageKey, err)
 			}
 		}
 	}
@@ -178,7 +178,7 @@ func switchTaskToCompletedInStorage(ctx context.Context, storage logical.Storage
 	// delete previous state from storage
 	prevStorageKey := taskStorageKey(prevTaskState, prevTask.UUID)
 	if err := storage.Delete(ctx, prevStorageKey); err != nil {
-		return fmt.Errorf("unable to delete %q from storage: %q", prevStorageKey, err)
+		return fmt.Errorf("unable to delete %q from storage: %w", prevStorageKey, err)
 	}
 
 	return nil
@@ -188,7 +188,7 @@ func getTaskFromStorage(ctx context.Context, storage logical.Storage, state task
 	storageKey := taskStorageKey(state, uuid)
 	entry, err := storage.Get(ctx, storageKey)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get %q from storage: %s", storageKey, err)
+		return nil, fmt.Errorf("unable to get %q from storage: %w", storageKey, err)
 	}
 
 	if entry == nil {
@@ -202,7 +202,7 @@ func getTaskLogFromStorage(ctx context.Context, storage logical.Storage, uuid st
 	storageKey := taskLogStorageKey(uuid)
 	entry, err := storage.Get(ctx, taskLogStorageKey(uuid))
 	if err != nil {
-		return nil, fmt.Errorf("unable to get %q from storage: %s", storageKey, err)
+		return nil, fmt.Errorf("unable to get %q from storage: %w", storageKey, err)
 	}
 
 	if entry == nil {

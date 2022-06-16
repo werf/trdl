@@ -67,17 +67,17 @@ func NewPublisher(logger hclog.Logger) *Publisher {
 func (publisher *Publisher) RotateRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface) error {
 	updated, updatedPrivKeys, err := repository.RotatePrivKeys(ctx)
 	if err != nil {
-		return fmt.Errorf("unable to rotate TUF repository keys: %s", err)
+		return fmt.Errorf("unable to rotate TUF repository keys: %w", err)
 	}
 
 	if updated {
 		entry, err := logical.StorageEntryJSON(storageKeyTufRepositoryKeys, updatedPrivKeys)
 		if err != nil {
-			return fmt.Errorf("error creating storage json entry by key %q: %s", storageKeyTufRepositoryKeys, err)
+			return fmt.Errorf("error creating storage json entry by key %q: %w", storageKeyTufRepositoryKeys, err)
 		}
 
 		if err := storage.Put(ctx, entry); err != nil {
-			return fmt.Errorf("error putting private keys json entry by key %q into the storage: %s", storageKeyTufRepositoryKeys, err)
+			return fmt.Errorf("error putting private keys json entry by key %q into the storage: %w", storageKeyTufRepositoryKeys, err)
 		}
 
 		publisher.logger.Info("Successfully rotated repository private keys")
@@ -97,7 +97,7 @@ type setRepositoryKeysOptions struct {
 func (publisher *Publisher) setRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface, opts setRepositoryKeysOptions) error {
 	entry, err := storage.Get(ctx, storageKeyTufRepositoryKeys)
 	if err != nil {
-		return fmt.Errorf("error getting storage private keys json entry by the key %q: %s", storageKeyTufRepositoryKeys, err)
+		return fmt.Errorf("error getting storage private keys json entry by the key %q: %w", storageKeyTufRepositoryKeys, err)
 	}
 
 	if entry == nil {
@@ -108,18 +108,18 @@ func (publisher *Publisher) setRepositoryKeys(ctx context.Context, storage logic
 		publisher.logger.Debug("Will generate new repository private keys")
 
 		if err := repository.GenPrivKeys(); err != nil {
-			return fmt.Errorf("error generating repository private keys: %s", err)
+			return fmt.Errorf("error generating repository private keys: %w", err)
 		}
 
 		privKeys := repository.GetPrivKeys()
 
 		entry, err := logical.StorageEntryJSON(storageKeyTufRepositoryKeys, privKeys)
 		if err != nil {
-			return fmt.Errorf("error creating storage json entry by key %q: %s", storageKeyTufRepositoryKeys, err)
+			return fmt.Errorf("error creating storage json entry by key %q: %w", storageKeyTufRepositoryKeys, err)
 		}
 
 		if err := storage.Put(ctx, entry); err != nil {
-			return fmt.Errorf("error putting private keys json entry by key %q into the storage: %s", storageKeyTufRepositoryKeys, err)
+			return fmt.Errorf("error putting private keys json entry by key %q into the storage: %w", storageKeyTufRepositoryKeys, err)
 		}
 
 		publisher.logger.Info("Generated new repository private keys")
@@ -129,11 +129,11 @@ func (publisher *Publisher) setRepositoryKeys(ctx context.Context, storage logic
 
 	var privKeys TufRepoPrivKeys
 	if err := entry.DecodeJSON(&privKeys); err != nil {
-		return fmt.Errorf("unable to decode keys json by the %q storage key:\n%s---\n%s", storageKeyTufRepositoryKeys, entry.Value, err)
+		return fmt.Errorf("unable to decode keys json by the %q storage key:\n%s---\n%w", storageKeyTufRepositoryKeys, entry.Value, err)
 	}
 
 	if err := repository.SetPrivKeys(privKeys); err != nil {
-		return fmt.Errorf("unable to set private keys into repository: %s", err)
+		return fmt.Errorf("unable to set private keys into repository: %w", err)
 	}
 
 	publisher.logger.Info("Loaded repository private keys from the storage")
@@ -141,14 +141,14 @@ func (publisher *Publisher) setRepositoryKeys(ctx context.Context, storage logic
 	return nil
 }
 
-func (pulisher *Publisher) deletePGPSigningKey(ctx context.Context, storage logical.Storage) error {
+func (publisher *Publisher) deletePGPSigningKey(ctx context.Context, storage logical.Storage) error {
 	return storage.Delete(ctx, storageKeyPGPSigningKey)
 }
 
 func (publisher *Publisher) fetchPGPSigningKey(ctx context.Context, storage logical.Storage, initializeKey bool) (*pgp.RSASigningKey, error) {
 	entry, err := storage.Get(ctx, storageKeyPGPSigningKey)
 	if err != nil {
-		return nil, fmt.Errorf("error getting storage pgp signing key json entry by storage key %q: %s", storageKeyPGPSigningKey, err)
+		return nil, fmt.Errorf("error getting storage pgp signing key json entry by storage key %q: %w", storageKeyPGPSigningKey, err)
 	}
 
 	if entry == nil {
@@ -160,12 +160,12 @@ func (publisher *Publisher) fetchPGPSigningKey(ctx context.Context, storage logi
 
 		key, err := pgp.GenerateRSASigningKey()
 		if err != nil {
-			return nil, fmt.Errorf("unable to generate new rsa pgp signing key: %s", err)
+			return nil, fmt.Errorf("unable to generate new rsa pgp signing key: %w", err)
 		}
 
 		serializedKey := bytes.NewBuffer(nil)
 		if err := key.SerializeFull(serializedKey); err != nil {
-			return nil, fmt.Errorf("unable to serialize pgp signing key: %s", err)
+			return nil, fmt.Errorf("unable to serialize pgp signing key: %w", err)
 		}
 
 		entry := &logical.StorageEntry{
@@ -174,7 +174,7 @@ func (publisher *Publisher) fetchPGPSigningKey(ctx context.Context, storage logi
 		}
 
 		if err := storage.Put(ctx, entry); err != nil {
-			return nil, fmt.Errorf("error putting pgp signing key by storage key %q: %s", storageKeyPGPSigningKey, err)
+			return nil, fmt.Errorf("error putting pgp signing key by storage key %q: %w", storageKeyPGPSigningKey, err)
 		}
 
 		hclog.L().Info("Generated new PGP signing key")
@@ -184,7 +184,7 @@ func (publisher *Publisher) fetchPGPSigningKey(ctx context.Context, storage logi
 
 	key, err := pgp.ParseRSASigningKey(bytes.NewReader(entry.Value))
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse pgp signing key by the %q storage key:\n%s\n---%s", storageKeyPGPSigningKey, entry.Value, err)
+		return nil, fmt.Errorf("unable to parse pgp signing key by the %q storage key:\n%s\n---%w", storageKeyPGPSigningKey, entry.Value, err)
 	}
 	return key, nil
 }
@@ -205,22 +205,22 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 		publisher.logger,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error initializing publisher repository handle: %s", err)
+		return nil, fmt.Errorf("error initializing publisher repository handle: %w", err)
 	}
 
 	if err := repository.Init(); err != nil {
-		return nil, fmt.Errorf("error initializing repository: %s", err)
+		return nil, fmt.Errorf("error initializing repository: %w", err)
 	}
 
 	if err := publisher.setRepositoryKeys(ctx, storage, repository, setRepositoryKeysOptions{InitializeKeys: options.InitializeTUFKeys}); err == ErrUninitializedRepositoryKeys {
 		return nil, ErrUninitializedRepositoryKeys
 	} else if err != nil {
-		return nil, fmt.Errorf("error initializing repository keys: %s", err)
+		return nil, fmt.Errorf("error initializing repository keys: %w", err)
 	}
 
 	pgpSigningKey, err := publisher.fetchPGPSigningKey(ctx, storage, options.InitializePGPSigningKey)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching pgp signing key: %s", err)
+		return nil, fmt.Errorf("error fetching pgp signing key: %w", err)
 	}
 	publisher.PGPSigningKey = pgpSigningKey
 
@@ -258,12 +258,12 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 		signDataReader := io.TeeReader(data, w)
 
 		if err := pgp.SignDataStream(gpgSignBuf, signDataReader, publisher.PGPSigningKey); err != nil {
-			gpgSignErrCh <- fmt.Errorf("unable to sign %q: %s", releaseFilePath, err)
+			gpgSignErrCh <- fmt.Errorf("unable to sign %q: %w", releaseFilePath, err)
 			return
 		}
 
 		if err := w.Close(); err != nil {
-			gpgSignErrCh <- fmt.Errorf("unable to close sign data reader stream: %s", err)
+			gpgSignErrCh <- fmt.Errorf("unable to close sign data reader stream: %w", err)
 			return
 		}
 
@@ -273,7 +273,7 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 	pathToReleaseTarget := path.Join("releases", releaseName, releaseFilePath)
 	hclog.L().Debug(fmt.Sprintf("Stage release target %q ...\n", pathToReleaseTarget))
 	if err := repository.StageTarget(ctx, pathToReleaseTarget, r); err != nil {
-		return fmt.Errorf("unable to stage release target %q into the repository: %s", pathToReleaseTarget, err)
+		return fmt.Errorf("unable to stage release target %q into the repository: %w", pathToReleaseTarget, err)
 	}
 
 	select {
@@ -285,7 +285,7 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 	pathToReleaseTargetSignature := path.Join("signatures", releaseName, fmt.Sprintf("%s.sig", releaseFilePath))
 	hclog.L().Debug(fmt.Sprintf("Stage release target signature %q ...\n", pathToReleaseTargetSignature))
 	if err := repository.StageTarget(ctx, pathToReleaseTargetSignature, bytes.NewBufferString(gpgSignBuf.String())); err != nil {
-		return fmt.Errorf("unable to stage release target signature %q into the repository: %s", pathToReleaseTargetSignature, err)
+		return fmt.Errorf("unable to stage release target signature %q into the repository: %w", pathToReleaseTargetSignature, err)
 	}
 
 	return nil
@@ -301,7 +301,7 @@ func (publisher *Publisher) StageChannelsConfig(ctx context.Context, repository 
 			publishPath := path.Join("channels", grp.Name, chnl.Name)
 
 			if err := repository.StageTarget(ctx, publishPath, bytes.NewBuffer([]byte(chnl.Version+"\n"))); err != nil {
-				return fmt.Errorf("error publishing %q: %s", publishPath, err)
+				return fmt.Errorf("error publishing %q: %w", publishPath, err)
 			}
 		}
 	}
@@ -315,7 +315,7 @@ func (publisher *Publisher) StageInMemoryFiles(ctx context.Context, repository R
 
 	for _, file := range files {
 		if err := repository.StageTarget(ctx, file.Name, bytes.NewReader(file.Data)); err != nil {
-			return fmt.Errorf("error publishing %q: %s", file.Name, err)
+			return fmt.Errorf("error publishing %q: %w", file.Name, err)
 		}
 	}
 
@@ -325,7 +325,7 @@ func (publisher *Publisher) StageInMemoryFiles(ctx context.Context, repository R
 func (publisher *Publisher) GetExistingReleases(ctx context.Context, repository RepositoryInterface) ([]string, error) {
 	existingTargets, err := repository.GetTargets(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error getting existing targets: %s", err)
+		return nil, fmt.Errorf("error getting existing targets: %w", err)
 	}
 
 	var releases []string

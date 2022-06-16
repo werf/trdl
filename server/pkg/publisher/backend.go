@@ -33,12 +33,12 @@ func (publisher *Publisher) Paths() []*framework.Path {
 func (publisher *Publisher) pathConfigurePGPSigningKeyRead(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	key, err := publisher.fetchPGPSigningKey(ctx, req.Storage, true)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching pgp signing key: %s", err)
+		return nil, fmt.Errorf("error fetching pgp signing key: %w", err)
 	}
 
 	pk := bytes.NewBuffer(nil)
 	if err := key.SerializePublicKey(pk); err != nil {
-		return nil, fmt.Errorf("unable to get public key text: %s", err)
+		return nil, fmt.Errorf("unable to get public key text: %w", err)
 	}
 
 	return &logical.Response{
@@ -50,7 +50,7 @@ func (publisher *Publisher) pathConfigurePGPSigningKeyRead(ctx context.Context, 
 
 func (publisher *Publisher) pathConfigurePGPSigningKeyDelete(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	if err := publisher.deletePGPSigningKey(ctx, req.Storage); err != nil {
-		return nil, fmt.Errorf("error deleting pgp signing key: %s", err)
+		return nil, fmt.Errorf("error deleting pgp signing key: %w", err)
 	}
 	return &logical.Response{Data: map[string]interface{}{}}, nil
 }

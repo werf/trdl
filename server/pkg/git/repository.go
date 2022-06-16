@@ -72,13 +72,13 @@ func AddWorktreeFilesToTar(tw *tar.Writer, gitRepo *git.Repository) error {
 			AccessTime: time.Now(),
 			ChangeTime: time.Now(),
 		}); err != nil {
-			return fmt.Errorf("unable to write tar entry %q header: %s", path, err)
+			return fmt.Errorf("unable to write tar entry %q header: %w", path, err)
 		}
 
 		if link == "" {
 			_, err := io.Copy(tw, fileReader)
 			if err != nil {
-				return fmt.Errorf("unable to write tar entry %q data: %s", path, err)
+				return fmt.Errorf("unable to write tar entry %q data: %w", path, err)
 			}
 		}
 
@@ -86,10 +86,10 @@ func AddWorktreeFilesToTar(tw *tar.Writer, gitRepo *git.Repository) error {
 	})
 }
 
-func ForEachWorktreeFile(gitRepo *git.Repository, fileFunc func(path string, link string, fileReader io.Reader, info os.FileInfo) error) error {
+func ForEachWorktreeFile(gitRepo *git.Repository, fileFunc func(path, link string, fileReader io.Reader, info os.FileInfo) error) error {
 	w, err := gitRepo.Worktree()
 	if err != nil {
-		return fmt.Errorf("unable to get git repository worktree: %s", err)
+		return fmt.Errorf("unable to get git repository worktree: %w", err)
 	}
 
 	fs := w.Filesystem
@@ -101,7 +101,7 @@ func ForEachWorktreeFile(gitRepo *git.Repository, fileFunc func(path string, lin
 			if fileInfo.IsDir() {
 				fFileInfoList, err := fs.ReadDir(absPath)
 				if err != nil {
-					return fmt.Errorf("unable to read dir %q: %s", absPath, err)
+					return fmt.Errorf("unable to read dir %q: %w", absPath, err)
 				}
 
 				if err := processFilesFunc(absPath, fFileInfoList); err != nil {
@@ -114,7 +114,7 @@ func ForEachWorktreeFile(gitRepo *git.Repository, fileFunc func(path string, lin
 			if fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink {
 				link, err := fs.Readlink(absPath)
 				if err != nil {
-					return fmt.Errorf("unable to read link %q: %s", absPath, err)
+					return fmt.Errorf("unable to read link %q: %w", absPath, err)
 				}
 
 				if err := fileFunc(absPath, link, nil, fileInfo); err != nil {
@@ -123,7 +123,7 @@ func ForEachWorktreeFile(gitRepo *git.Repository, fileFunc func(path string, lin
 			} else {
 				billyFile, err := fs.Open(absPath)
 				if err != nil {
-					return fmt.Errorf("unable to open file %q: %s", absPath, err)
+					return fmt.Errorf("unable to open file %q: %w", absPath, err)
 				}
 
 				if err := fileFunc(absPath, "", billyFile, fileInfo); err != nil {
@@ -142,7 +142,7 @@ func ForEachWorktreeFile(gitRepo *git.Repository, fileFunc func(path string, lin
 	rootDirectory := ""
 	files, err := fs.ReadDir(rootDirectory)
 	if err != nil {
-		return fmt.Errorf("unable to read root directory: %s", err)
+		return fmt.Errorf("unable to read root directory: %w", err)
 	}
 
 	return processFilesFunc(rootDirectory, files)
@@ -151,19 +151,19 @@ func ForEachWorktreeFile(gitRepo *git.Repository, fileFunc func(path string, lin
 func ReadWorktreeFile(gitRepo *git.Repository, path string) ([]byte, error) {
 	w, err := gitRepo.Worktree()
 	if err != nil {
-		return nil, fmt.Errorf("unable to get git repository worktree: %s", err)
+		return nil, fmt.Errorf("unable to get git repository worktree: %w", err)
 	}
 
 	fs := w.Filesystem
 
 	f, err := fs.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("unable to open git repository worktree file %q: %s", path, err)
+		return nil, fmt.Errorf("unable to open git repository worktree file %q: %w", path, err)
 	}
 
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read git repository worktree file %q: %s", path, err)
+		return nil, fmt.Errorf("unable to read git repository worktree file %q: %w", path, err)
 	}
 
 	return data, nil
@@ -172,17 +172,17 @@ func ReadWorktreeFile(gitRepo *git.Repository, path string) ([]byte, error) {
 func IsAncestor(gitRepo *git.Repository, ancestorCommit, descendantCommit string) (bool, error) {
 	ancestorCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(ancestorCommit))
 	if err != nil {
-		return false, fmt.Errorf("unable to get commit %q object: %s", ancestorCommit, err)
+		return false, fmt.Errorf("unable to get commit %q object: %w", ancestorCommit, err)
 	}
 
 	descendantCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(descendantCommit))
 	if err != nil {
-		return false, fmt.Errorf("unable to get commit %q object: %s", descendantCommitObj, err)
+		return false, fmt.Errorf("unable to get commit %q object: %w", descendantCommitObj, err)
 	}
 
 	isAncestor, err := ancestorCommitObj.IsAncestor(descendantCommitObj)
 	if err != nil {
-		return false, fmt.Errorf("unable to check ancestry of git commit %q to %q: %s", ancestorCommit, descendantCommit, err)
+		return false, fmt.Errorf("unable to check ancestry of git commit %q to %q: %w", ancestorCommit, descendantCommit, err)
 	}
 
 	return isAncestor, nil

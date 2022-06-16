@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
 	"github.com/werf/logboek"
 )
 
@@ -16,7 +17,7 @@ const (
 	TaskSucceededCallback = "TaskSucceededCallback"
 )
 
-var testTaskContextCanceledError = errors.New("no offense, but it's over: context canceled")
+var errTestTaskContextCanceled = errors.New("no offense, but it's over: context canceled")
 
 type MockedTasksCallbacks struct {
 	mock.Mock
@@ -148,7 +149,7 @@ func TestWorker_CancelRunningJobByTaskUUID(t *testing.T) {
 	// setup callback expectations
 	mockedTasksCallbacks.On(TaskStartedCallback, taskUUID).Return()
 	mockedTasksCallbacks.On(TaskStartedCallback, queuedTaskUUID).Return()
-	mockedTasksCallbacks.On(TaskFailedCallback, taskUUID, []byte{}, testTaskContextCanceledError).Return()
+	mockedTasksCallbacks.On(TaskFailedCallback, taskUUID, []byte{}, errTestTaskContextCanceled).Return()
 
 	// start processing tasks
 	go w.Start()
@@ -261,7 +262,7 @@ func testTaskAction(channels testTaskChannels) func(ctx context.Context) error {
 			case <-channels.doneCh:
 				return nil
 			case <-ctx.Done():
-				return testTaskContextCanceledError
+				return errTestTaskContextCanceled
 			}
 		}
 	}

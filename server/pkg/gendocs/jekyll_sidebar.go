@@ -84,7 +84,7 @@ func (s *JekyllSidebar) WriteFile(path string) error {
 	}
 
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-		return fmt.Errorf("unable to mkdir %q: %s", filepath.Dir(path), err)
+		return fmt.Errorf("unable to mkdir %q: %w", filepath.Dir(path), err)
 	}
 
 	return os.WriteFile(path, append([]byte(strings.Join(lines, "\n")), '\n'), 0o644)

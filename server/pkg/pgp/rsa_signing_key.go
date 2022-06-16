@@ -19,7 +19,7 @@ type RSASigningKey struct {
 func (key *RSASigningKey) SerializePublicKey(out io.Writer) error {
 	armoredOut, err := armor.Encode(out, openpgp.PublicKeyType, nil)
 	if err != nil {
-		return fmt.Errorf("unable to prepare armored writer: %s", err)
+		return fmt.Errorf("unable to prepare armored writer: %w", err)
 	}
 
 	if err := key.Entity.Serialize(armoredOut); err != nil {
@@ -27,7 +27,7 @@ func (key *RSASigningKey) SerializePublicKey(out io.Writer) error {
 	}
 
 	if err := armoredOut.Close(); err != nil {
-		return fmt.Errorf("unable to close armored writer: %s", err)
+		return fmt.Errorf("unable to close armored writer: %w", err)
 	}
 
 	return nil
@@ -40,7 +40,7 @@ func (key *RSASigningKey) SerializeFull(out io.Writer) error {
 func (key *RSASigningKey) SerializePrivateKey(out io.Writer) error {
 	armoredOut, err := armor.Encode(out, openpgp.PrivateKeyType, nil)
 	if err != nil {
-		return fmt.Errorf("unable to prepare armored writer: %s", err)
+		return fmt.Errorf("unable to prepare armored writer: %w", err)
 	}
 
 	if err := key.Entity.SerializePrivate(armoredOut, nil); err != nil {
@@ -48,7 +48,7 @@ func (key *RSASigningKey) SerializePrivateKey(out io.Writer) error {
 	}
 
 	if err := armoredOut.Close(); err != nil {
-		return fmt.Errorf("unable to close armored writer: %s", err)
+		return fmt.Errorf("unable to close armored writer: %w", err)
 	}
 
 	return nil
@@ -63,7 +63,7 @@ func GenerateRSASigningKey() (*RSASigningKey, error) {
 		RSABits:       4096,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to generate openpgp entity: %s", err)
+		return nil, fmt.Errorf("unable to generate openpgp entity: %w", err)
 	}
 
 	return &RSASigningKey{Entity: entity}, nil

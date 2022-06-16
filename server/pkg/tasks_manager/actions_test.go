@@ -190,7 +190,6 @@ func TestManager_AddOptionalTask(t *testing.T) {
 }
 
 func TestManager_WrapTaskFunc(t *testing.T) {
-	ctx := context.Background()
 	m := initManagerWithoutWorker()
 	storage := &logical.InmemStorage{}
 

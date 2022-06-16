@@ -36,7 +36,7 @@ func NewS3Filesystem(awsConfig *aws.Config, bucketName string, logger hclog.Logg
 func (fs *S3Filesystem) IsFileExist(ctx context.Context, path string) (bool, error) {
 	sess, err := session.NewSession(fs.AwsConfig)
 	if err != nil {
-		return false, fmt.Errorf("error opening s3 session: %s", err)
+		return false, fmt.Errorf("error opening s3 session: %w", err)
 	}
 
 	svc := s3.New(sess)
@@ -52,7 +52,7 @@ func (fs *S3Filesystem) IsFileExist(ctx context.Context, path string) (bool, err
 				return false, nil
 			}
 		}
-		return false, fmt.Errorf("error heading s3 object by key %q: %s", path, err)
+		return false, fmt.Errorf("error heading s3 object by key %q: %w", path, err)
 	}
 
 	return true, nil
@@ -61,7 +61,7 @@ func (fs *S3Filesystem) IsFileExist(ctx context.Context, path string) (bool, err
 func (fs *S3Filesystem) ReadFile(ctx context.Context, path string, writerAt io.WriterAt) error {
 	sess, err := session.NewSession(fs.AwsConfig)
 	if err != nil {
-		return fmt.Errorf("error opening s3 session: %s", err)
+		return fmt.Errorf("error opening s3 session: %w", err)
 	}
 
 	downloader := s3manager.NewDownloader(sess)
@@ -72,7 +72,7 @@ func (fs *S3Filesystem) ReadFile(ctx context.Context, path string, writerAt io.W
 			Key:    &path,
 		})
 	if err != nil {
-		return fmt.Errorf("unable to download item %q: %s", path, err)
+		return fmt.Errorf("unable to download item %q: %w", path, err)
 	}
 
 	fs.logger.Debug(fmt.Sprintf("Downloaded %q %d bytes", path, numBytes))
@@ -99,7 +99,7 @@ func (fw sequentialWriterAt) WriteAt(p []byte, offset int64) (int, error) {
 func (fs *S3Filesystem) ReadFileStream(ctx context.Context, path string, writer io.Writer) error {
 	sess, err := session.NewSession(fs.AwsConfig)
 	if err != nil {
-		return fmt.Errorf("error opening s3 session: %s", err)
+		return fmt.Errorf("error opening s3 session: %w", err)
 	}
 
 	downloader := s3manager.NewDownloader(sess)
@@ -113,7 +113,7 @@ func (fs *S3Filesystem) ReadFileStream(ctx context.Context, path string, writer 
 			Key:    &path,
 		})
 	if err != nil {
-		return fmt.Errorf("unable to download item %q: %s", path, err)
+		return fmt.Errorf("unable to download item %q: %w", path, err)
 	}
 
 	fs.logger.Debug(fmt.Sprintf("-- S3Filesystem.ReadFileStream downloaded %q %d bytes", path, numBytes))
@@ -124,7 +124,7 @@ func (fs *S3Filesystem) ReadFileStream(ctx context.Context, path string, writer 
 func (fs *S3Filesystem) ReadFileBytes(ctx context.Context, path string) ([]byte, error) {
 	sess, err := session.NewSession(fs.AwsConfig)
 	if err != nil {
-		return nil, fmt.Errorf("error opening s3 session: %s", err)
+		return nil, fmt.Errorf("error opening s3 session: %w", err)
 	}
 
 	downloader := s3manager.NewDownloader(sess)
@@ -137,7 +137,7 @@ func (fs *S3Filesystem) ReadFileBytes(ctx context.Context, path string) ([]byte,
 			Key:    &path,
 		})
 	if err != nil {
-		return nil, fmt.Errorf("unable to download item %q: %s", path, err)
+		return nil, fmt.Errorf("unable to download item %q: %w", path, err)
 	}
 
 	fs.logger.Debug(fmt.Sprintf("-- S3Filesystem.ReadFileBytes downloaded %q %d bytes", path, numBytes))
@@ -155,7 +155,7 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 
 	sess, err := session.NewSession(fs.AwsConfig)
 	if err != nil {
-		return fmt.Errorf("error opening s3 session: %s", err)
+		return fmt.Errorf("error opening s3 session: %w", err)
 	}
 
 	uploader := s3manager.NewUploader(sess)
@@ -174,7 +174,7 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 		u.PartSize = 1024 * 1024 * 10
 	})
 	if err != nil {
-		return fmt.Errorf("error uploading %q: %s", path, err)
+		return fmt.Errorf("error uploading %q: %w", path, err)
 	}
 
 	fs.logger.Debug(fmt.Sprintf("Uploaded %q", result.Location))

@@ -28,7 +28,7 @@ func ParseTrdlChannels(data []byte) (*TrdlChannels, error) {
 	var res *TrdlChannels
 
 	if err := yaml.Unmarshal(data, &res); err != nil {
-		return nil, fmt.Errorf("error unmarshalling yaml: %s", err)
+		return nil, fmt.Errorf("error unmarshalling yaml: %w", err)
 	}
 
 	return res, nil

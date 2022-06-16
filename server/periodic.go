@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/werf/logboek"
 
+	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/publisher"
 	"github.com/werf/trdl/server/pkg/tasks_manager"
 	"github.com/werf/trdl/server/pkg/util"
@@ -34,7 +34,7 @@ const (
 func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 	entry, err := req.Storage.Get(ctx, lastPeriodicRunTimestampKey)
 	if err != nil {
-		return fmt.Errorf("unable to get key %q from storage: %s", lastPeriodicRunTimestampKey, err)
+		return fmt.Errorf("unable to get key %q from storage: %w", lastPeriodicRunTimestampKey, err)
 	}
 
 	if entry != nil {
@@ -47,7 +47,7 @@ func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 
 	config, err := getConfiguration(ctx, req.Storage)
 	if err != nil {
-		return fmt.Errorf("unable to get configuration: %s", err)
+		return fmt.Errorf("unable to get configuration: %w", err)
 	}
 	if config == nil {
 		b.Logger().Info("Configuration not set: skipping periodic task")
@@ -68,7 +68,7 @@ func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("error getting publisher repository: %s", err)
+		return fmt.Errorf("error getting publisher repository: %w", err)
 	}
 
 	now := systemClock.Now()
@@ -88,11 +88,11 @@ func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("unable to add queue manager periodic task: %s", err)
+		return fmt.Errorf("unable to add queue manager periodic task: %w", err)
 	}
 
 	if err := req.Storage.Put(ctx, &logical.StorageEntry{Key: lastPeriodicRunTimestampKey, Value: []byte(fmt.Sprintf("%d", now.Unix()))}); err != nil {
-		return fmt.Errorf("unable to put last periodic task run timestamp in storage by key %q: %s", lastPeriodicRunTimestampKey, err)
+		return fmt.Errorf("unable to put last periodic task run timestamp in storage by key %q: %w", lastPeriodicRunTimestampKey, err)
 	}
 
 	b.Logger().Debug(fmt.Sprintf("Added new periodic task with uuid %s", uuid))
@@ -105,14 +105,14 @@ func (b *Backend) periodicTask(ctx context.Context, storage logical.Storage, _ *
 	b.Logger().Debug("Started TUF repository keys rotation")
 
 	if err := b.Publisher.RotateRepositoryKeys(ctx, storage, publisherRepository); err != nil {
-		return fmt.Errorf("unable to rotate TUF repository private keys: %s", err)
+		return fmt.Errorf("unable to rotate TUF repository private keys: %w", err)
 	}
 
 	logboek.Context(ctx).Default().LogF("Started TUF repository timestamps update\n")
 	b.Logger().Debug("Started TUF repository timestamps update")
 
 	if err := b.Publisher.UpdateTimestamps(ctx, storage, publisherRepository); err != nil {
-		return fmt.Errorf("unable to update TUF repository timestamps: %s", err)
+		return fmt.Errorf("unable to update TUF repository timestamps: %w", err)
 	}
 
 	return nil

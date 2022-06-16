@@ -132,7 +132,7 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 	}
 
 	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
-		return nil, fmt.Errorf("unable to put configuration into storage: %s", err)
+		return nil, fmt.Errorf("unable to put configuration into storage: %w", err)
 	}
 
 	return nil, nil
@@ -141,7 +141,7 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 func (b *Backend) pathConfigureRead(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	cfg, err := getConfiguration(ctx, req.Storage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get configuration: %s", err)
+		return nil, fmt.Errorf("unable to get configuration: %w", err)
 	}
 
 	if cfg == nil {
@@ -153,7 +153,7 @@ func (b *Backend) pathConfigureRead(ctx context.Context, req *logical.Request, _
 
 func (b *Backend) pathConfigureDelete(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	if err := deleteConfiguration(ctx, req.Storage); err != nil {
-		return nil, fmt.Errorf("unable to delete configuration: %s", err)
+		return nil, fmt.Errorf("unable to delete configuration: %w", err)
 	}
 
 	return nil, nil
