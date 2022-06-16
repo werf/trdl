@@ -13,7 +13,7 @@ import (
 
 const configurationFileBasename = "config.yaml"
 
-var repoConfigurationNotFoundErr = errors.New("configuration not found")
+var errRepoConfigurationNotFound = errors.New("configuration not found")
 
 type configuration struct {
 	Repositories []*RepoConfiguration `yaml:"repositories"`
@@ -77,7 +77,7 @@ func (c *configuration) StageRepoConfiguration(name, url string) {
 func (c *configuration) StageRepoDefaultChannel(name, channel string) error {
 	repo := c.GetRepoConfiguration(name)
 	if repo == nil {
-		return repoConfigurationNotFoundErr
+		return errRepoConfigurationNotFound
 	}
 
 	repo.DefaultChannel = channel
@@ -91,18 +91,18 @@ func (c *configuration) Reload() error {
 
 func (c *configuration) load() error {
 	if exist, err := util.IsRegularFileExist(c.configPath); err != nil {
-		return fmt.Errorf("unable to check existence of file %q: %s", c.configPath, err)
+		return fmt.Errorf("unable to check existence of file %q: %w", c.configPath, err)
 	} else if !exist {
 		return nil
 	}
 
 	data, err := ioutil.ReadFile(c.configPath)
 	if err != nil {
-		return fmt.Errorf("unable to read file %q: %s", c.configPath, err)
+		return fmt.Errorf("unable to read file %q: %w", c.configPath, err)
 	}
 
 	if err := yaml.Unmarshal(data, &c); err != nil {
-		return fmt.Errorf("yaml unmarshalling failed: %s", err)
+		return fmt.Errorf("yaml unmarshalling failed: %w", err)
 	}
 
 	return nil
@@ -111,11 +111,11 @@ func (c *configuration) load() error {
 func (c configuration) Save(configPath string) error {
 	data, err := yaml.Marshal(&c)
 	if err != nil {
-		return fmt.Errorf("yaml marshalling failed: %s", err)
+		return fmt.Errorf("yaml marshalling failed: %w", err)
 	}
 
 	if err := ioutil.WriteFile(configPath, data, os.ModePerm); err != nil {
-		return fmt.Errorf("unable to write file %q: %s", configPath, err)
+		return fmt.Errorf("unable to write file %q: %w", configPath, err)
 	}
 
 	return nil

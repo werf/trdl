@@ -34,12 +34,12 @@ func addCmd() *cobra.Command {
 			rootVersion, err := parseRootVersionArgument(rootVersionArg)
 			if err != nil {
 				PrintHelp(cmd)
-				return fmt.Errorf("unable to parse required argument \"ROOT_VERSION\": %s", err)
+				return fmt.Errorf("unable to parse required argument \"ROOT_VERSION\": %w", err)
 			}
 
 			c, err := trdlClient.NewClient(homeDir)
 			if err != nil {
-				return fmt.Errorf("unable to initialize trdl client: %s", err)
+				return fmt.Errorf("unable to initialize trdl client: %w", err)
 			}
 
 			if err := c.AddRepo(repoName, repoUrl, rootVersion, rootSha512); err != nil {

@@ -11,8 +11,8 @@ import (
 
 	"github.com/theupdateframework/go-tuf/data"
 	util2 "github.com/theupdateframework/go-tuf/util"
-	"github.com/werf/lockgate"
 
+	"github.com/werf/lockgate"
 	"github.com/werf/trdl/client/pkg/trdl"
 	"github.com/werf/trdl/client/pkg/util"
 )
@@ -47,7 +47,7 @@ func (c Client) UpdateChannel(group, channel string) error {
 
 			channelUpToDate, err = isLocalFileUpToDate(channelPath, targetMeta)
 			if err != nil {
-				return fmt.Errorf("unable to compare the file %q to the target: %s", channelPath, err)
+				return fmt.Errorf("unable to compare the file %q to the target: %w", channelPath, err)
 			}
 
 			var updateChannelPath string
@@ -58,7 +58,7 @@ func (c Client) UpdateChannel(group, channel string) error {
 				defer func() {
 					if deferErr != nil {
 						if removeErr := os.RemoveAll(channelTmpPath); removeErr != nil {
-							panic(fmt.Errorf("unable to remove %q: %s", channelTmpPath, removeErr))
+							panic(fmt.Errorf("unable to remove %q: %w", channelTmpPath, removeErr))
 						}
 					}
 				}()
@@ -70,7 +70,7 @@ func (c Client) UpdateChannel(group, channel string) error {
 
 			release, deferErr = readChannelRelease(updateChannelPath)
 			if deferErr != nil {
-				return fmt.Errorf("unable to get channel release: %s", deferErr)
+				return fmt.Errorf("unable to get channel release: %w", deferErr)
 			}
 		}
 
@@ -82,7 +82,7 @@ func (c Client) UpdateChannel(group, channel string) error {
 			if !channelUpToDate {
 				return lockgate.WithAcquire(c.locker, c.channelLockName(group, channel), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
 					if deferErr = os.MkdirAll(filepath.Dir(channelPath), os.ModePerm); deferErr != nil {
-						return fmt.Errorf("unable to mkdir all %q: %s", channelPath, deferErr)
+						return fmt.Errorf("unable to mkdir all %q: %w", channelPath, deferErr)
 					}
 
 					if deferErr = os.Rename(channelTmpPath, channelPath); deferErr != nil {
@@ -124,7 +124,7 @@ func (c Client) syncChannelRelease(release string) error {
 
 			equal, err := isLocalFileUpToDate(releaseFilePath, targetMeta)
 			if err != nil {
-				return fmt.Errorf("unable to compare local file %q with target %q: %s", releaseFilePath, targetName, err)
+				return fmt.Errorf("unable to compare local file %q with target %q: %w", releaseFilePath, targetName, err)
 			}
 
 			if !equal {
@@ -140,7 +140,7 @@ func (c Client) syncChannelRelease(release string) error {
 		defer func() {
 			if deferErr != nil {
 				if err := os.RemoveAll(releaseTmpDir); err != nil {
-					panic(fmt.Errorf("unable to remove %q: %s (previous err: %s)", releaseTmpDir, err, deferErr))
+					panic(fmt.Errorf("unable to remove %q: %w (previous err: %s)", releaseTmpDir, err, deferErr))
 				}
 			}
 		}()
@@ -158,16 +158,16 @@ func (c Client) syncChannelRelease(release string) error {
 		releaseFileRelPath := filepath.FromSlash(strings.TrimPrefix(targetName, releaseTargetNamePrefix+"/"))
 		releaseFilePath := filepath.Join(releaseTmpDir, releaseFileRelPath)
 		if deferErr = c.syncFile(targetName, targetMeta, releaseFilePath, releaseFilePathMode); deferErr != nil {
-			return fmt.Errorf("unable to sync file %q: %s", releaseFilePath, deferErr)
+			return fmt.Errorf("unable to sync file %q: %w", releaseFilePath, deferErr)
 		}
 	}
 
 	if deferErr = os.RemoveAll(releaseDir); deferErr != nil {
-		return fmt.Errorf("unable to remove broken release dir %q: %s", releaseDir, deferErr)
+		return fmt.Errorf("unable to remove broken release dir %q: %w", releaseDir, deferErr)
 	}
 
 	if deferErr = os.MkdirAll(filepath.Dir(releaseDir), os.ModePerm); deferErr != nil {
-		return fmt.Errorf("unable to mkdir all %q: %s", releaseDir, deferErr)
+		return fmt.Errorf("unable to mkdir all %q: %w", releaseDir, deferErr)
 	}
 
 	if deferErr = os.Rename(releaseTmpDir, releaseDir); deferErr != nil {
@@ -240,7 +240,7 @@ func (c Client) filterTargets(prefix string) (data.TargetFiles, error) {
 func isLocalFileUpToDate(path string, targetMeta data.TargetFileMeta) (bool, error) {
 	exist, err := util.IsRegularFileExist(path)
 	if err != nil {
-		return false, fmt.Errorf("unable to check existence of file %q: %s", path, err)
+		return false, fmt.Errorf("unable to check existence of file %q: %w", path, err)
 	}
 
 	if !exist {
@@ -249,7 +249,7 @@ func isLocalFileUpToDate(path string, targetMeta data.TargetFileMeta) (bool, err
 
 	f, err := os.Open(path)
 	if err != nil {
-		return false, fmt.Errorf("unable to open file %q, %s", path, err)
+		return false, fmt.Errorf("unable to open file %q, %w", path, err)
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
@@ -259,7 +259,7 @@ func isLocalFileUpToDate(path string, targetMeta data.TargetFileMeta) (bool, err
 
 	localFileMeta, err := util2.GenerateTargetFileMeta(f, targetMeta.FileMeta.HashAlgorithms()...)
 	if err != nil {
-		return false, fmt.Errorf("unable to generate meta for local file %q: %s", path, err)
+		return false, fmt.Errorf("unable to generate meta for local file %q: %w", path, err)
 	}
 
 	err = util2.TargetFileMetaEqual(targetMeta, localFileMeta)

@@ -14,13 +14,13 @@ var releaseMetafileExpirationPeriod = time.Hour * 24
 func (c Client) CleanReleases() error {
 	actualLocalReleases, err := c.getActualLocalReleases()
 	if err != nil {
-		return fmt.Errorf("unable to get actual local releases: %s", err)
+		return fmt.Errorf("unable to get actual local releases: %w", err)
 	}
 
 	allReleasesGlob := filepath.Join(c.dir, releasesDir, "*")
 	releaseDirList, err := filepath.Glob(allReleasesGlob)
 	if err != nil {
-		return fmt.Errorf("unable to glob files: %s", err)
+		return fmt.Errorf("unable to glob files: %w", err)
 	}
 
 	for _, releaseDir := range releaseDirList {
@@ -44,12 +44,12 @@ func (c Client) CleanReleases() error {
 			}
 
 			if err := metafile.Delete(c.locker); err != nil {
-				return fmt.Errorf("unable to remove release %q metafile: %s", releaseName, err)
+				return fmt.Errorf("unable to remove release %q metafile: %w", releaseName, err)
 			}
 		}
 
 		if err := os.RemoveAll(releaseDir); err != nil {
-			return fmt.Errorf("unable to remove %q: %s", releaseDir, err)
+			return fmt.Errorf("unable to remove %q: %w", releaseDir, err)
 		}
 	}
 
@@ -62,13 +62,13 @@ func (c Client) getActualLocalReleases() (map[string]bool, error) {
 	allChannelsGlob := filepath.Join(c.dir, channelsDir, "*", "*")
 	filePathList, err := filepath.Glob(allChannelsGlob)
 	if err != nil {
-		return nil, fmt.Errorf("unable to glob files: %s", err)
+		return nil, fmt.Errorf("unable to glob files: %w", err)
 	}
 
 	for _, filePath := range filePathList {
 		exist, err := util.IsRegularFileExist(filePath)
 		if err != nil {
-			return nil, fmt.Errorf("unable to check existence of file %q: %s", filePath, err)
+			return nil, fmt.Errorf("unable to check existence of file %q: %w", filePath, err)
 		}
 
 		if !exist {
@@ -77,7 +77,7 @@ func (c Client) getActualLocalReleases() (map[string]bool, error) {
 
 		release, err := readChannelRelease(filePath)
 		if err != nil {
-			return nil, fmt.Errorf("unable to get channel release: %s", err)
+			return nil, fmt.Errorf("unable to get channel release: %w", err)
 		}
 
 		actualLocalReleases[release] = true

@@ -19,7 +19,7 @@ func listCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := trdlClient.NewClient(homeDir)
 			if err != nil {
-				return fmt.Errorf("unable to initialize trdl client: %s", err)
+				return fmt.Errorf("unable to initialize trdl client: %w", err)
 			}
 
 			repoConfigurationList := c.GetRepoList()

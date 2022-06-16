@@ -59,7 +59,7 @@ func useCmd() *cobra.Command {
 
 			c, err := trdlClient.NewClient(homeDir)
 			if err != nil {
-				return fmt.Errorf("unable to initialize trdl client: %s", err)
+				return fmt.Errorf("unable to initialize trdl client: %w", err)
 			}
 
 			scriptPath, err := c.UseRepoChannelReleaseBinDir(
