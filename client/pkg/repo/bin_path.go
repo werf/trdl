@@ -2,7 +2,6 @@ package repo
 
 import (
 	"github.com/werf/lockgate"
-
 	"github.com/werf/trdl/client/pkg/trdl"
 )
 

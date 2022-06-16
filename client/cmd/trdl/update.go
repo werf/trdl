@@ -48,7 +48,7 @@ func updateCmd() *cobra.Command {
 
 			c, err := trdlClient.NewClient(homeDir)
 			if err != nil {
-				return fmt.Errorf("unable to initialize trdl client: %s", err)
+				return fmt.Errorf("unable to initialize trdl client: %w", err)
 			}
 
 			if inBackground {
@@ -64,7 +64,7 @@ func updateCmd() *cobra.Command {
 				}
 
 				if err := StartUpdateInBackground(trdlBinPath, backgroundUpdateArgs, backgroundStdoutFile, backgroundStderrFile); err != nil {
-					return fmt.Errorf("unable to start update in background: %s", err)
+					return fmt.Errorf("unable to start update in background: %w", err)
 				}
 
 				return nil
@@ -118,11 +118,11 @@ func StartUpdateInBackground(name string, args []string, backgroundStdoutFile, b
 
 	if err := cmd.Start(); err != nil {
 		command := strings.Join(append([]string{name}, args...), " ")
-		return fmt.Errorf("unable to start command %q: %s\n", command, err)
+		return fmt.Errorf("unable to start command %q: %w\n", command, err)
 	}
 
 	if err := cmd.Process.Release(); err != nil {
-		return fmt.Errorf("unable to release process: %s\n", err)
+		return fmt.Errorf("unable to release process: %w\n", err)
 	}
 
 	return nil

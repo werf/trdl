@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/inconshreveable/go-update"
+
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
-
 	"github.com/werf/trdl/client/pkg/repo"
 	"github.com/werf/trdl/client/pkg/trdl"
 	"github.com/werf/trdl/client/pkg/util"
@@ -31,7 +31,7 @@ type Client struct {
 func NewClient(dir string) (Interface, error) {
 	resolvedPath, err := util.ExpandPath(dir)
 	if err != nil {
-		return nil, fmt.Errorf("unable to expand path %q, %s", dir, err)
+		return nil, fmt.Errorf("unable to expand path %q, %w", dir, err)
 	}
 
 	c := Client{
@@ -51,7 +51,7 @@ func (c *Client) init() error {
 	}
 
 	if err := c.initFileLocker(); err != nil {
-		return fmt.Errorf("unable to init file locker: %s", err)
+		return fmt.Errorf("unable to init file locker: %w", err)
 	}
 
 	if err := c.initConfiguration(); err != nil {
@@ -99,11 +99,11 @@ func (c Client) AddRepo(repoName, repoUrl string, rootVersion int64, rootSha512 
 		}
 
 		if err := repoClient.Setup(rootVersion, rootSha512); err != nil {
-			return fmt.Errorf("unable to init repository %q client: %s", repoName, err)
+			return fmt.Errorf("unable to init repository %q client: %w", repoName, err)
 		}
 
 		if err := c.configuration.Save(c.configurationPath()); err != nil {
-			return fmt.Errorf("unable to save trdl configuration: %s", err)
+			return fmt.Errorf("unable to save trdl configuration: %w", err)
 		}
 
 		return nil
@@ -122,16 +122,16 @@ func (c Client) RemoveRepo(repoName string) error {
 			c.repoLocksDir(repoName),
 		} {
 			if err := os.RemoveAll(dir); err != nil {
-				return fmt.Errorf("unable to remove repo %q directory %q: %s", repoName, dir, err)
+				return fmt.Errorf("unable to remove repo %q directory %q: %w", repoName, dir, err)
 			}
 		}
 
 		if err := c.configuration.RemoveRepoConfiguration(repoName); err != nil {
-			return fmt.Errorf("unable to remove %q from trdl configuration: %s", repoName, err)
+			return fmt.Errorf("unable to remove %q from trdl configuration: %w", repoName, err)
 		}
 
 		if err := c.configuration.Save(c.configurationPath()); err != nil {
-			return fmt.Errorf("unable to save trdl configuration: %s", err)
+			return fmt.Errorf("unable to save trdl configuration: %w", err)
 		}
 
 		return nil
@@ -140,8 +140,8 @@ func (c Client) RemoveRepo(repoName string) error {
 
 func (c Client) SetRepoDefaultChannel(repoName, channel string) error {
 	if err := c.configuration.StageRepoDefaultChannel(repoName, channel); err != nil {
-		if err == repoConfigurationNotFoundErr {
-			return newRepositoryNotInitializedErr(repoName)
+		if err == errRepoConfigurationNotFound {
+			return newRepositoryNotInitializedError(repoName)
 		}
 
 		return err
@@ -149,7 +149,7 @@ func (c Client) SetRepoDefaultChannel(repoName, channel string) error {
 
 	return lockgate.WithAcquire(c.locker, c.configurationPath(), lockgate.AcquireOptions{Shared: false, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
 		if err := c.configuration.Save(c.configurationPath()); err != nil {
-			return fmt.Errorf("unable to save trdl configuration: %s", err)
+			return fmt.Errorf("unable to save trdl configuration: %w", err)
 		}
 
 		return nil
@@ -159,7 +159,7 @@ func (c Client) SetRepoDefaultChannel(repoName, channel string) error {
 func (c Client) DoSelfUpdate(autocleanReleases bool) error {
 	acquired, lock, err := c.locker.Acquire(selfUpdateLockFilename, lockgate.AcquireOptions{Shared: false, NonBlocking: true})
 	if err != nil {
-		return fmt.Errorf("unable to acquire lock: %s", err)
+		return fmt.Errorf("unable to acquire lock: %w", err)
 	}
 
 	// skip due to execution in a parallel process
@@ -171,7 +171,7 @@ func (c Client) DoSelfUpdate(autocleanReleases bool) error {
 	{
 		isRecentlyUpdated, err := c.selfUpdateMetafile().HasBeenModifiedWithinPeriod(c.locker, selfUpdateDelayBetweenUpdates)
 		if err != nil {
-			return fmt.Errorf("unable to check delay file: %s", err)
+			return fmt.Errorf("unable to check delay file: %w", err)
 		}
 
 		if isRecentlyUpdated {
@@ -184,11 +184,11 @@ func (c Client) DoSelfUpdate(autocleanReleases bool) error {
 	}
 
 	if err := c.selfUpdateMetafile().Reset(c.locker); err != nil {
-		return fmt.Errorf("unable to reset metafile: %s", err)
+		return fmt.Errorf("unable to reset metafile: %w", err)
 	}
 
 	if err := c.locker.Release(lock); err != nil {
-		return fmt.Errorf("unable to release lock: %s", err)
+		return fmt.Errorf("unable to release lock: %w", err)
 	}
 
 	return nil
@@ -197,7 +197,7 @@ func (c Client) DoSelfUpdate(autocleanReleases bool) error {
 func (c Client) doSelfUpdate(autocleanReleases bool) error {
 	channel, err := c.processRepoOptionalChannel(trdl.SelfUpdateDefaultRepo, "")
 	if err != nil {
-		if _, ok := err.(*RepositoryNotInitializedErr); !ok {
+		if _, ok := err.(*RepositoryNotInitializedError); !ok {
 			return err
 		}
 
@@ -241,7 +241,7 @@ func (c Client) doSelfUpdate(autocleanReleases bool) error {
 
 	f, err := os.Open(binPath)
 	if err != nil {
-		return fmt.Errorf("unable to open file %q: %s", binPath, err)
+		return fmt.Errorf("unable to open file %q: %w", binPath, err)
 	}
 	defer func() { _ = f.Close() }()
 
@@ -251,7 +251,7 @@ func (c Client) doSelfUpdate(autocleanReleases bool) error {
 
 	if autocleanReleases {
 		if err := repoClient.CleanReleases(); err != nil {
-			return fmt.Errorf("unable to clean old releases: %s", err)
+			return fmt.Errorf("unable to clean old releases: %w", err)
 		}
 	}
 
@@ -275,7 +275,7 @@ func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string, autoc
 
 	if autocleanReleases {
 		if err := repoClient.CleanReleases(); err != nil {
-			return fmt.Errorf("unable to clean old releases: %s", err)
+			return fmt.Errorf("unable to clean old releases: %w", err)
 		}
 	}
 
@@ -314,11 +314,11 @@ func (c Client) ExecRepoChannelReleaseBin(repoName, group, optionalChannel, opti
 
 	if err := repoClient.ExecChannelReleaseBin(group, channel, optionalBinName, args); err != nil {
 		switch e := err.(type) {
-		case repo.ChannelNotFoundLocallyErr:
+		case repo.ChannelNotFoundLocallyError:
 			return prepareChannelNotFoundLocallyErr(e)
-		case repo.ChannelReleaseNotFoundLocallyErr:
+		case repo.ChannelReleaseNotFoundLocallyError:
 			return prepareChannelReleaseNotFoundLocallyErr(e)
-		case repo.ChannelReleaseBinSeveralFilesFoundErr:
+		case repo.ChannelReleaseBinSeveralFilesFoundError:
 			return prepareChannelReleaseBinSeveralFilesFoundErr(e)
 		}
 
@@ -342,9 +342,9 @@ func (c Client) GetRepoChannelReleaseDir(repoName, group, optionalChannel string
 	dir, err := repoClient.GetChannelReleaseDir(group, channel)
 	if err != nil {
 		switch e := err.(type) {
-		case repo.ChannelNotFoundLocallyErr:
+		case repo.ChannelNotFoundLocallyError:
 			return "", prepareChannelNotFoundLocallyErr(e)
-		case repo.ChannelReleaseNotFoundLocallyErr:
+		case repo.ChannelReleaseNotFoundLocallyError:
 			return "", prepareChannelReleaseNotFoundLocallyErr(e)
 		}
 
@@ -368,9 +368,9 @@ func (c Client) GetRepoChannelReleaseBinDir(repoName, group, optionalChannel str
 	dir, err := repoClient.GetChannelReleaseBinDir(group, channel)
 	if err != nil {
 		switch e := err.(type) {
-		case repo.ChannelNotFoundLocallyErr:
+		case repo.ChannelNotFoundLocallyError:
 			return "", prepareChannelNotFoundLocallyErr(e)
-		case repo.ChannelReleaseNotFoundLocallyErr:
+		case repo.ChannelReleaseNotFoundLocallyError:
 			return "", prepareChannelReleaseNotFoundLocallyErr(e)
 		}
 
@@ -380,30 +380,30 @@ func (c Client) GetRepoChannelReleaseBinDir(repoName, group, optionalChannel str
 	return dir, nil
 }
 
-func prepareChannelNotFoundLocallyErr(e repo.ChannelNotFoundLocallyErr) error {
+func prepareChannelNotFoundLocallyErr(e repo.ChannelNotFoundLocallyError) error {
 	return fmt.Errorf(
-		"%s, update channel with \"trdl update %s %s %s\" command",
-		e.Error(),
+		"%w, update channel with \"trdl update %s %s %s\" command",
+		e,
 		e.RepoName,
 		e.Group,
 		e.Channel,
 	)
 }
 
-func prepareChannelReleaseNotFoundLocallyErr(e repo.ChannelReleaseNotFoundLocallyErr) error {
+func prepareChannelReleaseNotFoundLocallyErr(e repo.ChannelReleaseNotFoundLocallyError) error {
 	return fmt.Errorf(
-		"%s, update channel with \"trdl update %s %s %s\" command",
-		e.Error(),
+		"%w, update channel with \"trdl update %s %s %s\" command",
+		e,
 		e.RepoName,
 		e.Group,
 		e.Channel,
 	)
 }
 
-func prepareChannelReleaseBinSeveralFilesFoundErr(e repo.ChannelReleaseBinSeveralFilesFoundErr) error {
+func prepareChannelReleaseBinSeveralFilesFoundErr(e repo.ChannelReleaseBinSeveralFilesFoundError) error {
 	return fmt.Errorf(
-		"%s: it is necessary to specify the certain name:\n - %s",
-		e.Error(),
+		"%w: it is necessary to specify the certain name:\n - %s",
+		e,
 		strings.Join(e.Names, "\n - "),
 	)
 }
@@ -469,7 +469,7 @@ func (c *Client) processRepoOptionalChannel(repoName, optionalChannel string) (s
 func (c *Client) getRepoConfiguration(repoName string) (*RepoConfiguration, error) {
 	repoConfiguration := c.configuration.GetRepoConfiguration(repoName)
 	if repoConfiguration == nil {
-		return nil, newRepositoryNotInitializedErr(repoName)
+		return nil, newRepositoryNotInitializedError(repoName)
 	}
 
 	return repoConfiguration, nil

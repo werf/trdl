@@ -31,7 +31,7 @@ The new channel will be used by default instead of stable`,
 
 			c, err := trdlClient.NewClient(homeDir)
 			if err != nil {
-				return fmt.Errorf("unable to initialize trdl client: %s", err)
+				return fmt.Errorf("unable to initialize trdl client: %w", err)
 			}
 
 			if err := c.SetRepoDefaultChannel(repoName, channel); err != nil {

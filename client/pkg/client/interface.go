@@ -9,7 +9,7 @@ type Interface interface {
 	DoSelfUpdate(autocleanReleases bool) error
 	UpdateRepoChannel(repoName, group, optionalChannel string, autocleanReleases bool) error
 	UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, opts repo.UseSourceOptions) (string, error)
-	ExecRepoChannelReleaseBin(repoName, group, optionalChannel string, optionalBinName string, args []string) error
+	ExecRepoChannelReleaseBin(repoName, group, optionalChannel, optionalBinName string, args []string) error
 	GetRepoChannelReleaseDir(repoName, group, optionalChannel string) (string, error)
 	GetRepoChannelReleaseBinDir(repoName, group, optionalChannel string) (string, error)
 	GetRepoList() []*RepoConfiguration
@@ -20,7 +20,7 @@ type RepoInterface interface {
 	Setup(rootVersion int64, rootSha512 string) error
 	UpdateChannel(group, channel string) error
 	UseChannelReleaseBinDir(group, channel, shell string, opts repo.UseSourceOptions) (string, error)
-	ExecChannelReleaseBin(group, channel string, optionalBinName string, args []string) error
+	ExecChannelReleaseBin(group, channel, optionalBinName string, args []string) error
 	GetChannelRelease(group, channel string) (string, error)
 	GetChannelReleaseDir(group, channel string) (string, error)
 	GetChannelReleaseBinDir(group, channel string) (string, error)

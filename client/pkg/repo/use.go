@@ -126,19 +126,19 @@ export PATH="$trdl_repo_bin_path${PATH:+:${PATH}}"
 	return "", fileContent
 }
 
-func (c Client) syncSourceScriptFile(group string, channel string, name string, data []byte) (string, error) {
+func (c Client) syncSourceScriptFile(group, channel, name string, data []byte) (string, error) {
 	scriptPath := filepath.Join(c.channelScriptsDir(group, channel), name)
 	scriptTmpPath := filepath.Join(c.channelScriptsTmpDir(group, channel), name)
 
 	exist, err := util.IsRegularFileExist(scriptPath)
 	if err != nil {
-		return "", fmt.Errorf("unable to check existence of file %q: %s", scriptPath, err)
+		return "", fmt.Errorf("unable to check existence of file %q: %w", scriptPath, err)
 	}
 
 	if exist {
 		currentData, err := ioutil.ReadFile(scriptPath)
 		if err != nil {
-			return "", fmt.Errorf("unable to read file %q: %s", scriptPath, err)
+			return "", fmt.Errorf("unable to read file %q: %w", scriptPath, err)
 		}
 
 		if bytes.Equal(currentData, data) {

@@ -2,33 +2,33 @@ package repo
 
 import "fmt"
 
-type ChannelNotFoundLocallyErr struct {
+type ChannelNotFoundLocallyError struct {
 	RepoName string
 	Group    string
 	Channel  string
 }
 
-func NewChannelNotFoundLocallyErr(repoName, group, channel string) error {
-	return ChannelNotFoundLocallyErr{
+func NewChannelNotFoundLocallyError(repoName, group, channel string) error {
+	return ChannelNotFoundLocallyError{
 		RepoName: repoName,
 		Group:    group,
 		Channel:  channel,
 	}
 }
 
-func (e ChannelNotFoundLocallyErr) Error() string {
+func (e ChannelNotFoundLocallyError) Error() string {
 	return fmt.Sprintf("channel %[2]q not found locally (group: %[1]q)", e.Group, e.Channel)
 }
 
-type ChannelReleaseNotFoundLocallyErr struct {
+type ChannelReleaseNotFoundLocallyError struct {
 	RepoName string
 	Release  string
 	Group    string
 	Channel  string
 }
 
-func NewChannelReleaseNotFoundLocallyErr(repoName, group, channel, release string) error {
-	return ChannelReleaseNotFoundLocallyErr{
+func NewChannelReleaseNotFoundLocallyError(repoName, group, channel, release string) error {
+	return ChannelReleaseNotFoundLocallyError{
 		RepoName: repoName,
 		Release:  release,
 		Group:    group,
@@ -36,11 +36,11 @@ func NewChannelReleaseNotFoundLocallyErr(repoName, group, channel, release strin
 	}
 }
 
-func (e ChannelReleaseNotFoundLocallyErr) Error() string {
+func (e ChannelReleaseNotFoundLocallyError) Error() string {
 	return fmt.Sprintf("channel release %q not found locally (group: %q, channel: %q)", e.Release, e.Group, e.Channel)
 }
 
-type ChannelReleaseBinSeveralFilesFoundErr struct {
+type ChannelReleaseBinSeveralFilesFoundError struct {
 	RepoName string
 	Release  string
 	Group    string
@@ -48,8 +48,8 @@ type ChannelReleaseBinSeveralFilesFoundErr struct {
 	Names    []string
 }
 
-func NewChannelReleaseSeveralFilesFoundErr(repoName, group, channel, release string, names []string) error {
-	return ChannelReleaseBinSeveralFilesFoundErr{
+func NewChannelReleaseSeveralFilesFoundError(repoName, group, channel, release string, names []string) error {
+	return ChannelReleaseBinSeveralFilesFoundError{
 		RepoName: repoName,
 		Release:  release,
 		Group:    group,
@@ -58,6 +58,6 @@ func NewChannelReleaseSeveralFilesFoundErr(repoName, group, channel, release str
 	}
 }
 
-func (e ChannelReleaseBinSeveralFilesFoundErr) Error() string {
+func (e ChannelReleaseBinSeveralFilesFoundError) Error() string {
 	return fmt.Sprintf("several binary files found in release %q (group: %q, channel: %q)", e.Release, e.Group, e.Channel)
 }

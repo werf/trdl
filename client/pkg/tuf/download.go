@@ -8,7 +8,7 @@ import (
 	tufUtil "github.com/theupdateframework/go-tuf/util"
 )
 
-func (c Client) DownloadFile(targetName string, dest string, destMode os.FileMode) error {
+func (c Client) DownloadFile(targetName, dest string, destMode os.FileMode) error {
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
 	}
