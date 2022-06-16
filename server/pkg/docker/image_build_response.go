@@ -30,7 +30,7 @@ func DisplayFromImageBuildResponse(w io.Writer, response types.ImageBuildRespons
 				return nil
 			}
 
-			return fmt.Errorf("unable to decode message from docker daemon: %s", err)
+			return fmt.Errorf("unable to decode message from docker daemon: %w", err)
 		}
 
 		if err := jm.Display(w, false); err != nil {
@@ -39,7 +39,7 @@ func DisplayFromImageBuildResponse(w io.Writer, response types.ImageBuildRespons
 	}
 }
 
-func ReadTarFromImageBuildResponse(tarWriter io.Writer, buildLogWriter io.Writer, response types.ImageBuildResponse) error {
+func ReadTarFromImageBuildResponse(tarWriter, buildLogWriter io.Writer, response types.ImageBuildResponse) error {
 	dec := json.NewDecoder(response.Body)
 	currentState := checkingStartCode
 	var codeCursor int
@@ -52,7 +52,7 @@ func ReadTarFromImageBuildResponse(tarWriter io.Writer, buildLogWriter io.Writer
 				return nil
 			}
 
-			return fmt.Errorf("unable to decode message from docker daemon: %s", err)
+			return fmt.Errorf("unable to decode message from docker daemon: %w", err)
 		}
 
 		if jm.Error != nil {
@@ -72,7 +72,7 @@ func ReadTarFromImageBuildResponse(tarWriter io.Writer, buildLogWriter io.Writer
 
 						startReadCodeSuspectedBytes = append(startReadCodeSuspectedBytes, b)
 					} else if _, err := buildLogWriter.Write([]byte{b}); err != nil {
-						return fmt.Errorf("build log writer failed: %s", err)
+						return fmt.Errorf("build log writer failed: %w", err)
 					}
 
 				case processingStartCode:
@@ -92,7 +92,7 @@ func ReadTarFromImageBuildResponse(tarWriter io.Writer, buildLogWriter io.Writer
 						codeCursor = 0
 
 						if _, err := buildLogWriter.Write(append(startReadCodeSuspectedBytes, b)); err != nil {
-							return fmt.Errorf("build log writer failed: %s", err)
+							return fmt.Errorf("build log writer failed: %w", err)
 						}
 						startReadCodeSuspectedBytes = nil
 					}
@@ -107,7 +107,7 @@ func ReadTarFromImageBuildResponse(tarWriter io.Writer, buildLogWriter io.Writer
 					}
 
 					if _, err := tarWriter.Write(bufferedData); err != nil {
-						return fmt.Errorf("tar writer failed: %s", err)
+						return fmt.Errorf("tar writer failed: %w", err)
 					}
 
 					bufferedData = nil

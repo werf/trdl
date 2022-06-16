@@ -78,7 +78,7 @@ func pathConfigureGitCredentialCreateOrUpdate(ctx context.Context, req *logical.
 
 func pathConfigureGitCredentialDelete(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	if err := DeleteGitCredential(ctx, req.Storage); err != nil {
-		return nil, fmt.Errorf("unable to delete Git credentials configuration: %s", err)
+		return nil, fmt.Errorf("unable to delete Git credentials configuration: %w", err)
 	}
 
 	return nil, nil

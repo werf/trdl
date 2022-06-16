@@ -93,7 +93,7 @@ func pathConfigureTrustedPGPPublicKeyCreateOrUpdate(ctx context.Context, req *lo
 		Key:   trustedPGPPublicKeyStorageKey(name),
 		Value: []byte(key),
 	}); err != nil {
-		return nil, fmt.Errorf("unable to put trusted pgp public key: %s", err)
+		return nil, fmt.Errorf("unable to put trusted pgp public key: %w", err)
 	}
 
 	return nil, nil
@@ -102,7 +102,7 @@ func pathConfigureTrustedPGPPublicKeyCreateOrUpdate(ctx context.Context, req *lo
 func pathConfigureTrustedPGPPublicKeyReadOrList(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	list, err := req.Storage.List(ctx, storageKeyPrefixTrustedPGPPublicKey)
 	if err != nil {
-		return nil, fmt.Errorf("unable to list %q in storage: %s", storageKeyPrefixTrustedPGPPublicKey, err)
+		return nil, fmt.Errorf("unable to list %q in storage: %w", storageKeyPrefixTrustedPGPPublicKey, err)
 	}
 
 	return logical.ListResponse(list), nil

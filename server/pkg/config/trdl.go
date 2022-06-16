@@ -33,7 +33,7 @@ func (c *Trdl) Validate() error {
 	if c.GetDockerImage() == "" {
 		return errors.New("\"dockerImage\" field must be set")
 	} else if err := docker.ValidateImageNameWithDigest(c.GetDockerImage()); err != nil {
-		return fmt.Errorf(`"dockerImage" field validation failed: %s'`, err)
+		return fmt.Errorf(`"dockerImage" field validation failed: %w'`, err)
 	}
 
 	if len(c.Commands) == 0 {
@@ -46,17 +46,17 @@ func (c *Trdl) Validate() error {
 func ParseTrdl(data []byte, values map[string]interface{}) (*Trdl, error) {
 	tmpl := template.New("trdl.yaml")
 	if _, err := tmpl.Parse(string(data)); err != nil {
-		return nil, fmt.Errorf("unable to parse template: %s", err)
+		return nil, fmt.Errorf("unable to parse template: %w", err)
 	}
 
 	buf := bytes.NewBuffer(nil)
 	if err := tmpl.ExecuteTemplate(buf, "trdl.yaml", values); err != nil {
-		return nil, fmt.Errorf("unable to execute template: %s", err)
+		return nil, fmt.Errorf("unable to execute template: %w", err)
 	}
 
 	var res *Trdl
 	if err := yaml.Unmarshal(buf.Bytes(), &res); err != nil {
-		return nil, fmt.Errorf("error unmarshalling yaml: %s", err)
+		return nil, fmt.Errorf("error unmarshalling yaml: %w", err)
 	}
 
 	return res, nil

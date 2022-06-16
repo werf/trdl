@@ -158,7 +158,7 @@ func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 	}
 
 	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
-		return nil, fmt.Errorf("unable to save configuration: %s", err)
+		return nil, fmt.Errorf("unable to save configuration: %w", err)
 	}
 
 	return nil, nil
@@ -167,7 +167,7 @@ func (m *Manager) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 func (m *Manager) pathConfigureRead(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	c, err := getConfiguration(ctx, req.Storage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get configuration: %s", err)
+		return nil, fmt.Errorf("unable to get configuration: %w", err)
 	}
 
 	if c == nil {
@@ -185,7 +185,7 @@ func (m *Manager) pathTaskList(ctx context.Context, req *logical.Request, _ *fra
 		prefix := taskStorageKeyPrefix(state)
 		l, err := req.Storage.List(ctx, prefix)
 		if err != nil {
-			return nil, fmt.Errorf("unable to list %q in storage: %s", prefix, err)
+			return nil, fmt.Errorf("unable to list %q in storage: %w", prefix, err)
 		}
 
 		list = append(list, l...)
@@ -267,7 +267,7 @@ func (m *Manager) pathTaskLogRead(ctx context.Context, req *logical.Request, fie
 			if t != nil {
 				data, err := getTaskLogFromStorage(ctx, req.Storage, t.UUID)
 				if err != nil {
-					return nil, nil, fmt.Errorf("unable to get task log %q from storage: %s", uuid, err)
+					return nil, nil, fmt.Errorf("unable to get task log %q from storage: %w", uuid, err)
 				}
 
 				return data, nil, nil

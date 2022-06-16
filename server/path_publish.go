@@ -11,9 +11,9 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/werf/logboek"
 	"gopkg.in/yaml.v2"
 
+	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/config"
 	trdlGit "github.com/werf/trdl/server/pkg/git"
 	"github.com/werf/trdl/server/pkg/pgp"
@@ -67,7 +67,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 	cfg, err := getConfiguration(ctx, req.Storage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get configuration from storage: %s", err)
+		return nil, fmt.Errorf("unable to get configuration from storage: %w", err)
 	}
 
 	if cfg == nil {
@@ -76,7 +76,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 	gitCredentialFromStorage, err := trdlGit.GetGitCredential(ctx, req.Storage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get git credential from storage: %s", err)
+		return nil, fmt.Errorf("unable to get git credential from storage: %w", err)
 	}
 
 	gitUsername := fields.Get(fieldNameGitUsername).(string)
@@ -90,7 +90,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 	{
 		entry, err := req.Storage.Get(ctx, storageKeyLastPublishedGitCommit)
 		if err != nil {
-			return nil, fmt.Errorf("unable to get %q from storage: %s", storageKeyLastPublishedGitCommit, err)
+			return nil, fmt.Errorf("unable to get %q from storage: %w", storageKeyLastPublishedGitCommit, err)
 		}
 
 		if entry != nil {
@@ -103,7 +103,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 	opts.InitializePGPSigningKey = true
 	publisherRepository, err := b.Publisher.GetRepository(ctx, req.Storage, opts)
 	if err != nil {
-		return nil, fmt.Errorf("error getting publisher repository: %s", err)
+		return nil, fmt.Errorf("error getting publisher repository: %w", err)
 	}
 
 	taskUUID, err := b.TasksManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
@@ -116,12 +116,12 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		gitBranch := cfg.GitTrdlChannelsBranch
 		gitRepo, err := cloneGitRepositoryBranch(cfg.GitRepoUrl, gitBranch, gitUsername, gitPassword)
 		if err != nil {
-			return fmt.Errorf("unable to clone git repository: %s", err)
+			return fmt.Errorf("unable to clone git repository: %w", err)
 		}
 
 		headRef, err := gitRepo.Head()
 		if err != nil {
-			return fmt.Errorf("error getting git repo branch %q head reference: %s", gitBranch, err)
+			return fmt.Errorf("error getting git repo branch %q head reference: %w", gitBranch, err)
 		}
 		headCommit := headRef.Hash().String()
 
@@ -151,11 +151,11 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
 		if err != nil {
-			return fmt.Errorf("unable to get trusted PGP public keys: %s", err)
+			return fmt.Errorf("unable to get trusted PGP public keys: %w", err)
 		}
 
 		if err := trdlGit.VerifyCommitSignatures(gitRepo, headRef.Hash().String(), trustedPGPPublicKeys, cfg.RequiredNumberOfVerifiedSignaturesOnCommit, b.Logger()); err != nil {
-			return fmt.Errorf("signature verification failed: %s", err)
+			return fmt.Errorf("signature verification failed: %w", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Verified commit signatures\n")
@@ -166,7 +166,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 		cfg, err := GetTrdlChannelsConfig(gitRepo, cfg.GitTrdlChannelsPath)
 		if err != nil {
-			return fmt.Errorf("error getting trdl channels config: %s", err)
+			return fmt.Errorf("error getting trdl channels config: %w", err)
 		}
 
 		cfgDump, _ := yaml.Marshal(cfg)
@@ -174,27 +174,27 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		b.Logger().Debug(fmt.Sprintf("Got trdl channels config:\n%s\n---", cfgDump))
 
 		if err := ValidatePublishConfig(ctx, b.Publisher, publisherRepository, cfg, b.Logger()); err != nil {
-			return fmt.Errorf("unable to publish bad config: %s", err)
+			return fmt.Errorf("unable to publish bad config: %w", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Publishing trdl channels config into the TUF repository\n")
 		b.Logger().Debug("Publishing trdl channels config into the TUF repository")
 		if err := b.Publisher.StageChannelsConfig(ctx, publisherRepository, cfg); err != nil {
-			return fmt.Errorf("error publishing trdl channels into the repository: %s", err)
+			return fmt.Errorf("error publishing trdl channels into the repository: %w", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Committing TUF repository state\n")
 		b.Logger().Debug("Committing TUF repository state")
 
 		if err := publisherRepository.CommitStaged(ctx); err != nil {
-			return fmt.Errorf("unable to commit new tuf repository state: %s", err)
+			return fmt.Errorf("unable to commit new tuf repository state: %w", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Storing published commit record %q into the storage\n", headCommit)
 		b.Logger().Debug(fmt.Sprintf("Storing published commit record %q into the storage", headCommit))
 
 		if err := storage.Put(ctx, &logical.StorageEntry{Key: storageKeyLastPublishedGitCommit, Value: []byte(headCommit)}); err != nil {
-			return fmt.Errorf("unable to put %q into storage: %s", storageKeyLastPublishedGitCommit, err)
+			return fmt.Errorf("unable to put %q into storage: %w", storageKeyLastPublishedGitCommit, err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Task finished\n")
@@ -224,7 +224,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 func ValidatePublishConfig(ctx context.Context, publisher publisher.Interface, publisherRepository publisher.RepositoryInterface, config *config.TrdlChannels, logger hclog.Logger) error {
 	existingReleases, err := publisher.GetExistingReleases(ctx, publisherRepository)
 	if err != nil {
-		return fmt.Errorf("error getting existing targets: %s", err)
+		return fmt.Errorf("error getting existing targets: %w", err)
 	}
 
 	logboek.Context(ctx).Default().LogF("Got existing releases list: %v\n", existingReleases)
@@ -236,7 +236,7 @@ func ValidatePublishConfig(ctx context.Context, publisher publisher.Interface, p
 
 	for _, group := range config.Groups {
 		if _, err := semver.NewVersion(group.Name); err != nil {
-			return fmt.Errorf("expected semver group got %q: %s", group.Name, err)
+			return fmt.Errorf("expected semver group got %q: %w", group.Name, err)
 		}
 
 		if _, hasKey := processedGroups[group.Name]; hasKey {
@@ -259,7 +259,7 @@ func ValidatePublishConfig(ctx context.Context, publisher publisher.Interface, p
 			}
 
 			if err := ValidateReleaseVersion(channel.Version); err != nil {
-				return fmt.Errorf("bad version %q for channel %q, expected semver: %s", channel.Version, channel.Name, err)
+				return fmt.Errorf("bad version %q for channel %q, expected semver: %w", channel.Version, channel.Name, err)
 			}
 
 			if strings.HasPrefix(channel.Version, "v") {
@@ -334,12 +334,12 @@ func GetTrdlChannelsConfig(gitRepo *git.Repository, trdlChannelsPath string) (*c
 
 	data, err := trdlGit.ReadWorktreeFile(gitRepo, trdlChannelsPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read worktree file %s: %s", trdlChannelsPath, err)
+		return nil, fmt.Errorf("unable to read worktree file %s: %w", trdlChannelsPath, err)
 	}
 
 	cfg, err := config.ParseTrdlChannels(data)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing %s configuration file: %s", trdlChannelsPath, err)
+		return nil, fmt.Errorf("error parsing %s configuration file: %w", trdlChannelsPath, err)
 	}
 
 	return cfg, nil

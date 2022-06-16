@@ -59,7 +59,7 @@ func generateJekyll(ctx context.Context) error {
 
 	for _, dir := range []string{generateJekyllData.PagesDir, generateJekyllData.IncludesDir, generateJekyllData.SidebarYmlPath} {
 		if err := os.RemoveAll(dir); err != nil {
-			return fmt.Errorf("unable to clean %q: %s", dir, err)
+			return fmt.Errorf("unable to clean %q: %w", dir, err)
 		}
 	}
 
@@ -96,7 +96,7 @@ func generateMarkdown(ctx context.Context) error {
 	}
 
 	if err := os.RemoveAll(generateMarkdownData.Dir); err != nil {
-		return fmt.Errorf("unable to clean %q: %s", generateMarkdownData.Dir, err)
+		return fmt.Errorf("unable to clean %q: %w", generateMarkdownData.Dir, err)
 	}
 
 	return gendocs.GeneratePagesForBackend(ctx, gendocs.NewMarkdownPagesGenerator(generateMarkdownData.Dir), backendHandle)

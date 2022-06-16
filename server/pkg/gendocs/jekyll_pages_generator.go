@@ -68,7 +68,7 @@ func (g *JekyllPagesGenerator) FormatPathLink(markdownPagePath string) string {
 func (g *JekyllPagesGenerator) HandlePath(pathPattern string, doc []byte) error {
 	// Write markdown partial into includes dir
 	if err := g.markdownPagesGenerator.HandlePath(pathPattern, doc); err != nil {
-		return fmt.Errorf("unable to generate markdown includes: %s", err)
+		return fmt.Errorf("unable to generate markdown includes: %w", err)
 	}
 
 	markdownPagePath, err := FormatPathPatternAsFilesystemMarkdownPath(pathPattern)
@@ -78,7 +78,7 @@ func (g *JekyllPagesGenerator) HandlePath(pathPattern string, doc []byte) error 
 
 	f := filepath.Join(g.PagesDir, markdownPagePath)
 	if err := os.MkdirAll(filepath.Dir(f), os.ModePerm); err != nil {
-		return fmt.Errorf("unable to make dir %q: %s", filepath.Dir(f), err)
+		return fmt.Errorf("unable to make dir %q: %w", filepath.Dir(f), err)
 	}
 
 	pageRelativeUrl := path.Join(strings.TrimPrefix(g.BasePagesUrl, "/"), strings.TrimSuffix(markdownPagePath, ".md")+".html")
@@ -102,11 +102,11 @@ permalink: %s
 		pageRelativeUrl,
 		path.Join("/", includeRelativePath),
 	)), 0o644); err != nil {
-		return fmt.Errorf("unable to write file %q: %s", f, err)
+		return fmt.Errorf("unable to write file %q: %w", f, err)
 	}
 
 	if err := g.jekyllSidebar.HandlePath(pathPattern, doc); err != nil {
-		return fmt.Errorf("unable to generate sidebar: %s", err)
+		return fmt.Errorf("unable to generate sidebar: %w", err)
 	}
 
 	return nil

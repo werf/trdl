@@ -30,11 +30,11 @@ func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, fromImage 
 	}
 
 	if err := tw.WriteHeader(header); err != nil {
-		return fmt.Errorf("unable to write tar entry %q header: %s", dockerfileTarPath, err)
+		return fmt.Errorf("unable to write tar entry %q header: %w", dockerfileTarPath, err)
 	}
 
 	if _, err := tw.Write(dockerfileData); err != nil {
-		return fmt.Errorf("unable to write tar entry %q data: %s", dockerfileTarPath, err)
+		return fmt.Errorf("unable to write tar entry %q data: %w", dockerfileTarPath, err)
 	}
 
 	return nil

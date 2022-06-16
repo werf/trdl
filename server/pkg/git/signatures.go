@@ -29,7 +29,7 @@ func NewNotEnoughVerifiedPGPSignaturesError(number int) error {
 func VerifyTagSignatures(repo *git.Repository, tagName string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int, logger hclog.Logger) error {
 	tr, err := repo.Tag(tagName)
 	if err != nil {
-		return fmt.Errorf("unable to get tag: %s", err)
+		return fmt.Errorf("unable to get tag: %w", err)
 	}
 
 	to, err := repo.TagObject(tr.Hash())
@@ -37,19 +37,19 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, trustedPGPPublicK
 		if err == plumbing.ErrObjectNotFound { // lightweight tag
 			revHash, err := repo.ResolveRevision(plumbing.Revision(tr.Hash().String()))
 			if err != nil {
-				return fmt.Errorf("resolve revision %s failed: %s", tr.Hash(), err)
+				return fmt.Errorf("resolve revision %s failed: %w", tr.Hash(), err)
 			}
 
 			return VerifyCommitSignatures(repo, revHash.String(), trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
 		}
 
-		return fmt.Errorf("unable to get tag object: %s", err)
+		return fmt.Errorf("unable to get tag object: %w", err)
 	}
 
 	if to.PGPSignature != "" {
 		encoded := &plumbing.MemoryObject{}
 		if err := to.EncodeWithoutSignature(encoded); err != nil {
-			return fmt.Errorf("unable to encode tag object: %s", err)
+			return fmt.Errorf("unable to encode tag object: %w", err)
 		}
 
 		trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures([]string{to.PGPSignature}, func() (io.Reader, error) { return encoded.Reader() }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
@@ -68,7 +68,7 @@ func VerifyTagSignatures(repo *git.Repository, tagName string, trustedPGPPublicK
 func VerifyCommitSignatures(repo *git.Repository, commit string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int, logger hclog.Logger) error {
 	co, err := repo.CommitObject(plumbing.NewHash(commit))
 	if err != nil {
-		return fmt.Errorf("unable to get commit %q: %s", commit, err)
+		return fmt.Errorf("unable to get commit %q: %w", commit, err)
 	}
 
 	if co.PGPSignature != "" {
@@ -136,18 +136,18 @@ func objectSignaturesFromNotes(repo *git.Repository, objectID string) ([]string,
 			return nil, nil
 		}
 
-		return nil, fmt.Errorf("unable to check existance of reference %q: %s", notesReferenceName, err)
+		return nil, fmt.Errorf("unable to check existence of reference %q: %w", notesReferenceName, err)
 	}
 
 	refHeadCommit := ref.Hash()
 	refCommitObj, err := repo.CommitObject(refHeadCommit)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get objectID %q: %s", refHeadCommit, err)
+		return nil, fmt.Errorf("unable to get objectID %q: %w", refHeadCommit, err)
 	}
 
 	tree, err := refCommitObj.Tree()
 	if err != nil {
-		return nil, fmt.Errorf("unable to get objectID %q tree: %s", refHeadCommit, err)
+		return nil, fmt.Errorf("unable to get objectID %q tree: %w", refHeadCommit, err)
 	}
 
 	var file *object.File
@@ -160,7 +160,7 @@ FindObjectFile:
 		case err == object.ErrFileNotFound:
 			continue
 		case err != nil:
-			return nil, fmt.Errorf("unable to get objectID %q tree file %s: %s", refHeadCommit, path, err)
+			return nil, fmt.Errorf("unable to get objectID %q tree file %s: %w", refHeadCommit, path, err)
 		default:
 			break FindObjectFile
 		}
@@ -172,7 +172,7 @@ FindObjectFile:
 
 	r, err := file.Reader()
 	if err != nil {
-		return nil, fmt.Errorf("unable to get objectID %q tree file %s reader: %s", refHeadCommit, objectID, err)
+		return nil, fmt.Errorf("unable to get objectID %q tree file %s reader: %w", refHeadCommit, objectID, err)
 	}
 
 	var signatures []string

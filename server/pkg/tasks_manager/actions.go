@@ -70,13 +70,13 @@ func (m *Manager) doTaskWrap(ctx context.Context, reqStorage logical.Storage, ta
 	if m.Storage == nil {
 		m.Storage = reqStorage
 		if err := m.invalidateStorage(ctx, reqStorage); err != nil {
-			return fmt.Errorf("unable to invalidate storage: %s", err)
+			return fmt.Errorf("unable to invalidate storage: %w", err)
 		}
 	}
 
 	config, err := getConfiguration(ctx, reqStorage)
 	if err != nil {
-		return fmt.Errorf("unable to get tasks manager configuration: %s", err)
+		return fmt.Errorf("unable to get tasks manager configuration: %w", err)
 	}
 
 	var taskTimeoutDuration time.Duration
@@ -134,7 +134,7 @@ func (m *Manager) invalidateStorage(ctx context.Context, reqStorage logical.Stor
 		prefix := taskStorageKeyPrefix(state)
 		l, err := reqStorage.List(ctx, prefix)
 		if err != nil {
-			return fmt.Errorf("unable to list %q in storage: %s", prefix, err)
+			return fmt.Errorf("unable to list %q in storage: %w", prefix, err)
 		}
 
 		list = append(list, l...)
@@ -144,7 +144,7 @@ func (m *Manager) invalidateStorage(ctx context.Context, reqStorage logical.Stor
 		if err := switchTaskToCompletedInStorage(ctx, reqStorage, taskStatusCanceled, uuid, switchTaskToCompletedInStorageOptions{
 			reason: taskReasonInvalidatedTask,
 		}); err != nil {
-			return fmt.Errorf("unable to invalidate task %q: %s", uuid, err)
+			return fmt.Errorf("unable to invalidate task %q: %w", uuid, err)
 		}
 	}
 
@@ -167,7 +167,7 @@ func (m *Manager) isBusy(ctx context.Context, reqStorage logical.Storage) (bool,
 	for _, prefix := range []string{storageKeyPrefixRunningTask, storageKeyPrefixQueuedTask} {
 		list, err := reqStorage.List(ctx, prefix)
 		if err != nil {
-			return false, fmt.Errorf("unable to list %q in storage: %s", prefix, err)
+			return false, fmt.Errorf("unable to list %q in storage: %w", prefix, err)
 		}
 
 		if len(list) != 0 {

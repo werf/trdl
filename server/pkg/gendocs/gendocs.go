@@ -3,12 +3,9 @@ package gendocs
 import (
 	"context"
 	"fmt"
-	"math/rand"
-	"regexp/syntax"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-	regen "github.com/zach-klippenstein/goregen"
 )
 
 func GeneratePagesForBackend(ctx context.Context, pagesGenerator PagesGenerator, backend BackendHandle) error {
@@ -19,7 +16,7 @@ func GeneratePagesForBackend(ctx context.Context, pagesGenerator PagesGenerator,
 
 	pages, err := GetBackendReferencePages(ctx, backend, formatPathLink)
 	if err != nil {
-		return fmt.Errorf("unable to generate backend pages: %s", err)
+		return fmt.Errorf("unable to generate backend pages: %w", err)
 	}
 
 	return GeneratePages(pagesGenerator, pages)
@@ -28,12 +25,12 @@ func GeneratePagesForBackend(ctx context.Context, pagesGenerator PagesGenerator,
 func GeneratePages(pagesGenerator PagesGenerator, pages []*BackendReferencePage) error {
 	for _, page := range pages {
 		if err := pagesGenerator.HandlePath(page.Path, page.Doc); err != nil {
-			return fmt.Errorf("unable to handle path pattern %q: %s", page.Path, err)
+			return fmt.Errorf("unable to handle path pattern %q: %w", page.Path, err)
 		}
 	}
 
 	if err := pagesGenerator.Close(); err != nil {
-		return fmt.Errorf("unable to close pages generator: %s", err)
+		return fmt.Errorf("unable to close pages generator: %w", err)
 	}
 
 	return nil
@@ -75,7 +72,7 @@ func GetBackendReferencePages(ctx context.Context, backend BackendHandle, format
 	case map[string]interface{}:
 		backendDoc, err = framework.NewOASDocumentFromMap(v)
 		if err != nil {
-			return nil, fmt.Errorf("unable to parse openapi docs from backend help response: %s", err)
+			return nil, fmt.Errorf("unable to parse openapi docs from backend help response: %w", err)
 		}
 	default:
 		return nil, fmt.Errorf("no openapi backend docs found")
@@ -83,12 +80,12 @@ func GetBackendReferencePages(ctx context.Context, backend BackendHandle, format
 
 	backendTemplateData, err := NewBackendTemplateData(backendDoc, backend.FrameworkBackendRef, formatPathLink)
 	if err != nil {
-		return nil, fmt.Errorf("unable to prepare backend template data: %s", err)
+		return nil, fmt.Errorf("unable to prepare backend template data: %w", err)
 	}
 
 	overview, err := ExecuteTemplate(BackendOverviewTemplate, backendTemplateData)
 	if err != nil {
-		return nil, fmt.Errorf("error executing backend overview template: %s", err)
+		return nil, fmt.Errorf("error executing backend overview template: %w", err)
 	}
 
 	res = append(res, &BackendReferencePage{
@@ -99,7 +96,7 @@ func GetBackendReferencePages(ctx context.Context, backend BackendHandle, format
 	for _, pathTemplateData := range backendTemplateData.Paths {
 		pathPage, err := ExecuteTemplate(PathTemplate, pathTemplateData)
 		if err != nil {
-			return nil, fmt.Errorf("error executing path %q template: %s", pathTemplateData.Name, err)
+			return nil, fmt.Errorf("error executing path %q template: %w", pathTemplateData.Name, err)
 		}
 
 		res = append(res, &BackendReferencePage{
@@ -109,11 +106,4 @@ func GetBackendReferencePages(ctx context.Context, backend BackendHandle, format
 	}
 
 	return res, nil
-}
-
-func generatorArgs() *regen.GeneratorArgs {
-	return &regen.GeneratorArgs{
-		RngSource: rand.NewSource(445),
-		Flags:     syntax.Perl,
-	}
 }

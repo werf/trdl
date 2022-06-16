@@ -63,13 +63,13 @@ func (store *NonAtomicTufStore) GetMeta() (map[string]json.RawMessage, error) {
 
 		exists, err := store.Filesystem.IsFileExist(ctx, name)
 		if err != nil {
-			return nil, fmt.Errorf("error checking existance of %q: %s", name, err)
+			return nil, fmt.Errorf("error checking existence of %q: %w", name, err)
 		}
 
 		if exists {
 			data, err := store.Filesystem.ReadFileBytes(ctx, name)
 			if err != nil {
-				return nil, fmt.Errorf("error reading %q: %s", name, err)
+				return nil, fmt.Errorf("error reading %q: %w", name, err)
 			}
 			meta[name] = data
 		} else {
@@ -101,7 +101,7 @@ func (store *NonAtomicTufStore) WalkStagedTargets(targetPathList []string, targe
 			store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.WalkStagedTargets before ReadFileStream %q", path))
 
 			if err := store.Filesystem.ReadFileStream(ctx, path, writer); err != nil {
-				if err := writer.CloseWithError(fmt.Errorf("error reading file %q stream: %s", path, err)); err != nil {
+				if err := writer.CloseWithError(fmt.Errorf("error reading file %q stream: %w", path, err)); err != nil {
 					panic(fmt.Sprintf("ERROR: failed to close pipe writer while reading file %q stream: %s\n", path, err))
 				}
 			}
@@ -149,7 +149,7 @@ func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, targetPath 
 	// NOTE: consistenSnapshot cannot be supported when adding staged files before commit stage
 
 	if err := store.Filesystem.WriteFileStream(ctx, path.Join("targets", targetPath), data); err != nil {
-		return fmt.Errorf("error writing %q into the store filesystem: %s", targetPath, err)
+		return fmt.Errorf("error writing %q into the store filesystem: %w", targetPath, err)
 	}
 
 	store.stagedFiles = append(store.stagedFiles, targetPath)
@@ -172,7 +172,7 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 			store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.Commit storing metadata path %q into the filesystem", metadataPath))
 
 			if err := store.Filesystem.WriteFileBytes(ctx, metadataPath, data); err != nil {
-				return fmt.Errorf("error writing metadata path %q into the filesystem: %s", metadataPath, err)
+				return fmt.Errorf("error writing metadata path %q into the filesystem: %w", metadataPath, err)
 			}
 		}
 	}
@@ -234,14 +234,6 @@ func (store *NonAtomicTufStore) SavePrivateKey(role string, key *sign.PrivateKey
 
 func (m *NonAtomicTufStore) Clean() error {
 	panic("not supported")
-}
-
-func computeTargetPaths(consistentSnapshot bool, name string, _ map[string]data.Hashes) []string {
-	if consistentSnapshot {
-		panic("not supported")
-	}
-
-	return []string{name}
 }
 
 func computeMetadataPaths(consistentSnapshot bool, name string, versions map[string]int) []string {

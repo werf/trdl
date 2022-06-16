@@ -41,13 +41,13 @@ func RemoveImagesByLabels(ctx context.Context, cli *client.Client, labels map[st
 
 	list, err := cli.ImageList(ctx, types.ImageListOptions{Filters: filterSet})
 	if err != nil {
-		return fmt.Errorf("unable to list images: %s", err)
+		return fmt.Errorf("unable to list images: %w", err)
 	}
 
 	for _, img := range list {
 		options := types.ImageRemoveOptions{PruneChildren: true, Force: true}
 		if _, err := cli.ImageRemove(ctx, img.ID, options); err != nil {
-			return fmt.Errorf("unable to remove image %q: %s", img.ID, err)
+			return fmt.Errorf("unable to remove image %q: %w", img.ID, err)
 		}
 	}
 

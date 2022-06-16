@@ -186,7 +186,7 @@ func NewBackendTemplateData(backendDoc *framework.OASDocument, frameworkBackendR
 		if formatPathLink != nil {
 			markdownPath, err := FormatPathPatternAsFilesystemMarkdownPath(pathName)
 			if err != nil {
-				return nil, fmt.Errorf("unable to format path pattern %q as filesystem markdown path: %s", pathName, err)
+				return nil, fmt.Errorf("unable to format path pattern %q as filesystem markdown path: %w", pathName, err)
 			}
 
 			path.Link = formatPathLink(markdownPath)
@@ -313,12 +313,12 @@ var (
 func ExecuteTemplate(tpl string, data interface{}) (string, error) {
 	t, err := template.New("root").Parse(tpl)
 	if err != nil {
-		return "", fmt.Errorf("error parsing template: %s", err)
+		return "", fmt.Errorf("error parsing template: %w", err)
 	}
 
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("error executing template: %s", err)
+		return "", fmt.Errorf("error executing template: %w", err)
 	}
 
 	return strings.TrimSpace(buf.String()), nil

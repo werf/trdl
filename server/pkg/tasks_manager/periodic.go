@@ -23,7 +23,7 @@ func (m *Manager) PeriodicFunc(ctx context.Context, req *logical.Request) error 
 	{
 		entry, err := req.Storage.Get(ctx, storageKeyLastPeriodicRunTimestamp)
 		if err != nil {
-			return fmt.Errorf("unable to get %q from storage: %s", storageKeyLastPeriodicRunTimestamp, err)
+			return fmt.Errorf("unable to get %q from storage: %w", storageKeyLastPeriodicRunTimestamp, err)
 		}
 
 		if entry != nil {
@@ -41,7 +41,7 @@ func (m *Manager) PeriodicFunc(ctx context.Context, req *logical.Request) error 
 	}
 
 	if err := req.Storage.Put(ctx, &logical.StorageEntry{Key: storageKeyLastPeriodicRunTimestamp, Value: []byte(fmt.Sprintf("%d", startTime.Unix()))}); err != nil {
-		return fmt.Errorf("unable to put %q into storage: %s", storageKeyLastPeriodicRunTimestamp, err)
+		return fmt.Errorf("unable to put %q into storage: %w", storageKeyLastPeriodicRunTimestamp, err)
 	}
 
 	return nil
@@ -53,7 +53,7 @@ func (m *Manager) cleanupTaskHistory(ctx context.Context, req *logical.Request) 
 	{
 		config, err := getConfiguration(ctx, req.Storage)
 		if err != nil {
-			return fmt.Errorf("unable to get tasks manager configuration: %s", err)
+			return fmt.Errorf("unable to get tasks manager configuration: %w", err)
 		}
 
 		if config != nil {
