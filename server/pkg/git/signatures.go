@@ -112,7 +112,7 @@ func verifyObjectSignatures(repo *git.Repository, objectID string, trustedPGPPub
 		return NewNotEnoughVerifiedPGPSignaturesError(requiredNumberOfVerifiedSignatures)
 	}
 
-	trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
+	_, requiredNumberOfVerifiedSignatures, err = pgp.VerifyPGPSignatures(signatures, func() (io.Reader, error) { return strings.NewReader(objectID), nil }, trustedPGPPublicKeys, requiredNumberOfVerifiedSignatures, logger)
 	if err != nil {
 		return err
 	}
