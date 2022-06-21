@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://www.github.com/werf/trdl/compare/v0.4.2...v0.5.0) (2022-06-21)
+
+
+### Features
+
+* **client:** export environment variable with a used group and channel in the source script ([3c083a7](https://www.github.com/werf/trdl/commit/3c083a7401ef5c1281d4a1e30de0d7050077eb74))
+
 ### [0.4.2](https://www.github.com/werf/trdl/compare/v0.4.1...v0.4.2) (2022-05-05)
 
 
