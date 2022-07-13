@@ -1,0 +1,25 @@
+snippetcut:
+  actions:
+    copy_name:
+      en: Copy name
+      ru: Скопировать имя
+    copy_filename:
+      en: Copy filename
+      ru: Скопировать имя файла
+    copy_content:
+      en: Copy content
+      ru: Скопировать содержимое
+  messages:
+    copied_to_clipboard:
+      en: Has been copied to clipboard
+      ru: Скопировано в буфер обмена
+      de: In die Zwischenablage kopiert
+    filename_copied:
+      en: Filename copied
+      ru: Имя файла скопировано
+    content_copied:
+      en: Content copied
+      ru: Содержимое скопировано
+    something_went_wrong:
+      en: Something went wrong
+      ru: Что-то пошло не так

@@ -48,6 +48,7 @@ defaults:
       topnav: topnav
       sitemap_include: true
       multilang: true
+      lang: en
   - scope:
       path: "pages_*/reference"
       type: "pages"
