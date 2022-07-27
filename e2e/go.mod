@@ -14,7 +14,7 @@ require (
 )
 
 replace (
-	github.com/theupdateframework/go-tuf => github.com/werf/third-party-go-tuf v0.0.0-20210728151427-8674be250fb1
+	github.com/theupdateframework/go-tuf => github.com/werf/third-party-go-tuf v0.0.0-20220722154100-8305cede2c59
 	github.com/werf/trdl/client v0.0.0 => ../client
 	github.com/werf/trdl/server v0.0.0 => ../server
 )

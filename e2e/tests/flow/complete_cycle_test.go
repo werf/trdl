@@ -20,24 +20,30 @@ import (
 
 	clientUtil "github.com/werf/trdl/client/pkg/util"
 	"github.com/werf/trdl/server"
+	"github.com/werf/trdl/server/pkg/publisher"
 	tasksManagerTestutil "github.com/werf/trdl/server/pkg/tasks_manager/testutil"
 	"github.com/werf/trdl/server/pkg/testutil"
+	"github.com/werf/trdl/server/pkg/util"
 )
 
 var _ = Describe("Complete cycle", func() {
 	var storage logical.Storage
-	var backend logical.Backend
+	var backend *server.Backend
 	var minioAddress string
 	var minioRepoAddress string
+	var systemClock *util.FixedClock
 
 	const (
-		repo     = "test"
-		group    = "1"
-		channel  = "alpha"
-		tag1     = "v1.0.1"
-		tag2     = "v1.0.2"
-		version1 = "1.0.1"
-		version2 = "1.0.2"
+		repo       = "test"
+		secondRepo = "test2"
+		group      = "1"
+		channel    = "alpha"
+		tag1       = "v1.0.1"
+		tag2       = "v1.0.2"
+		tag3       = "v1.0.3"
+		version1   = "1.0.1"
+		version2   = "1.0.2"
+		version3   = "1.0.3"
 
 		branchName = "main"
 
@@ -47,6 +53,9 @@ var _ = Describe("Complete cycle", func() {
 	)
 
 	serverInitVariables := func() {
+		systemClock = util.NewFixedClock(time.Now())
+		server.SystemClock = systemClock
+
 		var err error
 		backend, err = server.NewBackend(hclog.L())
 		Ω(err).ShouldNot(HaveOccurred())
@@ -223,8 +232,8 @@ var _ = Describe("Complete cycle", func() {
 		tasksManagerTestutil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
 	}
 
-	clientAdd := func() {
-		resp, err := http.Get(minioRepoAddress + "/1.root.json")
+	clientAdd := func(repo string, rootVersion int) {
+		resp, err := http.Get(minioRepoAddress + fmt.Sprintf("/%d.root.json", rootVersion))
 		Ω(err).ShouldNot(HaveOccurred())
 		defer func() { _ = resp.Body.Close() }()
 
@@ -235,7 +244,7 @@ var _ = Describe("Complete cycle", func() {
 		testutil.RunSucceedCommand(
 			testDir,
 			trdlBinPath,
-			"add", repo, minioRepoAddress, "1", rootRoleSha512,
+			"add", repo, minioRepoAddress, fmt.Sprintf("%d", rootVersion), rootRoleSha512,
 		)
 	}
 
@@ -253,6 +262,23 @@ var _ = Describe("Complete cycle", func() {
 		taskUUID := val.(string)
 
 		tasksManagerTestutil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
+	}
+
+	clientUpdate := func(repo, group, channel, expectedVersion string) {
+		testutil.RunSucceedCommand(
+			"",
+			trdlBinPath,
+			testutil.TrdlBinArgs("update", repo, group, channel)...,
+		)
+
+		output := testutil.SucceedCommandOutputString(
+			"",
+			trdlBinPath,
+			testutil.TrdlBinArgs("bin-path", repo, group, channel)...,
+		)
+
+		pathParts := publisher.SplitFilepath(strings.TrimSpace(output))
+		Ω(pathParts[len(pathParts)-3]).Should(Equal(expectedVersion))
 	}
 
 	clientUse := func(group, channel, expectedVersion string) {
@@ -368,6 +394,17 @@ script.sh
 		return testutil.GetHeadCommit(testDir)
 	}
 
+	rotateTUFRoles := func() {
+		// After 1 year all TUF roles will be rotated: root.json, targets.json, snapshot.json and timestamp.json
+		systemClock.NowTime = systemClock.NowTime.AddDate(1, 0, 0)
+
+		req := &logical.Request{Storage: storage}
+		Expect(backend.Periodic(context.Background(), req)).To(Succeed())
+
+		// Wait for the background task to be completed
+		time.Sleep(time.Millisecond * 500)
+	}
+
 	It("should perform all steps", func() {
 		By("[server] Configuring ...")
 		serverConfigure()
@@ -380,7 +417,7 @@ script.sh
 		}
 
 		By("[client] Adding repo ...")
-		clientAdd()
+		clientAdd(repo, 1)
 
 		By("[server] Publishing channels ...")
 		{
@@ -408,5 +445,42 @@ script.sh
 		// Wait for the background update to be completed
 		time.Sleep(time.Millisecond * 500)
 		clientUse(group, channel, version2)
+
+		By(fmt.Sprintf("[server] Rotating TUF roles expiration ..."))
+		rotateTUFRoles()
+
+		By("[client-1] Getting channel release when no updates available ...")
+		clientUpdate(repo, group, channel, version2)
+
+		By(fmt.Sprintf("[server] Rotating TUF roles expiration ..."))
+		rotateTUFRoles()
+
+		By("[client-1] Getting channel release when no updates available ...")
+		clientUpdate(repo, group, channel, version2)
+
+		By("[client-2] Adding repo ...")
+		clientAdd(secondRepo, 3)
+
+		By("[client-2] Getting channel release when update available ...")
+		clientUpdate(secondRepo, group, channel, version2)
+
+		By(fmt.Sprintf("[server] Rotating TUF roles expiration ..."))
+		rotateTUFRoles()
+
+		By(fmt.Sprintf("[server] Releasing tag %q ...", tag3))
+		{
+			gitTag(tag3)
+			quorumSignTag(tag3)
+			serverRelease(tag3)
+			commit := gitAddTrdlChannelsConfiguration(group, channel, version3)
+			quorumSignCommit(commit)
+			serverPublish()
+		}
+
+		By("[client-1] Getting channel release when update available ...")
+		clientUpdate(repo, group, channel, version3)
+
+		By("[client-2] Getting channel release when update available ...")
+		clientUpdate(secondRepo, group, channel, version3)
 	})
 })
