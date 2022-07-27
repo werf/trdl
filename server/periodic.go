@@ -15,7 +15,7 @@ import (
 	"github.com/werf/trdl/server/pkg/util"
 )
 
-var systemClock util.Clock = util.NewSystemClock()
+var SystemClock util.Clock = util.NewSystemClock()
 
 const (
 	// TODO: Do not use global run timestamp to specify repository operations period.
@@ -39,7 +39,7 @@ func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 
 	if entry != nil {
 		lastRunTimestamp, err := strconv.ParseInt(string(entry.Value), 10, 64)
-		if err == nil && systemClock.Since(time.Unix(lastRunTimestamp, 0)) < periodicRunPeriod {
+		if err == nil && SystemClock.Since(time.Unix(lastRunTimestamp, 0)) < periodicRunPeriod {
 			b.Logger().Info("Waiting rotate repository keys period: skipping periodic task")
 			return nil
 		}
@@ -71,7 +71,7 @@ func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 		return fmt.Errorf("error getting publisher repository: %w", err)
 	}
 
-	now := systemClock.Now()
+	now := SystemClock.Now()
 	uuid, err := b.TasksManager.RunTask(ctx, req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		err := b.periodicTask(ctx, storage, config, publisherRepository)
 		if err != nil {
@@ -104,14 +104,14 @@ func (b *Backend) periodicTask(ctx context.Context, storage logical.Storage, _ *
 	logboek.Context(ctx).Default().LogF("Started TUF repository keys rotation\n")
 	b.Logger().Debug("Started TUF repository keys rotation")
 
-	if err := b.Publisher.RotateRepositoryKeys(ctx, storage, publisherRepository); err != nil {
+	if err := b.Publisher.RotateRepositoryKeys(ctx, storage, publisherRepository, SystemClock); err != nil {
 		return fmt.Errorf("unable to rotate TUF repository private keys: %w", err)
 	}
 
 	logboek.Context(ctx).Default().LogF("Started TUF repository timestamps update\n")
 	b.Logger().Debug("Started TUF repository timestamps update")
 
-	if err := b.Publisher.UpdateTimestamps(ctx, storage, publisherRepository); err != nil {
+	if err := b.Publisher.UpdateTimestamps(ctx, storage, publisherRepository, SystemClock); err != nil {
 		return fmt.Errorf("unable to update TUF repository timestamps: %w", err)
 	}
 

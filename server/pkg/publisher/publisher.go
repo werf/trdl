@@ -64,7 +64,7 @@ func NewPublisher(logger hclog.Logger) *Publisher {
 	return &Publisher{logger: logger}
 }
 
-func (publisher *Publisher) RotateRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface) error {
+func (publisher *Publisher) RotateRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface, systemClock util.Clock) error {
 	updated, updatedPrivKeys, err := repository.RotatePrivKeys(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to rotate TUF repository keys: %w", err)
@@ -86,8 +86,8 @@ func (publisher *Publisher) RotateRepositoryKeys(ctx context.Context, storage lo
 	return nil
 }
 
-func (publisher *Publisher) UpdateTimestamps(ctx context.Context, storage logical.Storage, repository RepositoryInterface) error {
-	return repository.UpdateTimestamps(ctx)
+func (publisher *Publisher) UpdateTimestamps(ctx context.Context, storage logical.Storage, repository RepositoryInterface, systemClock util.Clock) error {
+	return repository.UpdateTimestamps(ctx, systemClock)
 }
 
 type setRepositoryKeysOptions struct {

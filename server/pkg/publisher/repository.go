@@ -11,6 +11,8 @@ import (
 	"github.com/theupdateframework/go-tuf"
 	"github.com/theupdateframework/go-tuf/data"
 	"github.com/theupdateframework/go-tuf/sign"
+
+	"github.com/werf/trdl/server/pkg/util"
 )
 
 type S3Options struct {
@@ -129,20 +131,8 @@ func (repository *S3Repository) StageTarget(ctx context.Context, pathInsideTarge
 	return nil
 }
 
-func (repository *S3Repository) UpdateTimestamps(_ context.Context) error {
-	// TODO: Update only timestamp, or timestamp with snapshot, or timestamp with snapshot with root
-	// TODO: based on expiration dates.
-
-	if err := repository.TufRepo.Snapshot(tuf.CompressionTypeNone); err != nil {
-		return fmt.Errorf("tuf repo timestamp failed: %w", err)
-	}
-	if err := repository.TufRepo.Timestamp(); err != nil {
-		return fmt.Errorf("tuf repo timestamp failed: %w", err)
-	}
-	if err := repository.TufRepo.Commit(); err != nil {
-		return fmt.Errorf("unable to commit staged changes into the repo: %w", err)
-	}
-	return nil
+func (repository *S3Repository) UpdateTimestamps(_ context.Context, systemClock util.Clock) error {
+	return NewTufRepoRotator(repository.TufRepo).Rotate(repository.logger, systemClock.Now())
 }
 
 func (repository *S3Repository) CommitStaged(_ context.Context) error {
