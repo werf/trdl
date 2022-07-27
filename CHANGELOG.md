@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://www.github.com/werf/trdl/compare/v0.5.0...v0.6.0) (2022-07-27)
+
+
+### Features
+
+* **server:** prolong TUF roles expiration periodically ([7df2cae](https://www.github.com/werf/trdl/commit/7df2cae4004402dfa52eda5b87e2d55329661ac3))
+
 ## [0.5.0](https://www.github.com/werf/trdl/compare/v0.4.2...v0.5.0) (2022-06-21)
 
 
