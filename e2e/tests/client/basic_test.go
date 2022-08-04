@@ -13,7 +13,7 @@ import (
 	"github.com/werf/trdl/server/pkg/testutil"
 )
 
-var _ = Describe("Basic", func() {
+var _ = XDescribe("Basic", func() {
 	It("add", func() {
 		testutil.RunSucceedCommand(
 			"",
