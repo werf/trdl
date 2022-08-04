@@ -111,12 +111,6 @@ jobs:
 
           go install github.com/onsi/ginkgo/ginkgo@latest
 
-      - name: Up tuf repo with test data
-        working-directory: client
-        run: |
-          go install github.com/theupdateframework/go-tuf/cmd/tuf@latest
-          make minio_up
-
       - name: Test
         working-directory: e2e
         run: ginkgo -p -keepGoing -cover -coverpkg=../client/...,../server/... -outputdir=$TRDL_TEST_COVERAGE_DIR ./...

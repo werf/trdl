@@ -27,7 +27,7 @@ type useEntry struct {
 	expectedOutput       string
 }
 
-var _ = Describe("Use", func() {
+var _ = XDescribe("Use", func() {
 	BeforeEach(func() {
 		testutil.RunSucceedCommand(
 			"",
