@@ -3,8 +3,7 @@ configVersion: 1
 ---
 
 artifact: asset
-from: jekyll/builder:3
-fromCacheVersion: 20210426
+from: jekyll/builder:4.2.0
 shell:
   install:
     - gem update bundler
