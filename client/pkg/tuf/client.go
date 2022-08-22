@@ -1,8 +1,11 @@
 package tuf
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/theupdateframework/go-tuf"
@@ -19,7 +22,8 @@ const metaLocalStoreDirLockName = "meta"
 
 type Client struct {
 	*tufClient.Client
-	ReadOnlyLocalStore tufClient.LocalStore
+
+	memoryStore tufClient.LocalStore
 
 	repoUrl           string
 	metaLocalStoreDir string
@@ -65,21 +69,48 @@ func (c *Client) initFileLocker(locksPath string) error {
 }
 
 func (c *Client) initTufClient() error {
-	localDB, err := leveldbstore.FileLocalStore(c.metaLocalStoreDir)
-	if err != nil {
-		return fmt.Errorf("unable to init file local store: %w", err)
-	}
+	localMeta := map[string]json.RawMessage{}
+	{
+		exist, err := util.IsRegularFileExist(c.metaLocalFilePath())
+		if err != nil {
+			return fmt.Errorf("unable to check regular file %q existence: %w", c.metaLocalFilePath(), err)
+		}
 
-	allMeta, err := localDB.GetMeta()
-	if err != nil {
-		return fmt.Errorf("unable to get meta from file local store: %w", err)
-	}
-	if err := localDB.Close(); err != nil {
-		return fmt.Errorf("unable to close from file local store: %w", err)
+		if exist {
+			f, err := os.Open(c.metaLocalFilePath())
+			if err != nil {
+				return fmt.Errorf("unable to open file %q: %w", c.metaLocalFilePath(), err)
+			}
+			defer func() { _ = f.Close() }()
+
+			d, err := io.ReadAll(f)
+			if err != nil {
+				return fmt.Errorf("unable to read file %q: %w", c.metaLocalFilePath(), err)
+			}
+
+			if err := json.Unmarshal(d, &localMeta); err != nil {
+				return fmt.Errorf("unable to unmarshall data: %w", err)
+			}
+		} else { // backward compatibility with previous versions with leveldb backend
+			localDB, err := leveldbstore.FileLocalStore(c.metaLocalStoreDir)
+			if err != nil {
+				return fmt.Errorf("unable to init file local store: %w", err)
+			}
+
+			localDBMeta, err := localDB.GetMeta()
+			if err != nil {
+				return fmt.Errorf("unable to get meta from file local store: %w", err)
+			}
+			if err := localDB.Close(); err != nil {
+				return fmt.Errorf("unable to close from file local store: %w", err)
+			}
+
+			localMeta = localDBMeta
+		}
 	}
 
 	localMemory := tufClient.MemoryLocalStore()
-	for name, meta := range allMeta {
+	for name, meta := range localMeta {
 		if err := localMemory.SetMeta(name, meta); err != nil {
 			return fmt.Errorf("unable to set meta: %w", err)
 		}
@@ -91,7 +122,7 @@ func (c *Client) initTufClient() error {
 	}
 
 	c.Client = tufClient.NewClient(localMemory, remote)
-	c.ReadOnlyLocalStore = localMemory
+	c.memoryStore = localMemory
 
 	return nil
 }
@@ -171,23 +202,32 @@ func (c *Client) Update() error {
 }
 
 func (c *Client) saveMeta() error {
-	localDB, err := leveldbstore.FileLocalStore(c.metaLocalStoreDir)
-	if err != nil {
-		return fmt.Errorf("unable to init file local store: %w", err)
-	}
-
-	allMeta, err := c.ReadOnlyLocalStore.GetMeta()
+	allMeta, err := c.memoryStore.GetMeta()
 	if err != nil {
 		return fmt.Errorf("unable to get meta: %w", err)
 	}
 
-	for name, meta := range allMeta {
-		if err := localDB.SetMeta(name, meta); err != nil {
-			return fmt.Errorf("unable to set meta into file local store: %w", err)
-		}
+	if err := os.MkdirAll(c.metaLocalStoreDir, os.ModePerm); err != nil {
+		return fmt.Errorf("unable to mkdirAll: %w", err)
 	}
-	if err := localDB.Close(); err != nil {
-		return fmt.Errorf("unable to close from file local store: %w", err)
+
+	f, err := os.OpenFile(c.tmpMetaLocalFilePath(), os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("unable to open file %q: %w", c.tmpMetaLocalFilePath(), err)
+	}
+	defer func() { _ = f.Close() }()
+
+	d, err := json.Marshal(allMeta)
+	if err != nil {
+		return fmt.Errorf("unable to marshal meta: %w", err)
+	}
+
+	if _, err := f.Write(d); err != nil {
+		return fmt.Errorf("unable to write file %q: %w", c.tmpMetaLocalFilePath(), err)
+	}
+
+	if err := os.Rename(c.tmpMetaLocalFilePath(), c.metaLocalFilePath()); err != nil {
+		return fmt.Errorf("unable to rename file %q to %q: %w", c.tmpMetaLocalFilePath(), c.metaLocalFilePath(), err)
 	}
 
 	return nil
@@ -195,4 +235,12 @@ func (c *Client) saveMeta() error {
 
 func (c Client) GetTargets() (data.TargetFiles, error) {
 	return c.Client.Targets()
+}
+
+func (c Client) metaLocalFilePath() string {
+	return filepath.Join(c.metaLocalStoreDir, "meta.json")
+}
+
+func (c Client) tmpMetaLocalFilePath() string {
+	return filepath.Join(c.metaLocalStoreDir, "meta.json.tmp")
 }
