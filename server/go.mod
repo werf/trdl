@@ -102,4 +102,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/theupdateframework/go-tuf => github.com/werf/3p-go-tuf v0.0.0-20220913183007-e39ddce8a96c
+replace github.com/theupdateframework/go-tuf => github.com/werf/3p-go-tuf v0.0.0-20220916152539-6f59db8c7ce8
