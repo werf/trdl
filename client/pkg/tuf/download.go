@@ -1,6 +1,7 @@
 package tuf
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 
@@ -40,6 +41,11 @@ func (c Client) Download(targetName string, destination tufClient.Destination) e
 	return c.Client.Download(tufUtil.NormalizeTarget(targetName), destination)
 }
 
-func (c Client) DownloadMetaUnsafe(targetName string, maxMetaSize int64) ([]byte, error) {
-	return c.Client.DownloadMetaUnsafe(tufUtil.NormalizeTarget(targetName), maxMetaSize)
+func (c Client) DownloadMeta(name string) ([]byte, error) {
+	ioReader, _, err := c.RemoteStore.GetMeta(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.ReadAll(ioReader)
 }

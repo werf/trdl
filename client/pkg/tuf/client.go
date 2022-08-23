@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/theupdateframework/go-tuf"
 	tufClient "github.com/theupdateframework/go-tuf/client"
 	leveldbstore "github.com/theupdateframework/go-tuf/client/leveldbstore"
 	"github.com/theupdateframework/go-tuf/data"
@@ -19,6 +18,7 @@ const metaLocalStoreDirLockName = "meta"
 
 type Client struct {
 	*tufClient.Client
+	RemoteStore        tufClient.RemoteStore
 	ReadOnlyLocalStore tufClient.LocalStore
 
 	repoUrl           string
@@ -92,6 +92,7 @@ func (c *Client) initTufClient() error {
 
 	c.Client = tufClient.NewClient(localMemory, remote)
 	c.ReadOnlyLocalStore = localMemory
+	c.RemoteStore = remote
 
 	return nil
 }
@@ -118,7 +119,7 @@ func (c *Client) setup(rootVersion int64, rootSha512 string) error {
 		rootBasename = fmt.Sprintf("%d.root.json", rootVersion)
 	}
 
-	jsonData, err := c.DownloadMetaUnsafe(rootBasename, tufClient.DefaultRootDownloadLimit)
+	jsonData, err := c.DownloadMeta(rootBasename)
 	if err != nil {
 		return fmt.Errorf("unable to download %q: %w", rootBasename, err)
 	}
@@ -126,11 +127,6 @@ func (c *Client) setup(rootVersion int64, rootSha512 string) error {
 	rootFileChecksum := util.Sha512Checksum(jsonData)
 	if rootFileChecksum != rootSha512 {
 		return fmt.Errorf("expected hash sum of the root file %q not matched", rootFileChecksum)
-	}
-
-	rootKeys, err := tuf.ParseRootKeys(jsonData)
-	if err != nil {
-		return fmt.Errorf("unable to parse root keys: %w", err)
 	}
 
 	if err := os.RemoveAll(c.metaLocalStoreDir); err != nil {
@@ -141,7 +137,7 @@ func (c *Client) setup(rootVersion int64, rootSha512 string) error {
 		return fmt.Errorf("unable to reinit tuf client: %w", err)
 	}
 
-	if err := c.Client.Init(rootKeys, len(rootKeys)); err != nil {
+	if err := c.Client.Init(jsonData); err != nil {
 		return err
 	}
 
@@ -153,7 +149,7 @@ func (c *Client) setup(rootVersion int64, rootSha512 string) error {
 }
 
 func (c *Client) Update() error {
-	if _, err := c.Client.Update(); err != nil && !tufClient.IsLatestSnapshot(err) {
+	if _, err := c.Client.Update(); err != nil {
 		return fmt.Errorf("unable to update tuf meta: %w", err)
 	}
 

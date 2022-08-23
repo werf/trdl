@@ -20,6 +20,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/avelino/slugify v0.0.0-20180501145920-855f152bd774 // indirect
 	github.com/aws/aws-sdk-go v1.30.27 // indirect
 	github.com/containerd/containerd v1.3.4 // indirect
@@ -35,9 +36,11 @@ require (
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.1.0 // indirect
 	github.com/go-git/go-git/v5 v5.3.0 // indirect
+	github.com/gofrs/flock v0.7.1 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/uuid v1.1.1 // indirect
 	github.com/gookit/color v1.4.2 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
@@ -50,6 +53,8 @@ require (
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
@@ -68,6 +73,7 @@ require (
 	github.com/otiai10/copy v1.7.0 // indirect
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rodaine/table v1.0.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/samber/lo v1.28.0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
@@ -75,6 +81,9 @@ require (
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
+	github.com/spf13/cobra v1.1.3 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/theupdateframework/go-tuf v0.0.0-20201230183259-aee6270feb55 // indirect
 	github.com/werf/lockgate v0.0.0-20210423043214-fd4df31c9ab0 // indirect
 	github.com/werf/logboek v0.5.4 // indirect
@@ -91,10 +100,12 @@ require (
 	google.golang.org/grpc v1.29.1 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+	mvdan.cc/xurls v1.1.0 // indirect
 )
 
 replace (
-	github.com/theupdateframework/go-tuf => github.com/werf/3p-go-tuf v0.0.0-20220913183007-e39ddce8a96c
+	github.com/theupdateframework/go-tuf => github.com/werf/3p-go-tuf v0.0.0-20220916152539-6f59db8c7ce8
 	github.com/werf/trdl/client v0.0.0 => ../client
 	github.com/werf/trdl/server v0.0.0 => ../server
 )

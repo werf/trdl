@@ -257,7 +257,7 @@ func isLocalFileUpToDate(path string, targetMeta data.TargetFileMeta) (bool, err
 		}
 	}()
 
-	localFileMeta, err := util2.GenerateTargetFileMeta(f, targetMeta.FileMeta.HashAlgorithms()...)
+	localFileMeta, err := util2.GenerateTargetFileMeta(f, targetMeta.FileMeta.Hashes.HashAlgorithms()...)
 	if err != nil {
 		return false, fmt.Errorf("unable to generate meta for local file %q: %w", path, err)
 	}
