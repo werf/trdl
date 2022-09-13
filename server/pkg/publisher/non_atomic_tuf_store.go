@@ -10,34 +10,33 @@ import (
 	"github.com/djherbis/buffer"
 	"github.com/djherbis/nio/v3"
 	"github.com/hashicorp/go-hclog"
+	"github.com/samber/lo"
 	"github.com/theupdateframework/go-tuf"
 	"github.com/theupdateframework/go-tuf/data"
-	"github.com/theupdateframework/go-tuf/sign"
+	"github.com/theupdateframework/go-tuf/pkg/keys"
 	"github.com/theupdateframework/go-tuf/util"
 )
 
-type TufRepoPrivKeys struct {
-	Root      *sign.PrivateKey `json:"root"`
-	Snapshot  *sign.PrivateKey `json:"snapshot"`
-	Targets   *sign.PrivateKey `json:"targets"`
-	Timestamp *sign.PrivateKey `json:"timestamp"`
-}
-
 type NonAtomicTufStore struct {
-	PrivKeys   TufRepoPrivKeys
 	Filesystem Filesystem
+	PrivKeys   TufRepoPrivKeys
 
 	stagedMeta  map[string]json.RawMessage
 	stagedFiles []string
 	logger      hclog.Logger
+
+	signerForKeyID map[string]keys.Signer
+	keyIDsForRole  map[string][]string
 }
 
 func NewNonAtomicTufStore(privKeys TufRepoPrivKeys, filesystem Filesystem, logger hclog.Logger) *NonAtomicTufStore {
 	return &NonAtomicTufStore{
-		PrivKeys:   privKeys,
-		Filesystem: filesystem,
-		stagedMeta: make(map[string]json.RawMessage),
-		logger:     logger,
+		Filesystem:     filesystem,
+		PrivKeys:       privKeys,
+		stagedMeta:     make(map[string]json.RawMessage),
+		logger:         logger,
+		signerForKeyID: make(map[string]keys.Signer),
+		keyIDsForRole:  make(map[string][]string),
 	}
 }
 
@@ -157,7 +156,7 @@ func (store *NonAtomicTufStore) StageTargetFile(ctx context.Context, targetPath 
 	return nil
 }
 
-func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[string]int, _ map[string]data.Hashes) error {
+func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[string]int64, _ map[string]data.Hashes) error {
 	store.logger.Debug("-- NonAtomicTufStore.Commit")
 	if consistentSnapshot {
 		panic("not supported")
@@ -183,50 +182,58 @@ func (store *NonAtomicTufStore) Commit(consistentSnapshot bool, versions map[str
 	return nil
 }
 
-func (store *NonAtomicTufStore) GetSigningKeys(role string) ([]sign.Signer, error) {
-	store.logger.Debug(fmt.Sprintf("-- NonAtomicTufStore.GetSigningKeys(%q) store.PrivKeys=%#v", role, store.PrivKeys))
-
-	toSigners := func(key *sign.PrivateKey) []sign.Signer {
-		if key != nil {
-			return []sign.Signer{key.Signer()}
-		}
-		return nil
-	}
-
-	switch role {
-	case "root":
-		return toSigners(store.PrivKeys.Root), nil
-
-	case "targets":
-		return toSigners(store.PrivKeys.Targets), nil
-
-	case "snapshot":
-		return toSigners(store.PrivKeys.Snapshot), nil
-
-	case "timestamp":
-		return toSigners(store.PrivKeys.Timestamp), nil
-
-	default:
-		panic(fmt.Sprintf("unknown role %q", role))
-	}
+func (store *NonAtomicTufStore) FileIsStaged(filename string) bool {
+	_, ok := store.stagedMeta[filename]
+	return ok
 }
 
-func (store *NonAtomicTufStore) SavePrivateKey(role string, key *sign.PrivateKey) error {
-	switch role {
-	case "root":
-		store.PrivKeys.Root = key
+func (store *NonAtomicTufStore) GetSigners(role string) ([]keys.Signer, error) {
+	keyIDs, ok := store.keyIDsForRole[role]
+	if ok {
+		return store.SignersForKeyIDs(keyIDs), nil
+	}
+	return nil, nil
+}
 
-	case "targets":
-		store.PrivKeys.Targets = key
+func (store *NonAtomicTufStore) SignersForKeyIDs(keyIDs []string) []keys.Signer {
+	signers := []keys.Signer{}
+	keyIDsSeen := map[string]struct{}{}
 
-	case "snapshot":
-		store.PrivKeys.Snapshot = key
+	for _, keyID := range keyIDs {
+		signer, ok := store.signerForKeyID[keyID]
+		if !ok {
+			continue
+		}
+		addSigner := false
 
-	case "timestamp":
-		store.PrivKeys.Timestamp = key
+		for _, skid := range signer.PublicData().IDs() {
+			if _, seen := keyIDsSeen[skid]; !seen {
+				addSigner = true
+			}
 
-	default:
-		panic(fmt.Sprintf("unknown role %q", role))
+			keyIDsSeen[skid] = struct{}{}
+		}
+
+		if addSigner {
+			signers = append(signers, signer)
+		}
+	}
+
+	return signers
+}
+
+func (store *NonAtomicTufStore) SaveSigner(role string, signer keys.Signer) error {
+	keyIDs := signer.PublicData().IDs()
+
+	for _, keyID := range keyIDs {
+		store.signerForKeyID[keyID] = signer
+	}
+
+	mergedKeyIDs := lo.Uniq[string](append(store.keyIDsForRole[role], keyIDs...))
+	store.keyIDsForRole[role] = mergedKeyIDs
+
+	if err := store.PrivKeys.SetKeyFromSigner(role, signer); err != nil {
+		return fmt.Errorf("unable to set private key for role %q: %w", role, err)
 	}
 
 	return nil
@@ -236,7 +243,7 @@ func (m *NonAtomicTufStore) Clean() error {
 	panic("not supported")
 }
 
-func computeMetadataPaths(consistentSnapshot bool, name string, versions map[string]int) []string {
+func computeMetadataPaths(consistentSnapshot bool, name string, versions map[string]int64) []string {
 	if consistentSnapshot {
 		panic("not supported")
 	}

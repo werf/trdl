@@ -9,8 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/hashicorp/go-hclog"
 	"github.com/theupdateframework/go-tuf"
-	"github.com/theupdateframework/go-tuf/data"
-	"github.com/theupdateframework/go-tuf/sign"
 
 	"github.com/werf/trdl/server/pkg/util"
 )
@@ -27,12 +25,19 @@ type TufRepoOptions struct {
 func NewRepositoryWithOptions(s3Options S3Options, tufRepoOptions TufRepoOptions, logger hclog.Logger) (*S3Repository, error) {
 	s3fs := NewS3Filesystem(s3Options.AwsConfig, s3Options.BucketName, logger)
 	tufStore := NewNonAtomicTufStore(tufRepoOptions.PrivKeys, s3fs, logger)
+
 	tufRepo, err := tuf.NewRepo(tufStore)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing tuf repo: %w", err)
 	}
 
-	return NewRepository(s3fs, tufStore, tufRepo, logger), nil
+	repository := NewRepository(s3fs, tufStore, tufRepo, logger)
+
+	if err := tufStore.PrivKeys.SetupStoreSigners(tufStore); err != nil {
+		return nil, fmt.Errorf("unable to set private keys into tuf store: %w", err)
+	}
+
+	return repository, nil
 }
 
 type S3Repository struct {
@@ -56,23 +61,18 @@ func (repository *S3Repository) SetPrivKeys(privKeys TufRepoPrivKeys) error {
 	repository.logger.Debug("-- S3Repository.SetPrivKeys")
 
 	repository.TufStore.PrivKeys = privKeys
-	repository.logger.Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys BEFORE AddPrivateKeyWithExpires: %#v\n", repository.TufStore.PrivKeys))
 
-	for _, desc := range []struct {
-		role string
-		key  *sign.PrivateKey
-	}{
-		{"root", privKeys.Root},
-		{"targets", privKeys.Targets},
-		{"snapshot", privKeys.Snapshot},
-		{"timestamp", privKeys.Timestamp},
-	} {
-		if err := repository.TufRepo.AddPrivateKeyWithExpires(desc.role, desc.key, data.DefaultExpires("root")); err != nil {
-			return fmt.Errorf("unable to add tuf repository private key for role %s: %w", desc.role, err)
-		}
+	repository.logger.Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys BEFORE AddPrivateKeyWithExpires: %#v\n", privKeys))
+
+	if err := privKeys.SetupStoreSigners(repository.TufStore); err != nil {
+		return fmt.Errorf("unable to set private keys into tuf store: %w", err)
 	}
 
-	repository.logger.Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys AFTER AddPrivateKeyWithExpires: %#v\n", repository.TufStore.PrivKeys))
+	if err := privKeys.SetupTufRepoSigners(repository.TufRepo); err != nil {
+		return fmt.Errorf("unable to set private keys into tuf repo: %w", err)
+	}
+
+	repository.logger.Debug(fmt.Sprintf("-- S3Repository.SetPrivKeys AFTER AddPrivateKeyWithExpires: %#v\n", privKeys))
 
 	return nil
 }
@@ -136,7 +136,7 @@ func (repository *S3Repository) UpdateTimestamps(_ context.Context, systemClock 
 }
 
 func (repository *S3Repository) CommitStaged(_ context.Context) error {
-	if err := repository.TufRepo.Snapshot(tuf.CompressionTypeNone); err != nil {
+	if err := repository.TufRepo.Snapshot(); err != nil {
 		return fmt.Errorf("tuf repo snapshot failed: %w", err)
 	}
 	if err := repository.TufRepo.Timestamp(); err != nil {
