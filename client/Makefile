@@ -20,10 +20,4 @@ fmt:
 lint:
 	GOOS=$(OS) GOARCH="$(GOARCH)" golangci-lint run ./... --config ../.golangci.yaml
 
-minio_up:
-	./scripts/minio/up.sh
-
-minio_down:
-	./scripts/minio/down.sh
-
 all: fmt lint
