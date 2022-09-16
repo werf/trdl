@@ -113,7 +113,10 @@ jobs:
 
       - name: Test
         working-directory: e2e
-        run: ginkgo -p -keepGoing -cover -coverpkg=../client/...,../server/... -outputdir=$TRDL_TEST_COVERAGE_DIR ./...
+        run: |
+          ls -la $TRDL_TEST_COVERAGE_DIR
+          ginkgo -p -keepGoing -cover -coverpkg=../client/...,../server/... -outputdir=$TRDL_TEST_COVERAGE_DIR ./...
+          ls -la $TRDL_TEST_COVERAGE_DIR
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@master
