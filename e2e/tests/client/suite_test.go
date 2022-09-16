@@ -17,13 +17,13 @@ func Test(t *testing.T) {
 	RunSpecs(t, "Client Suite")
 }
 
-const (
+var (
 	testRepoName = "test"
 
-	validRepoUrl     = "http://localhost:9000/test-project"
-	validRootVersion = "4"
-	validRootSHA512  = "67afb6eb389e2ec89017ff19f94caf1c9a78d79565553d155d93d0525b28f86f6ffb6a96f3c20c4b062b7e4b2498f20050d31fd057998ec01ea625a84a93ec7e"
-	validGroup       = "v0"
+	validRepoUrl     string
+	validRootVersion = "0"
+	validRootSHA512  = "951ca9cd3e55162a2e990a9d291d51684e2bf4e7537003cf40649f7612ac9db7f9a73ff8ceb05ac14eba32c706b30874cf21a98d01a02293149d0cbbdb1e4f99"
+	validGroup       = "0"
 )
 
 var (
@@ -34,8 +34,11 @@ var (
 	stubs          *gostub.Stubs
 )
 
-var _ = SynchronizedBeforeSuite(testutil.ComputeTrdlBinPath, func(computedPathToWerf []byte) {
-	trdlBinPath = string(computedPathToWerf)
+var _ = SynchronizedBeforeSuite(func() []byte {
+	tufRepoUP()
+	return testutil.ComputeTrdlBinPath()
+}, func(computedPathToTrdl []byte) {
+	trdlBinPath = string(computedPathToTrdl)
 
 	output := testutil.SucceedCommandOutputString(
 		"",
@@ -44,6 +47,35 @@ var _ = SynchronizedBeforeSuite(testutil.ComputeTrdlBinPath, func(computedPathTo
 	)
 	version := strings.TrimSpace(output)
 	trdlBinVersion = version
+})
+
+func tufRepoUP() {
+	fixturesDir := testutil.FixturePath("tuf_repo")
+	testutil.RunSucceedCommand(
+		"",
+		"docker-compose",
+		"--project-directory", fixturesDir,
+		"up", "--detach",
+	)
+
+	output := testutil.SucceedCommandOutputString(
+		"",
+		"docker-compose",
+		"--project-directory", fixturesDir,
+		"port", "server", "8080",
+	)
+	validRepoUrl = "http://" + strings.TrimSpace(output)
+}
+
+var _ = AfterSuite(func() {
+	fixturesDir := testutil.FixturePath("tuf_repo")
+
+	testutil.RunSucceedCommand(
+		"",
+		"docker-compose",
+		"--project-directory", fixturesDir,
+		"down",
+	)
 })
 
 var _ = BeforeEach(func() {
