@@ -17,10 +17,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Go 1.16
+      - name: Set up Go 1.18
         uses: actions/setup-go@v3
         with:
-          go-version: 1.16
+          go-version: 1.18
         id: go
 
       - name: Prepare environment

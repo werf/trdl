@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/theupdateframework/go-tuf/data"
 	"github.com/theupdateframework/go-tuf/encrypted"
-	"github.com/theupdateframework/go-tuf/sign"
 )
 
 type PersistedKeys struct {
@@ -14,14 +14,14 @@ type PersistedKeys struct {
 	Data      json.RawMessage `json:"data"`
 }
 
-func LoadKeys(r io.Reader, passphrase []byte) ([]*sign.PrivateKey, error) {
+func LoadKeys(r io.Reader, passphrase []byte) ([]*data.PrivateKey, error) {
 	pk := &PersistedKeys{}
 
 	if err := json.NewDecoder(r).Decode(pk); err != nil {
 		return nil, fmt.Errorf("error unmarshalling keys json data: %w", err)
 	}
 
-	var keys []*sign.PrivateKey
+	var keys []*data.PrivateKey
 
 	if !pk.Encrypted {
 		if err := json.Unmarshal(pk.Data, &keys); err != nil {

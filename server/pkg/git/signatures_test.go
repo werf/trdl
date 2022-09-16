@@ -3,8 +3,7 @@ package git
 import (
 	_ "embed"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/werf/trdl/server/pkg/testutil"
