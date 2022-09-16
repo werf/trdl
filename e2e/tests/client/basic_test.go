@@ -13,7 +13,7 @@ import (
 	"github.com/werf/trdl/server/pkg/testutil"
 )
 
-var _ = XDescribe("Basic", func() {
+var _ = Describe("Basic", func() {
 	It("add", func() {
 		testutil.RunSucceedCommand(
 			"",
@@ -40,9 +40,7 @@ var _ = XDescribe("Basic", func() {
 				"list",
 			)
 
-			Ω(output).Should(Equal(fmt.Sprintf(`Name  URL                                 Default Channel  
-%s  %s  %s           
-`, testRepoName, validRepoUrl, trdl.DefaultChannel)))
+			Ω(output).Should(ContainSubstring(fmt.Sprintf("%s  %s  %s", testRepoName, validRepoUrl, trdl.DefaultChannel)))
 		})
 
 		It("set-default-channel", func() {
