@@ -1,3 +1,7 @@
+priorityClassName:
+  _default: develop
+  production: production-medium
+
 host:
   production: trdl.dev
   _default: trdl.test.flant.com
