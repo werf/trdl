@@ -1,5 +1,17 @@
 # Changelog
 
+### [0.6.3](https://www.github.com/werf/trdl/compare/v0.6.1...v0.6.3) (2022-09-20)
+
+
+### Build System
+
+* **server:** fix module requires Go 1.18 ([bac9399](https://www.github.com/werf/trdl/commit/bac9399b51cd7abe1a169eb3ef7a12beae7394e1))
+
+
+### Miscellaneous Chores
+
+* release v0.6.3 ([d44a47c](https://www.github.com/werf/trdl/commit/d44a47cc170862ddef1189d2aa61dd4bb397a46b))
+
 ### [0.6.1](https://www.github.com/werf/trdl/compare/v0.6.0...v0.6.1) (2022-09-20)
 
 
