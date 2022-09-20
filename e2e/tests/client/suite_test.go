@@ -1,6 +1,8 @@
 package client
 
 import (
+	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -9,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prashantv/gostub"
 
+	"github.com/werf/trdl/client/pkg/util"
 	"github.com/werf/trdl/server/pkg/testutil"
 )
 
@@ -21,8 +24,8 @@ var (
 	testRepoName = "test"
 
 	validRepoUrl     string
-	validRootVersion = "0"
-	validRootSHA512  = "951ca9cd3e55162a2e990a9d291d51684e2bf4e7537003cf40649f7612ac9db7f9a73ff8ceb05ac14eba32c706b30874cf21a98d01a02293149d0cbbdb1e4f99"
+	validRootSHA512  string
+	validRootVersion string
 	validGroup       = "0"
 )
 
@@ -35,7 +38,7 @@ var (
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	tufRepoUP()
+	initTufRepo()
 	return testutil.ComputeTrdlBinPath()
 }, func(computedPathToTrdl []byte) {
 	trdlBinPath = string(computedPathToTrdl)
@@ -49,13 +52,13 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	trdlBinVersion = version
 })
 
-func tufRepoUP() {
+func initTufRepo() {
 	fixturesDir := testutil.FixturePath("tuf_repo")
 	testutil.RunSucceedCommand(
 		"",
 		"docker-compose",
 		"--project-directory", fixturesDir,
-		"up", "--detach",
+		"up", "--detach", "--build",
 	)
 
 	output := testutil.SucceedCommandOutputString(
@@ -65,6 +68,20 @@ func tufRepoUP() {
 		"port", "server", "8080",
 	)
 	validRepoUrl = "http://" + strings.TrimSpace(output)
+
+	// Get root.json SHA sum.
+	{
+		rootJsonURI := validRepoUrl + "/root.json"
+		resp, err := http.Get(rootJsonURI)
+		Ω(err).ShouldNot(HaveOccurred())
+		defer resp.Body.Close()
+
+		data, err := ioutil.ReadAll(resp.Body)
+		Ω(err).ShouldNot(HaveOccurred())
+
+		validRootVersion = "0"
+		validRootSHA512 = util.Sha512Checksum(data)
+	}
 }
 
 var _ = AfterSuite(func() {
