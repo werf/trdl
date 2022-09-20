@@ -1,4 +1,4 @@
-docker_image: golang:1.17-alpine@sha256:13919fb9091f6667cb375d5fdf016ecd6d3a5d5995603000d422b04583de4ef9
+docker_image: golang:1.19.1-alpine@sha256:ca4f0513119dfbdc65ae7b76b69688f0723ed00d9ecf9de68abbf6ed01ef11bf
 commands:
 - go install github.com/mitchellh/gox@8c3b2b9e647dc52457d6ee7b5adcf97e2bafe131
 - cd server && ./scripts/ci/build_release.sh {{ .Tag }} && cp -a release-build/{{ .Tag }}/* /result
