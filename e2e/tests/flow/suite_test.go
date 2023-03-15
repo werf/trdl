@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,8 +27,26 @@ var (
 	stubs       *gostub.Stubs
 )
 
-var _ = SynchronizedBeforeSuite(testutil.ComputeTrdlBinPath, func(computedPathToTrdl []byte) {
-	trdlBinPath = string(computedPathToTrdl)
+type SyncBeforeSuiteFirstFuncResult struct {
+	ComputedPathToTrdl string
+}
+
+var _ = SynchronizedBeforeSuite(func() []byte {
+	pathToTrdl := testutil.ComputeTrdlBinPath()
+
+	result := SyncBeforeSuiteFirstFuncResult{
+		ComputedPathToTrdl: pathToTrdl,
+	}
+
+	serializedResult, err := json.Marshal(result)
+	Ω(err).ShouldNot(HaveOccurred())
+
+	return serializedResult
+}, func(firstFuncResultSerialized []byte) {
+	var firstFuncResult SyncBeforeSuiteFirstFuncResult
+	Expect(json.Unmarshal(firstFuncResultSerialized, &firstFuncResult)).To(Succeed())
+
+	trdlBinPath = firstFuncResult.ComputedPathToTrdl
 })
 
 var _ = BeforeEach(func() {

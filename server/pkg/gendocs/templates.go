@@ -69,7 +69,7 @@ type MethodTemplateData struct {
 	Examples    []*MethodExampleTemplateData
 }
 
-func NewMethodTemplateData(name, path string, urlParameters []framework.OASParameter, methodDesc *framework.OASOperation) *MethodTemplateData {
+func NewMethodTemplateData(name, path string, urlParameters []framework.OASParameter, methodDesc *framework.OASOperation, pathComponentSchema *framework.OASSchema) *MethodTemplateData {
 	method := &MethodTemplateData{
 		Name: name,
 		Path: path,
@@ -90,6 +90,10 @@ func NewMethodTemplateData(name, path string, urlParameters []framework.OASParam
 		method.Parameters = append(method.Parameters, NewMethodParameterTemplateData(paramDesc, false))
 	}
 
+	var schemas []*framework.OASSchema
+	if (name == "POST" || name == "PUT") && pathComponentSchema != nil && pathComponentSchema.Type == "object" {
+		schemas = append(schemas, pathComponentSchema)
+	}
 	if methodDesc.RequestBody != nil {
 		keys := make([]string, 0, len(methodDesc.RequestBody.Content))
 		for k := range methodDesc.RequestBody.Content {
@@ -101,25 +105,29 @@ func NewMethodTemplateData(name, path string, urlParameters []framework.OASParam
 			content := methodDesc.RequestBody.Content[contentType]
 
 			if contentType == "application/json" && content.Schema != nil && content.Schema.Type == "object" {
-				props := make([]string, 0, len(content.Schema.Properties))
-				for k := range content.Schema.Properties {
-					props = append(props, k)
-				}
-				sort.Strings(props)
+				schemas = append(schemas, content.Schema)
+			}
+		}
+	}
 
-				for _, propName := range props {
-					propSchema := content.Schema.Properties[propName]
+	for _, schema := range schemas {
+		props := make([]string, 0, len(schema.Properties))
+		for k := range schema.Properties {
+			props = append(props, k)
+		}
+		sort.Strings(props)
 
-					isRequired := false
-					for _, name := range content.Schema.Required {
-						if name == propName {
-							isRequired = true
-						}
-					}
+		for _, propName := range props {
+			propSchema := schema.Properties[propName]
 
-					method.Parameters = append(method.Parameters, NewMethodParameterTemplateDataFromSchema(propName, propSchema.Description, false, isRequired, propSchema))
+			isRequired := false
+			for _, name := range schema.Required {
+				if name == propName {
+					isRequired = true
 				}
 			}
+
+			method.Parameters = append(method.Parameters, NewMethodParameterTemplateDataFromSchema(propName, propSchema.Description, false, isRequired, propSchema))
 		}
 	}
 
@@ -196,16 +204,18 @@ func NewBackendTemplateData(backendDoc *framework.OASDocument, frameworkBackendR
 			return nil, fmt.Errorf("required path %q description", rawPathName)
 		}
 
+		pathComponentSchema := backendDoc.Components.Schemas[constructRequestName(rawPathName)]
+
 		if pathDesc.Post != nil {
-			path.Methods = append(path.Methods, NewMethodTemplateData("POST", pathName, pathDesc.Parameters, pathDesc.Post))
+			path.Methods = append(path.Methods, NewMethodTemplateData("POST", pathName, pathDesc.Parameters, pathDesc.Post, pathComponentSchema))
 		}
 
 		if pathDesc.Get != nil {
-			path.Methods = append(path.Methods, NewMethodTemplateData("GET", pathName, pathDesc.Parameters, pathDesc.Get))
+			path.Methods = append(path.Methods, NewMethodTemplateData("GET", pathName, pathDesc.Parameters, pathDesc.Get, pathComponentSchema))
 		}
 
 		if pathDesc.Delete != nil {
-			path.Methods = append(path.Methods, NewMethodTemplateData("DELETE", pathName, pathDesc.Parameters, pathDesc.Delete))
+			path.Methods = append(path.Methods, NewMethodTemplateData("DELETE", pathName, pathDesc.Parameters, pathDesc.Delete, pathComponentSchema))
 		}
 
 		backendTemplateData.Paths = append(backendTemplateData.Paths, path)
@@ -322,4 +332,22 @@ func ExecuteTemplate(tpl string, data interface{}) (string, error) {
 	}
 
 	return strings.TrimSpace(buf.String()), nil
+}
+
+func constructRequestName(path string) string {
+	var b strings.Builder
+
+	// split the path by / _ - separators
+	for _, token := range strings.FieldsFunc(path, func(r rune) bool {
+		return r == '/' || r == '_' || r == '-'
+	}) {
+		// exclude request fields
+		if !strings.ContainsAny(token, "{}") {
+			b.WriteString(strings.Title(token))
+		}
+	}
+
+	b.WriteString("Request")
+
+	return b.String()
 }

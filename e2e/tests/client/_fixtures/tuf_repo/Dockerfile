@@ -1,6 +1,6 @@
-FROM golang:1.19 as tuf_repo
+FROM golang:1.20.2 as tuf_repo
 
-RUN go install github.com/theupdateframework/go-tuf/cmd/tuf@v0.5.0
+RUN go install github.com/theupdateframework/go-tuf/cmd/tuf@v0.5.2
 
 RUN mkdir /workspace
 WORKDIR /workspace
@@ -9,10 +9,10 @@ ENV TUF_ROOT_PASSPHRASE="foobar" \
     TUF_TARGETS_PASSPHRASE="foobar" \
     TUF_SNAPSHOT_PASSPHRASE="foobar" \
     TUF_TIMESTAMP_PASSPHRASE="foobar"
-RUN tuf gen-key root \
-        && tuf gen-key targets \
-        && tuf gen-key snapshot \
-        && tuf gen-key timestamp \
+RUN tuf gen-key --expires 9999 root \
+        && tuf gen-key --expires 9999 targets \
+        && tuf gen-key --expires 9999 snapshot \
+        && tuf gen-key --expires 9999 timestamp \
         && tuf sign root.json
 
 COPY staged /workspace/staged

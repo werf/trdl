@@ -26,7 +26,7 @@ func GetTempDir() string {
 	return dir
 }
 
-func ComputeTrdlBinPath() []byte {
+func ComputeTrdlBinPath() string {
 	binPath := os.Getenv("TRDL_TEST_BINARY_PATH")
 	if binPath == "" {
 		var err error
@@ -34,7 +34,7 @@ func ComputeTrdlBinPath() []byte {
 		Ω(err).ShouldNot(HaveOccurred())
 	}
 
-	return []byte(binPath)
+	return binPath
 }
 
 func TrdlBinArgs(userArgs ...string) []string {

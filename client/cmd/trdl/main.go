@@ -26,6 +26,9 @@ func rootCmd() *cobra.Command {
 		Long:          "The universal package manager for delivering your software updates securely from a TUF repository (more details on https://trdl.dev)",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd: true,
+		},
 	}
 
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
