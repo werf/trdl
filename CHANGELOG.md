@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.6.5](https://www.github.com/werf/trdl/compare/v0.6.4...v0.6.5) (2023-03-17)
+
+
+### Bug Fixes
+
+* **deps:** update logboek and lockgate ([5183b51](https://www.github.com/werf/trdl/commit/5183b516c80607cd2c2a38f2f3c945af5bc719ed))
+
 ### [0.6.4](https://www.github.com/werf/trdl/compare/v0.6.3...v0.6.4) (2023-03-17)
 
 
