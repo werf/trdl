@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.6.4](https://www.github.com/werf/trdl/compare/v0.6.3...v0.6.4) (2023-03-17)
+
+
+### Bug Fixes
+
+* update all dependencies ([777331d](https://www.github.com/werf/trdl/commit/777331db23b5513729ceecd457918d00beac30a1))
+
 ### [0.6.3](https://www.github.com/werf/trdl/compare/v0.6.1...v0.6.3) (2022-09-20)
 
 
