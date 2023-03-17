@@ -108,6 +108,9 @@ func getTrdlBackendGendocsHandle(ctx context.Context) (gendocs.BackendHandle, er
 		System: &logical.StaticSystemView{
 			DefaultLeaseTTLVal: time.Hour * 12,
 			MaxLeaseTTLVal:     time.Hour * 24,
+			PluginEnvironment: &logical.PluginEnvironment{
+				VaultVersion: "1.13.0",
+			},
 		},
 		StorageView: &logical.InmemStorage{},
 	}

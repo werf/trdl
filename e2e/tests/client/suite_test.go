@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -25,7 +26,7 @@ var (
 
 	validRepoUrl     string
 	validRootSHA512  string
-	validRootVersion string
+	validRootVersion = "0"
 	validGroup       = "0"
 )
 
@@ -37,23 +38,15 @@ var (
 	stubs          *gostub.Stubs
 )
 
+type SyncBeforeSuiteFirstFuncResult struct {
+	ValidRepoURL       string
+	ValidRootSHA512    string
+	ComputedPathToTrdl string
+}
+
 var _ = SynchronizedBeforeSuite(func() []byte {
-	initTufRepo()
-	return testutil.ComputeTrdlBinPath()
-}, func(computedPathToTrdl []byte) {
-	trdlBinPath = string(computedPathToTrdl)
-
-	output := testutil.SucceedCommandOutputString(
-		"",
-		trdlBinPath,
-		"version",
-	)
-	version := strings.TrimSpace(output)
-	trdlBinVersion = version
-})
-
-func initTufRepo() {
 	fixturesDir := testutil.FixturePath("tuf_repo")
+
 	testutil.RunSucceedCommand(
 		"",
 		"docker-compose",
@@ -67,11 +60,11 @@ func initTufRepo() {
 		"--project-directory", fixturesDir,
 		"port", "server", "8080",
 	)
-	validRepoUrl = "http://" + strings.TrimSpace(output)
+	repoUrl := "http://" + strings.TrimSpace(output)
 
-	// Get root.json SHA sum.
+	var rootSHA512 string
 	{
-		rootJsonURI := validRepoUrl + "/root.json"
+		rootJsonURI := repoUrl + "/root.json"
 		resp, err := http.Get(rootJsonURI)
 		Ω(err).ShouldNot(HaveOccurred())
 		defer resp.Body.Close()
@@ -79,21 +72,51 @@ func initTufRepo() {
 		data, err := ioutil.ReadAll(resp.Body)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		validRootVersion = "0"
-		validRootSHA512 = util.Sha512Checksum(data)
+		rootSHA512 = util.Sha512Checksum(data)
 	}
-}
 
-var _ = AfterSuite(func() {
-	fixturesDir := testutil.FixturePath("tuf_repo")
+	pathToTrdl := testutil.ComputeTrdlBinPath()
 
-	testutil.RunSucceedCommand(
+	result := SyncBeforeSuiteFirstFuncResult{
+		ValidRepoURL:       repoUrl,
+		ValidRootSHA512:    rootSHA512,
+		ComputedPathToTrdl: pathToTrdl,
+	}
+
+	serializedResult, err := json.Marshal(result)
+	Ω(err).ShouldNot(HaveOccurred())
+
+	return serializedResult
+}, func(firstFuncResultSerialized []byte) {
+	var firstFuncResult SyncBeforeSuiteFirstFuncResult
+	Expect(json.Unmarshal(firstFuncResultSerialized, &firstFuncResult)).To(Succeed())
+
+	validRepoUrl = firstFuncResult.ValidRepoURL
+	validRootSHA512 = firstFuncResult.ValidRootSHA512
+	trdlBinPath = firstFuncResult.ComputedPathToTrdl
+
+	output := testutil.SucceedCommandOutputString(
 		"",
-		"docker-compose",
-		"--project-directory", fixturesDir,
-		"down",
+		trdlBinPath,
+		"version",
 	)
+	version := strings.TrimSpace(output)
+	trdlBinVersion = version
 })
+
+var _ = SynchronizedAfterSuite(
+	func() {},
+	func() {
+		fixturesDir := testutil.FixturePath("tuf_repo")
+
+		testutil.RunSucceedCommand(
+			"",
+			"docker-compose",
+			"--project-directory", fixturesDir,
+			"down",
+		)
+	},
+)
 
 var _ = BeforeEach(func() {
 	stubs = gostub.New()
