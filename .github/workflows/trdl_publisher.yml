@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - "**/trdl_channels.yaml"
+  workflow_dispatch:
 
 jobs:
   publish:

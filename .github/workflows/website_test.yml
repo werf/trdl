@@ -2,6 +2,7 @@ name: Test website
 on:
   pull_request:
     types: [labeled, synchronize]
+  workflow_dispatch:
 
 env:
   WERF_REPO: "ghcr.io/${{ github.repository_owner }}/trdl"

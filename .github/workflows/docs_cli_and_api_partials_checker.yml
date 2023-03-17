@@ -5,6 +5,7 @@ on:
       - '.github/workflows/docs_cli_and_api_partials_checker.yml'
       - 'client/cmd/**'
       - 'server/**'
+  workflow_dispatch:
 
 jobs:
   check:
