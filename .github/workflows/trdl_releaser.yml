@@ -1,6 +1,7 @@
 name: Trdl releaser
 on:
   create:
+  workflow_dispatch:
 
 jobs:
   release:

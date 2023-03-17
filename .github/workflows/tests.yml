@@ -6,10 +6,12 @@ on:
       - 'client/scripts/minio'
       - '.github/workflows/tests.yml'
       - '**/*.go'
+      - go.mod
   schedule:
     - cron: '0 8 * * *'
   repository_dispatch:
     types: [ tests ]
+  workflow_dispatch:
 
 jobs:
 

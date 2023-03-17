@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/website_converge.yml'
       - 'docs/**'
+  workflow_dispatch:
 
 env:
   WERF_REPO: "ghcr.io/${{ github.repository_owner }}/trdl"

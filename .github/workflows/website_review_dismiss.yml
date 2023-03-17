@@ -2,6 +2,7 @@ name: Review env Dismiss
 on:
   pull_request:
     types: [closed, unlabeled]
+  workflow_dispatch:
 
 env:
   WERF_REPO: "ghcr.io/${{ github.repository_owner }}/trdl"
