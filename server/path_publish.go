@@ -253,7 +253,7 @@ func ValidatePublishConfig(ctx context.Context, publisher publisher.Interface, p
 			}
 
 			switch channel.Name {
-			case "alpha", "beta", "ea", "stable", "rock-solid":
+			case "dev", "alpha", "beta", "ea", "stable", "rock-solid":
 			default:
 				return NewErrIncorrectChannelName(channel.Name)
 			}
@@ -303,7 +303,7 @@ func ValidatePublishConfig(ctx context.Context, publisher publisher.Interface, p
 }
 
 func NewErrIncorrectChannelName(chnl string) error {
-	return fmt.Errorf(`got incorrect channel name %q: expected "alpha", "beta", "ea", "stable" or "rock-solid"`, chnl)
+	return fmt.Errorf(`got incorrect channel name %q: expected "dev", "alpha", "beta", "ea", "stable" or "rock-solid"`, chnl)
 }
 
 func cloneGitRepositoryBranch(url, gitBranch, username, password string) (*git.Repository, error) {

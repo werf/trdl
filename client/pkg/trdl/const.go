@@ -3,6 +3,7 @@ package trdl
 import "time"
 
 const (
+	ChannelDev       = "dev"
 	ChannelAlpha     = "alpha"
 	ChannelBeta      = "beta"
 	ChannelEA        = "ea"
@@ -21,6 +22,7 @@ const (
 )
 
 var Channels = []string{
+	ChannelDev,
 	ChannelAlpha,
 	ChannelBeta,
 	ChannelEA,
