@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://www.github.com/werf/trdl/compare/v0.6.5...v0.7.0) (2023-09-13)
+
+
+### Features
+
+* support dev channel ([fd33299](https://www.github.com/werf/trdl/commit/fd33299ce34a05cb8cfb507e2b8e755529c27bef))
+
 ### [0.6.5](https://www.github.com/werf/trdl/compare/v0.6.4...v0.6.5) (2023-03-17)
 
 
