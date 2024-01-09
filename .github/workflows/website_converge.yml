@@ -14,11 +14,11 @@ jobs:
 
   converge:
     name: Converge site to Production
-    runs-on: tfprod-trdl
+    runs-on: ubuntu-latest-4-cores
     steps:
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -26,9 +26,9 @@ jobs:
       uses: werf/actions/converge@v1.2
       with:
         env: production
+        kube-config-base64-data: ${{ secrets.KUBECONFIG_BASE64_PROD }}
       env:
         WERF_DIR: "docs"
-        WERF_KUBE_CONTEXT: prod
 
   notification:
     name: Notification
