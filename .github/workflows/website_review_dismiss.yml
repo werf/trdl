@@ -11,12 +11,12 @@ jobs:
 
   dismiss:
     name: Dismiss
-    runs-on: tfprod-trdl
+    runs-on: ubuntu-latest-4-cores
     if: github.event.label.name == 'review docs' || contains( github.event.pull_request.labels.*.name, 'review docs' )
     steps:
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -25,7 +25,7 @@ jobs:
       continue-on-error: true
       with:
         env: review-${{ github.event.number }}
+        kube-config-base64-data: ${{ secrets.KUBECONFIG_BASE64_DEV }}
       env:
         WERF_DIR: "docs"
-        WERF_KUBE_CONTEXT: dev
         WERF_WITH_NAMESPACE: true
