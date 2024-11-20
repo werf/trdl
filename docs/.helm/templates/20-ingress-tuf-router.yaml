@@ -8,8 +8,8 @@ kind: Ingress
 metadata:
   name: tuf-router
   annotations:
-    kubernetes.io/ingress.class: "nginx"
 spec:
+  ingressClassName: nginx
   tls:
   - hosts:
       - {{ $host }}
