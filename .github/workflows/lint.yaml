@@ -2,7 +2,7 @@ name: Lint
 on:
   push:
     paths:
-      - '**/*.go'
+      - "**/*.go"
   workflow_dispatch:
 
 jobs:
@@ -15,7 +15,7 @@ jobs:
       max-parallel: 6
       fail-fast: false
       matrix:
-        directory: [ "client", "server", "e2e" ]
+        directory: ["client", "server", "e2e"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

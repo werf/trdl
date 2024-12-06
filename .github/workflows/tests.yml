@@ -2,29 +2,27 @@ name: Tests
 on:
   push:
     paths:
-      - 'client/scripts/ci'
-      - 'client/scripts/minio'
-      - '.github/workflows/tests.yml'
-      - '**/*.go'
+      - "client/scripts/ci"
+      - "client/scripts/minio"
+      - ".github/workflows/tests.yml"
+      - "**/*.go"
       - go.mod
   schedule:
-    - cron: '0 8 * * *'
+    - cron: "0 8 * * *"
   repository_dispatch:
-    types: [ tests ]
+    types: [tests]
   workflow_dispatch:
 
 jobs:
-
   tests:
     name: Tests
     strategy:
       fail-fast: false
       matrix:
-        directory: [ server ]
-        os: [ ubuntu-latest ]
+        directory: [server]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -39,20 +37,20 @@ jobs:
           export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/tests/${{ matrix.os }}/${{ matrix.directory }}
           mkdir -p $TRDL_TEST_COVERAGE_DIR
           echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
-          
+
           # git user
           ./e2e/scripts/ci/git.sh
-          
+
           # install gpg
           sudo apt-get update
           sudo apt-get install gpg
-          
+
           # install git-signatures
           git clone https://github.com/werf/3p-git-signatures.git
           cd 3p-git-signatures
           make install
           echo "~/.local/bin" >> $GITHUB_PATH
-          
+
           # install ginkgo
           go install github.com/onsi/ginkgo/v2/ginkgo@latest
         shell: bash
@@ -72,10 +70,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -100,11 +97,11 @@ jobs:
 
           # git user
           ./scripts/ci/git.sh
-          
+
           # install gpg
           sudo apt-get update
           sudo apt-get install gpg
-          
+
           # install git-signatures
           git clone https://github.com/werf/3p-git-signatures.git
           cd 3p-git-signatures
@@ -130,7 +127,6 @@ jobs:
       - e2e_tests
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -181,13 +177,8 @@ jobs:
     if: always()
     needs: upload_coverage
     runs-on: ubuntu-latest
-    steps:
-
-      - uses: technote-space/workflow-conclusion-action@v2
-
-      - name: Notify
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: ${{ env.WORKFLOW_CONCLUSION }}
-          MSG_MINIMAL: "ref,actions url"
+    uses: ./.github/workflows/_notification.yml
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}

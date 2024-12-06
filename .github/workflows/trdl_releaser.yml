@@ -9,38 +9,33 @@ jobs:
     name: Perform trdl release using trdl server
     runs-on: ubuntu-latest
     steps:
-    - name: Release client
-      uses: werf/trdl-vault-actions/release@main
-      with:
-        vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
-        project-name: trdl
-        git-tag: ${{ github.event.ref }}
-        vault-auth-method: approle
-        vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID }}
-        vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID }}
+      - name: Release client
+        uses: werf/trdl-vault-actions/release@main
+        with:
+          vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
+          project-name: trdl
+          git-tag: ${{ github.event.ref }}
+          vault-auth-method: approle
+          vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID }}
 
-    - name: Release server
-      uses: werf/trdl-vault-actions/release@main
-      with:
-        vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
-        project-name: trdl-server
-        git-tag: ${{ github.event.ref }}
-        vault-auth-method: approle
-        vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_SERVER }}
-        vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_SERVER }}
+      - name: Release server
+        uses: werf/trdl-vault-actions/release@main
+        with:
+          vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
+          project-name: trdl-server
+          git-tag: ${{ github.event.ref }}
+          vault-auth-method: approle
+          vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_SERVER }}
+          vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_SERVER }}
 
   notification:
     name: Notification
     if: ${{ always() && startsWith(github.ref, 'refs/tags/v') }}
     needs: release
     runs-on: ubuntu-latest
-    steps:
-
-      - uses: technote-space/workflow-conclusion-action@v2
-
-      - name: Notify
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: ${{ env.WORKFLOW_CONCLUSION }}
-          MSG_MINIMAL: "ref,actions url"
+    uses: ./.github/workflows/_notification.yml
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}

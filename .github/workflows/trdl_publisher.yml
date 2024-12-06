@@ -12,36 +12,31 @@ jobs:
     name: Publish release channels using trdl server
     runs-on: ubuntu-latest
     steps:
-    - name: Publish client channels
-      uses: werf/trdl-vault-actions/publish@main
-      with:
-        vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
-        project-name: trdl
-        vault-auth-method: approle
-        vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID }}
-        vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID }}
+      - name: Publish client channels
+        uses: werf/trdl-vault-actions/publish@main
+        with:
+          vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
+          project-name: trdl
+          vault-auth-method: approle
+          vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID }}
 
-    - name: Publish server channels
-      uses: werf/trdl-vault-actions/publish@main
-      with:
-        vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
-        project-name: trdl-server
-        vault-auth-method: approle
-        vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_SERVER }}
-        vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_SERVER }}
+      - name: Publish server channels
+        uses: werf/trdl-vault-actions/publish@main
+        with:
+          vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
+          project-name: trdl-server
+          vault-auth-method: approle
+          vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_SERVER }}
+          vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_SERVER }}
 
   notification:
     name: Notification
     if: always()
     needs: publish
     runs-on: ubuntu-latest
-    steps:
-
-      - uses: technote-space/workflow-conclusion-action@v2
-
-      - name: Notify
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: ${{ env.WORKFLOW_CONCLUSION }}
-          MSG_MINIMAL: "ref,actions url"
+    uses: ./.github/workflows/_notification.yml
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}

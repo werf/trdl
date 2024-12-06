@@ -15,7 +15,6 @@ jobs:
       matrix:
         lang: [ru, en]
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 
