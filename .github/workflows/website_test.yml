@@ -8,22 +8,20 @@ env:
   WERF_REPO: "ghcr.io/${{ github.repository_owner }}/trdl"
 
 jobs:
-
   converge:
     name: Converge to Test
     runs-on: ubuntu-latest-4-cores
     if: github.event.label.name == 'test docs' || contains( github.event.pull_request.labels.*.name, 'test docs' )
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Converge
-      uses: werf/actions/converge@v1.2
-      with:
-        env: test
-        kube-config-base64-data: ${{ secrets.KUBECONFIG_BASE64_DEV }}
-      env:
-        WERF_DIR: "docs"
+      - name: Converge
+        uses: werf/actions/converge@v1.2
+        with:
+          env: test
+          kube-config-base64-data: ${{ secrets.KUBECONFIG_BASE64_DEV }}
+        env:
+          WERF_DIR: "docs"
