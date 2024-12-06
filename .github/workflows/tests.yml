@@ -176,7 +176,6 @@ jobs:
     name: Notification
     if: always()
     needs: upload_coverage
-    runs-on: ubuntu-latest
     uses: ./.github/workflows/_notification.yml
     secrets:
       loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}

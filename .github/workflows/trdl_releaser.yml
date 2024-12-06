@@ -33,7 +33,6 @@ jobs:
     name: Notification
     if: ${{ always() && startsWith(github.ref, 'refs/tags/v') }}
     needs: release
-    runs-on: ubuntu-latest
     uses: ./.github/workflows/_notification.yml
     secrets:
       loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
