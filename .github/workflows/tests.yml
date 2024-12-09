@@ -138,7 +138,7 @@ jobs:
           go-version-file: e2e/go.mod
 
       - name: Download coverage artifact
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v3
         with:
           name: tests_coverage
           path: tests_coverage
