@@ -8,7 +8,7 @@ services:
       - "9000"
     command: server /data
     networks:
-    - minio-net
+      - minio-net
 
   mc:
     image: minio/mc@sha256:f78c05169b54f191ab407a8e4d746a2b1f65a047936ba0e51885504912c9595e
@@ -17,4 +17,4 @@ services:
     environment:
       MC_HOST_main: http://minioadmin:minioadmin@minio:9000
     networks:
-    - minio-net
+      - minio-net
