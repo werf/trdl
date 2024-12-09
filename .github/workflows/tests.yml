@@ -62,7 +62,7 @@ jobs:
         run: ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v3
         with:
           name: tests_coverage
           path: tests_coverage
@@ -117,7 +117,7 @@ jobs:
         run: ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v3
         with:
           name: tests_coverage
           path: tests_coverage
