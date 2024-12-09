@@ -1,6 +1,6 @@
 module github.com/werf/trdl/server
 
-go 1.20
+go 1.23.2
 
 require (
 	github.com/Masterminds/goutils v1.1.1
