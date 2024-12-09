@@ -112,9 +112,6 @@ jobs:
 
           go install github.com/onsi/ginkgo/v2/ginkgo@latest
 
-      - name: check
-        run : docker compose version
-
       - name: Test
         working-directory: e2e
         run: ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
