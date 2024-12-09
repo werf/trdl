@@ -57,9 +57,6 @@ jobs:
           go install github.com/onsi/ginkgo/v2/ginkgo@latest
         shell: bash
 
-      - name: check
-        run : echo docker compose version
-
       - name: Test
         working-directory: ${{ matrix.directory }}
         run: ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
@@ -114,6 +111,9 @@ jobs:
           echo "~/.local/bin" >> $GITHUB_PATH
 
           go install github.com/onsi/ginkgo/v2/ginkgo@latest
+
+      - name: check
+        run : docker compose version
 
       - name: Test
         working-directory: e2e
