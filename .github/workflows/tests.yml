@@ -54,7 +54,7 @@ jobs:
           echo "~/.local/bin" >> $GITHUB_PATH
 
           # install ginkgo
-          go install github.com/onsi/ginkgo/v2/ginkgo@latest
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.22.0
         shell: bash
 
       - name: Test
@@ -110,7 +110,7 @@ jobs:
           make install
           echo "~/.local/bin" >> $GITHUB_PATH
 
-          go install github.com/onsi/ginkgo/v2/ginkgo@latest
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.22.0
 
       - name: Test
         working-directory: e2e
