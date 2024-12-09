@@ -142,7 +142,7 @@ var _ = Describe("Complete cycle", func() {
 	composeUpMinio := func() {
 		testutil.RunSucceedCommand(
 			testDir,
-			"docker-compose",
+			"docker compose",
 			"up", "--detach",
 		)
 	}
@@ -150,19 +150,19 @@ var _ = Describe("Complete cycle", func() {
 	composeAddMinioRepo := func() {
 		testutil.RunSucceedCommand(
 			testDir,
-			"docker-compose",
+			"docker compose",
 			"run", "mc", "mb", "main/repo",
 		)
 
 		testutil.RunSucceedCommand(
 			testDir,
-			"docker-compose",
+			"docker compose",
 			"run", "mc", "policy", "set", "download", "main/repo",
 		)
 
 		output := testutil.SucceedCommandOutputString(
 			testDir,
-			"docker-compose",
+			"docker compose",
 			"port", "minio", "9000",
 		)
 		minioAddress = "http://" + strings.TrimSpace(output)
@@ -172,7 +172,7 @@ var _ = Describe("Complete cycle", func() {
 	composeDownMinio := func() {
 		testutil.RunSucceedCommand(
 			testDir,
-			"docker-compose",
+			"docker compose",
 			"down",
 		)
 	}
