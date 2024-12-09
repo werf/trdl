@@ -1,6 +1,8 @@
 module github.com/werf/trdl/e2e
 
-go 1.20
+go 1.23
+
+toolchain go1.23.2
 
 require (
 	github.com/hashicorp/go-hclog v1.4.0
