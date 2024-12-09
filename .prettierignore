@@ -1,0 +1,4 @@
+docs/.helm
+docs/_data/sidebars
+werf.yaml
+docs/_data/breadcrumbs.yml

@@ -14,7 +14,7 @@ import (
 )
 
 func Test(t *testing.T) {
-	testutil.MeetsRequirementTools([]string{"docker", "docker-compose", "git", "git-signatures", "gpg"})
+	testutil.MeetsRequirementTools([]string{"docker", "git", "git-signatures", "gpg"})
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Flow Suite")
 }
