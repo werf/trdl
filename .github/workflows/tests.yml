@@ -1,6 +1,7 @@
 name: Tests
 on:
   push:
+    branches: [main]
     paths:
       - "client/scripts/ci"
       - "client/scripts/minio"
@@ -9,6 +10,8 @@ on:
       - go.mod
   schedule:
     - cron: "0 8 * * *"
+  pull_request:
+    types: [labeled]
   repository_dispatch:
     types: [tests]
   workflow_dispatch:
