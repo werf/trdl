@@ -3,45 +3,37 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/workflows/website_converge.yml'
-      - 'docs/**'
+      - ".github/workflows/website_converge.yml"
+      - "docs/**"
   workflow_dispatch:
 
 env:
   WERF_REPO: "ghcr.io/${{ github.repository_owner }}/trdl"
 
 jobs:
-
   converge:
     name: Converge site to Production
     runs-on: ubuntu-latest-4-cores
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Converge
-      uses: werf/actions/converge@v1.2
-      with:
-        env: production
-        kube-config-base64-data: ${{ secrets.KUBECONFIG_BASE64_PROD }}
-      env:
-        WERF_DIR: "docs"
+      - name: Converge
+        uses: werf/actions/converge@v1.2
+        with:
+          env: production
+          kube-config-base64-data: ${{ secrets.KUBECONFIG_BASE64_PROD }}
+        env:
+          WERF_DIR: "docs"
 
   notification:
     name: Notification
     if: always()
     needs: converge
-    runs-on: ubuntu-latest
-    steps:
-
-      - uses: technote-space/workflow-conclusion-action@v2
-
-      - name: Notify
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: ${{ env.WORKFLOW_CONCLUSION }}
-          MSG_MINIMAL: "ref,actions url"
+    uses: ./.github/workflows/_notification.yml
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
