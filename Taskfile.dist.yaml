@@ -2,6 +2,14 @@ version: "3"
 
 silent: true
 
+vars:
+  version: "0.0.0"
+  os: "{{OS}}"
+  arch: '{{ternary "arm64" ARCH (eq ARCH "arm")}}'
+  mode: '{{ternary "cgo" "go" (eq .os "linux")}}'
+  cgoTags: "dfrunsecurity dfrunnetwork dfrunmount dfssh containers_image_openpgp osusergo exclude_graphdriver_devicemapper netgo no_devmapper static_build cni"
+  goTags: "dfrunsecurity dfrunnetwork dfrunmount dfssh containers_image_openpgp"
+
 tasks:
   sign:
     desc: 'Sign last version tag + origin/main and push signatures. Important vars: "refs".'
@@ -15,3 +23,23 @@ tasks:
           git signatures show {{.CLI_ARGS}} $ref
         done
       - git signatures push {{.CLI_ARGS}}
+
+  deps:install:prettier:
+    desc: "Install prettier."
+    cmds:
+      - npm install -g prettier
+
+  lint:
+    desc: 'Run all linters in parallel. Important vars: "paths".'
+    deps:
+      - lint:prettier
+
+  lint:prettier:
+    desc: "Check if prettier-formatted."
+    deps:
+      - lint:prettier:yaml
+
+  lint:prettier:yaml:
+    desc: "Check if yaml files are prettier-formatted."
+    cmds:
+      - prettier -c "**/*.yaml" "**/*.yml"

@@ -10,26 +10,26 @@ site_description: Deliver your software continuously & securely.
 github_repo_path: /werf/trdl
 
 exclude:
-- .gitignore
-- Gemfile
-- Gemfile.lock
-- werf.yaml
-- pages_ru/
+  - .gitignore
+  - Gemfile
+  - Gemfile.lock
+  - werf.yaml
+  - pages_ru/
 
 highlighter: rouge
 
 plugins:
-- jekyll-assets
+  - jekyll-assets
 
 markdown: kramdown
 kramdown:
- input: GFM
- hard_wrap: false
- syntax_highlighter: rouge
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
 
 breadcrumbs:
   root:
-    hide: false  # show breadcrumbs on root/home page
+    hide: false # show breadcrumbs on root/home page
     image: false # Show image or title text
   hometext: "Home"
 

@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version-file: ${{ matrix.directory }}/go.mod
 
@@ -54,15 +54,15 @@ jobs:
           echo "~/.local/bin" >> $GITHUB_PATH
 
           # install ginkgo
-          go install github.com/onsi/ginkgo/v2/ginkgo@latest
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.22.0
         shell: bash
 
       - name: Test
         working-directory: ${{ matrix.directory }}
-        run: ginkgo -vet=off -race -keepGoing -cover -coverpkg=./... -outputdir=$TRDL_TEST_COVERAGE_DIR ./...
+        run: ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v3
         with:
           name: tests_coverage
           path: tests_coverage
@@ -79,7 +79,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version-file: e2e/go.mod
 
@@ -110,14 +110,14 @@ jobs:
           make install
           echo "~/.local/bin" >> $GITHUB_PATH
 
-          go install github.com/onsi/ginkgo/v2/ginkgo@latest
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.22.0
 
       - name: Test
         working-directory: e2e
-        run: ginkgo -p -keepGoing -cover -coverpkg=../client/...,../server/... -outputdir=$TRDL_TEST_COVERAGE_DIR ./...
+        run: ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v3
         with:
           name: tests_coverage
           path: tests_coverage
@@ -133,12 +133,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version-file: e2e/go.mod
 
       - name: Download coverage artifact
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v3
         with:
           name: tests_coverage
           path: tests_coverage

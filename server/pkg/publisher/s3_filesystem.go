@@ -182,15 +182,15 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 	return nil
 }
 
-type debugReader struct {
-	origReader io.Reader
-	logger     hclog.Logger
-}
+// type debugReader struct {
+// 	origReader io.Reader
+// 	logger     hclog.Logger
+// }
 
-func (o *debugReader) Read(p []byte) (int, error) {
-	n, err := o.origReader.Read(p)
+// func (o *debugReader) Read(p []byte) (int, error) {
+// 	n, err := o.origReader.Read(p)
 
-	o.logger.Debug(fmt.Sprintf("-- debugReader Read(%p) -> %d, %v", p, n, err))
+// 	o.logger.Debug(fmt.Sprintf("-- debugReader Read(%p) -> %d, %v", p, n, err))
 
-	return n, err
-}
+// 	return n, err
+// }

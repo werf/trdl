@@ -4,14 +4,14 @@ site_lang: ru
 site_description: Инструмент безопасной доставки вашего кода пользователям.
 
 exclude:
-- .gitignore
-- Gemfile
-- Gemfile.lock
-- werf.yaml
-- pages_en/
+  - .gitignore
+  - Gemfile
+  - Gemfile.lock
+  - werf.yaml
+  - pages_en/
 
 include:
-- pages_ru/
+  - pages_ru/
 
 breadcrumbs:
   hometext: "Начало"
