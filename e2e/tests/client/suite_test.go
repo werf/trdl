@@ -49,14 +49,16 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	testutil.RunSucceedCommand(
 		"",
-		"docker-compose",
+		"docker",
+		"compose",
 		"--project-directory", fixturesDir,
 		"up", "--detach", "--build",
 	)
 
 	output := testutil.SucceedCommandOutputString(
 		"",
-		"docker-compose",
+		"docker",
+		"compose",
 		"--project-directory", fixturesDir,
 		"port", "server", "8080",
 	)
@@ -111,7 +113,8 @@ var _ = SynchronizedAfterSuite(
 
 		testutil.RunSucceedCommand(
 			"",
-			"docker-compose",
+			"docker",
+			"compose",
 			"--project-directory", fixturesDir,
 			"down",
 		)

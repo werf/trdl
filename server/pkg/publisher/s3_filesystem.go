@@ -161,10 +161,8 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 	uploader := s3manager.NewUploader(sess)
 
 	upParams := &s3manager.UploadInput{
-		Bucket: &fs.BucketName,
-		Key:    &path,
-		// DEBUG
-		// Body:   &debugReader{origReader: data, logger: fs.logger},
+		Bucket:       &fs.BucketName,
+		Key:          &path,
 		Body:         data,
 		CacheControl: &cacheControl,
 	}
@@ -180,17 +178,4 @@ func (fs *S3Filesystem) WriteFileStream(ctx context.Context, path string, data i
 	fs.logger.Debug(fmt.Sprintf("Uploaded %q", result.Location))
 
 	return nil
-}
-
-type debugReader struct {
-	origReader io.Reader
-	logger     hclog.Logger
-}
-
-func (o *debugReader) Read(p []byte) (int, error) {
-	n, err := o.origReader.Read(p)
-
-	o.logger.Debug(fmt.Sprintf("-- debugReader Read(%p) -> %d, %v", p, n, err))
-
-	return n, err
 }

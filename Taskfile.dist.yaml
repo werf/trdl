@@ -15,3 +15,23 @@ tasks:
           git signatures show {{.CLI_ARGS}} $ref
         done
       - git signatures push {{.CLI_ARGS}}
+
+  deps:install:prettier:
+    desc: "Install prettier."
+    cmds:
+      - npm install -g prettier
+
+  lint:
+    desc: 'Run all linters in parallel.'
+    deps:
+      - lint:prettier
+
+  lint:prettier:
+    desc: "Check if prettier-formatted."
+    deps:
+      - lint:prettier:yaml
+
+  lint:prettier:yaml:
+    desc: "Check if yaml files are prettier-formatted."
+    cmds:
+      - prettier -c "**/*.yaml" "**/*.yml"
