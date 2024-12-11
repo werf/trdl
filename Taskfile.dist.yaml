@@ -2,14 +2,6 @@ version: "3"
 
 silent: true
 
-vars:
-  version: "0.0.0"
-  os: "{{OS}}"
-  arch: '{{ternary "arm64" ARCH (eq ARCH "arm")}}'
-  mode: '{{ternary "cgo" "go" (eq .os "linux")}}'
-  cgoTags: "dfrunsecurity dfrunnetwork dfrunmount dfssh containers_image_openpgp osusergo exclude_graphdriver_devicemapper netgo no_devmapper static_build cni"
-  goTags: "dfrunsecurity dfrunnetwork dfrunmount dfssh containers_image_openpgp"
-
 tasks:
   sign:
     desc: 'Sign last version tag + origin/main and push signatures. Important vars: "refs".'
