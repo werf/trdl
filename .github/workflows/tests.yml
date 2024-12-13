@@ -62,7 +62,7 @@ jobs:
         run: ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tests_coverage
           path: tests_coverage
@@ -117,9 +117,9 @@ jobs:
         run: ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: tests_coverage
+          name: e2e_coverage
           path: tests_coverage
 
   upload_coverage:
@@ -138,9 +138,8 @@ jobs:
           go-version-file: e2e/go.mod
 
       - name: Download coverage artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: tests_coverage
           path: tests_coverage
 
       - name: Prepare environment
