@@ -22,7 +22,7 @@ tasks:
       - npm install -g prettier
 
   lint:
-    desc: 'Run all linters in parallel.'
+    desc: "Run all linters in parallel."
     deps:
       - lint:prettier
 
