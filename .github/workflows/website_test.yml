@@ -18,10 +18,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install werf
+        uses: werf/actions/install@v2
+
       - name: Converge
-        uses: werf/actions/converge@v1.2
-        with:
-          env: test
-          kube-config-base64-data: ${{ secrets.KUBECONFIG_BASE64_DEV }}
+        run: |
+          . $(werf ci-env github --as-file)
+          werf converge
         env:
           WERF_DIR: "docs"
+          WERF_ENV: "test"
+          WERF_KUBE_CONFIG_BASE64: ${{ secrets.KUBECONFIG_BASE64_DEV }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
