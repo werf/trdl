@@ -2,7 +2,7 @@ project: trdl-web
 configVersion: 1
 ---
 
-artifact: asset
+image: asset
 from: jekyll/builder:3
 fromCacheVersion: 20210426
 shell:
@@ -41,9 +41,9 @@ shell:
 {{ .Files.Get ".werf/nginx.conf" | indent 4 }}
     EOF
 import:
-- artifact: asset
+- image: asset
   add: /srv/jekyll-data/_site
-  to: /app/
+  to: /app
   before: setup
 ---
 image: tuf-router
