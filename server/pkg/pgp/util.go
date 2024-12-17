@@ -14,37 +14,33 @@ func VerifyPGPSignatures(pgpSignatures []string, signedReaderFunc func() (io.Rea
 		return pgpKeys, 0, nil
 	}
 
-	for _, pgpSignature := range pgpSignatures {
-		i := 0
-		l := len(pgpKeys)
-		for i < l {
-			keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pgpKeys[i]))
-			if err != nil {
-				return nil, 0, err
-			}
+	signedReader, err := signedReaderFunc()
+	if err != nil {
+		return nil, 0, err
+	}
 
-			signedReader, err := signedReaderFunc()
-			if err != nil {
-				return nil, 0, err
-			}
+	verifiedKeys := make([]string, 0, len(pgpKeys))
+	for _, pgpKey := range pgpKeys {
+		keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(pgpKey))
+		if err != nil {
+			return nil, 0, err
+		}
 
-			if _, err = openpgp.CheckArmoredDetachedSignature(keyring, signedReader, strings.NewReader(pgpSignature)); err != nil {
+		for _, pgpSignature := range pgpSignatures {
+			_, err := openpgp.CheckArmoredDetachedSignature(keyring, signedReader, strings.NewReader(pgpSignature))
+			if err != nil {
 				if logger != nil {
-					logger.Debug(fmt.Sprintf("[DEBUG-SIGNATURES] VerifyPGPSignatures -- will skip pgpKey due to error: %s\n>%v<", err, pgpKeys[i]))
+					logger.Debug(fmt.Sprintf("[DEBUG-SIGNATURES] VerifyPGPSignatures -- will skip pgpKey due to error: %s\n>%v<", err, pgpKey))
 				}
-				i++
 				continue
 			}
-
 			requiredNumberOfVerifiedSignatures--
 			if requiredNumberOfVerifiedSignatures == 0 {
-				return pgpKeys, 0, nil
+				return verifiedKeys, 0, nil
 			}
-
-			pgpKeys = append(append([]string{}, pgpKeys[:i]...), pgpKeys[i+1:]...)
+			verifiedKeys = append(verifiedKeys, pgpKey)
 			break
 		}
 	}
-
-	return pgpKeys, requiredNumberOfVerifiedSignatures, nil
+	return verifiedKeys, requiredNumberOfVerifiedSignatures, nil
 }
