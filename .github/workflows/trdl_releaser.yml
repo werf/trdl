@@ -33,7 +33,7 @@ jobs:
     name: Notification
     if: always() && startsWith(github.ref, 'refs/tags/v')
     needs: release
-    uses: ./.github/workflows/_notification.yml
+    uses: werf/ci-reusable-workflows/.github/workflows/notification.yml@main
     secrets:
       loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
       webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
