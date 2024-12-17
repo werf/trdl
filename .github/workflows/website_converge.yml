@@ -24,7 +24,7 @@ jobs:
         uses: werf/actions/install@v2
 
       - name: Converge
-       run: |
+        run: |
           . $(werf ci-env github --as-file)
           werf converge
         env:
