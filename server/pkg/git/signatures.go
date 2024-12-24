@@ -2,6 +2,7 @@ package git
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -93,8 +94,8 @@ func VerifyCommitSignatures(repo *git.Repository, commit string, trustedPGPPubli
 func verifyObjectSignatures(repo *git.Repository, objectID string, trustedPGPPublicKeys []string, requiredNumberOfVerifiedSignatures int, logger hclog.Logger) error {
 	signatures, err := objectSignaturesFromNotes(repo, objectID)
 	if err != nil {
-		if strings.HasSuffix(err.Error(), plumbing.ErrObjectNotFound.Error()) {
-			logger.Debug(fmt.Sprintf("[DEBUG-SIGNATURES] git object not found (%s): exiting", err))
+		if errors.Is(err, plumbing.ErrObjectNotFound) {
+			logger.Debug(fmt.Sprintf("[DEBUG-SIGNATURES] git object not found (%s): exiting", objectID))
 			return NewNotEnoughVerifiedPGPSignaturesError(requiredNumberOfVerifiedSignatures)
 		}
 
@@ -140,6 +141,17 @@ func objectSignaturesFromNotes(repo *git.Repository, objectID string) ([]string,
 	}
 
 	refHeadCommit := ref.Hash()
+
+	// for annotated tags it needs to get the tag object and then its target object.
+	obj, err := repo.Object(plumbing.AnyObject, refHeadCommit)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get object %q: %w", refHeadCommit, err)
+	}
+
+	if tagObj, ok := obj.(*object.Tag); ok {
+		refHeadCommit = tagObj.Target
+	}
+
 	refCommitObj, err := repo.CommitObject(refHeadCommit)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get objectID %q: %w", refHeadCommit, err)
