@@ -44,3 +44,12 @@ jobs:
       - name: Lint
         working-directory: ${{ matrix.directory }}
         run: make lint
+
+  notification:
+    name: Notification
+    if: always()
+    uses: werf/common-ci/.github/workflows/notification.yml@main
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
