@@ -16,39 +16,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  prettier:
+  lint:
     uses: werf/common-ci/.github/workflows/lint.yml@chore/ci/lint
-
-  golangci-lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    env:
-      GOFLAGS: -mod=readonly
-    strategy:
-      max-parallel: 6
-      fail-fast: false
-      matrix:
-        directory: ["client", "server", "e2e"]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: ${{ matrix.directory }}/go.mod
-
-      - name: Install linter
-        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.57.1
-
-      - name: Lint
-        working-directory: ${{ matrix.directory }}
-        run: make lint
+    with:
+      directories: '["client", "server", "e2e"]'
+      cmd: make lint
 
   notification:
     needs:
-      - prettier
-      - golangci-lint
+      - lint
     name: Notification
     if: always()
     uses: werf/common-ci/.github/workflows/notification.yml@main
