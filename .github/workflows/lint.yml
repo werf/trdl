@@ -1,0 +1,34 @@
+name: Lint
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Taskfile.dist.yaml"
+      - ".github/**"
+      - "docs/**"
+      - "client/**"
+      - "e2e/**"
+      - "server/**"
+  pull_request:
+  repository_dispatch:
+    types: ["Lint"]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    uses: werf/common-ci/.github/workflows/lint.yml@chore/ci/lint
+    with:
+      directories: '["client", "server", "e2e"]'
+      cmd: make lint
+
+  notification:
+    needs:
+      - lint
+    name: Notification
+    if: always()
+    uses: werf/common-ci/.github/workflows/notification.yml@main
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
