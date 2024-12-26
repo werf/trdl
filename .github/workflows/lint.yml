@@ -46,6 +46,9 @@ jobs:
         run: make lint
 
   notification:
+    needs:
+      - prettier
+      - golangci-lint
     name: Notification
     if: always()
     uses: werf/common-ci/.github/workflows/notification.yml@main
