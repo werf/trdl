@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.7.1](https://www.github.com/werf/trdl/compare/v0.7.0...v0.7.1) (2024-12-26)
+
+
+### Bug Fixes
+
+* **git:** fix error if using annotated tags ([#286](https://www.github.com/werf/trdl/issues/286)) ([1847b79](https://www.github.com/werf/trdl/commit/1847b79ca69e46c447d0ba76b69c26bfba82aea7))
+
 ## [0.7.0](https://www.github.com/werf/trdl/compare/v0.6.5...v0.7.0) (2023-09-13)
 
 
