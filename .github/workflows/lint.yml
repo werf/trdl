@@ -19,8 +19,7 @@ jobs:
   lint:
     uses: werf/common-ci/.github/workflows/lint.yml@chore/ci/lint
     with:
-      directories: '["client", "server", "e2e"]'
-      cmd: make lint
+      go-version-file-dir: '["client", "server", "e2e"]'
 
   notification:
     needs:
