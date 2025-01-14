@@ -3,23 +3,17 @@ package server
 import (
 	"archive/tar"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"io"
-	"path"
 	"strings"
 
 	"github.com/Masterminds/semver"
 	"github.com/djherbis/buffer"
 	"github.com/djherbis/nio/v3"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/config"
@@ -158,7 +152,14 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		tarBuf := buffer.New(64 * 1024 * 1024)
 		tarReader, tarWriter := nio.Pipe(tarBuf)
 
-		err, cleanupFunc := buildReleaseArtifacts(ctx, tarWriter, gitRepo, trdlCfg.GetDockerImage(), trdlCfg.Commands, b.Logger())
+		err, cleanupFunc := docker.BuildReleaseArtifacts(ctx,
+			docker.BuildReleaseArtifactsOpts{
+				TarWriter:   tarWriter,
+				GitRepo:     gitRepo,
+				FromImage:   trdlCfg.GetDockerImage(),
+				RunCommands: trdlCfg.Commands,
+				Storage:     req.Storage,
+			}, b.Logger())
 		if err != nil {
 			return fmt.Errorf("unable to build release artifacts: %w", err)
 		}
@@ -181,12 +182,15 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					return fmt.Errorf("error reading next tar artifact header: %w", err)
 				}
 
-				if hdr.Typeflag != tar.TypeDir {
-					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", hdr.Name)
-					b.Logger().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", hdr.Name))
+				if strings.HasPrefix(hdr.Name, docker.ContainerArtifactsDir) {
+					if hdr.Typeflag != tar.TypeDir {
+						name := strings.TrimPrefix(hdr.Name, docker.ContainerArtifactsDir+"/")
+						logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", name)
+						b.Logger().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", name))
 
-					if err := b.Publisher.StageReleaseTarget(ctx, publisherRepository, releaseName, hdr.Name, twArtifacts); err != nil {
-						return fmt.Errorf("unable to publish release target %q: %w", hdr.Name, err)
+						if err := b.Publisher.StageReleaseTarget(ctx, publisherRepository, releaseName, name, twArtifacts); err != nil {
+							return fmt.Errorf("unable to publish release target %q: %w", name, err)
+						}
 					}
 				}
 			}
@@ -264,113 +268,6 @@ func getTrdlConfig(gitRepo *git.Repository, gitTag, trdlPath string) (*config.Tr
 	}
 
 	return cfg, nil
-}
-
-func buildReleaseArtifacts(ctx context.Context, tarWriter *nio.PipeWriter, gitRepo *git.Repository, fromImage string, runCommands []string, logger hclog.Logger) (error, func() error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return fmt.Errorf("unable to create docker client: %w", err), nil
-	}
-
-	serviceDirInContext := ".trdl"
-	serviceDockerfilePathInContext := path.Join(serviceDirInContext, "Dockerfile")
-	serviceLabels := map[string]string{
-		"vault-trdl-release-uuid": uuid.NewV4().String(),
-	}
-
-	contextBuf := buffer.New(64 * 1024 * 1024)
-	contextReader, contextWriter := nio.Pipe(contextBuf)
-
-	go func() {
-		if err := func() error {
-			tw := tar.NewWriter(contextWriter)
-
-			logboek.Context(ctx).Default().LogF("Adding git worktree files to the build context\n")
-			logger.Debug("Adding git worktree files to the build context")
-
-			if err := trdlGit.AddWorktreeFilesToTar(tw, gitRepo); err != nil {
-				return fmt.Errorf("unable to add git worktree files to tar: %w", err)
-			}
-
-			dockerfileOpts := docker.DockerfileOpts{
-				WithArtifacts: true,
-				Labels:        serviceLabels,
-			}
-			if err := docker.GenerateAndAddDockerfileToTar(tw, serviceDockerfilePathInContext, fromImage, runCommands, dockerfileOpts); err != nil {
-				return fmt.Errorf("unable to add service dockerfile to tar: %w", err)
-			}
-
-			if err := tw.Close(); err != nil {
-				return fmt.Errorf("unable to close tar writer: %w", err)
-			}
-
-			return nil
-		}(); err != nil {
-			if closeErr := contextWriter.CloseWithError(err); closeErr != nil {
-				panic(closeErr)
-			}
-			return
-		}
-
-		if err := contextWriter.Close(); err != nil {
-			panic(err)
-		}
-	}()
-
-	logboek.Context(ctx).Default().LogF("Building docker image with artifacts\n")
-	logger.Debug("Building docker image with artifacts")
-
-	response, err := cli.ImageBuild(ctx, contextReader, types.ImageBuildOptions{
-		Dockerfile:  serviceDockerfilePathInContext,
-		PullParent:  true,
-		NoCache:     true,
-		Remove:      true,
-		ForceRemove: true,
-		Version:     types.BuilderV1,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to run docker image build: %w", err), nil
-	}
-
-	handleFromImageBuildResponse(ctx, response, tarWriter)
-
-	cleanupFunc := func() error {
-		return docker.RemoveImagesByLabels(ctx, cli, serviceLabels)
-	}
-
-	return nil, cleanupFunc
-}
-
-func handleFromImageBuildResponse(ctx context.Context, response types.ImageBuildResponse, tarWriter *nio.PipeWriter) {
-	buf := buffer.New(64 * 1024 * 1024)
-	r, w := nio.Pipe(buf)
-
-	go func() {
-		if err := docker.ReadTarFromImageBuildResponse(w, logboek.Context(ctx).OutStream(), response); err != nil {
-			if closeErr := w.CloseWithError(err); closeErr != nil {
-				panic(closeErr)
-			}
-			return
-		}
-
-		if err := w.Close(); err != nil {
-			panic(err)
-		}
-	}()
-
-	go func() {
-		decoder := base64.NewDecoder(base64.StdEncoding, r)
-		if _, err := io.Copy(tarWriter, decoder); err != nil {
-			if closeErr := tarWriter.CloseWithError(err); closeErr != nil {
-				panic(closeErr)
-			}
-			return
-		}
-
-		if err := w.Close(); err != nil {
-			panic(err)
-		}
-	}()
 }
 
 const (
