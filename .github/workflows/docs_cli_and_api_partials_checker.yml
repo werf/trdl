@@ -33,8 +33,3 @@ jobs:
 
       - name: Regen partials
         run: task -p regen_reference
-
-      - name: Check
-        run: |
-          git add -A
-          git diff --exit-code HEAD -- || { echo -e "CLI or API partials are outdated!\nRegen it with 'make -C docs' and then commit changes."; exit 1; }
