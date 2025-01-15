@@ -23,6 +23,11 @@ jobs:
         with:
           go-version-file: server/go.mod
 
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Prepare environment
         run: ./e2e/scripts/ci/git.sh
 
