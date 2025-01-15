@@ -2,6 +2,23 @@ version: "3"
 
 silent: true
 
+vars:
+  minio_data_dir: ".minio_data"
+  minio_container: "trdl_dev_minio"
+  vault_container: "trdl_dev_vault"
+  s3_access_key: "minioadmin"
+  s3_secret_key: "minioadmin"
+  minio_port: "9000"
+  minio_console_port: "9001"
+  vault_port: "8200"
+  trdl_dev_ssh_host:
+    sh: |
+      echo "${TRDL_DEV_SSH_HOST:?not set}"
+  remote_user: "ubuntu"
+  remote_path: "/home/ubuntu/"
+  update_script: "/opt/update-vault-plugin-secrets-trdl.sh"
+  built_trdl_bin_path: "{{.TRDL_BIN_PATH | default 'trdl'}}"
+
 tasks:
   sign:
     desc: 'Sign last version tag + origin/main and push signatures. Important vars: "refs".'
@@ -21,10 +38,10 @@ tasks:
     cmds:
       - npm install -g prettier
 
-  lint:
-    desc: "Run all linters in parallel."
-    deps:
-      - lint:prettier
+  deps:install:golangci-lint:
+    desc: "Install golangci-lint binary."
+    cmds:
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin {{.golangcilintVersion | default "v1.57.1"}}
 
   lint:prettier:
     desc: "Check if prettier-formatted."
@@ -35,3 +52,277 @@ tasks:
     desc: "Check if yaml files are prettier-formatted."
     cmds:
       - prettier -c "**/*.yaml" "**/*.yml"
+
+  lint:golangci-lint:
+    desc: "Lint with golangci-lint"
+    dir: $PWD
+    cmds:
+      - golangci-lint run ./... --config {{.GITHUB_WORKSPACE}}/.golangci.yaml
+
+  format:
+    desc: 'Run all code formatters. Important vars: "paths".'
+    run: once
+    cmds:
+      - format:client
+      - format:e2e
+      - format:server
+
+  format:client:
+    desc: "Format client code"
+    cmds:
+      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.paths | default "client/"}}
+      - gofumpt -extra -w {{.paths | default "client/"}}
+
+  format:e2e:
+    desc: "Format e2e code"
+    cmds:
+      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.paths | default "e2e/"}}
+      - gofumpt -extra -w {{.paths | default "e2e/"}}
+
+  format:server:
+    desc: "Format server code"
+    cmds:
+      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.paths | default "server/"}}
+      - gofumpt -extra -w {{.paths | default "server/"}}
+
+  build:
+    desc: build valut plugin
+    dir: server
+    cmds:
+      - go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
+    sources:
+      - cmd/vault-plugin-secrets-trdl/main.go
+      - "**/*.go"
+    generates:
+      - vault/plugins/vault-plugin-secrets-trdl
+    env:
+      CGO_ENABLED: "0"
+      GOOS: "{{OS}}"
+      GOARCH: "{{ARCH}}"
+
+  restart:
+    desc: restart dev trdl server
+    cmds:
+      - docker rm -f {{.minio_container}} || true
+      - docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} -p {{.minio_console_port}}:{{.minio_console_port}} --volume $$(pwd)/{{.minio_data_dir}}:/data minio/minio server /data --console-address ":{{.minio_console_port}}"
+      - |
+        while ! docker run -ti --rm -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} minio/mc ls main; do
+          sleep 1;
+        done
+      - docker rm -f {{.vault_container}} || true
+      - docker run --workdir /app --privileged --name {{.vault_container}} -e VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE=1 -e VAULT_PLUGIN_SECRETS_TRDL_DEBUG=1 --detach --volume /var/run/docker.sock:/var/run/docker.sock --volume $$(pwd):/app -p {{.vault_port}}:{{.vault_port}} ghcr.io/werf/{{.vault_container}}:latest server -dev -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
+      - |
+        while ! VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault status; do
+          sleep 1;
+        done
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=trdl-test-project1 vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write trdl-test-project1/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project1 s3_region=ru-central1 s3_endpoint=http://$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project git_trdl_path=p1/trdl.yaml git_trdl_channels_path=p1/trdl_channels.yaml
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=trdl-test-project2 vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write trdl-test-project2/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project2 s3_region=ru-central1 s3_endpoint=http://$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project git_trdl_path=p2/trdl.yaml git_trdl_channels_path=p2/trdl_channels.yaml
+
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=trdl vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write trdl/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl s3_region=ru-central1 s3_endpoint=http://$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl
+
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=kubedog vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write kubedog/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=kubedog s3_region=ru-central1 s3_endpoint=http://$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/kubedog
+
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=werf vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write werf/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=werf s3_region=ru-central1 s3_endpoint=http://$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf git_trdl_channels_branch=multiwerf
+
+  run:
+    desc: Set up MinIO and Vault development environment
+    dir: server
+    deps:
+      - build
+    cmds:
+      - task: setup_minio
+      - task: setup_vault
+      - touch .run
+    sources:
+      - "cmd/vault-plugin-secrets-trdl"
+    generates:
+      - .run
+
+  setup_minio:
+    desc: Set up and configure MinIO
+    dir: server
+    cmds:
+      - docker rm -f {{.minio_container}} || true
+      - docker run --rm --volume $(pwd):/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+      - mkdir {{.minio_data_dir}}
+      - |
+        docker run --name {{.minio_container}} --detach --rm \
+        -p {{.minio_port}}:{{.minio_port}} -p {{.minio_console_port}}:{{.minio_console_port}} \
+        --volume $(pwd)/{{.minio_data_dir}}:/data \
+        minio/minio server /data --console-address ":{{.minio_console_port}}"
+      - |
+        while ! docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc ls main ; do
+          sleep 1
+        done
+      - task: configure_minio
+
+  configure_minio:
+    desc: Configure MinIO buckets and policies
+    cmds:
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc mb main/trdl-test-project1
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc policy set public main/trdl-test-project1
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} \
+        minio/mc mb main/trdl-test-project2
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} \
+        minio/mc policy set public main/trdl-test-project2
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} \
+        minio/mc mb main/werf
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} \
+        minio/mc policy set public main/werf
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} \
+        minio/mc mb main/trdl
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} \
+        minio/mc policy set public main/trdl
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} \
+        minio/mc mb main/kubedog
+      - >
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} \
+        minio/mc policy set public main/kubedog
+
+  setup_vault:
+    desc: Set up and configure Vault
+    cmds:
+      - docker rm -f {{.vault_container}} || true
+      - |
+        docker run --workdir /app --privileged --name {{.vault_container}} \
+        -e VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE=1 \
+        -e VAULT_PLUGIN_SECRETS_TRDL_DEBUG=1 \
+        --detach --volume /var/run/docker.sock:/var/run/docker.sock \
+        --volume $(pwd):/app \
+        -p {{.vault_port}}:{{.vault_port}} \
+        ghcr.io/werf/trdl-dev-vault:latest \
+        server -dev -dev-root-token-id=root \
+        -dev-plugin-dir=/app/{{.vault_plugins_dir}} -log-level trace
+      - |
+        while ! VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault status; do
+          sleep 1
+        done
+      - task: configure_vault
+
+  configure_vault:
+    desc: Enable and configure Vault secrets plugins
+    cmds:
+      - >
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault secrets enable -path=trdl-test-project1 vault-plugin-secrets-trdl
+      - >
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault write trdl-test-project1/configure s3_secret_access_key={{.s3_secret_key}} \
+        s3_access_key_id={{.s3_access_key}} s3_bucket_name=trdl-test-project1 \
+        s3_region=ru-central1 \
+        s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        required_number_of_verified_signatures_on_commit=0 \
+        git_repo_url=https://github.com/werf/trdl-test-project \
+        git_trdl_path=p1/trdl.yaml git_trdl_channels_path=p1/trdl_channels.yaml
+      - >
+        VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=trdl-test-project2 vault-plugin-secrets-trdl
+        VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write trdl-test-project2/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project2 s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project git_trdl_path=p2/trdl.yaml git_trdl_channels_path=p2/trdl_channels.yaml
+      - >
+        VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=trdl vault-plugin-secrets-trdl
+        VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write trdl/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl
+      - >
+        VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=kubedog vault-plugin-secrets-trdl
+        VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write kubedog/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=kubedog s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/kubedog
+      - >
+        VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=werf vault-plugin-secrets-trdl
+        VAULT_TOKEN=root VAULT_ADDR=http://$$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write werf/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=werf s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf git_trdl_channels_branch=multiwerf
+
+  tail:
+    cmds:
+      - docker logs -f {{.vault_container}}
+
+  clean:
+    dir: server
+    cmds:
+      - rm -f ./vault/plugins/vault-plugin-secrets-trdl
+      - docker rm -f {{.minio_container}} || true
+      - docker rm -f {{.vault_container}} || true
+      - docker run --rm --volume $$(pwd):/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+
+  install-to-dev:
+    desc: Build and install the plugin to the development environment
+    dir: server
+    deps:
+      - task: build
+    cmds:
+      - |
+        echo "Checking TRDL_DEV_SSH_HOST..."
+      - |
+        scp vault/plugins/vault-plugin-secrets-trdl {{.remote_user}}@{{.trdl_dev_ssh_host}}:{{.remote_path}}
+      - |
+        ssh -tt {{.remote_user}}@{{.trdl_dev_ssh_host}} sudo {{.update_script}}
+    env:
+      TRDL_DEV_SSH_HOST:
+
+  regen_reference:
+    desc: Regenerate references
+    deps:
+      - _regen_reference_cli
+      - _regen_reference_vault_plugin
+      - _compile
+
+  _regen_reference_cli:
+    desc: Regenerate CLI reference
+    cmds:
+      - cd ../client && go install github.com/werf/trdl/client/cmd/trdl
+      - "{{.built_trdl_bin_path}} docs ."
+
+  _regen_reference_vault_plugin:
+    desc: Regenerate Vault Plugin reference
+    cmds:
+      - cd ../server && go install github.com/werf/trdl/server/cmd/vault-plugin-docs
+      - |
+        vault-plugin-docs generate-jekyll \
+          --base-pages-url /reference/vault_plugin \
+          --includes-dir _includes/reference/vault_plugin \
+          --pages-dir pages_en/reference/vault_plugin \
+          --sidebar-yml-path _data/sidebars/_vault_plugin.yml
+
+  _compile:
+    desc: Compile reference sidebar
+    cmds:
+      - |
+        sh: |
+          reference_sidebar_path="./_data/sidebars/reference.yml"
+          cli_partial_path="./_data/sidebars/_cli.yml"
+          vault_plugin_partial_path="./_data/sidebars/_vault_plugin.yml"
+          reference_partial_path="./_data/sidebars/_reference.yml"
+          echo "# This file is generated by Taskfile.yml" > "$reference_sidebar_path"
+          echo "# DO NOT EDIT!" >> "$reference_sidebar_path"
+          echo "" >> "$reference_sidebar_path"
+          echo "# This is your sidebar TOC. The sidebar code loops through sections here and provides the appropriate formatting." >> "$reference_sidebar_path"
+          echo "" >> "$reference_sidebar_path"
+          cat "$cli_partial_path" >> "$reference_sidebar_path"
+          echo "" >> "$reference_sidebar_path"
+          cat "$vault_plugin_partial_path" >> "$reference_sidebar_path"
+          echo "" >> "$reference_sidebar_path"
+          cat "$reference_partial_path" >> "$reference_sidebar_path"
