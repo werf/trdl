@@ -11,12 +11,20 @@
 
 # Test binary, built with `go test -c`
 *.test
-bin/tests
+bin/
+build/
+dist/
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-client/release-build
-server/release-build
+client/dist
+server/dist
 
 .jekyll-cache/
+
+# local dev
+_includes
+pages_en
+.task
+tests_coverage/

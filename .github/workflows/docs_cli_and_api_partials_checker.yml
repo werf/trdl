@@ -12,9 +12,6 @@ jobs:
     name: Partials checker
     runs-on: ubuntu-22.04
     steps:
-      - name: Install werf build dependencies
-        run: sudo apt-get install -y libbtrfs-dev
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -23,14 +20,13 @@ jobs:
         with:
           go-version-file: server/go.mod
 
-      - name: Prepare environment
-        run: ./e2e/scripts/ci/git.sh
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up git config
+        run: task ci:setup:git-config
+        
       - name: Regen partials
-        working-directory: docs
-        run: make
-
-      - name: Check
-        run: |
-          git add -A
-          git diff --exit-code HEAD -- || { echo -e "CLI or API partials are outdated!\nRegen it with 'make -C docs' and then commit changes."; exit 1; }
+        run: task docs:gen

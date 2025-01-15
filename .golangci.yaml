@@ -1,9 +1,5 @@
 run:
   timeout: 10m
-  skip-dirs:
-    - scripts
-    - examples
-    - vault
 
 linters-settings:
   gofumpt:
@@ -45,6 +41,10 @@ issues:
   # Show all errors.
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-dirs:
+    - scripts
+    - examples
+    - vault
 
   exclude:
     # TODO use %w in the future.
