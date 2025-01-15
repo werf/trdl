@@ -20,3 +20,8 @@ client/release-build
 server/release-build
 
 .jekyll-cache/
+
+# local dev
+
+_includes
+pages_en
