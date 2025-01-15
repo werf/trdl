@@ -24,3 +24,4 @@ server/release-build
 # local dev
 _includes
 pages_en
+.task
