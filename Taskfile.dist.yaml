@@ -13,7 +13,7 @@ vars:
   vault_port: "8200"
   trdl_dev_ssh_host:
     sh: |
-      echo "${TRDL_DEV_SSH_HOST:?not set}"
+      echo "${TRDL_DEV_SSH_HOST:-}"
   remote_user: "ubuntu"
   remote_path: "/home/ubuntu/"
   update_script: "/opt/update-vault-plugin-secrets-trdl.sh"
