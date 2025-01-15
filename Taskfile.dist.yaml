@@ -248,37 +248,37 @@ tasks:
         git_repo_url=https://github.com/werf/trdl-test-project \
         git_trdl_path=p1/trdl.yaml git_trdl_channels_path=p1/trdl_channels.yaml
       - |
-        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format  "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
         vault secrets enable -path=trdl-test-project2 vault-plugin-secrets-trdl
-        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format  "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
         vault write trdl-test-project2/configure s3_secret_access_key={{.s3_secret_key}} \
         s3_access_key_id={{.s3_access_key}} s3_bucket_name=trdl-test-project2 \
-        s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format"{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
         required_number_of_verified_signatures_on_commit=0 \
         git_repo_url=https://github.com/werf/trdl-test-project \
         git_trdl_path=p2/trdl.yaml git_trdl_channels_path=p2/trdl_channels.yaml
       - |
-        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format  "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
         vault secrets enable -path=trdl vault-plugin-secrets-trdl
-        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format  "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
         vault write trdl/configure s3_secret_access_key={{.s3_secret_key}} \
         s3_access_key_id={{.s3_access_key}} s3_bucket_name=trdl \
-        s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}}  --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
         required_number_of_verified_signatures_on_commit=0 \
         git_repo_url=https://github.com/werf/trdl
       - |
-        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format  "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
         vault secrets enable -path=kubedog vault-plugin-secrets-trdl
-        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format  "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
         vault write kubedog/configure s3_secret_access_key={{.s3_secret_key}} \
         s3_access_key_id={{.s3_access_key}} s3_bucket_name=kubedog \
         s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
         required_number_of_verified_signatures_on_commit=0 \
         git_repo_url=https://github.com/werf/kubedog
       - |
-        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format  "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
         vault secrets enable -path=werf vault-plugin-secrets-trdl
-        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format  "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
         vault write werf/configure s3_secret_access_key={{.s3_secret_key}} \
         s3_access_key_id={{.s3_access_key}} s3_bucket_name=werf \
         s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
