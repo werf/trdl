@@ -84,7 +84,7 @@ tasks:
       - gofumpt -extra -w {{.paths | default "server/"}}
 
   build:
-    desc: build valut plugin
+    desc: Build vault plugin
     dir: server
     cmds:
       - go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
@@ -99,7 +99,7 @@ tasks:
       GOARCH: "amd64"
 
   restart:
-    desc: restart dev trdl server
+    desc: Restart dev trdl server
     cmds:
       - docker rm -f {{.minio_container}} || true
       - docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} -p {{.minio_console_port}}:{{.minio_console_port}} --volume $(pwd)/{{.minio_data_dir}}:/data minio/minio server /data --console-address ":{{.minio_console_port}}"
@@ -127,21 +127,21 @@ tasks:
       - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=werf vault-plugin-secrets-trdl
       - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write werf/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=werf s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf git_trdl_channels_branch=multiwerf
 
-  run:
+  setup:
     desc: Set up MinIO and Vault development environment
     dir: server
     deps:
       - build
     cmds:
-      - task: setup_minio
-      - task: setup_vault
-      - touch .run
+      - task: setup:minio
+      - task: setup:vault
+      - touch .setup
     sources:
       - "cmd/vault-plugin-secrets-trdl"
     generates:
-      - .run
+      - .setup
 
-  setup_minio:
+  setup:minio:
     desc: Set up and configure MinIO
     dir: server
     cmds:
@@ -159,9 +159,9 @@ tasks:
         minio/mc ls main ; do
           sleep 1
         done
-      - task: configure_minio
+      - task: configure:minio
 
-  configure_minio:
+  configure:minio:
     desc: Configure MinIO buckets and policies
     dir: server
     cmds:
@@ -206,7 +206,7 @@ tasks:
         -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
         minio/mc policy set public main/kubedog
 
-  setup_vault:
+  setup:vault:
     desc: Set up and configure Vault
     dir: server
     cmds:
@@ -226,9 +226,9 @@ tasks:
         vault status; do
           sleep 1
         done
-      - task: configure_vault
+      - task: configure:vault
 
-  configure_vault:
+  configure:vault:
     desc: Enable and configure Vault secrets plugins
     dir: server
     cmds:
@@ -295,22 +295,22 @@ tasks:
       - docker rm -f {{.vault_container}} || true
       - docker run --rm --volume $(pwd):/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
 
-  regen_reference:
+  regen:reference:
     desc: Regenerate references
     dir: docs
     deps:
-      - _regen_reference_cli
-      - _regen_reference_vault_plugin
-      - _compile
+      - regen:reference:cli
+      - regen:reference:vault-plugin
+      - compile
 
-  _regen_reference_cli:
+  regen:reference:cli:
     desc: Regenerate CLI reference
     dir: docs
     cmds:
       - cd ../client && go install github.com/werf/trdl/client/cmd/trdl
       - "{{.built_trdl_bin_path}} docs ."
 
-  _regen_reference_vault_plugin:
+  regen:reference:vault-plugin:
     desc: Regenerate Vault Plugin reference
     dir: docs
     cmds:
@@ -322,7 +322,7 @@ tasks:
           --pages-dir pages_en/reference/vault_plugin \
           --sidebar-yml-path _data/sidebars/_vault_plugin.yml
 
-  _compile:
+  compile:
     desc: Compile reference sidebar
     dir: docs
     cmds:
