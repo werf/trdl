@@ -1,21 +1,23 @@
 name: Lint
 on:
   push:
+    branches: [main]
     paths:
-      - "**/*.go"
+      - "Taskfile.dist.yaml"
+      - ".github/**"
+      - "docs/**"
+      - "client/**"
+      - "e2e/**"
+      - "server/**"
+  pull_request:
+  repository_dispatch:
+    types: ["Lint"]
   workflow_dispatch:
 
 jobs:
   lint:
-    name: Lint
     runs-on: ubuntu-22.04
-    env:
-      GOFLAGS: -mod=readonly
-    strategy:
-      max-parallel: 6
-      fail-fast: false
-      matrix:
-        directory: ["client", "server", "e2e"]
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,21 +25,26 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: ${{ matrix.directory }}/go.mod
+          go-version: "1.23"
 
       - name: Install Task
         uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install prettier
-        run: task -p deps:install:prettier
+      - name: Install golangci-lint
+        run: task -p deps:install:golangci-lint
 
       - name: Lint
-        run: task -p lint
+        run: task lint
 
-      - name: Install linter
-        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.57.1
-      - name: Lint
-        working-directory: ${{ matrix.directory }}
-        run: make lint
+  notification:
+    needs:
+      - lint
+    name: Notification
+    if: always()
+    uses: werf/common-ci/.github/workflows/notification.yml@main
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}

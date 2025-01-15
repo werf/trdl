@@ -1,0 +1,224 @@
+version: "3"
+
+silent: true
+
+vars:
+  version: '{{.version | default "dev"}}'
+
+tasks:
+  format:
+    desc: 'Run all code formatters. Important vars: "paths".'
+    run: once
+    cmds:
+      - task: format:gci
+      - task: format:gofumpt
+      - task: format:prettier
+
+  format:gci:
+    desc: 'Format code with gci. Important vars: "paths".'
+    cmds:
+      - gci write -s standard -s default -s 'Prefix(github.com/werf/)' {{.CLI_ARGS}} {{.paths | default "pkg/ cmd/"}}
+
+  format:gofumpt:
+    desc: 'Format code with gofumpt. Important vars: "paths".'
+    cmds:
+      - gofumpt -extra -w {{.CLI_ARGS}} {{.paths | default "pkg/ cmd/"}}
+
+  format:prettier:
+    desc: "Format with prettier."
+    deps:
+      - format:prettier:yaml
+
+  format:prettier:yaml:
+    desc: "Check if yaml files are prettier-formatted."
+    cmds:
+      - docker run --rm -v $(pwd):/work tmknom/prettier -w "**/*.yaml"
+
+  lint:
+    desc: 'Run all linters in parallel. Important vars: "paths".'
+    deps:
+      - lint:golangci-lint
+      - lint:prettier
+
+  lint:golangci-lint:go:
+    desc: 'Lint with golangci-lint. Important vars: "paths".'
+    cmds:
+      - golangci-lint run {{.CLI_ARGS}} --config ../.golangci.yaml {{.paths | default "./..."}}
+    env:
+      CGO_ENABLED: "0"
+
+  _lint:golangci-lint:go:
+    deps:
+      - task: lint:golangci-lint:go
+        vars:
+          paths: "{{.paths}}"
+
+  lint:golangci-lint:
+    desc: 'Lint with golangci-lint. Important vars: "paths".'
+    deps:
+      - task: _lint:golangci-lint:go
+        vars:
+          paths: "{{.paths}}"
+
+  lint:prettier:
+    desc: "Check if prettier-formatted."
+    deps:
+      - lint:prettier:yaml
+
+  lint:prettier:yaml:
+    desc: "Check if yaml files are prettier-formatted."
+    cmds:
+      - docker run --rm -v $(pwd):/work tmknom/prettier -c "**/*.yaml"
+
+  build:
+    desc: "Build client dev binary."
+    run: once
+    cmds:
+      - task: build:dev:{{OS}}:{{ARCH}}
+        vars:
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+          outputDir: ../bin/trdl
+
+  build:all:
+    desc: "Build all client binaries."
+    deps:
+      - build:dev
+      - build:dist
+
+  build:dev:
+    desc: "Build all client dev binaries."
+    cmds:
+      - task: build:dev:linux:amd64
+      - task: build:dev:linux:arm64
+      - task: build:dev:darwin:amd64
+      - task: build:dev:darwin:arm64
+      - task: build:dev:windows:amd64
+
+  build:dist:
+    desc: "Build all client release binaries."
+    cmds:
+      - task: build:dist:linux:amd64
+      - task: build:dist:linux:arm64
+      - task: build:dist:darwin:amd64
+      - task: build:dist:darwin:arm64
+      - task: build:dist:windows:amd64
+
+  build:dev:linux:amd64:
+    desc: "Build client dev binary for linux/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:linux:arm64:
+    desc: "Build client dev binary for linux/arm64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:darwin:amd64:
+    desc: "Build client dev binary for darwin/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:darwin:arm64:
+    desc: "Build client dev binary for darwin/arm64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:windows:amd64:
+    desc: "Build client dev binary for windows/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dist:linux:amd64:
+    desc: "Build client release binary for linux/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "dist/{{.version}}/linux-amd64/bin/"
+
+  build:dist:linux:arm64:
+    desc: "Build client release binary for linux/arm64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "dist/{{.version}}/linux-arm64/bin/"
+
+  build:dist:darwin:amd64:
+    desc: "Build client release binary for darwin/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "dist/{{.version}}/darwin-amd64/bin/"
+
+  build:dist:darwin:arm64:
+    desc: "Build client release binary for darwin/arm64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "dist/{{.version}}/darwin-arm64/bin/"
+
+  build:dist:windows:amd64:
+    desc: "Build client release binary for windows/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "dist/{{.version}}/windows-amd64/bin/"
+
+  _build:go:
+    internal: true
+    cmds:
+      - |
+        go build -o {{.outputDir | default (printf "../bin/%s/%s-%s" .version .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}} \
+        {{.extraGoBuildArgs}} {{.CLI_ARGS}} github.com/werf/trdl/client/cmd/trdl
+    env:
+      GOOS: "{{.targetOS}}"
+      GOARCH: "{{.targetArch}}"
+      CGO_ENABLED: 0
+
+  build-with-coverage:
+    desc: "Build client binary to run E2E tests with coverage."
+    cmd: |
+      GOOS=linux GOARCH=amd64 go test {{.extraGoBuildArgs}} -o {{.outputBin }}
+    vars:
+      outputBin: ../bin/coverage/trdl
+      extraGoBuildArgs: '-ldflags="-s -w" -tags "test_coverage" -cover -covermode=atomic -coverpkg=./... -c cmd/trdl/*.go'
+
+  verify:dist:binaries:
+    desc: "Verify that the distributable binaries are built and have correct platform/arch."
+    cmds:
+      - ./scripts/verify-dist-binaries.sh {{.version}}
