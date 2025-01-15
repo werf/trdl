@@ -27,8 +27,7 @@ jobs:
         run: ./e2e/scripts/ci/git.sh
 
       - name: Regen partials
-        working-directory: docs
-        run: make
+        run: task -p regen_reference
 
       - name: Check
         run: |

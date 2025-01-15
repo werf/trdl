@@ -285,6 +285,7 @@ tasks:
 
   regen_reference:
     desc: Regenerate references
+    dir: docs
     deps:
       - _regen_reference_cli
       - _regen_reference_vault_plugin
@@ -292,12 +293,14 @@ tasks:
 
   _regen_reference_cli:
     desc: Regenerate CLI reference
+    dir: docs
     cmds:
       - cd ../client && go install github.com/werf/trdl/client/cmd/trdl
       - "{{.built_trdl_bin_path}} docs ."
 
   _regen_reference_vault_plugin:
     desc: Regenerate Vault Plugin reference
+    dir: docs
     cmds:
       - cd ../server && go install github.com/werf/trdl/server/cmd/vault-plugin-docs
       - |
@@ -309,6 +312,7 @@ tasks:
 
   _compile:
     desc: Compile reference sidebar
+    dir: docs
     cmds:
       - |
         sh: |
