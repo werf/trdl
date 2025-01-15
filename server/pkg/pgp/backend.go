@@ -1,11 +1,13 @@
 package pgp
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+	"golang.org/x/crypto/openpgp"
 
 	"github.com/werf/trdl/server/pkg/util"
 )
@@ -89,6 +91,10 @@ func pathConfigureTrustedPGPPublicKeyCreateOrUpdate(ctx context.Context, req *lo
 	name := fields.Get(fieldNameTrustedPGPPublicKeyName).(string)
 	key := fields.Get(fieldNameTrustedPGPPublicKeyData).(string)
 
+	if err := IsValidGPGPublicKey(key); err != nil {
+		return nil, err
+	}
+
 	if err := req.Storage.Put(ctx, &logical.StorageEntry{
 		Key:   trustedPGPPublicKeyStorageKey(name),
 		Value: []byte(key),
@@ -135,4 +141,25 @@ func pathConfigureTrustedPGPPublicKeyDelete(ctx context.Context, req *logical.Re
 	}
 
 	return nil, nil
+}
+
+func IsValidGPGPublicKey(key string) error {
+	reader := bytes.NewReader([]byte(key))
+
+	entityList, err := openpgp.ReadArmoredKeyRing(reader)
+	if err != nil {
+		return fmt.Errorf("failed to parse key: %w", err)
+	}
+
+	if len(entityList) == 0 {
+		return fmt.Errorf("no public key found in the input")
+	}
+
+	for _, entity := range entityList {
+		if entity.PrimaryKey != nil {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("no valid public key found")
 }
