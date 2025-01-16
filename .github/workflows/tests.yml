@@ -82,6 +82,9 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up git config
+        uses: ./.github/actions/set-up-git-config
+
       - name: Prepare environment
         working-directory: e2e
         run: |
