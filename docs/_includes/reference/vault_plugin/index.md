@@ -12,6 +12,8 @@ The trdl plugin builds and releases software versions, publishes the release cha
 
 * [`/configure/trusted_pgp_public_key/:name`]({{ "/reference/vault_plugin/configure/trusted_pgp_public_key/name.html" | true_relative_url }}) — read or delete the configured trusted pgp public key.
 
+* [`configure/secrets`]({{ "/reference/vault_plugin/configure/secrets.html" | true_relative_url }}) — configure build secrets.
+
 * [`/publish`]({{ "/reference/vault_plugin/publish.html" | true_relative_url }}) — publish release channels.
 
 * [`/release`]({{ "/reference/vault_plugin/release.html" | true_relative_url }}) — perform a release.

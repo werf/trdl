@@ -64,6 +64,13 @@ Here:
 
 {% include reference/trdl_yaml/example_build_sh.md.liquid %}
 
+### Using build secrets
+
+You can use secrets during the build process by adding them to the secret store in advance using the [`configure/secrets`]({{ "/reference/vault_plugin/configure/secrets.html" | true_relative_url }}) method. Secrets are mounted to `/run/secrets/<id>`, where `id` is the identifier of the secret used when adding it to the secret store. Example usage:
+
+{% include reference/trdl_yaml/example_build_sh.md.liquid %}
+
+
 ### Below is the structure of the /result directory after running assembly instructions
 
 {% include reference/trdl_yaml/example_result.md.liquid %}

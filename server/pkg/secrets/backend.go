@@ -28,7 +28,7 @@ func Paths() []*framework.Path {
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameSecretId: {
 					Type:        framework.TypeNameString,
-					Description: "Secert Id",
+					Description: "Secret Id",
 					Required:    true,
 				},
 				fieldNameSecretData: {
@@ -51,7 +51,7 @@ func Paths() []*framework.Path {
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameSecretId: {
 					Type:        framework.TypeNameString,
-					Description: "Secert Id",
+					Description: "Secret Id",
 					Required:    true,
 				},
 			},

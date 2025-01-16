@@ -23,14 +23,6 @@ import (
 	"github.com/werf/trdl/server/pkg/secrets"
 )
 
-var (
-	defaultCLI command.Cli
-)
-
-const (
-	ctxDockerCliKey = "docker_cli"
-)
-
 type BuildReleaseArtifactsOpts struct {
 	FromImage   string
 	RunCommands []string

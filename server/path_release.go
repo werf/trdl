@@ -182,15 +182,13 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					return fmt.Errorf("error reading next tar artifact header: %w", err)
 				}
 
-				if strings.HasPrefix(hdr.Name, docker.ContainerArtifactsDir) {
-					if hdr.Typeflag != tar.TypeDir {
-						name := strings.TrimPrefix(hdr.Name, docker.ContainerArtifactsDir+"/")
-						logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", name)
-						b.Logger().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", name))
+				if strings.HasPrefix(hdr.Name, docker.ContainerArtifactsDir+"/") && hdr.Typeflag != tar.TypeDir {
+					name := strings.TrimPrefix(hdr.Name, docker.ContainerArtifactsDir+"/")
+					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", name)
+					b.Logger().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", name))
 
-						if err := b.Publisher.StageReleaseTarget(ctx, publisherRepository, releaseName, name, twArtifacts); err != nil {
-							return fmt.Errorf("unable to publish release target %q: %w", name, err)
-						}
+					if err := b.Publisher.StageReleaseTarget(ctx, publisherRepository, releaseName, name, twArtifacts); err != nil {
+						return fmt.Errorf("unable to publish release target %q: %w", name, err)
 					}
 				}
 			}

@@ -22,8 +22,8 @@ func secretIdStorageKey(name string) string {
 }
 
 func CreateSecret(ctx context.Context, req *logical.Request, s secretStorage) (*logical.Response, error) {
-	secretIdstorageKey := secretIdStorageKey(s.Id)
-	entry, err := req.Storage.Get(ctx, secretIdstorageKey)
+	secretIdStorageKey := secretIdStorageKey(s.Id)
+	entry, err := req.Storage.Get(ctx, secretIdStorageKey)
 	if err != nil {
 		return nil, fmt.Errorf("can't check if secret exists: %w", err)
 	}
@@ -32,7 +32,7 @@ func CreateSecret(ctx context.Context, req *logical.Request, s secretStorage) (*
 	}
 
 	if err := req.Storage.Put(ctx, &logical.StorageEntry{
-		Key:   secretIdstorageKey,
+		Key:   secretIdStorageKey,
 		Value: []byte(s.Data),
 	}); err != nil {
 		return nil, fmt.Errorf("unable to put secret: %w", err)
