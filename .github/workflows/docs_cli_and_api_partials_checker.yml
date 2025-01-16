@@ -32,4 +32,4 @@ jobs:
         run: ./e2e/scripts/ci/git.sh
 
       - name: Regen partials
-        run: task regen:reference
+        run: task docs:gen

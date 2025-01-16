@@ -283,11 +283,13 @@ tasks:
         git_repo_url=https://github.com/werf/werf \
         git_trdl_channels_branch=multiwerf
 
-  tail:
+  vault:logs:
+    desc: Get logs from vault container
     cmds:
       - docker logs -f {{.vault_container}}
 
   clean:
+    desc: Cleanup development environment
     dir: server
     cmds:
       - rm -f ./vault/plugins/vault-plugin-secrets-trdl
@@ -295,22 +297,22 @@ tasks:
       - docker rm -f {{.vault_container}} || true
       - docker run --rm --volume $(pwd):/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
 
-  regen:reference:
+  doc:gen:
     desc: Regenerate references
     dir: docs
     deps:
-      - regen:reference:cli
-      - regen:reference:vault-plugin
-      - compile
+      - doc:reference:cli
+      - doc:reference:vault-plugin
+      - doc:reference:sidebar
 
-  regen:reference:cli:
+  doc:reference:cli:
     desc: Regenerate CLI reference
     dir: docs
     cmds:
       - cd ../client && go install github.com/werf/trdl/client/cmd/trdl
       - "{{.built_trdl_bin_path}} docs ."
 
-  regen:reference:vault-plugin:
+  doc:reference:vault-plugin:
     desc: Regenerate Vault Plugin reference
     dir: docs
     cmds:
@@ -322,7 +324,7 @@ tasks:
           --pages-dir pages_en/reference/vault_plugin \
           --sidebar-yml-path _data/sidebars/_vault_plugin.yml
 
-  compile:
+  doc:reference:sidebar:
     desc: Compile reference sidebar
     dir: docs
     cmds:
