@@ -38,6 +38,7 @@ tasks:
       - npm install -g prettier
 
   deps:install:ginkgo:
+    dir: $PWD
     desc: "Install ginkgo binary."
     cmds:
       - |
