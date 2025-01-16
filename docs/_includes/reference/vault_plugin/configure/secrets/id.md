@@ -1,6 +1,6 @@
-Delete the configured build secrets.
+Delete configured build secret.
 
-## Delete the trusted PGP public key
+## Delete configured build secret
 
 
 | Method | Path |

@@ -25,7 +25,7 @@ func Paths() []*framework.Path {
 		{
 			Pattern:         "configure/secrets/?",
 			HelpSynopsis:    "Add a build secret",
-			HelpDescription: "Add a build secret to use when building release",
+			HelpDescription: "Add a build secret",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameSecretId: {
 					Type:        framework.TypeNameString,
@@ -47,8 +47,8 @@ func Paths() []*framework.Path {
 		},
 		{
 			Pattern:         "configure/secrets/" + framework.GenericNameRegex(fieldNameSecretId) + "$",
-			HelpSynopsis:    "Delete the configured build secrets",
-			HelpDescription: "Delete the configured build secrets",
+			HelpSynopsis:    "Delete a build secret",
+			HelpDescription: "Delete a build secret",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameSecretId: {
 					Type:        framework.TypeNameString,
@@ -58,7 +58,7 @@ func Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.DeleteOperation: &framework.PathOperation{
-					Description: "Delete the trusted PGP public key",
+					Description: "Delete a build secret",
 					Callback:    pathSecretDelete,
 				},
 			},
