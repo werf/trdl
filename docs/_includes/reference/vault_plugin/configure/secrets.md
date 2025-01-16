@@ -5,7 +5,7 @@ Add a build secret.
 
 | Method | Path |
 |--------|------|
-| `POST` | `/configure/secrets` |
+| `POST` | `/configure/build/secrets` |
 
 ### Parameters
 

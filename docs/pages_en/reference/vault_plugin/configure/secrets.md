@@ -1,6 +1,6 @@
 ---
-title: /configure/secrets
-permalink: reference/vault_plugin/configure/secrets.html
+title: /configure/build/secrets
+permalink: reference/vault_plugin/configure/build/secrets.html
 ---
 
-{% include /reference/vault_plugin/configure/secrets.md %}
+{% include /reference/vault_plugin/configure/build/secrets.md %}

@@ -8,9 +8,9 @@ The trdl plugin builds and releases software versions, publishes the release cha
 
 * [`/configure/pgp_signing_key`]({{ "/reference/vault_plugin/configure/pgp_signing_key.html" | true_relative_url }}) — configure a pgp key for signing release artifacts.
 
-* [`/configure/secrets`]({{ "/reference/vault_plugin/configure/secrets.html" | true_relative_url }}) — add a build secret.
+* [`/configure/build/secrets`]({{ "/reference/vault_plugin/configure/build/secrets.html" | true_relative_url }}) — add a build secret.
 
-* [`/configure/secrets/:id`]({{ "/reference/vault_plugin/configure/secrets/id.html" | true_relative_url }}) — delete the configured build secrets.
+* [`/configure/build/secrets/:id`]({{ "/reference/vault_plugin/configure/build/secrets/id.html" | true_relative_url }}) — delete the configured build secrets.
 
 * [`/configure/trusted_pgp_public_key`]({{ "/reference/vault_plugin/configure/trusted_pgp_public_key.html" | true_relative_url }}) — configure trusted pgp public keys.
 

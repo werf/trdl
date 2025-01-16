@@ -12,10 +12,10 @@ _vault_plugin: &_vault_plugin
       url: /reference/vault_plugin/configure/git_credential.html
     - title: /configure/pgp_signing_key
       url: /reference/vault_plugin/configure/pgp_signing_key.html
-    - title: /configure/secrets
-      url: /reference/vault_plugin/configure/secrets.html
-    - title: /configure/secrets/:id
-      url: /reference/vault_plugin/configure/secrets/id.html
+    - title: /configure/build/secrets
+      url: /reference/vault_plugin/configure/build/secrets.html
+    - title: /configure/build/secrets/:id
+      url: /reference/vault_plugin/configure/build/secrets/id.html
     - title: /configure/trusted_pgp_public_key
       url: /reference/vault_plugin/configure/trusted_pgp_public_key.html
     - title: /configure/trusted_pgp_public_key/:name

@@ -5,7 +5,7 @@ Delete configured build secret.
 
 | Method | Path |
 |--------|------|
-| `DELETE` | `/configure/secrets/:id` |
+| `DELETE` | `/configure/build/secrets/:id` |
 
 ### Parameters
 

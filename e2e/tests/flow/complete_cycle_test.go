@@ -222,7 +222,7 @@ var _ = Describe("Complete cycle", func() {
 
 		for i := 0; i < 2; i++ {
 			req = &logical.Request{Storage: storage}
-			req.Path = "configure/secrets"
+			req.Path = "configure/build/secrets"
 			req.Operation = logical.CreateOperation
 			req.Data = map[string]interface{}{
 				"id":   fmt.Sprintf("secretId%d", i),

@@ -23,7 +23,7 @@ type Secret struct {
 func Paths() []*framework.Path {
 	return []*framework.Path{
 		{
-			Pattern:         "configure/secrets/?",
+			Pattern:         "configure/build/secrets/?",
 			HelpSynopsis:    "Add a build secret",
 			HelpDescription: "Add a build secret",
 			Fields: map[string]*framework.FieldSchema{
@@ -46,7 +46,7 @@ func Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern:         "configure/secrets/" + framework.GenericNameRegex(fieldNameSecretId) + "$",
+			Pattern:         "configure/build/secrets/" + framework.GenericNameRegex(fieldNameSecretId) + "$",
 			HelpSynopsis:    "Delete a build secret",
 			HelpDescription: "Delete a build secret",
 			Fields: map[string]*framework.FieldSchema{
