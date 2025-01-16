@@ -1,6 +1,6 @@
-Delete configured build secret.
+Delete a build secret.
 
-## Delete configured build secret
+## Delete a build secret
 
 
 | Method | Path |
