@@ -1,6 +1,7 @@
-Configure build secrets.
+Add a build secret.
 
-## Add build secret
+## Add a build secret
+
 
 | Method | Path |
 |--------|------|
@@ -8,24 +9,9 @@ Configure build secrets.
 
 ### Parameters
 
-* `id` (string, required) — id of build secret
-* `data` (string, required) — secret data
+* `data` (string, required) — Secret data.
+* `id` (string, required) — Secret Id.
 
 ### Responses
 
-* 200 — OK. 
-
-
-## Delete build secret
-
-| Method | Path |
-|--------|------|
-| `DELETE` | `/configure/secrets` |
-
-### Parameters
-
-* `id` (string, required) — id of build secret
-
-### Responses
-
-* 200 — OK. 
+* 200 — OK.
