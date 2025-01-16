@@ -4,20 +4,16 @@ import (
 	"archive/tar"
 	"context"
 	"fmt"
-	"io"
-	"os"
+	"os/exec"
 	"path"
 
 	"github.com/djherbis/buffer"
 	"github.com/djherbis/nio/v3"
-	"github.com/docker/cli/cli/command"
-	"github.com/docker/cli/cli/streams"
 	"github.com/docker/docker/client"
 	"github.com/go-git/go-git/v5"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 	uuid "github.com/satori/go.uuid"
-	"github.com/spf13/cobra"
 	"github.com/werf/logboek"
 	trdlGit "github.com/werf/trdl/server/pkg/git"
 	"github.com/werf/trdl/server/pkg/secrets"
@@ -90,13 +86,8 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 		return fmt.Errorf("unable to set cli args: %w", err), nil
 	}
 
-	cli, err := newDockerCli(defaultCliOptions(ctx))
-	if err != nil {
-		return fmt.Errorf("error creating docker cli: %w", err), nil
-	}
-
-	if err := CliBuild(cli, contextReader, opts.TarWriter, args...); err != nil {
-		return err, nil
+	if err := RunCliBuild(contextReader, opts.TarWriter, args...); err != nil {
+		return fmt.Errorf("can't build artifacts: %w", err), nil
 	}
 
 	cleanupFunc := func() error {
@@ -110,39 +101,34 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	return nil, cleanupFunc
 }
 
-func CliBuild(c command.Cli, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
-	var finalArgs []string
-	var cmd *cobra.Command
+func RunCliBuild(contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
+	finalArgs := append([]string{"buildx", "build"}, args...)
+	cmd := exec.Command("docker", finalArgs...)
+	cmd.Stdout = tarWriter
+	cmd.Stdin = contextReader
 
-	c.SetIn(streams.NewIn(contextReader))
-
-	cmd = NewBuildxCommand(c)
-	finalArgs = append([]string{"build"}, args...)
-
-	cmd = prepareCliCmd(cmd, finalArgs...)
-
-	reader, writer, err := os.Pipe()
-	if err != nil {
-		return err
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to execute docker build: %w", err)
 	}
 
-	origStdOut := os.Stdout
-	os.Stdout = writer
-	defer func() { os.Stdout = origStdOut }()
-
-	go func() {
-		defer reader.Close()
-		if _, err := io.Copy(tarWriter, reader); err != nil {
-			if closeErr := tarWriter.CloseWithError(err); closeErr != nil {
-				panic(closeErr)
-			}
-			return
-		}
-	}()
-
-	err = cmd.Execute()
-	if err != nil {
-		return fmt.Errorf("failed to execute build: %w", err)
-	}
 	return nil
+}
+
+func setCliArgs(serviceDockerfilePathInContext string, secrets []secrets.Secret) ([]string, error) {
+	args := []string{
+		"--file", serviceDockerfilePathInContext,
+		"--pull",
+		"--no-cache",
+		"-o", "-",
+	}
+
+	if len(secrets) > 0 {
+		if err := SetTempEnvVars(secrets); err != nil {
+			return nil, fmt.Errorf("unable to set secrets")
+		}
+		args = append(args, GetSecretsCommandMounts(secrets)...)
+	}
+
+	args = append(args, "-")
+	return args, nil
 }
