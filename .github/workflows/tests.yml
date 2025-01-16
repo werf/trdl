@@ -49,6 +49,7 @@ jobs:
         uses: ./.github/actions/install-3p-git-signatures
 
       - name: Install ginkgo
+        working-directory: server
         run: task -p deps:install:ginkgo
 
       - name: Test
@@ -84,6 +85,7 @@ jobs:
       - name: Prepare environment
         working-directory: e2e
         run: |
+          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/e2e/${{ matrix.os }}
           # coverage trdl binary
           ./scripts/ci/trdl_with_coverage.sh
           export TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/e2e/bin/tests/trdl_with_coverage
@@ -98,6 +100,7 @@ jobs:
         uses: ./.github/actions/install-3p-git-signatures
 
       - name: Install ginkgo
+        working-directory: e2e
         run: task -p deps:install:ginkgo
 
       - name: Test
