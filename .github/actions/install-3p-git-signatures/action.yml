@@ -1,0 +1,12 @@
+name: Install 3p-git-signatures
+description: "Install 3p-git-signatures"
+runs:
+  using: composite
+  steps:
+    - name: Install 3p-git-signatures
+      run: |
+        git clone https://github.com/werf/3p-git-signatures.git
+        cd 3p-git-signatures
+        make install
+        echo "~/.local/bin" >> $GITHUB_PATH
+      shell: bash

@@ -20,10 +20,7 @@ jobs:
     name: Tests
     strategy:
       fail-fast: false
-      matrix:
-        directory: [server]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,35 +28,33 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: ${{ matrix.directory }}/go.mod
+          go-version-file: server/go.mod
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare environment
         run: |
-          # coverage directory
-          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/tests/${{ matrix.os }}/${{ matrix.directory }}
-          mkdir -p $TRDL_TEST_COVERAGE_DIR
-          echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
-
-          # git user
-          ./e2e/scripts/ci/git.sh
-
+          echo TRDL_TEST_COVERAGE_DIR=${{github.workspace}}/tests_coverage >> $GITHUB_ENV
           # install gpg
           sudo apt-get update
-          sudo apt-get install gpg
+          sudo apt-get install -y gpg
 
-          # install git-signatures
-          git clone https://github.com/werf/3p-git-signatures.git
-          cd 3p-git-signatures
-          make install
-          echo "~/.local/bin" >> $GITHUB_PATH
+      - name: Set up git config
+        uses: ./.github/actions/set-up-git-config
 
-          # install ginkgo
-          go install github.com/onsi/ginkgo/v2/ginkgo@v2.22.0
-        shell: bash
+      - name: Install 3p-git-signatures
+        uses: ./.github/actions/install-3p-git-signatures
+
+      - name: Install ginkgo
+        run: task -p deps:install:ginkgo
 
       - name: Test
-        working-directory: ${{ matrix.directory }}
-        run: ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
+        run: task -p test:server
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -71,9 +66,7 @@ jobs:
     name: End-to-end tests
     strategy:
       fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -83,38 +76,34 @@ jobs:
         with:
           go-version-file: e2e/go.mod
 
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Prepare environment
         working-directory: e2e
         run: |
-          # coverage directory
-          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/e2e/${{ matrix.os }}
-          mkdir -p $TRDL_TEST_COVERAGE_DIR
-          echo TRDL_TEST_COVERAGE_DIR=$TRDL_TEST_COVERAGE_DIR >> $GITHUB_ENV
-
           # coverage trdl binary
           ./scripts/ci/trdl_with_coverage.sh
           export TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/e2e/bin/tests/trdl_with_coverage
           chmod +x $TRDL_TEST_BINARY_PATH
           echo TRDL_TEST_BINARY_PATH=$TRDL_TEST_BINARY_PATH >> $GITHUB_ENV
 
-          # git user
-          ./scripts/ci/git.sh
-
           # install gpg
           sudo apt-get update
-          sudo apt-get install gpg
+          sudo apt-get install -y gpg
 
-          # install git-signatures
-          git clone https://github.com/werf/3p-git-signatures.git
-          cd 3p-git-signatures
-          make install
-          echo "~/.local/bin" >> $GITHUB_PATH
+      - name: Install 3p-git-signatures
+        uses: ./.github/actions/install-3p-git-signatures
 
-          go install github.com/onsi/ginkgo/v2/ginkgo@v2.22.0
+      - name: Install ginkgo
+        run: task -p deps:install:ginkgo
 
       - name: Test
-        working-directory: e2e
         run: ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4

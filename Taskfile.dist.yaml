@@ -16,6 +16,7 @@ vars:
   update_script: "/opt/update-vault-plugin-secrets-trdl.sh"
   built_trdl_bin_path: '{{.TRDL_BIN_PATH | default "$(go env GOPATH)/bin/trdl"}}'
   vault_plugin_bin_path: '{{.VAULT_PLUGIN_BIN_PATH | default "$(go env GOPATH)/bin/vault-plugin-docs"}}'
+  mode: '{{ternary "cgo" "go" (eq .os "linux")}}'
 
 tasks:
   sign:
@@ -35,6 +36,13 @@ tasks:
     desc: "Install prettier."
     cmds:
       - npm install -g prettier
+
+  deps:install:ginkgo:
+    desc: "Install ginkgo binary."
+    cmds:
+      - |
+        version="$(go list -m -f '{{ printf `{{ .Version }}` }}' github.com/onsi/ginkgo/v2)"
+        go install {{.CLI_ARGS}} github.com/onsi/ginkgo/v2/ginkgo@${version}
 
   deps:install:golangci-lint:
     desc: "Install golangci-lint binary."
@@ -343,3 +351,21 @@ tasks:
         cat "$vault_plugin_partial_path" >> "$reference_sidebar_path"
         echo "" >> "$reference_sidebar_path"
         cat "$reference_partial_path" >> "$reference_sidebar_path"
+
+  test:
+    desc: "Run all tests"
+    cmds:
+      - task: test:server
+      - task: test:e2e
+
+  test:server:
+    desc: "Run server tests."
+    dir: server
+    cmds:
+      - ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$GITHUB_WORKSPACE/tests_coverage ./...
+
+  test:e2e:
+    desc: "Run e2e tests."
+    dir: e2e
+    cmds:
+      - ginkgo --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$GITHUB_WORKSPACE/tests_coverage ./...

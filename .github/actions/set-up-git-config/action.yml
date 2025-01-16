@@ -1,0 +1,11 @@
+name: Set up git config
+description: "Set up git config"
+runs:
+  using: composite
+  steps:
+    - name: Set up git config
+      run: |
+        git config --global init.defaultBranch main
+        git config --global user.name "borya"
+        git config --global user.email "borya@flant.com"
+      shell: bash
