@@ -45,5 +45,5 @@ ru:
     <<: *reference-vault_plugin_task_uuid
   /reference/vault_plugin/trusted_pgp_public_key:
     <<: *reference-vault_plugin_trusted_pgp_public_key
-  /reference/vault_plugin/secrets:
+  /reference/vault_plugin/configure/secrets:
     <<: *reference-vault_plugin_secrets
