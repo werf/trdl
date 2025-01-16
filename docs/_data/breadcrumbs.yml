@@ -14,9 +14,6 @@ en:
   /reference/vault_plugin/configure/trusted_pgp_public_key: &reference-vault_plugin_configure_trusted_pgp_public_key
     title: Trusted PGP public key
     url: /reference/vault_plugin/configure.html
-  /reference/vault_plugin/configure/secrets: &reference-vault_plugin_configure_trusted_pgp_public_key
-    title: Trusted PGP public key
-    url: /reference/vault_plugin/configure.html
   /reference/vault_plugin/task: &reference-vault_plugin_task
     title: Task
     url: /reference/vault_plugin/task.html
@@ -28,7 +25,7 @@ en:
     url: /reference/vault_plugin/configure/trusted_pgp_public_key/name.html
   /reference/vault_plugin/secrets: &reference-vault_plugin_secrets
     title: Build secrets
-    url: /reference/vault_plugin/configure/trusted_pgp_public_key/name.html
+    url: /reference/vault_plugin/configure/secrets.html
 ru:
   /reference:
     << : *reference
