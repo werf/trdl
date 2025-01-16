@@ -18,8 +18,6 @@ on:
 jobs:
   tests:
     name: Tests
-    strategy:
-      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -37,7 +35,7 @@ jobs:
 
       - name: Prepare environment
         run: |
-          echo TRDL_TEST_COVERAGE_DIR=${{github.workspace}}/tests_coverage >> $GITHUB_ENV
+          echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage >> $GITHUB_ENV
           # install gpg
           sudo apt-get update
           sudo apt-get install -y gpg
@@ -65,8 +63,6 @@ jobs:
 
   e2e_tests:
     name: End-to-end tests
-    strategy:
-      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -88,7 +84,7 @@ jobs:
       - name: Prepare environment
         working-directory: e2e
         run: |
-          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/e2e/${{ matrix.os }}
+          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage
           # coverage trdl binary
           ./scripts/ci/trdl_with_coverage.sh
           export TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/e2e/bin/tests/trdl_with_coverage
