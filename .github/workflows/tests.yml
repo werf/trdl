@@ -104,7 +104,7 @@ jobs:
         run: task -p deps:install:ginkgo
 
       - name: Test
-        run: ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
+        run: task -p test:e2e
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}
 
