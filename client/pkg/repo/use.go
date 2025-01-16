@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/werf/trdl/client/pkg/util"
@@ -49,7 +50,7 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string,
 	backgroundUpdateArgsString := strings.Join(backgroundUpdateArgs, " ")
 	_ = logPathBackgroundUpdateStderr
 	trdlBinaryPath := os.Args[0]
-	trdlUseRepoGroupChannelEnvName := fmt.Sprintf("TRDL_USE_%s_GROUP_CHANNEL", strings.ToUpper(c.repoName))
+	trdlUseRepoGroupChannelEnvName := fmt.Sprintf("TRDL_USE_%s_GROUP_CHANNEL", formatRepoName(c.repoName))
 	trdlUseRepoGroupChannelEnvValue := fmt.Sprintf("%s %s", group, channel)
 
 	var tmpl string
@@ -174,4 +175,12 @@ func (c Client) syncSourceScriptFile(group, channel, name string, data []byte) (
 	}
 
 	return scriptPath, nil
+}
+
+// formatRepoName returns a formatted repository name.
+// It replaces all non-alphanumeric characters with underscores and converts the result to uppercase.
+func formatRepoName(repoName string) string {
+	re := regexp.MustCompile("[^a-zA-Z0-9_]+")
+	formattedName := re.ReplaceAllString(repoName, "_")
+	return strings.ToUpper(formattedName)
 }
