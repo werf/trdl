@@ -51,7 +51,7 @@ jobs:
         run: task -p deps:install:ginkgo
 
       - name: Test
-        run: task -p test:server -- --keep-goint --vet=off --race --cover --coverpkg=$GITHUB_WORKSPACE/server/... --output-dir=$GITHUB_WORKSPACE/tests_coverage
+        run: task -p test:server -- --keep-going --vet=off --race --cover --coverpkg=$GITHUB_WORKSPACE/server/... --output-dir=$GITHUB_WORKSPACE/tests_coverage
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -97,6 +97,7 @@ jobs:
         uses: ./.github/actions/install-3p-git-signatures
 
       - name: Install ginkgo
+        working-directory: e2e
         run: task -p deps:install:ginkgo
 
       - name: Test
