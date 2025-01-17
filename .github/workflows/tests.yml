@@ -51,7 +51,7 @@ jobs:
         run: task -p deps:install:ginkgo
 
       - name: Test
-        run: task -p test:server -- --keep-going --vet=off --cover --coverpkg=$GITHUB_WORKSPACE/server/... --output-dir=$GITHUB_WORKSPACE/tests_coverage
+        run: task -p test:server -- --keep-going --vet=off --cover --coverpkg=./server/... --output-dir=$GITHUB_WORKSPACE/tests_coverage
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -101,7 +101,7 @@ jobs:
         run: task -p deps:install:ginkgo
 
       - name: Test
-        run: task -p test:e2e -- --keep-going --cover --coverpkg=$GITHUB_WORKSPACE/client/...,$GITHUB_WORKSPACE/server/... --output-dir=$GITHUB_WORKSPACE/tests_coverage
+        run: task -p test:e2e -- --keep-going --cover --coverpkg=./client/...,./server/... --output-dir=$GITHUB_WORKSPACE/tests_coverage
         env:
           GITHUB_WORKSPACE: ${{ github.workspace }}
 
