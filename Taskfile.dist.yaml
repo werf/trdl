@@ -414,36 +414,26 @@ tasks:
           labelFilter: "{{.labelFilter}}"
           parallel: "{{.parallel}}"
 
-  test:server:
-    desc: 'Run server tests. Important vars: "paths".'
+  test:
+    desc: 'Run all tests. Important vars: "paths"."paths" is relative path from "dir".'
+    cmds:
+      - task: test:unit
+      - task: test:e2e
+
+  test:unit:
+    desc: 'Run unit tests. Important vars: "paths"."paths" is relative path from "dir".'
+    dir: server
     cmds:
       - task: test:ginkgo
         vars:
-          paths: '{{.paths | default "./server"}}'
+          paths: '{{.paths | default "."}}'
           parallel: "{{.parallel}}"
 
   test:e2e:
-    desc: 'Run e2e tests. Important vars: "paths".'
+    desc: 'Run e2e tests. Important vars: "paths". "paths" is relative path from "dir".'
+    dir: e2e
     cmds:
       - task: test:ginkgo
         vars:
-          paths: '{{.paths | default "./e2e"}}'
+          paths: '{{.paths | default "."}}'
           parallel: "{{.parallel}}"
-
-  # test:
-  #   desc: "Run all tests"
-  #   cmds:
-  #     - task: test:server
-  #     - task: test:e2e
-
-  # test:server:
-  #   desc: "Run server tests."
-  #   dir: server
-  #   cmds:
-  #     - ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$GITHUB_WORKSPACE/tests_coverage ./...
-
-  # test:e2e:
-  #   desc: "Run e2e tests."
-  #   dir: e2e
-  #   cmds:
-  #     - ginkgo --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$GITHUB_WORKSPACE/tests_coverage ./...
