@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.8.2](https://www.github.com/werf/trdl/compare/v0.8.1...v0.8.2) (2025-01-17)
+
+
+### Miscellaneous Chores
+
+* **server, release:** fix failed release build ([37b6335](https://www.github.com/werf/trdl/commit/37b6335d80e7ca023e8c69f4d5ae21cc9a2a62a7))
+
 ### [0.8.1](https://www.github.com/werf/trdl/compare/v0.8.0...v0.8.1) (2025-01-17)
 
 
