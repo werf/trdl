@@ -64,6 +64,12 @@ result
 
 {% include reference/trdl_yaml/example_build_sh.md.liquid %}
 
+### Использование сборочных секретов
+
+Вы можете использовать секреты во время сборки, предварительно добавив их в хранилище секретов с помощью метода [`/configure/build/secrets`]({{ "/reference/vault_plugin/configure/build/secrets.html" | true_relative_url }}). Секреты мотируются по пути `/run/secrets/<id>`, где `id` - это идентификатор секрета использованного при добавлении секрета в хранилище. Пример использования:
+
+{% include reference/trdl_yaml/example_trdl_yaml_w_secrets.md.liquid %}
+
 ### Директория /result после выполнения сборочных инструкций
 
 {% include reference/trdl_yaml/example_result.md.liquid %}

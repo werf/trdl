@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/docker/distribution/reference"
-	"github.com/docker/docker/api/types"
+	"github.com/distribution/reference"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 )
 
@@ -39,13 +39,13 @@ func RemoveImagesByLabels(ctx context.Context, cli *client.Client, labels map[st
 		filterSet.Add("label", fmt.Sprintf("%s=%s", key, value))
 	}
 
-	list, err := cli.ImageList(ctx, types.ImageListOptions{Filters: filterSet})
+	list, err := cli.ImageList(ctx, image.ListOptions{Filters: filterSet})
 	if err != nil {
 		return fmt.Errorf("unable to list images: %w", err)
 	}
 
 	for _, img := range list {
-		options := types.ImageRemoveOptions{PruneChildren: true, Force: true}
+		options := image.RemoveOptions{PruneChildren: true, Force: true}
 		if _, err := cli.ImageRemove(ctx, img.ID, options); err != nil {
 			return fmt.Errorf("unable to remove image %q: %w", img.ID, err)
 		}

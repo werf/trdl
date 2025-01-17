@@ -219,6 +219,18 @@ var _ = Describe("Complete cycle", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(resp).Should(BeNil())
 		}
+
+		for i := 0; i < 2; i++ {
+			req = &logical.Request{Storage: storage}
+			req.Path = "configure/build/secrets"
+			req.Operation = logical.CreateOperation
+			req.Data = map[string]interface{}{
+				"id":   fmt.Sprintf("secretId%d", i),
+				"data": "secretData",
+			}
+			_, err = backend.HandleRequest(context.Background(), req)
+			Ω(err).ShouldNot(HaveOccurred())
+		}
 	}
 
 	serverRelease := func(tagName string) {

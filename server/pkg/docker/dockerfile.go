@@ -2,19 +2,23 @@ package docker
 
 import (
 	"archive/tar"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/werf/trdl/server/pkg/secrets"
+)
+
+const (
+	ContainerSourceDir    = "git"
+	ContainerArtifactsDir = "result"
 )
 
 type DockerfileOpts struct {
-	ContainerSourceDir    string
-	ContainerArtifactsDir string
-	WithArtifacts         bool
-	EnvVars               map[string]string
-	Labels                map[string]string
+	EnvVars map[string]string
+	Labels  map[string]string
+	Secrets []secrets.Secret
 }
 
 func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, fromImage string, runCommands []string, dockerfileOpts DockerfileOpts) error {
@@ -41,14 +45,6 @@ func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, fromImage 
 }
 
 func generateDockerfile(fromImage string, runCommands []string, opts DockerfileOpts) []byte {
-	if opts.ContainerSourceDir == "" {
-		opts.ContainerSourceDir = "/git"
-	}
-
-	if opts.ContainerArtifactsDir == "" {
-		opts.ContainerArtifactsDir = "/result"
-	}
-
 	var data []byte
 	addLineFunc := func(line string) {
 		data = append(data, []byte(line+"\n")...)
@@ -65,27 +61,19 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	}
 
 	// copy source code and set workdir for the following docker instructions
-	addLineFunc(fmt.Sprintf("COPY . %s", opts.ContainerSourceDir))
-	addLineFunc(fmt.Sprintf("WORKDIR %s", opts.ContainerSourceDir))
+	addLineFunc(fmt.Sprintf("COPY . /%s", ContainerSourceDir))
+	addLineFunc(fmt.Sprintf("WORKDIR /%s", ContainerSourceDir))
 
-	if opts.WithArtifacts {
-		// create empty dir for release artifacts
-		addLineFunc(fmt.Sprintf("RUN %s", fmt.Sprintf("mkdir -p %s", opts.ContainerArtifactsDir)))
-	}
+	addLineFunc(fmt.Sprintf("RUN %s", fmt.Sprintf("mkdir -p /%s", ContainerArtifactsDir)))
 
 	// run user's build commands
 	if len(runCommands) != 0 {
-		addLineFunc(fmt.Sprintf("RUN %s", strings.Join(runCommands, " && ")))
-	}
-
-	if opts.WithArtifacts {
-		// tar result files to stdout (with control messages for a receiver)
-		serviceRunCommands := []string{
-			fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString(artifactsTarStartReadCode)),
-			fmt.Sprintf("tar c -C %s . | base64", opts.ContainerArtifactsDir),
-			fmt.Sprintf("echo -n $(echo -n '%s' | base64 -d)", base64.StdEncoding.EncodeToString(artifactsTarStopReadCode)),
+		if len(opts.Secrets) > 0 {
+			mounts := GetSecretsRunMounts(opts.Secrets)
+			addLineFunc(fmt.Sprintf("%s %s", mounts, strings.Join(runCommands, " && ")))
+		} else {
+			addLineFunc(fmt.Sprintf("RUN %s", strings.Join(runCommands, " && ")))
 		}
-		addLineFunc("RUN " + strings.Join(serviceRunCommands, " && "))
 	}
 
 	return data
