@@ -12,7 +12,7 @@
 ### Bug Fixes
 
 * **client, use:** format repository name for valid environment variable name ([eacedbb](https://www.github.com/werf/trdl/commit/eacedbbf3664cb108da9263c25416252f56056be))
-* **git:** fix error if using annotated tags ([#286](https://www.github.com/werf/trdl/issues/286)) ([1847b79](https://www.github.com/werf/trdl/commit/1847b79ca69e46c447d0ba76b69c26bfba82aea7))
+* **server, quorum:** fix case when using annotated service tags ([#286](https://www.github.com/werf/trdl/issues/286)) ([1847b79](https://www.github.com/werf/trdl/commit/1847b79ca69e46c447d0ba76b69c26bfba82aea7))
 
 ## [0.7.0](https://www.github.com/werf/trdl/compare/v0.6.5...v0.7.0) (2023-09-13)
 
