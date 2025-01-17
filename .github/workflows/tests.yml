@@ -40,10 +40,8 @@ jobs:
           # install gpg
           sudo apt-get update
           sudo apt-get install -y gpg
-          ./scripts/ci/trdl_with_coverage.sh
-          export TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/e2e/bin/tests/trdl_with_coverage
-          chmod +x $TRDL_TEST_BINARY_PATH
-          echo TRDL_TEST_BINARY_PATH=$TRDL_TEST_BINARY_PATH >> $GITHUB_ENV
+          ./scripts/ci/precompiled_tests_binaries.sh ../client trdl/client/cmd/trdl
+          chmod +x ../client/cmd/trdl/trdl.test
 
       - name: Set up git config
         uses: ./.github/actions/set-up-git-config
