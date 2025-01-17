@@ -34,11 +34,16 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare environment
+        working-directory: e2e
         run: |
           echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage >> $GITHUB_ENV
           # install gpg
           sudo apt-get update
           sudo apt-get install -y gpg
+          ./scripts/ci/trdl_with_coverage.sh
+          export TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/e2e/bin/tests/trdl_with_coverage
+          chmod +x $TRDL_TEST_BINARY_PATH
+          echo TRDL_TEST_BINARY_PATH=$TRDL_TEST_BINARY_PATH >> $GITHUB_ENV
 
       - name: Set up git config
         uses: ./.github/actions/set-up-git-config
