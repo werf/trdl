@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0](https://www.github.com/werf/trdl/compare/v0.7.0...v0.8.0) (2025-01-17)
+
+
+### Features
+
+* **server:** support build secrets ([#289](https://www.github.com/werf/trdl/issues/289)) ([920c879](https://www.github.com/werf/trdl/commit/920c8791964d9bd7e3072b3fbb613650e54f3666))
+* **server:** validate trusted pgp public keys ([#291](https://www.github.com/werf/trdl/issues/291)) ([0293aed](https://www.github.com/werf/trdl/commit/0293aed5281a861856167a2a13bec72013243c8c))
+
+
+### Bug Fixes
+
+* **client, use:** format repository name for valid environment variable name ([eacedbb](https://www.github.com/werf/trdl/commit/eacedbbf3664cb108da9263c25416252f56056be))
+* **git:** fix error if using annotated tags ([#286](https://www.github.com/werf/trdl/issues/286)) ([1847b79](https://www.github.com/werf/trdl/commit/1847b79ca69e46c447d0ba76b69c26bfba82aea7))
+
 ## [0.7.0](https://www.github.com/werf/trdl/compare/v0.6.5...v0.7.0) (2023-09-13)
 
 
