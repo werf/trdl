@@ -16,51 +16,53 @@ on:
   workflow_dispatch:
 
 jobs:
-  # tests:
-  #   name: Tests
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  #     - name: Set up Go
-  #       uses: actions/setup-go@v5
-  #       with:
-  #         go-version-file: server/go.mod
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
 
-  #     - name: Install Task
-  #       uses: arduino/setup-task@v2
-  #       with:
-  #         repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Prepare environment
-  #       working-directory: e2e
-  #       run: |
-  #         echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage >> $GITHUB_ENV
-  #         # install gpg
-  #         sudo apt-get update
-  #         sudo apt-get install -y gpg
-  #         ./scripts/ci/precompiled_tests_binaries.sh ../client trdl/client/cmd/trdl
-  #         ls -la ../client
+      - name: Prepare environment
+        working-directory: e2e
+        run: |
+          echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage >> $GITHUB_ENV
+          # install gpg
+          sudo apt-get update
+          sudo apt-get install -y gpg
+          ./scripts/ci/precompiled_tests_binaries.sh ../client trdl/client/cmd/trdl
+          ls -la ../client
 
-  #     - name: Set up git config
-  #       uses: ./.github/actions/set-up-git-config
+      - name: Set up git config
+        uses: ./.github/actions/set-up-git-config
 
-  #     - name: Install 3p-git-signatures
-  #       uses: ./.github/actions/install-3p-git-signatures
+      - name: Install 3p-git-signatures
+        uses: ./.github/actions/install-3p-git-signatures
 
-  #     - name: Install ginkgo
-  #       working-directory: server
-  #       run: task -p deps:install:ginkgo
+      - name: Install ginkgo
+        working-directory: server
+        run: task -p deps:install:ginkgo
 
-  #     - name: Test
-  #       run: task -p test:unit -- --vet=off --keep-going --cover --coverpkg=./... --output-dir=$GITHUB_WORKSPACE/tests_coverage
+      - name: Test
+        run: task -p test:unit -- --keep-going
+        env:
+          GOCOVERDIR: ${{github.workspace}}/covdata
 
-  #     - name: Upload coverage artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: tests_coverage
-  #         path: tests_coverage
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests_coverage
+          path: tests_coverage
 
   e2e_tests:
     name: End-to-end tests
@@ -106,7 +108,6 @@ jobs:
       - name: Test
         run: task -p test:e2e -- --keep-going
         env:
-          GITHUB_WORKSPACE: ${{ github.workspace }}
           GOCOVERDIR: ${{github.workspace}}/covdata
 
       - name: Upload coverage artifact
