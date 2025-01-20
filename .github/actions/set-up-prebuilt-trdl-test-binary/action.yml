@@ -1,0 +1,39 @@
+name: Set up prebuilt werf test binary
+inputs:
+  coverage:
+    default: false
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Set TRDL_TEST_* env vars
+      run: |
+        if ${{ inputs.coverage }}; then
+          cat >> "$GITHUB_ENV" <<EOF
+        TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/bin/trdl
+        TRDL_TEST_COVER_DIR=$GITHUB_WORKSPACE/covdata
+        TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/coverage
+        EOF
+        else
+          cat >> "$GITHUB_ENV" <<EOF
+        TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/bin/trdl
+        EOF
+        fi
+      shell: bash
+
+    - if: inputs.coverage == 'true'
+      name: Create TRDL_TEST_COVERAGE_DIR and TRDL_TEST_COVER_DIR
+      run: |
+        mkdir -p "$TRDL_TEST_COVERAGE_DIR"
+        mkdir -p "$TRDL_TEST_COVER_DIR"
+      shell: bash
+
+    # TODO: add build tasks to Taskfile
+    # - name: Build werf test binary
+    #   run: |
+    #     if ${{ inputs.coverage }}; then
+    #       task -p build-with-coverage
+    #     else
+    #       task -p build
+    #     fi
+    #   shell: bash

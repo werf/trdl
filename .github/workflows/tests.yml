@@ -40,8 +40,7 @@ jobs:
           # install gpg
           sudo apt-get update
           sudo apt-get install -y gpg
-          ./scripts/ci/precompiled_tests_binaries.sh ../client trdl/client/cmd/trdl
-          ls -la ../client
+          ./scripts/ci/precompiled_tests_binaries.sh ../server ../server
 
       - name: Set up git config
         uses: ./.github/actions/set-up-git-config
