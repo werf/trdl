@@ -10,7 +10,7 @@ on:
 jobs:
   publish:
     name: Publish release channels using trdl server
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Publish client channels
         uses: werf/trdl-vault-actions/publish@main

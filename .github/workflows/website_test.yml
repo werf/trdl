@@ -10,7 +10,7 @@ env:
 jobs:
   converge:
     name: Converge to Test
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-22.04
     if: github.event.label.name == 'test docs' || contains( github.event.pull_request.labels.*.name, 'test docs' )
     steps:
       - name: Checkout code
