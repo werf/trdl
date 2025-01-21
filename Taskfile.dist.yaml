@@ -38,7 +38,7 @@ tasks:
       - git signatures push {{.CLI_ARGS}}
 
   _build:cgo:dev: &build_cgo_dev
-    dir: client
+    dir: "{{.dir}}"
     cmds:
       - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "./build/%s-%s" .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
         -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.pkg | default .package}}
@@ -49,6 +49,7 @@ tasks:
       CC: "{{.cc}}"
     vars:
       raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+      dir: '{{.dir | default "client"}}'
 
   _build:cgo:dist:
     <<: *build_cgo_dev
@@ -57,7 +58,7 @@ tasks:
         -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.pkg | default .package}}
 
   _build:go:dev: &build_go_dev
-    dir: client
+    dir: "{{.dir}}"
     cmds:
       - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "./build/%s-%s" .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
         -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.pkg | default .package}}
@@ -67,6 +68,7 @@ tasks:
       GOARCH: "{{.targetArch}}"
     vars:
       raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+      dir: '{{.dir | default "client"}}'
 
   _build:go:dist:
     <<: *build_go_dev
@@ -75,15 +77,18 @@ tasks:
         -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.pkg | default .package}}
 
   build:
-    desc: "Build trdl dev binary."
-    dir: client
+    desc: "Build all dev binaries."
     run: once
     cmds:
       - task: build:dev:{{.os}}:{{.arch}}
         vars:
-          outputDir: '{{.outputDir | default "./bin"}}'
+          outputDir: '{{.outputDir | default "../bin"}}'
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+          dir: '{{.dir | default "client"}}'
+      - task: build:vault-plugin
+        vars:
+          dir: '{{.dir | default "server"}}'
 
   build:dev:all:
     desc: "Build all trdl dev binaries in parallel."
@@ -106,17 +111,16 @@ tasks:
 
   build:dev:linux:amd64:
     desc: "Build trdl dev binary for linux/amd64."
-    dir: client
     cmds:
       - task: build:dev:linux:amd64:cgo
         vars:
           outputDir: "{{.outputDir}}"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dev:linux:amd64:cgo:
     desc: "Build trdl dev binary for linux/amd64 with cgo."
-    dir: client
     cmds:
       - task: _build:cgo:dev
         vars:
@@ -125,10 +129,10 @@ tasks:
           outputDir: "{{.outputDir}}"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dev:linux:amd64:go:
     desc: "Build trdl dev binary for linux/amd64 without cgo."
-    dir: client
     cmds:
       - task: _build:go:dev
         vars:
@@ -137,20 +141,20 @@ tasks:
           outputDir: "{{.outputDir}}"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dist:linux:amd64:
     desc: 'Build trdl release binary for linux/amd64. Important vars: "version".'
-    dir: client
     cmds:
       - task: _build:cgo:dist
         vars:
           targetOS: "linux"
           targetArch: "amd64"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dev:linux:arm64:
     desc: "Build trdl dev binary for linux/arm64."
-    dir: client
     cmds:
       - task: _build:cgo:dev
         vars:
@@ -160,10 +164,10 @@ tasks:
           outputDir: "{{.outputDir}}"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dist:linux:arm64:
     desc: 'Build trdl release binary for linux/arm64. Important vars: "version".'
-    dir: client
     cmds:
       - task: _build:cgo:dist
         vars:
@@ -171,10 +175,10 @@ tasks:
           targetArch: "arm64"
           cc: "aarch64-linux-gnu-gcc"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dev:darwin:amd64:
     desc: "Build trdl dev binary for darwin/amd64."
-    dir: client
     cmds:
       - task: _build:go:dev
         vars:
@@ -183,20 +187,20 @@ tasks:
           outputDir: "{{.outputDir}}"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dist:darwin:amd64:
     desc: 'Build trdl release binary for darwin/amd64. Important vars: "version".'
-    dir: client
     cmds:
       - task: _build:go:dist
         vars:
           targetOS: "darwin"
           targetArch: "amd64"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dev:darwin:arm64:
     desc: "Build trdl dev binary for darwin/arm64."
-    dir: client
     cmds:
       - task: _build:go:dev
         vars:
@@ -205,20 +209,20 @@ tasks:
           outputDir: "{{.outputDir}}"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dist:darwin:arm64:
     desc: 'Build trdl release binary for darwin/arm64. Important vars: "version".'
-    dir: client
     cmds:
       - task: _build:go:dist
         vars:
           targetOS: "darwin"
           targetArch: "arm64"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dev:windows:amd64:
     desc: "Build trdl dev binary for windows/amd64."
-    dir: client
     cmds:
       - task: _build:go:dev
         vars:
@@ -227,26 +231,27 @@ tasks:
           outputDir: "{{.outputDir}}"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+          dir: '{{.dir | default "client"}}'
 
   build:dist:windows:amd64:
     desc: 'Build trdl release binary for windows/amd64. Important vars: "version".'
-    dir: client
     cmds:
       - task: _build:go:dist
         vars:
           targetOS: "windows"
           targetArch: "amd64"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          dir: '{{.dir | default "client"}}'
 
   build-with-coverage:
     desc: "Build trdl binary to run E2E tests with coverage."
-    dir: client
     cmds:
       - task: build:dev:{{.os}}:{{.arch}}
         vars:
           outputDir: '{{.outputDir | default "../bin"}}'
           extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
           goTags: test_coverage
+          dir: '{{.dir | default "client"}}'
 
   deps:install:prettier:
     desc: "Install prettier."
@@ -310,7 +315,7 @@ tasks:
 
   build:vault-plugin:
     desc: Build vault plugin
-    dir: server
+    dir: "{{.dir}}"
     cmds:
       - go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
     sources:
@@ -322,6 +327,8 @@ tasks:
       CGO_ENABLED: "0"
       GOOS: "{{OS}}"
       GOARCH: "amd64"
+    vars:
+      dir: '{{.dir | default "server"}}'
 
   restart:
     desc: Restart dev trdl server
@@ -354,7 +361,7 @@ tasks:
 
   setup:
     desc: Set up MinIO and Vault development environment
-    dir: server
+    dir: "{{.dir}}"
     deps:
       - build
     cmds:
@@ -365,10 +372,12 @@ tasks:
       - "cmd/vault-plugin-secrets-trdl"
     generates:
       - .setup
+    vars:
+      dir: '{{.dir | default "server"}}'
 
   setup:minio:
     desc: Set up and configure MinIO
-    dir: server
+    dir: "{{.dir}}"
     cmds:
       - docker rm -f {{.minio_container}} || true
       - docker run --rm --volume $(pwd):/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
@@ -385,10 +394,12 @@ tasks:
           sleep 1
         done
       - task: configure:minio
+    vars:
+      dir: '{{.dir | default "server"}}'
 
   configure:minio:
     desc: Configure MinIO buckets and policies
-    dir: server
+    dir: "{{.dir}}"
     cmds:
       - |
         docker run -ti --rm \
@@ -430,10 +441,12 @@ tasks:
         docker run -ti --rm \
         -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
         minio/mc policy set public main/kubedog
+    vars:
+      dir: '{{.dir | default "server"}}'
 
   setup:vault:
     desc: Set up and configure Vault
-    dir: server
+    dir: "{{.dir}}"
     cmds:
       - docker rm -f {{.vault_container}} || true
       - |
@@ -452,10 +465,12 @@ tasks:
           sleep 1
         done
       - task: configure:vault
+    vars:
+      dir: '{{.dir | default "server"}}'
 
   configure:vault:
     desc: Enable and configure Vault secrets plugins
-    dir: server
+    dir: "{{.dir}}"
     cmds:
       - |
         VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
@@ -507,6 +522,8 @@ tasks:
         required_number_of_verified_signatures_on_commit=0 \
         git_repo_url=https://github.com/werf/werf \
         git_trdl_channels_branch=multiwerf
+    vars:
+      dir: '{{.dir | default "server"}}'
 
   vault:logs:
     desc: Get logs from vault container
@@ -515,31 +532,37 @@ tasks:
 
   clean:
     desc: Cleanup development environment
-    dir: server
+    dir: "{{.dir}}"
     cmds:
       - rm -f ./vault/plugins/vault-plugin-secrets-trdl
       - docker rm -f {{.minio_container}} || true
       - docker rm -f {{.vault_container}} || true
       - docker run --rm --volume $(pwd):/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+    vars:
+      dir: '{{.dir | default "server"}}'
 
   doc:gen:
     desc: Regenerate references
-    dir: docs
+    dir: "{{.dir}}"
     deps:
       - doc:reference:cli
       - doc:reference:vault-plugin
       - doc:reference:sidebar
+    vars:
+      dir: '{{.dir | default "docs"}}'
 
   doc:reference:cli:
     desc: Regenerate CLI reference
-    dir: docs
+    dir: "{{.dir}}"
     cmds:
       - cd ../client && go install github.com/werf/trdl/client/cmd/trdl
       - "{{.built_trdl_bin_path}} docs ."
+    vars:
+      dir: '{{.dir | default "docs"}}'
 
   doc:reference:vault-plugin:
     desc: Regenerate Vault Plugin reference
-    dir: docs
+    dir: "{{.dir}}"
     cmds:
       - cd ../server && go install github.com/werf/trdl/server/cmd/vault-plugin-docs
       - |
@@ -548,10 +571,12 @@ tasks:
           --includes-dir _includes/reference/vault_plugin \
           --pages-dir pages_en/reference/vault_plugin \
           --sidebar-yml-path _data/sidebars/_vault_plugin.yml
+    vars:
+      dir: '{{.dir | default "docs"}}'
 
   doc:reference:sidebar:
     desc: Compile reference sidebar
-    dir: docs
+    dir: "{{.dir}}"
     cmds:
       - |
         reference_sidebar_path="./_data/sidebars/reference.yml"
@@ -568,21 +593,29 @@ tasks:
         cat "$vault_plugin_partial_path" >> "$reference_sidebar_path"
         echo "" >> "$reference_sidebar_path"
         cat "$reference_partial_path" >> "$reference_sidebar_path"
+    vars:
+      dir: '{{.dir | default "docs"}}'
 
   _test:go-test:cgo:
+    dir: "{{.dir}}"
     cmds:
       - go test -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraTestGoTestArgs}} {{.CLI_ARGS}} {{.paths}}
     env:
       CGO_ENABLED: "1"
+    vars:
+      dir: "{{.dir}}"
     requires:
       vars:
         - paths
 
   _test:go-test:go:
+    dir: "{{.dir}}"
     cmds:
       - go test -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraTestGoTestArgs}} {{.CLI_ARGS}} {{.paths}}
     env:
       CGO_ENABLED: "0"
+    vars:
+      dir: "{{.dir}}"
     requires:
       vars:
         - paths
@@ -594,8 +627,10 @@ tasks:
         vars:
           paths: "{{.paths}}"
           extraTestGoTestArgs: "{{.extraTestGoTestArgs}}"
+          dir: "{{.dir}}"
 
   _test:ginkgo:cgo:
+    dir: "{{.dir}}"
     cmds:
       - |
         ginkgo {{if eq .parallel "true" }}-p{{end}} -r -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" \
@@ -604,11 +639,13 @@ tasks:
       CGO_ENABLED: "1"
     vars:
       parallel: '{{.parallel | default "true"}}'
+      dir: "{{.dir}}"
     requires:
       vars:
         - paths
 
   _test:ginkgo:go:
+    dir: "{{.dir}}"
     cmds:
       - |
         ginkgo {{if eq .parallel "true" }}-p{{end}} -r -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" \
@@ -617,6 +654,7 @@ tasks:
       CGO_ENABLED: "0"
     vars:
       parallel: '{{.parallel | default "true"}}'
+      dir: "{{.dir}}"
     requires:
       vars:
         - paths
@@ -629,6 +667,7 @@ tasks:
           paths: "{{.paths}}"
           labelFilter: "{{.labelFilter}}"
           parallel: "{{.parallel}}"
+          dir: "{{.dir}}"
 
   test:
     desc: 'Run all tests. Important vars: "paths"."paths" is relative path from "dir".'
@@ -637,13 +676,31 @@ tasks:
       - task: test:e2e
 
   test:unit:
-    desc: 'Run unit tests. Important vars: "paths"."paths" is relative path from "dir".'
-    dir: server
+    desc: 'Run all unit tests. Important vars: "paths"."paths" is relative path from "dir".'
+    cmds:
+      - task: test:unit:server
+        vars:
+          dir: '{{.dir | default "server"}}'
+
+  test:unit:server:
+    desc: 'Run server unit tests.Important vars: "paths"."paths" is relative path from "dir".'
+    dir: "{{.dir}}"
     cmds:
       - ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
+    vars:
+      dir: '{{.dir | default "server"}}'
 
   test:e2e:
-    desc: 'Run e2e tests. Important vars: "paths". "paths" is relative path from "dir".'
-    dir: e2e
+    desc: 'Run all e2e tests. Important vars: "paths"."paths" is relative path from "dir".'
     cmds:
-      - ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
+      - task: test:e2e:client
+        vars:
+          dir: '{{.dir | default "e2e"}}'
+
+  test:e2e:client:
+    desc: 'Run all e2e tests. Important vars: "paths". "paths" is relative path from "dir".'
+    dir: "{{.dir}}"
+    cmds:
+      - ginkgo -p --keep-going --cover --coverpkg=../client/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
+    vars:
+      dir: '{{.dir | default "e2e"}}'
