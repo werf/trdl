@@ -1,0 +1,33 @@
+name: Upload coverage artifact
+description: Upload coverage artifact
+inputs:
+  coverage:
+    description: coverage
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - if: inputs.coverage == 'true'
+      name: Convert coverage artifact
+      working-directory: e2e
+      shell: bash
+      run: |
+        if [ "$(ls -A $TRDL_TEST_COVER_DIR)" ]; then
+          export COVER_PROFILE_FILE=$(openssl rand -hex 6)-coverage.out
+          go tool covdata textfmt -i=$TRDL_TEST_COVER_DIR -o=$TRDL_TEST_COVERAGE_DIR/$COVER_PROFILE_FILE
+          go tool cover -func=$TRDL_TEST_COVERAGE_DIR/$COVER_PROFILE_FILE | awk '/^total:/{print $3}'
+        else
+          echo "No coverage data found in $TRDL_TEST_COVER_DIR"
+        fi
+
+    - if: inputs.coverage == 'true'
+      name: Set timestamp
+      shell: bash
+      run: echo "TIMESTAMP=$(date +%H%M%S%N)" >> $GITHUB_ENV
+
+    - if: inputs.coverage == 'true'
+      name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-${{ env.TIMESTAMP }}
+        path: coverage

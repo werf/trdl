@@ -2,6 +2,27 @@ version: "3"
 
 silent: true
 
+vars:
+  os: "{{OS}}"
+  arch: '{{ternary "arm64" ARCH (eq ARCH "arm")}}'
+  mode: '{{ternary "cgo" "go" (eq .os "linux")}}'
+  package: "github.com/werf/trdl/client/cmd/trdl"
+  goLDFlags: "-s -w"
+
+  minio_data_dir: ".minio_data"
+  minio_container: "trdl_dev_minio"
+  vault_container: "trdl_dev_vault"
+  s3_access_key: "minioadmin"
+  s3_secret_key: "minioadmin"
+  minio_port: "9000"
+  minio_console_port: "9001"
+  vault_port: "8200"
+  remote_user: "ubuntu"
+  remote_path: "/home/ubuntu/"
+  update_script: "/opt/update-vault-plugin-secrets-trdl.sh"
+  built_trdl_bin_path: '{{.TRDL_BIN_PATH | default "$(go env GOPATH)/bin/trdl"}}'
+  vault_plugin_bin_path: '{{.VAULT_PLUGIN_BIN_PATH | default "$(go env GOPATH)/bin/vault-plugin-docs"}}'
+
 tasks:
   sign:
     desc: 'Sign last version tag + origin/main and push signatures. Important vars: "refs".'
@@ -16,15 +37,234 @@ tasks:
         done
       - git signatures push {{.CLI_ARGS}}
 
+  _build:cgo:dev: &build_cgo_dev
+    dir: client
+    cmds:
+      - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "./build/%s-%s" .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
+        -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.pkg | default .package}}
+    env:
+      CGO_ENABLED: "1"
+      GOOS: "{{.targetOS}}"
+      GOARCH: "{{.targetArch}}"
+      CC: "{{.cc}}"
+    vars:
+      raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+
+  _build:cgo:dist:
+    <<: *build_cgo_dev
+    cmds:
+      - go build -o "{{.outputDir | default (printf "./dist/%s/%s-%s/bin" .version .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
+        -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.pkg | default .package}}
+
+  _build:go:dev: &build_go_dev
+    dir: client
+    cmds:
+      - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "./build/%s-%s" .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
+        -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.pkg | default .package}}
+    env:
+      CGO_ENABLED: "0"
+      GOOS: "{{.targetOS}}"
+      GOARCH: "{{.targetArch}}"
+    vars:
+      raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+
+  _build:go:dist:
+    <<: *build_go_dev
+    cmds:
+      - go build -o "{{.outputDir | default (printf "./dist/%s/%s-%s/bin" .version .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
+        -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.pkg | default .package}}
+
+  build:
+    desc: "Build trdl dev binary."
+    dir: client
+    run: once
+    cmds:
+      - task: build:dev:{{.os}}:{{.arch}}
+        vars:
+          outputDir: '{{.outputDir | default "./bin"}}'
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+
+  build:dev:all:
+    desc: "Build all trdl dev binaries in parallel."
+    deps:
+      - build:dev:linux:amd64:cgo
+      - build:dev:linux:amd64:go
+      - build:dev:linux:arm64
+      - build:dev:darwin:amd64
+      - build:dev:darwin:arm64
+      - build:dev:windows:amd64
+
+  build:dist:all:
+    desc: "Build all trdl release binaries in parallel."
+    deps:
+      - build:dist:linux:amd64
+      - build:dist:linux:arm64
+      - build:dist:darwin:amd64
+      - build:dist:darwin:arm64
+      - build:dist:windows:amd64
+
+  build:dev:linux:amd64:
+    desc: "Build trdl dev binary for linux/amd64."
+    dir: client
+    cmds:
+      - task: build:dev:linux:amd64:cgo
+        vars:
+          outputDir: "{{.outputDir}}"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:dev:linux:amd64:cgo:
+    desc: "Build trdl dev binary for linux/amd64 with cgo."
+    dir: client
+    cmds:
+      - task: _build:cgo:dev
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:dev:linux:amd64:go:
+    desc: "Build trdl dev binary for linux/amd64 without cgo."
+    dir: client
+    cmds:
+      - task: _build:go:dev
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:dist:linux:amd64:
+    desc: 'Build trdl release binary for linux/amd64. Important vars: "version".'
+    dir: client
+    cmds:
+      - task: _build:cgo:dist
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:dev:linux:arm64:
+    desc: "Build trdl dev binary for linux/arm64."
+    dir: client
+    cmds:
+      - task: _build:cgo:dev
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          cc: "aarch64-linux-gnu-gcc"
+          outputDir: "{{.outputDir}}"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:dist:linux:arm64:
+    desc: 'Build trdl release binary for linux/arm64. Important vars: "version".'
+    dir: client
+    cmds:
+      - task: _build:cgo:dist
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          cc: "aarch64-linux-gnu-gcc"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:dev:darwin:amd64:
+    desc: "Build trdl dev binary for darwin/amd64."
+    dir: client
+    cmds:
+      - task: _build:go:dev
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:dist:darwin:amd64:
+    desc: 'Build trdl release binary for darwin/amd64. Important vars: "version".'
+    dir: client
+    cmds:
+      - task: _build:go:dist
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:dev:darwin:arm64:
+    desc: "Build trdl dev binary for darwin/arm64."
+    dir: client
+    cmds:
+      - task: _build:go:dev
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          outputDir: "{{.outputDir}}"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:dist:darwin:arm64:
+    desc: 'Build trdl release binary for darwin/arm64. Important vars: "version".'
+    dir: client
+    cmds:
+      - task: _build:go:dist
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:dev:windows:amd64:
+    desc: "Build trdl dev binary for windows/amd64."
+    dir: client
+    cmds:
+      - task: _build:go:dev
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:dist:windows:amd64:
+    desc: 'Build trdl release binary for windows/amd64. Important vars: "version".'
+    dir: client
+    cmds:
+      - task: _build:go:dist
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build-with-coverage:
+    desc: "Build trdl binary to run E2E tests with coverage."
+    dir: client
+    cmds:
+      - task: build:dev:{{.os}}:{{.arch}}
+        vars:
+          outputDir: '{{.outputDir | default "../bin"}}'
+          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
+          goTags: test_coverage
+
   deps:install:prettier:
     desc: "Install prettier."
     cmds:
       - npm install -g prettier
 
-  lint:
-    desc: "Run all linters in parallel."
-    deps:
-      - lint:prettier
+  deps:install:ginkgo:
+    dir: $PWD
+    desc: "Install ginkgo binary."
+    cmds:
+      - |
+        version="$(go list -m -f '{{ printf `{{ .Version }}` }}' github.com/onsi/ginkgo/v2)"
+        go install {{.CLI_ARGS}} github.com/onsi/ginkgo/v2/ginkgo@${version}
+
+  deps:install:golangci-lint:
+    desc: "Install golangci-lint binary."
+    cmds:
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin {{.golangcilintVersion | default "v1.57.1"}}
 
   lint:prettier:
     desc: "Check if prettier-formatted."
@@ -35,3 +275,375 @@ tasks:
     desc: "Check if yaml files are prettier-formatted."
     cmds:
       - prettier -c "**/*.yaml" "**/*.yml"
+
+  lint:golangci-lint:
+    desc: "Lint with golangci-lint"
+    dir: $PWD
+    cmds:
+      - golangci-lint run ./... --config {{.GITHUB_WORKSPACE}}/.golangci.yaml
+
+  format:
+    desc: 'Run all code formatters. Important vars: "paths".'
+    run: once
+    cmds:
+      - format:client
+      - format:e2e
+      - format:server
+
+  format:client:
+    desc: "Format client code"
+    cmds:
+      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.paths | default "client/"}}
+      - gofumpt -extra -w {{.paths | default "client/"}}
+
+  format:e2e:
+    desc: "Format e2e code"
+    cmds:
+      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.paths | default "e2e/"}}
+      - gofumpt -extra -w {{.paths | default "e2e/"}}
+
+  format:server:
+    desc: "Format server code"
+    cmds:
+      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.paths | default "server/"}}
+      - gofumpt -extra -w {{.paths | default "server/"}}
+
+  build:vault-plugin:
+    desc: Build vault plugin
+    dir: server
+    cmds:
+      - go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
+    sources:
+      - cmd/vault-plugin-secrets-trdl/main.go
+      - "**/*.go"
+    generates:
+      - vault/plugins/vault-plugin-secrets-trdl
+    env:
+      CGO_ENABLED: "0"
+      GOOS: "{{OS}}"
+      GOARCH: "amd64"
+
+  restart:
+    desc: Restart dev trdl server
+    cmds:
+      - docker rm -f {{.minio_container}} || true
+      - docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} -p {{.minio_console_port}}:{{.minio_console_port}} --volume $(pwd)/{{.minio_data_dir}}:/data minio/minio server /data --console-address ":{{.minio_console_port}}"
+      - |
+        while ! docker run -ti --rm -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} minio/mc ls main; do
+          sleep 1;
+        done
+      - docker rm -f {{.vault_container}} || true
+      - docker run --workdir /app --privileged --name {{.vault_container}} -e VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE=1 -e VAULT_PLUGIN_SECRETS_TRDL_DEBUG=1 --detach --volume /var/run/docker.sock:/var/run/docker.sock --volume $(pwd):/app -p {{.vault_port}}:{{.vault_port}} ghcr.io/werf/{{.vault_container}}:latest server -dev -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
+      - |
+        while ! VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault status; do
+          sleep 1;
+        done
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=trdl-test-project1 vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write trdl-test-project1/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project1 s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project git_trdl_path=p1/trdl.yaml git_trdl_channels_path=p1/trdl_channels.yaml
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=trdl-test-project2 vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write trdl-test-project2/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project2 s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project git_trdl_path=p2/trdl.yaml git_trdl_channels_path=p2/trdl_channels.yaml
+
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=trdl vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write trdl/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl
+
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=kubedog vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write kubedog/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=kubedog s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/kubedog
+
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault secrets enable -path=werf vault-plugin-secrets-trdl
+      - VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.vault_port}} vault write werf/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=werf s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ .NetworkSettings.IPAddress }}"):{{.minio_port}} required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf git_trdl_channels_branch=multiwerf
+
+  setup:
+    desc: Set up MinIO and Vault development environment
+    dir: server
+    deps:
+      - build
+    cmds:
+      - task: setup:minio
+      - task: setup:vault
+      - touch .setup
+    sources:
+      - "cmd/vault-plugin-secrets-trdl"
+    generates:
+      - .setup
+
+  setup:minio:
+    desc: Set up and configure MinIO
+    dir: server
+    cmds:
+      - docker rm -f {{.minio_container}} || true
+      - docker run --rm --volume $(pwd):/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+      - mkdir {{.minio_data_dir}}
+      - |
+        docker run --name {{.minio_container}} --detach --rm \
+        -p {{.minio_port}}:{{.minio_port}} -p {{.minio_console_port}}:{{.minio_console_port}} \
+        --volume $(pwd)/{{.minio_data_dir}}:/data \
+        minio/minio server /data --console-address ":{{.minio_console_port}}"
+      - |
+        while ! docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc ls main ; do
+          sleep 1
+        done
+      - task: configure:minio
+
+  configure:minio:
+    desc: Configure MinIO buckets and policies
+    dir: server
+    cmds:
+      - |
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc mb main/trdl-test-project1
+      - |
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc policy set public main/trdl-test-project1
+      - |
+        docker run -ti --rm \
+         -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc mb main/trdl-test-project2
+      - |
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc policy set public main/trdl-test-project2
+      - |
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc mb main/werf
+      - |
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc policy set public main/werf
+      - |
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc mb main/trdl
+      - |
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc policy set public main/trdl
+      - |
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc mb main/kubedog
+      - |
+        docker run -ti --rm \
+        -e MC_HOST_main=http://{{.s3_access_key}}:{{.s3_secret_key}}@$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        minio/mc policy set public main/kubedog
+
+  setup:vault:
+    desc: Set up and configure Vault
+    dir: server
+    cmds:
+      - docker rm -f {{.vault_container}} || true
+      - |
+        docker run --workdir /app --privileged --name {{.vault_container}} \
+        -e VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE=1 \
+        -e VAULT_PLUGIN_SECRETS_TRDL_DEBUG=1 \
+        --detach --volume /var/run/docker.sock:/var/run/docker.sock \
+        --volume $(pwd):/app \
+        -p {{.vault_port}}:{{.vault_port}} \
+        ghcr.io/werf/trdl-dev-vault:latest \
+        server -dev -dev-root-token-id=root \
+        -dev-plugin-dir=/app/vault/plugins -log-level trace
+      - |
+        while ! VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault status; do
+          sleep 1
+        done
+      - task: configure:vault
+
+  configure:vault:
+    desc: Enable and configure Vault secrets plugins
+    dir: server
+    cmds:
+      - |
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault secrets enable -path=trdl-test-project1 vault-plugin-secrets-trdl
+      - |
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault write trdl-test-project1/configure s3_secret_access_key={{.s3_secret_key}} \
+        s3_access_key_id={{.s3_access_key}} s3_bucket_name=trdl-test-project1 \
+        s3_region=ru-central1 \
+        s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        required_number_of_verified_signatures_on_commit=0 \
+        git_repo_url=https://github.com/werf/trdl-test-project \
+        git_trdl_path=p1/trdl.yaml git_trdl_channels_path=p1/trdl_channels.yaml
+      - |
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault secrets enable -path=trdl-test-project2 vault-plugin-secrets-trdl
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault write trdl-test-project2/configure s3_secret_access_key={{.s3_secret_key}} \
+        s3_access_key_id={{.s3_access_key}} s3_bucket_name=trdl-test-project2 \
+        s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        required_number_of_verified_signatures_on_commit=0 \
+        git_repo_url=https://github.com/werf/trdl-test-project \
+        git_trdl_path=p2/trdl.yaml git_trdl_channels_path=p2/trdl_channels.yaml
+      - |
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault secrets enable -path=trdl vault-plugin-secrets-trdl
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault write trdl/configure s3_secret_access_key={{.s3_secret_key}} \
+        s3_access_key_id={{.s3_access_key}} s3_bucket_name=trdl \
+        s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        required_number_of_verified_signatures_on_commit=0 \
+        git_repo_url=https://github.com/werf/trdl
+      - |
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault secrets enable -path=kubedog vault-plugin-secrets-trdl
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault write kubedog/configure s3_secret_access_key={{.s3_secret_key}} \
+        s3_access_key_id={{.s3_access_key}} s3_bucket_name=kubedog \
+        s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        required_number_of_verified_signatures_on_commit=0 \
+        git_repo_url=https://github.com/werf/kubedog
+      - |
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault secrets enable -path=werf vault-plugin-secrets-trdl
+        VAULT_TOKEN=root VAULT_ADDR=http://$(docker inspect {{.vault_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.vault_port}} \
+        vault write werf/configure s3_secret_access_key={{.s3_secret_key}} \
+        s3_access_key_id={{.s3_access_key}} s3_bucket_name=werf \
+        s3_region=ru-central1 s3_endpoint=http://$(docker inspect {{.minio_container}} --format "{{ "{{ .NetworkSettings.IPAddress }}" }}"):{{.minio_port}} \
+        required_number_of_verified_signatures_on_commit=0 \
+        git_repo_url=https://github.com/werf/werf \
+        git_trdl_channels_branch=multiwerf
+
+  vault:logs:
+    desc: Get logs from vault container
+    cmds:
+      - docker logs -f {{.vault_container}}
+
+  clean:
+    desc: Cleanup development environment
+    dir: server
+    cmds:
+      - rm -f ./vault/plugins/vault-plugin-secrets-trdl
+      - docker rm -f {{.minio_container}} || true
+      - docker rm -f {{.vault_container}} || true
+      - docker run --rm --volume $(pwd):/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+
+  doc:gen:
+    desc: Regenerate references
+    dir: docs
+    deps:
+      - doc:reference:cli
+      - doc:reference:vault-plugin
+      - doc:reference:sidebar
+
+  doc:reference:cli:
+    desc: Regenerate CLI reference
+    dir: docs
+    cmds:
+      - cd ../client && go install github.com/werf/trdl/client/cmd/trdl
+      - "{{.built_trdl_bin_path}} docs ."
+
+  doc:reference:vault-plugin:
+    desc: Regenerate Vault Plugin reference
+    dir: docs
+    cmds:
+      - cd ../server && go install github.com/werf/trdl/server/cmd/vault-plugin-docs
+      - |
+        {{.vault_plugin_bin_path}} generate-jekyll \
+          --base-pages-url /reference/vault_plugin \
+          --includes-dir _includes/reference/vault_plugin \
+          --pages-dir pages_en/reference/vault_plugin \
+          --sidebar-yml-path _data/sidebars/_vault_plugin.yml
+
+  doc:reference:sidebar:
+    desc: Compile reference sidebar
+    dir: docs
+    cmds:
+      - |
+        reference_sidebar_path="./_data/sidebars/reference.yml"
+        cli_partial_path="./_data/sidebars/_cli.yml"
+        vault_plugin_partial_path="./_data/sidebars/_vault_plugin.yml"
+        reference_partial_path="./_data/sidebars/_reference.yml"
+        echo "# This file is generated by Taskfile.yml" > "$reference_sidebar_path"
+        echo "# DO NOT EDIT!" >> "$reference_sidebar_path"
+        echo "" >> "$reference_sidebar_path"
+        echo "# This is your sidebar TOC. The sidebar code loops through sections here and provides the appropriate formatting." >> "$reference_sidebar_path"
+        echo "" >> "$reference_sidebar_path"
+        cat "$cli_partial_path" >> "$reference_sidebar_path"
+        echo "" >> "$reference_sidebar_path"
+        cat "$vault_plugin_partial_path" >> "$reference_sidebar_path"
+        echo "" >> "$reference_sidebar_path"
+        cat "$reference_partial_path" >> "$reference_sidebar_path"
+
+  _test:go-test:cgo:
+    cmds:
+      - go test -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraTestGoTestArgs}} {{.CLI_ARGS}} {{.paths}}
+    env:
+      CGO_ENABLED: "1"
+    requires:
+      vars:
+        - paths
+
+  _test:go-test:go:
+    cmds:
+      - go test -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraTestGoTestArgs}} {{.CLI_ARGS}} {{.paths}}
+    env:
+      CGO_ENABLED: "0"
+    requires:
+      vars:
+        - paths
+
+  test:go-test:
+    desc: 'Run raw "go test". Important vars: "paths".'
+    cmds:
+      - task: _test:go-test:{{.mode}}
+        vars:
+          paths: "{{.paths}}"
+          extraTestGoTestArgs: "{{.extraTestGoTestArgs}}"
+
+  _test:ginkgo:cgo:
+    cmds:
+      - |
+        ginkgo {{if eq .parallel "true" }}-p{{end}} -r -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" \
+          {{if .labelFilter}}--label-filter="{{.labelFilter}}"{{end}} {{.CLI_ARGS}} {{.paths}}
+    env:
+      CGO_ENABLED: "1"
+    vars:
+      parallel: '{{.parallel | default "true"}}'
+    requires:
+      vars:
+        - paths
+
+  _test:ginkgo:go:
+    cmds:
+      - |
+        ginkgo {{if eq .parallel "true" }}-p{{end}} -r -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" \
+          {{if .labelFilter}}--label-filter="{{.labelFilter}}"{{end}} {{.CLI_ARGS}} {{.paths}}
+    env:
+      CGO_ENABLED: "0"
+    vars:
+      parallel: '{{.parallel | default "true"}}'
+    requires:
+      vars:
+        - paths
+
+  test:ginkgo:
+    desc: 'Run raw "ginkgo". Important vars: "paths".'
+    cmds:
+      - task: _test:ginkgo:{{.mode}}
+        vars:
+          paths: "{{.paths}}"
+          labelFilter: "{{.labelFilter}}"
+          parallel: "{{.parallel}}"
+
+  test:
+    desc: 'Run all tests. Important vars: "paths"."paths" is relative path from "dir".'
+    cmds:
+      - task: test:unit
+      - task: test:e2e
+
+  test:unit:
+    desc: 'Run unit tests. Important vars: "paths"."paths" is relative path from "dir".'
+    dir: server
+    cmds:
+      - ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
+
+  test:e2e:
+    desc: 'Run e2e tests. Important vars: "paths". "paths" is relative path from "dir".'
+    dir: e2e
+    cmds:
+      - ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
