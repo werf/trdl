@@ -49,16 +49,15 @@ jobs:
         run: task -p deps:install:ginkgo
 
       - name: Test
-        run: task -p test:unit -- --keep-going --cover --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR
+        run: task -p test:unit
         env:
-          GOCOVERDIR: ${{github.workspace}}/covdata
           TRDL_TEST_COVERAGE_DIR: ${{github.workspace}}/coverage
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: tests_coverage
-          path: tests_coverage
+          path: ${{github.workspace}}/coverage
 
   e2e_tests:
     name: End-to-end tests
@@ -98,9 +97,7 @@ jobs:
         run: task -p deps:install:ginkgo
 
       - name: Test
-        run: task -p test:e2e -- --keep-going
-        env:
-          GOCOVERDIR: ${{github.workspace}}/covdata
+        run: task -p test:e2e
 
       - name: Upload coverage artifact
         uses: ./.github/actions/upload-coverage-artifact
