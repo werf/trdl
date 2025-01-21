@@ -98,6 +98,8 @@ jobs:
 
       - name: Test
         run: task -p test:e2e
+        env:
+          GOCOVERDIR: ${{github.workspace}}/covdata
 
       - name: Upload coverage artifact
         uses: ./.github/actions/upload-coverage-artifact
