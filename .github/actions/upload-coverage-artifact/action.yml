@@ -9,6 +9,7 @@ runs:
   steps:
     - if: inputs.coverage == 'true'
       name: Convert coverage artifact
+      working-directory: e2e
       shell: bash
       run: |
         if [ "$(ls -A $TRDL_TEST_COVER_DIR)" ]; then
