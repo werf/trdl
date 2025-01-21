@@ -34,13 +34,9 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare environment
-        working-directory: e2e
         run: |
-          echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage >> $GITHUB_ENV
-          # install gpg
           sudo apt-get update
           sudo apt-get install -y gpg
-          ./scripts/ci/precompiled_tests_binaries.sh ../server ../server
 
       - name: Set up git config
         uses: ./.github/actions/set-up-git-config
@@ -53,9 +49,10 @@ jobs:
         run: task -p deps:install:ginkgo
 
       - name: Test
-        run: task -p test:unit -- --keep-going
+        run: task -p test:unit -- --keep-going --cover --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR
         env:
           GOCOVERDIR: ${{github.workspace}}/covdata
+          TRDL_TEST_COVERAGE_DIR: ${{github.workspace}}/coverage
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -80,20 +77,16 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up prebuilt werf test binary
+        uses: ./.github/actions/set-up-prebuilt-trdl-test-binary
+        with:
+          coverage: "true"
+
       - name: Set up git config
         uses: ./.github/actions/set-up-git-config
 
       - name: Prepare environment
-        working-directory: e2e
         run: |
-          export TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage
-          # coverage trdl binary
-          ./scripts/ci/trdl_with_coverage.sh
-          export TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/e2e/bin/tests/trdl_with_coverage
-          chmod +x $TRDL_TEST_BINARY_PATH
-          echo TRDL_TEST_BINARY_PATH=$TRDL_TEST_BINARY_PATH >> $GITHUB_ENV
-
-          # install gpg
           sudo apt-get update
           sudo apt-get install -y gpg
 
@@ -110,61 +103,9 @@ jobs:
           GOCOVERDIR: ${{github.workspace}}/covdata
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-coverage-artifact
         with:
-          name: e2e_coverage
-          path: tests_coverage
-
-  upload_coverage:
-    name: Upload coverage
-    needs:
-      # - tests
-      - e2e_tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: e2e/go.mod
-
-      - name: Download coverage artifact
-        uses: actions/download-artifact@v4
-        with:
-          path: tests_coverage
-
-      - name: Prepare environment
-        run: |
-          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-          chmod +x ./cc-test-reporter
-
-          go install github.com/wadey/gocovmerge@latest
-
-          echo TRDL_TEST_COVERAGE_DIR=tests_coverage >> $GITHUB_ENV
-
-      - name: Prepare coverage file
-        run: |
-          find $TRDL_TEST_COVERAGE_DIR -type f -exec \
-            sed -i -e "s|/home/ubuntu/actions-runner/_work/werf/trdl|github.com/werf/trdl|g" {} +
-
-          coverage_files=$(find $TRDL_TEST_COVERAGE_DIR -type f)
-          gocovmerge ${coverage_files[@]} > coverage.out
-
-      - name: Format and upload
-        run: |
-          export GIT_BRANCH=${GITHUB_REF:11}
-          export GIT_COMMIT_SHA=$GITHUB_SHA
-
-          ./cc-test-reporter format-coverage \
-              -t=gocov \
-              -p=github.com/werf/trdl/ \
-              coverage.out
-
-          ./cc-test-reporter upload-coverage
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+          coverage: "true"
 
   # notification:
   #   name: Notification

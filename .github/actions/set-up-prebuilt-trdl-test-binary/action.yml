@@ -1,8 +1,9 @@
 name: Set up prebuilt werf test binary
+description: Set up prebuilt werf test binary
 inputs:
   coverage:
-    default: false
-    type: string
+    description: Enable/disable coverage profiling
+    default: "false"
 runs:
   using: composite
   steps:
@@ -28,12 +29,11 @@ runs:
         mkdir -p "$TRDL_TEST_COVER_DIR"
       shell: bash
 
-    # TODO: add build tasks to Taskfile
-    # - name: Build werf test binary
-    #   run: |
-    #     if ${{ inputs.coverage }}; then
-    #       task -p build-with-coverage
-    #     else
-    #       task -p build
-    #     fi
-    #   shell: bash
+    - name: Build werf test binary
+      run: |
+        if ${{ inputs.coverage }}; then
+          task -p build-with-coverage
+        else
+          task -p build
+        fi
+      shell: bash
