@@ -640,16 +640,9 @@ tasks:
     desc: 'Run unit tests. Important vars: "paths"."paths" is relative path from "dir".'
     dir: server
     cmds:
-      - task: test:ginkgo
-        vars:
-          paths: '{{.paths | default "."}}'
-          parallel: "{{.parallel}}"
+      - ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
 
   test:e2e:
     desc: 'Run e2e tests. Important vars: "paths". "paths" is relative path from "dir".'
-    dir: e2e
     cmds:
-      - task: test:ginkgo
-        vars:
-          paths: '{{.paths | default "."}}'
-          parallel: "{{.parallel}}"
+      - ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
