@@ -644,5 +644,6 @@ tasks:
 
   test:e2e:
     desc: 'Run e2e tests. Important vars: "paths". "paths" is relative path from "dir".'
+    dir: e2e
     cmds:
       - ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir=$TRDL_TEST_COVERAGE_DIR ./...
