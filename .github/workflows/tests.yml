@@ -106,12 +106,14 @@ jobs:
         with:
           coverage: "true"
 
-  # notification:
-  #   name: Notification
-  #   if: always()
-  #   needs: upload_coverage
-  #   uses: werf/common-ci/.github/workflows/notification.yml@main
-  #   secrets:
-  #     loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
-  #     webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
-  #     notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
+  notification:
+    name: Notification
+    if: always()
+    needs:
+      - tests
+      - e2e_tests
+    uses: werf/common-ci/.github/workflows/notification.yml@main
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
