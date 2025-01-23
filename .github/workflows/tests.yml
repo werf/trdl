@@ -16,9 +16,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  tests:
+  unit_server:
     name: Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,9 +59,9 @@ jobs:
           name: tests_coverage
           path: ${{github.workspace}}/coverage
 
-  e2e_tests:
+  e2e_client:
     name: End-to-end tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
