@@ -335,9 +335,9 @@ tasks:
     desc: Regenerate references
     dir: docs
     deps:
-      - doc:reference:cli
-      - doc:reference:vault-plugin
-      - doc:reference:sidebar
+      - docs:reference:cli
+      - docs:reference:vault-plugin
+      - docs:reference:sidebar
 
   docs:reference:cli:
     desc: Regenerate CLI reference
