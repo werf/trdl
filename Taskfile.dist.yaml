@@ -343,9 +343,7 @@ tasks:
     desc: Regenerate CLI reference
     dir: docs
     deps:
-      - task: build:dev:darwin:amd64
-        vars:
-          dir: server
+      - task: build:server
     cmds:
       - "{{.built_trdl_bin_path}} docs ."
 
