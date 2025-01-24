@@ -342,9 +342,8 @@ tasks:
   docs:reference:cli:
     desc: Regenerate CLI reference
     dir: docs
-    deps:
-      - task: build:server
     cmds:
+      - cd ../client && go install github.com/werf/trdl/client/cmd/trdl
       - "{{.built_trdl_bin_path}} docs ."
 
   docs:reference:vault-plugin:
