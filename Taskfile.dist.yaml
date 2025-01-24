@@ -6,8 +6,6 @@ vars:
   os: "{{OS}}"
   arch: '{{ternary "arm64" ARCH (eq ARCH "arm")}}'
   mode: '{{ternary "cgo" "go" (eq .os "linux")}}'
-  built_trdl_bin_path: '{{.TRDL_BIN_PATH | default "$(go env GOPATH)/bin/trdl"}}'
-  vault_plugin_bin_path: '{{.VAULT_PLUGIN_BIN_PATH | default "$(go env GOPATH)/bin/vault-plugin-docs"}}'
   goLDFlags: "-s -w"
 
 tasks:
@@ -24,10 +22,10 @@ tasks:
         done
       - git signatures push {{.CLI_ARGS}}
 
-  _build:cgo:dev: &build_cgo_dev
-    dir: "{{.dir}}"
+  _build:client:cgo:dev: &build_client_cgo_dev
+    dir: client/cmd/trdl
     cmds:
-      - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "./build/%s-%s" .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
+      - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "../../../bin/build/%s-%s" .targetOS .targetArch)}}/client{{if (eq .targetOS "windows")}}.exe{{end}}"
         -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.package}}
     env:
       CGO_ENABLED: "1"
@@ -36,18 +34,17 @@ tasks:
       CC: "{{.cc}}"
     vars:
       raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
-      dir: "{{.dir}}"
 
-  _build:cgo:dist:
-    <<: *build_cgo_dev
+  _build:client:cgo:dist:
+    <<: *build_client_cgo_dev
     cmds:
-      - go build -o "{{.outputDir | default (printf "./dist/%s/%s-%s/bin" .version .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
+      - go build -o "{{.outputDir | default (printf "../../../bin/dist/%s/%s-%s/" .version .targetOS .targetArch)}}/client{{if (eq .targetOS "windows")}}.exe{{end}}"
         -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.package}}
 
-  _build:go:dev: &build_go_dev
-    dir: "{{.dir}}"
+  _build:client:go:dev: &build_client_go_dev
+    dir: client/cmd/trdl
     cmds:
-      - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "./build/%s-%s" .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
+      - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "../../../bin/build/%s-%s" .targetOS .targetArch)}}/client{{if (eq .targetOS "windows")}}.exe{{end}}"
         -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.package}}
     env:
       CGO_ENABLED: "0"
@@ -55,190 +52,348 @@ tasks:
       GOARCH: "{{.targetArch}}"
     vars:
       raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
-      dir: "{{.dir}}"
 
-  _build:go:dist:
-    <<: *build_go_dev
+  _build:client:go:dist:
+    <<: *build_client_go_dev
     cmds:
-      - go build -o "{{.outputDir | default (printf "./dist/%s/%s-%s/bin" .version .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}}"
+      - go build -o "{{.outputDir | default (printf "../../../bin/dist/%s/%s-%s" .version .targetOS .targetArch)}}/client{{if (eq .targetOS "windows")}}.exe{{end}}"
+        -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.package}}
+
+  _build:server:cgo:dev: &build_server_cgo_dev
+    dir: server/cmd/vault-plugin-secrets-trdl
+    cmds:
+      - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "../../../bin/build/%s-%s" .targetOS .targetArch)}}/server{{if (eq .targetOS "windows")}}.exe{{end}}"
+        -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.package}}
+    env:
+      CGO_ENABLED: "1"
+      GOOS: "{{.targetOS}}"
+      GOARCH: "{{.targetArch}}"
+      CC: "{{.cc}}"
+    vars:
+      raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+
+  _build:server:cgo:dist:
+    <<: *build_server_cgo_dev
+    cmds:
+      - go build -o "{{.outputDir | default (printf "../../../bin/dist/%s/%s-%s/" .version .targetOS .targetArch)}}/server{{if (eq .targetOS "windows")}}.exe{{end}}"
+        -compiler gc -ldflags="{{.cgoLDFlags}}" -tags="{{.cgoTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.package}}
+
+  _build:server:go:dev: &build_server_go_dev
+    dir: server/cmd/vault-plugin-secrets-trdl
+    cmds:
+      - go build {{if eq .raceDetectorEnabled "true" }}-race{{end}} -o "{{.outputDir | default (printf "../../../bin/build/%s-%s" .targetOS .targetArch)}}/server{{if (eq .targetOS "windows")}}.exe{{end}}"
+        -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.package}}
+    env:
+      CGO_ENABLED: "0"
+      GOOS: "{{.targetOS}}"
+      GOARCH: "{{.targetArch}}"
+    vars:
+      raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+
+  _build:server:go:dist:
+    <<: *build_server_go_dev
+    cmds:
+      - go build -o "{{.outputDir | default (printf "../../../bin/dist/%s/%s-%s/" .version .targetOS .targetArch)}}/server{{if (eq .targetOS "windows")}}.exe{{end}}"
         -ldflags="{{.goLDFlags}}" -tags="{{.goTags}}" {{.extraGoBuildArgs}} {{.CLI_ARGS}} {{.package}}
 
   build:
     desc: "Build all dev binaries."
     run: once
     cmds:
-      - task: build:dev:{{.os}}:{{.arch}}
-        vars:
-          outputDir: '{{.outputDir | default "../bin"}}'
-          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
-          raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
-          dir: "{{.dir}}"
-      - task: build:server
-        vars:
-          dir: "{{.dir}}"
+      - task: build:client:dev:all
+      - task: build:server:dev:all
 
-  build:dev:all:
-    desc: "Build all trdl dev binaries in parallel."
+  build:client:dev:all:
+    desc: "Build all client dev binaries in parallel."
     deps:
-      - build:dev:linux:amd64:cgo
-      - build:dev:linux:amd64:go
-      - build:dev:linux:arm64
-      - build:dev:darwin:amd64
-      - build:dev:darwin:arm64
-      - build:dev:windows:amd64
+      - build:client:dev:linux:amd64:cgo
+      - build:client:dev:linux:amd64:go
+      - build:client:dev:linux:arm64
+      - build:client:dev:darwin:amd64
+      - build:client:dev:darwin:arm64
+      - build:client:dev:windows:amd64
 
-  build:dist:all:
-    desc: "Build all trdl release binaries in parallel."
+  build:client:dist:all:
+    desc: "Build all client release binaries in parallel."
     deps:
-      - build:dist:linux:amd64
-      - build:dist:linux:arm64
-      - build:dist:darwin:amd64
-      - build:dist:darwin:arm64
-      - build:dist:windows:amd64
+      - build:client:dist:linux:amd64
+      - build:client:dist:linux:arm64
+      - build:client:dist:darwin:amd64
+      - build:client:dist:darwin:arm64
+      - build:client:dist:windows:amd64
 
-  build:dev:linux:amd64:
-    desc: "Build trdl dev binary for linux/amd64."
+  build:server:dev:all:
+    desc: "Build all server dev binaries in parallel."
+    deps:
+      - build:server:dev:linux:amd64:cgo
+      - build:server:dev:linux:amd64:go
+      - build:server:dev:linux:arm64
+      - build:server:dev:darwin:amd64
+      - build:server:dev:darwin:arm64
+      - build:server:dev:windows:amd64
+
+  build:server:dist:all:
+    desc: "Build all server release binaries in parallel."
+    deps:
+      - build:server:dist:linux:amd64
+      - build:server:dist:linux:arm64
+      - build:server:dist:darwin:amd64
+      - build:server:dist:darwin:arm64
+      - build:server:dist:windows:amd64
+
+  build:client:dev:linux:amd64:
+    desc: "Build client dev binary for linux/amd64."
     cmds:
-      - task: build:dev:linux:amd64:cgo
+      - task: build:client:dev:linux:amd64:cgo
         vars:
-          outputDir: "{{.outputDir}}"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
-          dir: "{{.dir}}"
 
-  build:dev:linux:amd64:cgo:
-    desc: "Build trdl dev binary for linux/amd64 with cgo."
+  build:client:dev:linux:amd64:cgo:
+    desc: "Build client dev binary for linux/amd64 with cgo."
     cmds:
-      - task: _build:cgo:dev
-        vars:
-          targetOS: "linux"
-          targetArch: "amd64"
-          outputDir: "{{.outputDir}}"
-          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
-          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
-          dir: "{{.dir}}"
-
-  build:dev:linux:amd64:go:
-    desc: "Build trdl dev binary for linux/amd64 without cgo."
-    cmds:
-      - task: _build:go:dev
-        vars:
-          targetOS: "linux"
-          targetArch: "amd64"
-          outputDir: "{{.outputDir}}"
-          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
-          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
-          dir: "{{.dir}}"
-
-  build:dist:linux:amd64:
-    desc: 'Build trdl release binary for linux/amd64. Important vars: "version".'
-    cmds:
-      - task: _build:cgo:dist
+      - task: _build:client:cgo:dev
         vars:
           targetOS: "linux"
           targetArch: "amd64"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
-          dir: "{{.dir}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
 
-  build:dev:linux:arm64:
-    desc: "Build trdl dev binary for linux/arm64."
+  build:client:dev:linux:amd64:go:
+    desc: "Build client dev binary for linux/amd64 without cgo."
     cmds:
-      - task: _build:cgo:dev
+      - task: _build:client:go:dev
         vars:
           targetOS: "linux"
-          targetArch: "arm64"
-          cc: "aarch64-linux-gnu-gcc"
-          outputDir: "{{.outputDir}}"
+          targetArch: "amd64"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
-          dir: "{{.dir}}"
 
-  build:dist:linux:arm64:
-    desc: 'Build trdl release binary for linux/arm64. Important vars: "version".'
+  build:client:dist:linux:amd64:
+    desc: 'Build client release binary for linux/amd64. Important vars: "version".'
     cmds:
-      - task: _build:cgo:dist
+      - task: _build:client:cgo:dist
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:client:dev:linux:arm64:
+    desc: "Build client dev binary for linux/arm64."
+    cmds:
+      - task: _build:client:cgo:dev
         vars:
           targetOS: "linux"
           targetArch: "arm64"
           cc: "aarch64-linux-gnu-gcc"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
-          dir: "{{.dir}}"
-
-  build:dev:darwin:amd64:
-    desc: "Build trdl dev binary for darwin/amd64."
-    cmds:
-      - task: _build:go:dev
-        vars:
-          targetOS: "darwin"
-          targetArch: "amd64"
-          outputDir: "{{.outputDir}}"
-          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
-          dir: "{{.dir}}"
 
-  build:dist:darwin:amd64:
-    desc: 'Build trdl release binary for darwin/amd64. Important vars: "version".'
+  build:client:dist:linux:arm64:
+    desc: 'Build client release binary for linux/arm64. Important vars: "version".'
     cmds:
-      - task: _build:go:dist
+      - task: _build:client:cgo:dist
         vars:
-          targetOS: "darwin"
-          targetArch: "amd64"
-          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
-          dir: "{{.dir}}"
-
-  build:dev:darwin:arm64:
-    desc: "Build trdl dev binary for darwin/arm64."
-    cmds:
-      - task: _build:go:dev
-        vars:
-          targetOS: "darwin"
+          targetOS: "linux"
           targetArch: "arm64"
-          outputDir: "{{.outputDir}}"
+          cc: "aarch64-linux-gnu-gcc"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:client:dev:darwin:amd64:
+    desc: "Build client dev binary for darwin/amd64."
+    cmds:
+      - task: _build:client:go:dev
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
-          dir: "{{.dir}}"
 
-  build:dist:darwin:arm64:
-    desc: 'Build trdl release binary for darwin/arm64. Important vars: "version".'
+  build:client:dist:darwin:amd64:
+    desc: 'Build client release binary for darwin/amd64. Important vars: "version".'
     cmds:
-      - task: _build:go:dist
+      - task: _build:client:go:dist
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:client:dev:darwin:arm64:
+    desc: "Build client dev binary for darwin/arm64."
+    cmds:
+      - task: _build:client:go:dev
         vars:
           targetOS: "darwin"
           targetArch: "arm64"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
-          dir: "{{.dir}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
 
-  build:dev:windows:amd64:
-    desc: "Build trdl dev binary for windows/amd64."
+  build:client:dist:darwin:arm64:
+    desc: 'Build client release binary for darwin/arm64. Important vars: "version".'
     cmds:
-      - task: _build:go:dev
+      - task: _build:client:go:dist
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:client:dev:windows:amd64:
+    desc: "Build client dev binary for windows/amd64."
+    cmds:
+      - task: _build:client:go:dev
         vars:
           targetOS: "windows"
           targetArch: "amd64"
-          outputDir: "{{.outputDir}}"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: "{{.raceDetectorEnabled}}"
-          dir: "{{.dir}}"
 
-  build:dist:windows:amd64:
-    desc: 'Build trdl release binary for windows/amd64. Important vars: "version".'
+  build:client:dist:windows:amd64:
+    desc: 'Build client release binary for windows/amd64. Important vars: "version".'
     cmds:
-      - task: _build:go:dist
+      - task: _build:client:go:dist
         vars:
           targetOS: "windows"
           targetArch: "amd64"
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
-          dir: "{{.dir}}"
+
+  build:server:dev:linux:amd64:
+    desc: "Build server dev binary for linux/amd64."
+    cmds:
+      - task: build:server:dev:linux:amd64:cgo
+        vars:
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:server:dev:linux:amd64:cgo:
+    desc: "Build server dev binary for linux/amd64 with cgo."
+    cmds:
+      - task: _build:server:cgo:dev
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:server:dev:linux:amd64:go:
+    desc: "Build server dev binary for linux/amd64 without cgo."
+    cmds:
+      - task: _build:server:go:dev
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:server:dist:linux:amd64:
+    desc: 'Build server release binary for linux/amd64. Important vars: "version".'
+    cmds:
+      - task: _build:server:cgo:dist
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:server:dev:linux:arm64:
+    desc: "Build server dev binary for linux/arm64."
+    cmds:
+      - task: _build:server:cgo:dev
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          cc: "aarch64-linux-gnu-gcc"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:server:dist:linux:arm64:
+    desc: 'Build server release binary for linux/arm64. Important vars: "version".'
+    cmds:
+      - task: _build:server:cgo:dist
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          cc: "aarch64-linux-gnu-gcc"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:server:dev:darwin:amd64:
+    desc: "Build server dev binary for darwin/amd64."
+    cmds:
+      - task: _build:server:go:dev
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:server:dist:darwin:amd64:
+    desc: 'Build server release binary for darwin/amd64. Important vars: "version".'
+    cmds:
+      - task: _build:server:go:dist
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:server:dev:darwin:arm64:
+    desc: "Build server dev binary for darwin/arm64."
+    cmds:
+      - task: _build:server:go:dev
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:server:dist:darwin:arm64:
+    desc: 'Build server release binary for darwin/arm64. Important vars: "version".'
+    cmds:
+      - task: _build:server:go:dist
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+
+  build:server:dev:windows:amd64:
+    desc: "Build server dev binary for windows/amd64."
+    cmds:
+      - task: _build:server:go:dev
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: "{{.raceDetectorEnabled}}"
+
+  build:server:dist:windows:amd64:
+    desc: 'Build server release binary for windows/amd64. Important vars: "version".'
+    cmds:
+      - task: _build:server:go:dist
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
 
   build-with-coverage:
-    desc: "Build trdl binary to run E2E tests with coverage."
+    desc: "Build dev binaries to run E2E tests with coverage."
     cmds:
-      - task: build:dev:{{.os}}:{{.arch}}
+      - task: build-with-coverage:client
+      - task: build-with-coverage:server
+
+  build-with-coverage:client:
+    desc: "Build client binary to run E2E tests with coverage."
+    cmds:
+      - task: build:client:dev:{{.os}}:{{.arch}}
         vars:
-          outputDir: '{{.outputDir | default "../bin"}}'
+          outputDir: ../../../bin/coverage"
           extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
           goTags: test_coverage
-          dir: "{{.dir}}"
+
+  build-with-coverage:server:
+    desc: "Build server binary to run E2E tests with coverage."
+    cmds:
+      - task: build:server:dev:{{.os}}:{{.arch}}
+        vars:
+          outputDir: "../../../bin/coverage"
+          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
+          goTags: test_coverage
 
   deps:install:prettier:
     desc: "Install prettier."
@@ -315,7 +470,7 @@ tasks:
       - gofumpt -extra -w {{.CLI_ARGS}} {{.paths | default "e2e/"}}
 
   format:server:
-    desc: "Format server code"
+    desc: 'Format server code. Important vars: "paths".'
     cmds:
       - task: format:server:gci
       - task: format:server:gofumpt
@@ -372,22 +527,27 @@ tasks:
   docs:reference:cli:
     desc: Regenerate CLI reference
     dir: docs
+    deps:
+      - build:client:dev:{{.os}}:{{.arch}}
     cmds:
-      - cd ../client && go install github.com/werf/trdl/client/cmd/trdl
-      - "{{.built_trdl_bin_path}} docs ."
+      - "{{.built_client_bin_path}} docs ."
+    vars:
+      built_client_bin_path: "../bin/build/{{.os}}-{{.arch}}/client"
 
   docs:reference:vault-plugin:
     desc: Regenerate Vault Plugin reference
     dir: docs
     deps:
-      - build:server
+      - build:server:dev:{{.os}}:{{.arch}}
     cmds:
       - |
-        {{.vault_plugin_bin_path}} generate-jekyll \
+        {{.server_bin_path}} generate-jekyll \
           --base-pages-url /reference/vault_plugin \
           --includes-dir _includes/reference/vault_plugin \
           --pages-dir pages_en/reference/vault_plugin \
           --sidebar-yml-path _data/sidebars/_vault_plugin.yml
+    vars:
+      server_bin_path: "../bin/build/{{.os}}-{{.arch}}/server"
 
   docs:reference:sidebar:
     desc: Compile reference sidebar
