@@ -32,4 +32,4 @@ jobs:
         uses: ./.github/actions/set-up-git-config
 
       - name: Regen partials
-        run: task doc:gen
+        run: task docs:gen
