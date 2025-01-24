@@ -278,27 +278,57 @@ tasks:
     desc: 'Run all code formatters. Important vars: "paths".'
     run: once
     cmds:
-      - format:client
-      - format:e2e
-      - format:server
+      - task: format:client
+      - task: format:e2e
+      - task: format:server
 
   format:client:
-    desc: "Format client code"
+    desc: 'Format client code. Important vars: "paths".'
     cmds:
-      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.paths | default "client/"}}
-      - gofumpt -extra -w {{.paths | default "client/"}}
+      - task: format:client:gci
+      - task: format:client:gofumpt
+
+  format:client:gci:
+    desc: 'Format client code with gci. Important vars: "paths".'
+    cmds:
+      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.CLI_ARGS}} {{.paths | default "client/"}}
+
+  format:client:gofumpt:
+    desc: 'Format client code with gofumpt. Important vars: "paths".'
+    cmds:
+      - gofumpt -extra -w {{.CLI_ARGS}} {{.paths | default "client/"}}
 
   format:e2e:
-    desc: "Format e2e code"
+    desc: 'Format e2e code. Important vars: "paths".'
     cmds:
-      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.paths | default "e2e/"}}
-      - gofumpt -extra -w {{.paths | default "e2e/"}}
+      - task: format:e2e:gci
+      - task: format:e2e:gofumpt
+
+  format:e2e:gci:
+    desc: 'Format e2e code with gci. Important vars: "paths".'
+    cmds:
+      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.CLI_ARGS}} {{.paths | default "e2e/"}}
+
+  format:e2e:gofumpt:
+    desc: 'Format e2e code with gofumpt. Important vars: "paths".'
+    cmds:
+      - gofumpt -extra -w {{.CLI_ARGS}} {{.paths | default "e2e/"}}
 
   format:server:
     desc: "Format server code"
     cmds:
-      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.paths | default "server/"}}
-      - gofumpt -extra -w {{.paths | default "server/"}}
+      - task: format:server:gci
+      - task: format:server:gofumpt
+
+  format:server:gci:
+    desc: 'Format server code with gci. Important vars: "paths".'
+    cmds:
+      - gci write -s Standard -s Default -s 'Prefix(github.com/werf)' {{.CLI_ARGS}} {{.paths | default "server/"}}
+
+  format:server:gofumpt:
+    desc: 'Format server code with gofumpt. Important vars: "paths".'
+    cmds:
+      - gofumpt -extra -w {{.CLI_ARGS}} {{.paths | default "server/"}}
 
   build:server:
     desc: Build vault plugin
@@ -312,14 +342,14 @@ tasks:
 
   clean:
     desc: "Clean all temporary files and build artifacts."
-    deps:
-      - clean:binaries
+    cmds:
+      - task: clean:binaries
 
   clean:binaries:
     desc: "Clean all built binaries."
-    deps:
-      - clean:binaries:dev
-      - clean:binaries:dist
+    cmds:
+      - task: clean:binaries:dev
+      - task: clean:binaries:dist
 
   clean:binaries:dev:
     desc: "Clean built dev binaries."
@@ -334,10 +364,10 @@ tasks:
   docs:gen:
     desc: Regenerate references
     dir: docs
-    deps:
-      - docs:reference:cli
-      - docs:reference:vault-plugin
-      - docs:reference:sidebar
+    cmds:
+      - task: docs:reference:cli
+      - task: docs:reference:vault-plugin
+      - task: docs:reference:sidebar
 
   docs:reference:cli:
     desc: Regenerate CLI reference
