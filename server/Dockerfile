@@ -11,4 +11,5 @@ RUN apk add --no-cache wget && \
     chmod +x /docker-buildx
 
 FROM ghcr.io/werf/trdl-dev-vault:latest
+RUN addgroup vault ping
 COPY --from=builder /docker-buildx /usr/lib/docker/cli-plugins/docker-buildx
