@@ -414,7 +414,7 @@ git signatures push
 ```shell
 URL=https://storage.googleapis.com/trdl-test-project-tuf
 ROOT_VERSION=1
-ROOT_SHA512=$(curl -Ls ${URL}/${ROOT_VERSION}.root.json | sha512sum)
+ROOT_SHA512=$(curl -Ls ${URL}/${ROOT_VERSION}.root.json | sha512sum | cut -b -128)
 ```
 
 Далее пользователь добавляет репозиторий, указав произвольное имя:
