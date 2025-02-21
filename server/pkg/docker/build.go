@@ -2,6 +2,7 @@ package docker
 
 import (
 	"archive/tar"
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -105,11 +106,16 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 func RunCliBuild(contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
 	finalArgs := append([]string{"buildx", "build"}, args...)
 	cmd := exec.Command("docker", finalArgs...)
+
 	cmd.Stdout = tarWriter
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
 	cmd.Stdin = contextReader
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to execute docker build: %w", err)
+		return fmt.Errorf("failed to execute docker build: %w: %s", err, stderr.String())
 	}
 
 	return nil
