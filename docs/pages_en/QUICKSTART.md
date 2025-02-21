@@ -415,7 +415,7 @@ In our case, the user gets the following data from the vendor:
 ```shell
 URL=https://storage.googleapis.com/trdl-test-project-tuf
 ROOT_VERSION=1
-ROOT_SHA512=$(curl -Ls ${URL}/${ROOT_VERSION}.root.json | sha512sum | cut -b -128)
+ROOT_SHA512=$(curl -Ls ${URL}/${ROOT_VERSION}.root.json | sha512sum | cut -c 1-128)
 ```
 
 Next, the user adds a repository with an arbitrary name:
