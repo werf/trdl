@@ -7,103 +7,87 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/werf/trdl/release/common"
+	"github.com/werf/trdl/release/pkg/logger"
 	"github.com/werf/trdl/release/pkg/vault"
 )
 
-type ConsoleLogger struct{}
-
-func (cl *ConsoleLogger) Log(taskID, msg string) {
-	log.Printf("[%s] %s", taskID, msg)
-}
-
 func newVaultClient(vaultAddr, vaultToken string, enableRetry bool, maxAttempts int, retryDelay time.Duration) (*vault.TrdlClient, error) {
-	consoleLogger := &ConsoleLogger{}
+	consoleLogger := &logger.ConsoleLogger{}
 	return vault.NewTrdlClient(vaultAddr, vaultToken, consoleLogger, enableRetry, maxAttempts, retryDelay)
 }
 
 func main() {
-	var vaultToken string
-	var vaultAddr string
-	var projectName string
-	var gitTag string
-	var enableRetry bool
-	var maxAttempts int
-	var retryDelay time.Duration
+	var commonCmdData common.CmdData
 
-	var rootCmd = &cobra.Command{
+	var cmd = &cobra.Command{
 		Use:   "trdl-vault",
 		Short: "Trdl CLI for Vault operations",
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			requiredFlags := map[string]*string{
-				"vault-addr":   &vaultAddr,
-				"vault-token":  &vaultToken,
-				"project-name": &projectName,
-			}
-			missingFlags := []string{}
-			for flag, value := range requiredFlags {
-				if *value == "" {
-					missingFlags = append(missingFlags, flag)
-				}
-			}
-
-			if len(missingFlags) > 0 {
-				log.Fatalf("Error: required flags are missing: %v", missingFlags)
-			}
-		},
 	}
 
 	var publishCmd = &cobra.Command{
 		Use:   "publish",
 		Short: "Publish operation",
-		Run: func(cmd *cobra.Command, args []string) {
-			client, err := newVaultClient(vaultAddr, vaultToken, enableRetry, maxAttempts, retryDelay)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := newVaultClient(
+				*commonCmdData.VaultAddress,
+				*commonCmdData.VaultToken,
+				*commonCmdData.Retry,
+				*commonCmdData.MaxAttempts,
+				*commonCmdData.Delay,
+			)
 			if err != nil {
-				log.Fatalf("Error initializing Vault client: %v", err)
+				return err
 			}
 
-			log.Println("Starting publish...")
-			err = client.Publish(projectName)
+			err = client.Publish(*commonCmdData.ProjectName)
 			if err != nil {
-				log.Fatalf("Operation failed: %v", err)
+				return err
 			}
 
 			log.Println("Publish completed successfully!")
+			return nil
 		},
 	}
 
 	var releaseCmd = &cobra.Command{
-		Use:   "release",
+		Use:   "release <git-tag>",
 		Short: "Release operation",
-		Run: func(cmd *cobra.Command, args []string) {
-			client, err := newVaultClient(vaultAddr, vaultToken, enableRetry, maxAttempts, retryDelay)
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			gitTag := args[0]
+			client, err := newVaultClient(
+				*commonCmdData.VaultAddress,
+				*commonCmdData.VaultToken,
+				*commonCmdData.Retry,
+				*commonCmdData.MaxAttempts,
+				*commonCmdData.Delay,
+			)
 			if err != nil {
-				log.Fatalf("Error initializing Vault client: %v", err)
+				return err
 			}
 
-			log.Println("Starting release...")
-			err = client.Release(projectName, gitTag)
+			err = client.Release(*commonCmdData.ProjectName, gitTag)
 			if err != nil {
-				log.Fatalf("Operation failed: %v", err)
+				return err
 			}
 
 			log.Println("Release completed successfully!")
+			return nil
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVar(&vaultAddr, "vault-addr", os.Getenv("VAULT_ADDR"), "Vault address")
-	rootCmd.PersistentFlags().StringVar(&vaultToken, "vault-token", os.Getenv("VAULT_TOKEN"), "Vault token")
-	rootCmd.PersistentFlags().StringVar(&projectName, "project-name", os.Getenv("PROJECT_NAME"), "Project name")
-	rootCmd.PersistentFlags().BoolVar(&enableRetry, "enable-retry", true, "Enable retries on failure")
-	rootCmd.PersistentFlags().IntVar(&maxAttempts, "max-attempts", 5, "Maximum number of retry attempts")
-	rootCmd.PersistentFlags().DurationVar(&retryDelay, "retry-delay", 10*time.Second, "Delay between retry attempts")
+	common.SetupProjectName(&commonCmdData, cmd)
+	common.SetupVaultAddress(&commonCmdData, cmd)
+	common.SetupVaultToken(&commonCmdData, cmd)
+	common.SetupRetry(&commonCmdData, cmd)
+	common.SetupMaxAttemps(&commonCmdData, cmd)
+	common.SetupDelay(&commonCmdData, cmd)
 
-	releaseCmd.Flags().StringVar(&gitTag, "git-tag", "", "Git tag ")
-	releaseCmd.MarkFlagRequired("git-tag")
+	cmd.AddCommand(publishCmd)
+	cmd.AddCommand(releaseCmd)
 
-	rootCmd.AddCommand(publishCmd)
-	rootCmd.AddCommand(releaseCmd)
-
-	if err := rootCmd.Execute(); err != nil {
+	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
