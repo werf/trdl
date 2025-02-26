@@ -43,6 +43,10 @@ func Paths() []*framework.Path {
 					Description: "Add a build secret",
 					Callback:    pathSecretCreate,
 				},
+				logical.UpdateOperation: &framework.PathOperation{
+					Description: "Add a build secret",
+					Callback:    pathSecretCreate,
+				},
 			},
 		},
 		{
