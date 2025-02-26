@@ -2,8 +2,11 @@ package docker
 
 import (
 	"archive/tar"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"os/exec"
 	"path"
 
@@ -105,11 +108,31 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 func RunCliBuild(contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
 	finalArgs := append([]string{"buildx", "build"}, args...)
 	cmd := exec.Command("docker", finalArgs...)
+
 	cmd.Stdout = tarWriter
 	cmd.Stdin = contextReader
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to execute docker build: %w", err)
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("error starting docker build: %w", err)
+	}
+
+	var stderr bytes.Buffer
+	go func() {
+		if _, err := io.Copy(&stderr, stderrPipe); err != nil {
+			log.Printf("error writing stderr buffer: %s", err.Error())
+		}
+	}()
+
+	if err := cmd.Wait(); err != nil {
+		if stderr.Len() > 0 {
+			log.Println("Docker build error output:", stderr.String())
+		}
+		return fmt.Errorf("failed to execute docker build: %w: %s", err, stderr.String())
 	}
 
 	return nil
