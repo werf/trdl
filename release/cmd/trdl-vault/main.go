@@ -12,9 +12,9 @@ import (
 	"github.com/werf/trdl/release/pkg/vault"
 )
 
-func newVaultClient(vaultAddr, vaultToken string, enableRetry bool, maxAttempts int, retryDelay time.Duration) (*vault.TrdlClient, error) {
+func newVaultClient(vaultAddress, vaultToken string, Retry bool, maxAttempts int, Delay time.Duration) (*vault.TrdlClient, error) {
 	consoleLogger := &logger.ConsoleLogger{}
-	return vault.NewTrdlClient(vaultAddr, vaultToken, consoleLogger, enableRetry, maxAttempts, retryDelay)
+	return vault.NewTrdlClient(vaultAddress, vaultToken, consoleLogger, Retry, maxAttempts, Delay)
 }
 
 func main() {
