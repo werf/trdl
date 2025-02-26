@@ -1,9 +1,40 @@
 package logger
 
-import "log"
+import (
+	"context"
+	"log/slog"
+	"os"
+)
 
-type ConsoleLogger struct{}
+type Logger struct {
+	logger *slog.Logger
+}
 
-func (cl *ConsoleLogger) Log(taskID, msg string) {
-	log.Printf("[%s] %s", taskID, msg)
+func NewLogger(level slog.Level) *Logger {
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	return &Logger{logger: slog.New(handler)}
+}
+
+func (l *Logger) Debug(taskID, msg string) {
+	l.log(context.Background(), slog.LevelDebug, taskID, msg)
+}
+
+func (l *Logger) Info(taskID, msg string) {
+	l.log(context.Background(), slog.LevelInfo, taskID, msg)
+}
+
+func (l *Logger) Warn(taskID, msg string) {
+	l.log(context.Background(), slog.LevelWarn, taskID, msg)
+}
+
+func (l *Logger) Error(taskID, msg string) {
+	l.log(context.Background(), slog.LevelError, taskID, msg)
+}
+
+func (l *Logger) log(ctx context.Context, level slog.Level, taskID, msg string) {
+	if taskID == "" {
+		l.logger.Log(ctx, level, msg)
+	} else {
+		l.logger.Log(ctx, level, "task_id", taskID, msg)
+	}
 }

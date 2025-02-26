@@ -9,8 +9,12 @@ import (
 )
 
 type TaskLogger interface {
-	Log(taskID, msg string)
+	Debug(taskID, msg string)
+	Info(taskID, msg string)
+	Warn(taskID, msg string)
+	Error(taskID, msg string)
 }
+
 type TrdlClient struct {
 	vaultClient *api.Client
 	logger      TaskLogger
@@ -49,7 +53,7 @@ func (c *TrdlClient) longRunningWrite(path string, data map[string]interface{}) 
 		resp, err := c.vaultClient.Logical().Write(path, data)
 		if err != nil {
 			if err.Error() == "busy" {
-				c.logger.Log("INFO", fmt.Sprintf("Vault is busy. Retrying request to %s in 5s...", path))
+				c.logger.Warn("", fmt.Sprintf("Vault is busy. Retrying request to %s in 5s...", path))
 				time.Sleep(c.delay)
 				continue
 			}
@@ -67,7 +71,7 @@ func (c *TrdlClient) withRetryRequest(
 	for attempt := 1; attempt <= c.maxAttempts; attempt++ {
 		resp, err := c.longRunningWrite(path, data)
 		if err != nil {
-			c.logger.Log("ERROR", fmt.Sprintf("Attempt %d/%d failed: %v", attempt, c.maxAttempts, err))
+			c.logger.Error("", fmt.Sprintf("Attempt %d/%d failed: %v", attempt, c.maxAttempts, err))
 
 			if !c.enableRetry || attempt == c.maxAttempts {
 				return fmt.Errorf("request to %s failed after %d attempts: %w", path, c.maxAttempts, err)
@@ -112,7 +116,7 @@ func (c *TrdlClient) Release(projectName, gitTag string) error {
 
 // watchTask waits for the task to finish and handles status changes
 func (c *TrdlClient) watchTask(projectName, taskID string, logger TaskLogger) error {
-	logger.Log(taskID, "Started task")
+	logger.Info(taskID, "Started task")
 
 	for {
 		status, reason, err := c.getTaskStatus(projectName, taskID)
@@ -122,12 +126,12 @@ func (c *TrdlClient) watchTask(projectName, taskID string, logger TaskLogger) er
 
 		switch status {
 		case "FAILED":
-			logger.Log(taskID, fmt.Sprintf("Task failed: %s", reason))
+			logger.Error(taskID, fmt.Sprintf("Task failed: %s", reason))
 			return fmt.Errorf("task %s failed: %s", taskID, reason)
 		case "SUCCEEDED":
 			return nil
 		default:
-			logger.Log(taskID, fmt.Sprintf("Task %s still running", taskID))
+			logger.Debug(taskID, fmt.Sprintf("Task %s still running", taskID))
 			time.Sleep(2 * time.Second)
 		}
 	}

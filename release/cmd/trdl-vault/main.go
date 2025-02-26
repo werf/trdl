@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -12,9 +12,8 @@ import (
 	"github.com/werf/trdl/release/pkg/vault"
 )
 
-func newVaultClient(vaultAddress, vaultToken string, Retry bool, maxAttempts int, Delay time.Duration) (*vault.TrdlClient, error) {
-	consoleLogger := &logger.ConsoleLogger{}
-	return vault.NewTrdlClient(vaultAddress, vaultToken, consoleLogger, Retry, maxAttempts, Delay)
+func newVaultClient(vaultAddress, vaultToken string, Retry bool, maxAttempts int, Delay time.Duration, log *logger.Logger) (*vault.TrdlClient, error) {
+	return vault.NewTrdlClient(vaultAddress, vaultToken, log, Retry, maxAttempts, Delay)
 }
 
 func main() {
@@ -24,6 +23,7 @@ func main() {
 		Use:   "trdl-vault",
 		Short: "Trdl CLI for Vault operations",
 	}
+	log := logger.NewLogger(slog.LevelInfo)
 
 	var publishCmd = &cobra.Command{
 		Use:   "publish",
@@ -35,17 +35,20 @@ func main() {
 				*commonCmdData.Retry,
 				*commonCmdData.MaxAttempts,
 				*commonCmdData.Delay,
+				log,
 			)
 			if err != nil {
+				log.Error("", fmt.Sprintf("Failed to create Vault client: %v", err))
 				return err
 			}
 
 			err = client.Publish(*commonCmdData.ProjectName)
 			if err != nil {
+				log.Error("", fmt.Sprintf("Publish failed: %v", err))
 				return err
 			}
 
-			log.Println("Publish completed successfully!")
+			log.Info("", "Publish completed successfully!")
 			return nil
 		},
 	}
@@ -62,17 +65,20 @@ func main() {
 				*commonCmdData.Retry,
 				*commonCmdData.MaxAttempts,
 				*commonCmdData.Delay,
+				log,
 			)
 			if err != nil {
+				log.Error("", fmt.Sprintf("Failed to create Vault client: %v", err))
 				return err
 			}
 
 			err = client.Release(*commonCmdData.ProjectName, gitTag)
 			if err != nil {
+				log.Error("", fmt.Sprintf("Release failed: %v", err))
 				return err
 			}
 
-			log.Println("Release completed successfully!")
+			log.Info("", "Release completed successfully!")
 			return nil
 		},
 	}
@@ -88,7 +94,7 @@ func main() {
 	cmd.AddCommand(releaseCmd)
 
 	if err := cmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Error("", fmt.Sprintf("Command execution failed: %v", err))
 		os.Exit(1)
 	}
 }
