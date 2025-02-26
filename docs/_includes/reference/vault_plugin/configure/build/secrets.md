@@ -1,6 +1,6 @@
 Add a build secret.
 
-## Add or update a build secret
+## Add a build secret
 
 
 | Method | Path |
