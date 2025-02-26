@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.8.4](https://www.github.com/werf/trdl/compare/v0.8.3...v0.8.4) (2025-02-26)
+
+
+### Bug Fixes
+
+* fix secrets create error ([#305](https://www.github.com/werf/trdl/issues/305)) ([e0ca0de](https://www.github.com/werf/trdl/commit/e0ca0debf3a8f49dd696b550a18e6861f2769704))
+
 ### [0.8.3](https://www.github.com/werf/trdl/compare/v0.8.2...v0.8.3) (2025-01-17)
 
 
