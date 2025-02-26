@@ -12,4 +12,6 @@ RUN apk add --no-cache wget && \
 
 FROM ghcr.io/werf/trdl-dev-vault:latest
 RUN addgroup vault ping
+ENV VAULT_ADDR=http://localhost:8200
+ENV VAULT_TOKEN=root
 COPY --from=builder /docker-buildx /usr/lib/docker/cli-plugins/docker-buildx
