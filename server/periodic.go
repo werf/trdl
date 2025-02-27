@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -55,8 +54,8 @@ func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 	}
 
 	{
-		cfgData, err := json.MarshalIndent(config, "", "  ")
-		b.Logger().Debug(fmt.Sprintf("Got configuration (err=%v):\n%s", err, string(cfgData)))
+		cfgData, err := config.maskConfigSensetiveDataForDebug()
+		b.Logger().Debug(fmt.Sprintf("Got configuration (err=%v):\n%s", err, cfgData))
 	}
 
 	opts := config.RepositoryOptions()
