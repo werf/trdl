@@ -26,9 +26,11 @@ func main() {
 	log := logger.NewLogger(slog.LevelInfo)
 
 	var publishCmd = &cobra.Command{
-		Use:   "publish",
+		Use:   "publish <project-name>",
 		Short: "Publish operation",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			projectName := args[0]
 			client, err := newVaultClient(
 				*commonCmdData.VaultAddress,
 				*commonCmdData.VaultToken,
@@ -42,7 +44,7 @@ func main() {
 				return err
 			}
 
-			err = client.Publish(*commonCmdData.ProjectName)
+			err = client.Publish(projectName)
 			if err != nil {
 				log.Error("", fmt.Sprintf("Publish failed: %v", err))
 				return err
@@ -54,11 +56,12 @@ func main() {
 	}
 
 	var releaseCmd = &cobra.Command{
-		Use:   "release <git-tag>",
+		Use:   "release <project-name> <git-tag>",
 		Short: "Release operation",
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gitTag := args[0]
+			projectName := args[0]
+			gitTag := args[1]
 			client, err := newVaultClient(
 				*commonCmdData.VaultAddress,
 				*commonCmdData.VaultToken,
@@ -72,7 +75,7 @@ func main() {
 				return err
 			}
 
-			err = client.Release(*commonCmdData.ProjectName, gitTag)
+			err = client.Release(projectName, gitTag)
 			if err != nil {
 				log.Error("", fmt.Sprintf("Release failed: %v", err))
 				return err
@@ -83,7 +86,6 @@ func main() {
 		},
 	}
 
-	common.SetupProjectName(&commonCmdData, cmd)
 	common.SetupVaultAddress(&commonCmdData, cmd)
 	common.SetupVaultToken(&commonCmdData, cmd)
 	common.SetupRetry(&commonCmdData, cmd)

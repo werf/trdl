@@ -1,22 +1,12 @@
 package common
 
 import (
-	"log"
 	"net/url"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 )
-
-func SetupProjectName(cmdData *CmdData, cmd *cobra.Command) {
-	cmdData.ProjectName = new(string)
-	cmd.PersistentFlags().StringVarP(cmdData.ProjectName, "project-name", "N", os.Getenv("TRDL_PROJECT_NAME"), "Set a specific project name")
-	if *cmdData.ProjectName == "" {
-		log.Fatal("Project name is required. Please specify the --project-name flag or set the TRDL_PROJECT_NAME environment variable.")
-	}
-
-}
 
 func SetupVaultAddress(cmdData *CmdData, cmd *cobra.Command) {
 	cmdData.VaultAddress = new(string)
