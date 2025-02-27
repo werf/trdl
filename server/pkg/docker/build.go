@@ -125,10 +125,12 @@ func RunCliBuild(contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args 
 	io.Copy(&stderr, stderrPipe)
 
 	if err := cmd.Wait(); err != nil {
+		var errMsg string
 		if stderr.Len() > 0 {
-			log.Println("Docker build error output:", stderr.String())
+			errMsg = stderr.String()
 		}
-		return fmt.Errorf("failed to execute docker build: %w: %s", err, stderr.String())
+		return fmt.Errorf("error executing command: %s %w", errMsg, err)
+	}
 	}
 
 	return nil
