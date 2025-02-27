@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.8.5](https://www.github.com/werf/trdl/compare/v0.8.4...v0.8.5) (2025-02-27)
+
+
+### Bug Fixes
+
+* mask sensetive data in debug output ([eef4e2c](https://www.github.com/werf/trdl/commit/eef4e2c61c37045f4fc77be38bf3d4033177eb05))
+
 ### [0.8.4](https://www.github.com/werf/trdl/compare/v0.8.3...v0.8.4) (2025-02-26)
 
 
