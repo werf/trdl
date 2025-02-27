@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os/exec"
 	"path"
 
@@ -130,7 +129,6 @@ func RunCliBuild(contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args 
 			errMsg = stderr.String()
 		}
 		return fmt.Errorf("error executing command: %s %w", errMsg, err)
-	}
 	}
 
 	return nil
