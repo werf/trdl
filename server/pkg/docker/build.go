@@ -122,11 +122,7 @@ func RunCliBuild(contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args 
 	}
 
 	var stderr bytes.Buffer
-	go func() {
-		if _, err := io.Copy(&stderr, stderrPipe); err != nil {
-			log.Printf("error writing stderr buffer: %s", err.Error())
-		}
-	}()
+	io.Copy(&stderr, stderrPipe)
 
 	if err := cmd.Wait(); err != nil {
 		if stderr.Len() > 0 {
