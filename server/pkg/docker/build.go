@@ -2,10 +2,14 @@ package docker
 
 import (
 	"archive/tar"
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/djherbis/buffer"
 	"github.com/djherbis/nio/v3"
@@ -108,11 +112,40 @@ func RunCliBuild(contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args 
 	cmd.Stdout = tarWriter
 	cmd.Stdin = contextReader
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to execute docker build: %w", err)
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("error starting command: %w", err)
+	}
+
+	var stderr bytes.Buffer
+	io.Copy(&stderr, stderrPipe)
+
+	if err := cmd.Wait(); err != nil {
+		var errMsg string
+		if stderr.Len() > 0 {
+			errMsg = extractErrorMessage(stderr.String())
+		}
+		return fmt.Errorf("error executing command: %s %w", errMsg, err)
 	}
 
 	return nil
+}
+
+func extractErrorMessage(stderr string) string {
+	scanner := bufio.NewScanner(strings.NewReader(stderr))
+	var errors []string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "ERROR:") || strings.HasPrefix(line, "error:") {
+			errors = append(errors, line)
+		}
+	}
+	return strings.Join(errors, " ")
 }
 
 func setCliArgs(serviceDockerfilePathInContext string, secrets []secrets.Secret) ([]string, error) {
