@@ -2,6 +2,12 @@ GOARCH = amd64
 
 UNAME = $(shell uname -s)
 
+PROJECT_NAME ?= trdl-test-project1
+SIGNATURES_COUNT ?= 0
+GIT_REPO_URL ?= https://github.com/werf/trdl-test-project
+GIT_TRDL_PATH ?= p1/trdl.yaml
+GIT_TRDL_CHANNELS_PATH ?= p1/trdl_channels.yaml
+
 ifndef OS
 	ifeq ($(UNAME), Linux)
 	else ifeq ($(UNAME), Darwin)
@@ -12,7 +18,7 @@ endif
 GOSRC = $(shell find . -type f -name '*.go')
 .DEFAULT_GOAL := all
 
-RUN_TRDL_DEV_VAULT = docker run --rm -e VAULT_TOKEN=root -e VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 ghcr.io/werf/trdl-dev-vault:latest
+RUN_TRDL_DEV_VAULT = docker run --rm -e VAULT_ADDR=http://$$(docker inspect trdl_dev_vault --format "{{ .NetworkSettings.IPAddress }}"):8200 ghcr.io/werf/trdl-dev-vault:latest
 RUN_TRDL_DEV_MINIO = docker run -ti --rm -e MC_HOST_main=http://minioadmin:minioadmin@$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 minio/mc
 
 .PHONY: fmt lint clean tail
@@ -27,7 +33,7 @@ lint:
 	GOOS=$(OS) GOARCH="$(GOARCH)" golangci-lint run ./... --config ../.golangci.yaml
 
 vault/plugins/vault-plugin-secrets-trdl: $(GOSRC)
-	CGO_ENABLED=0 GOOS=$(OS) GOARCH="$(GOARCH)" go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH="$(GOARCH)" go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
 
 build: vault/plugins/vault-plugin-secrets-trdl
 
@@ -52,21 +58,8 @@ restart:
 	)
 
 	# Enable and configure plugin
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=trdl-test-project1 vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write trdl-test-project1/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project1 s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project git_trdl_path=p1/trdl.yaml git_trdl_channels_path=p1/trdl_channels.yaml
-
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=trdl-test-project2 vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write trdl-test-project2/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project2 s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project git_trdl_path=p2/trdl.yaml git_trdl_channels_path=p2/trdl_channels.yaml
-
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=trdl vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write trdl/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl
-
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=kubedog vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write kubedog/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=kubedog s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/kubedog
-
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=werf vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write werf/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=werf s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf git_trdl_channels_branch=multiwerf
-
+	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=$(PROJECT_NAME) vault-plugin-secrets-trdl
+	$(RUN_TRDL_DEV_VAULT) vault write $(PROJECT_NAME)/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=$(PROJECT_NAME) s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=$(SIGNATURES_COUNT) git_repo_url=$(GIT_REPO_URL) git_trdl_path=$(GIT_TRDL_PATH) git_trdl_channels_path=$(GIT_TRDL_CHANNELS_PATH)
 
 .run: vault/plugins/vault-plugin-secrets-trdl
 	# Run minio, create bucket
@@ -80,16 +73,9 @@ restart:
 			sleep 1 ; \
 		done ; \
 	)
-	$(RUN_TRDL_DEV_MINIO) mb main/trdl-test-project1
-	$(RUN_TRDL_DEV_MINIO) anonymous set public main/trdl-test-project1
-	$(RUN_TRDL_DEV_MINIO) mb main/trdl-test-project2
-	$(RUN_TRDL_DEV_MINIO) anonymous set public main/trdl-test-project2
-	$(RUN_TRDL_DEV_MINIO) mb main/werf
-	$(RUN_TRDL_DEV_MINIO) anonymous set public main/werf
-	$(RUN_TRDL_DEV_MINIO) mb main/trdl
-	$(RUN_TRDL_DEV_MINIO) anonymous set public main/trdl
-	$(RUN_TRDL_DEV_MINIO) mb main/kubedog
-	$(RUN_TRDL_DEV_MINIO) anonymous set public main/kubedog
+	$(RUN_TRDL_DEV_MINIO) mb main/$(PROJECT_NAME)
+	$(RUN_TRDL_DEV_MINIO) anonymous set public main/$(PROJECT_NAME)
+
 
 	# Run vault dev server
 	docker rm -f trdl_dev_vault || true
@@ -102,20 +88,8 @@ restart:
 	)
 
 	# Enable and configure plugin
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=trdl-test-project1 vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write trdl-test-project1/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project1 s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project git_trdl_path=p1/trdl.yaml git_trdl_channels_path=p1/trdl_channels.yaml
-
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=trdl-test-project2 vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write trdl-test-project2/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl-test-project2 s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl-test-project git_trdl_path=p2/trdl.yaml git_trdl_channels_path=p2/trdl_channels.yaml
-
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=trdl vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write trdl/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=trdl s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/trdl
-
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=kubedog vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write kubedog/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=kubedog s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/kubedog
-
-	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=werf vault-plugin-secrets-trdl
-	$(RUN_TRDL_DEV_VAULT) vault write werf/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=werf s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=0 git_repo_url=https://github.com/werf/werf git_trdl_channels_branch=multiwerf
+	$(RUN_TRDL_DEV_VAULT) vault secrets enable -path=$(PROJECT_NAME) vault-plugin-secrets-trdl
+	$(RUN_TRDL_DEV_VAULT) vault write $(PROJECT_NAME)/configure s3_secret_access_key=minioadmin s3_access_key_id=minioadmin s3_bucket_name=$(PROJECT_NAME) s3_region=ru-central1 s3_endpoint=http://$$(docker inspect trdl_dev_minio --format "{{ .NetworkSettings.IPAddress }}"):9000 required_number_of_verified_signatures_on_commit=$(SIGNATURES_COUNT) git_repo_url=$(GIT_REPO_URL) git_trdl_path=$(GIT_TRDL_PATH) git_trdl_channels_path=$(GIT_TRDL_CHANNELS_PATH)
 
 	touch .run
 
