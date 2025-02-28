@@ -225,7 +225,7 @@ var _ = Describe("Complete cycle", func() {
 			req.Path = "configure/build/secrets"
 			req.Operation = logical.CreateOperation
 			req.Data = map[string]interface{}{
-				"id":   fmt.Sprintf("secretId%d", i),
+				"id":   fmt.Sprintf("secretId%d-test", i),
 				"data": "secretData",
 			}
 			_, err = backend.HandleRequest(context.Background(), req)
