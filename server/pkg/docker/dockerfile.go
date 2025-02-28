@@ -50,7 +50,8 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 		data = append(data, []byte(line+"\n")...)
 	}
 
-	addLineFunc(fmt.Sprintf("FROM %s", fromImage))
+	// we use stages to reduce the size of output data to stdout
+	addLineFunc(fmt.Sprintf("FROM %s as builder", fromImage))
 
 	for labelName, labelVal := range opts.Labels {
 		addLineFunc(fmt.Sprintf("LABEL %s=%q", labelName, labelVal))
@@ -75,6 +76,11 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 			addLineFunc(fmt.Sprintf("RUN %s", strings.Join(runCommands, " && ")))
 		}
 	}
+
+	// since we need only the artifacts from the build stage
+	// we use scratch as the final image containing ONLY artifacts
+	addLineFunc("FROM scratch")
+	addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
 
 	return data
 }
