@@ -1,8 +1,11 @@
 package vault
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/vault/api"
@@ -26,6 +29,7 @@ type TrdlClient struct {
 type Task struct {
 	Status string `json:"status"`
 	Reason string `json:"reason"`
+	Log    string `json:"result"`
 }
 
 // NewTrdlClient initializes the Vault client using DefaultConfig
@@ -116,22 +120,27 @@ func (c *TrdlClient) Release(projectName, gitTag string) error {
 
 // watchTask waits for the task to finish and handles status changes
 func (c *TrdlClient) watchTask(projectName, taskID string, logger TaskLogger) error {
-	logger.Info(taskID, "Started task")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go c.WatchTaskLog(ctx, projectName, taskID, logger)
 
 	for {
 		status, reason, err := c.getTaskStatus(projectName, taskID)
 		if err != nil {
+			cancel()
 			return fmt.Errorf("failed to fetch task status for %s: %w", taskID, err)
 		}
 
 		switch status {
 		case "FAILED":
-			logger.Error(taskID, fmt.Sprintf("Task failed: %s", reason))
+			cancel()
 			return fmt.Errorf("task %s failed: %s", taskID, reason)
 		case "SUCCEEDED":
+			cancel()
 			return nil
 		default:
-			logger.Debug(taskID, fmt.Sprintf("Task %s still running", taskID))
 			time.Sleep(2 * time.Second)
 		}
 	}
@@ -158,4 +167,89 @@ func (c *TrdlClient) getTaskStatus(projectName, taskID string) (string, string, 
 	}
 
 	return task.Status, task.Reason, nil
+}
+
+// getTaskLogs retrieves the logs of the task
+func (c *TrdlClient) getTaskLogs(projectName, taskID string) (string, error) {
+	resp, err := c.vaultClient.Logical().Read(fmt.Sprintf("%s/task/%s/log", projectName, taskID))
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch task status: %w", err)
+	}
+	if resp == nil || resp.Data == nil {
+		return "", nil
+	}
+
+	dataBytes, err := json.Marshal(resp.Data)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal resp.Data: %w", err)
+	}
+
+	var task Task
+	if err := json.Unmarshal(dataBytes, &task); err != nil {
+		return "", fmt.Errorf("failed to unmarshal task status: %w", err)
+	}
+
+	return task.Log, nil
+}
+
+func (c *TrdlClient) WatchTaskLog(ctx context.Context, projectName, taskID string, logger TaskLogger) {
+	var lastLines []string
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			logData, err := c.getTaskLogs(projectName, taskID)
+			if err != nil {
+				logger.Error(taskID, fmt.Sprintf("Failed to fetch task log: %v", err))
+				time.Sleep(2 * time.Second)
+				continue
+			}
+
+			if logData == "" {
+				time.Sleep(2 * time.Second)
+				continue
+			}
+
+			lines := cleanAndSplitLog(logData)
+
+			newLines := diffLines(lastLines, lines)
+			for _, line := range newLines {
+				logger.Info(taskID, line)
+			}
+
+			lastLines = lines
+			time.Sleep(2 * time.Second)
+		}
+	}
+}
+
+func cleanAndSplitLog(log string) []string {
+	lines := strings.Split(log, "\n")
+
+	re := regexp.MustCompile(`^\d+h?\d+m\d+(\.\d+)?\s+`)
+
+	var cleanedLines []string
+	for _, line := range lines {
+		cleanedLine := re.ReplaceAllString(line, "")
+		if cleanedLine != "" {
+			cleanedLines = append(cleanedLines, cleanedLine)
+		}
+	}
+
+	return cleanedLines
+}
+
+func diffLines(oldLines, newLines []string) []string {
+	if len(oldLines) == 0 {
+		return newLines
+	}
+
+	lastIndex := len(oldLines)
+	if lastIndex >= len(newLines) {
+		return nil
+	}
+
+	return newLines[lastIndex:]
 }

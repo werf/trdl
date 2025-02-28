@@ -40,17 +40,13 @@ func main() {
 				log,
 			)
 			if err != nil {
-				log.Error("", fmt.Sprintf("Failed to create Vault client: %v", err))
 				return err
 			}
 
 			err = client.Publish(projectName)
 			if err != nil {
-				log.Error("", fmt.Sprintf("Publish failed: %v", err))
 				return err
 			}
-
-			log.Info("", "Publish completed successfully!")
 			return nil
 		},
 	}
@@ -71,17 +67,14 @@ func main() {
 				log,
 			)
 			if err != nil {
-				log.Error("", fmt.Sprintf("Failed to create Vault client: %v", err))
 				return err
 			}
 
 			err = client.Release(projectName, gitTag)
 			if err != nil {
-				log.Error("", fmt.Sprintf("Release failed: %v", err))
 				return err
 			}
 
-			log.Info("", "Release completed successfully!")
 			return nil
 		},
 	}
