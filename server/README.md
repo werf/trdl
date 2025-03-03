@@ -1,4 +1,4 @@
-# Local Development Environment for TRDL
+# Local development environment
 
 This repository provides a Makefile for setting up a local development environment with MinIO and Vault.
 
