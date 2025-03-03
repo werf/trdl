@@ -42,7 +42,7 @@ This will:
 - Set `GIT_TRDL_PATH` to the path to `trdl.yaml` in your `GIT_REPO_URL`
 - Set `GIT_TRDL_CHANNELS_PATH` to the path to `trdl_channels.yaml` in your `GIT_REPO_URL`
 
-## Cleaning Up
+## Cleaning up
 
 To remove all containers and clean up data, run:
 
