@@ -2,7 +2,7 @@
 
 This repository provides a Makefile for setting up a local development environment with MinIO and Vault.
 
-## Default Setup
+## Default setup
 
 To start the local development environment with default settings, simply run:
 
