@@ -16,7 +16,7 @@ This command will:
 2. Start a Vault server in development mode.
 3. Configure the Vault plugin with default parameters.
 
-### Default Parameters
+### Default parameters
 
 | Parameter                | Default Value                               | Description                                   |
 | ------------------------ | ------------------------------------------- | --------------------------------------------- |
