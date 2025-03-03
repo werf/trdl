@@ -39,7 +39,6 @@ func main() {
 				*commonCmdData.Delay,
 				log,
 			)
-
 			client.Publish(projectName)
 		},
 	}
@@ -59,7 +58,6 @@ func main() {
 				*commonCmdData.Delay,
 				log,
 			)
-
 			client.Release(projectName, gitTag)
 		},
 	}

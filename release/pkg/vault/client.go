@@ -3,12 +3,14 @@ package vault
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -33,6 +35,11 @@ type Task struct {
 	Log    string `json:"result"`
 }
 
+var (
+	ErrTaskStatusUnavailable = errors.New("task status not available")
+	ErrTaskFailed            = errors.New("task failed")
+)
+
 // NewTrdlClient initializes the Vault client using DefaultConfig
 func NewTrdlClient(vaultAddr string, vaultToken string, logger TaskLogger, enableRetry bool, maxAttempts int, delay time.Duration) *TrdlClient {
 	config := api.DefaultConfig()
@@ -54,7 +61,7 @@ func NewTrdlClient(vaultAddr string, vaultToken string, logger TaskLogger, enabl
 	}
 }
 
-func (c *TrdlClient) longRunningWrite(path string, data map[string]interface{}) *api.Secret {
+func (c *TrdlClient) longRunningWrite(path string, data map[string]interface{}) (*api.Secret, error) {
 	for {
 		resp, err := c.vaultClient.Logical().Write(path, data)
 		if err != nil {
@@ -64,83 +71,99 @@ func (c *TrdlClient) longRunningWrite(path string, data map[string]interface{}) 
 				continue
 			}
 			c.logger.Error("", fmt.Sprintf("failed to write to Vault at %s: %v", path, err))
-			os.Exit(1)
+			return nil, err
 		}
-		return resp
+		return resp, nil
 	}
 }
 
-func (c *TrdlClient) withRetryRequest(
+func (c *TrdlClient) withBackoffRequest(
 	path string,
 	data map[string]interface{},
-	action func(taskID string, logger TaskLogger),
-) {
-	for attempt := 1; attempt <= c.maxAttempts; attempt++ {
-		resp := c.longRunningWrite(path, data)
-		if resp == nil {
-			c.logger.Error("", fmt.Sprintf("Attempt %d/%d failed: Vault write failed", attempt, c.maxAttempts))
-			if !c.enableRetry || attempt == c.maxAttempts {
-				return
-			}
-			time.Sleep(c.delay)
-			continue
+	action func(taskID string, logger TaskLogger) error,
+) error {
+	bo := backoff.WithMaxRetries(backoff.NewConstantBackOff(c.delay), uint64(c.maxAttempts))
+
+	operation := func() error {
+		resp, err := c.longRunningWrite(path, data)
+		if err != nil {
+			c.logger.Error("", fmt.Sprintf("%v", err))
+			return err
 		}
 
 		taskID, ok := resp.Data["task_uuid"].(string)
 		if !ok {
-			c.logger.Error("", fmt.Sprintf("invalid response from Vault: missing task_uuid"))
-			return
+			c.logger.Error("", "invalid response from Vault: missing task_uuid")
+			return err
 		}
 
-		action(taskID, c.logger)
-		return
+		return action(taskID, c.logger)
 	}
 
-	c.logger.Error("", fmt.Sprintf("unexpected error: reached unreachable code in withRetryRequest"))
-	os.Exit(1)
+	err := backoff.RetryNotify(
+		operation,
+		bo,
+		func(err error, duration time.Duration) {
+			c.logger.Info("", fmt.Sprintf("Retrying %s after %v...", path, c.delay))
+		},
+	)
+
+	if err != nil {
+		c.logger.Error("", fmt.Sprintf("operation exceeded maximum duration: %v", err))
+		return err
+	}
+
+	return err
 }
 
 func (c *TrdlClient) Publish(projectName string) {
-	c.withRetryRequest(
+	err := c.withBackoffRequest(
 		fmt.Sprintf("%s/publish", projectName),
 		nil,
-		func(taskID string, logger TaskLogger) {
-			c.watchTask(projectName, taskID, logger)
+		func(taskID string, logger TaskLogger) error {
+			return c.watchTask(projectName, taskID, logger)
 		},
 	)
+	if err != nil {
+		c.logger.Error("", fmt.Sprintf("Failed to publish project %s: %v", projectName, err))
+		os.Exit(1)
+	}
 }
 
 func (c *TrdlClient) Release(projectName, gitTag string) {
-	c.withRetryRequest(
+	err := c.withBackoffRequest(
 		fmt.Sprintf("%s/release", projectName),
 		map[string]interface{}{"git_tag": gitTag},
-		func(taskID string, logger TaskLogger) {
-			c.watchTask(projectName, taskID, logger)
+		func(taskID string, logger TaskLogger) error {
+			return c.watchTask(projectName, taskID, logger)
 		},
 	)
+	if err != nil {
+		c.logger.Error("", fmt.Sprintf("Failed to release project %s: %v", projectName, err))
+		os.Exit(1)
+	}
 }
 
-func (c *TrdlClient) watchTask(projectName, taskID string, logger TaskLogger) {
+func (c *TrdlClient) watchTask(projectName, taskID string, logger TaskLogger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	go c.WatchTaskLog(ctx, projectName, taskID, logger)
-
 	for {
 		status, reason := c.getTaskStatus(projectName, taskID)
 		if status == "" {
 			cancel()
-			return
+			c.logger.Error("", "task status not available")
+			return ErrTaskStatusUnavailable
 		}
-
 		switch status {
 		case "FAILED":
 			cancel()
-			c.logger.Error(taskID, fmt.Sprintf("task %s failed: %s", taskID, reason))
-			return
+			c.logger.Error("", fmt.Sprintf("Task %s failed: %s", taskID, reason))
+			return ErrTaskFailed
 		case "SUCCEEDED":
 			cancel()
-			return
+			return nil
 		default:
 			time.Sleep(2 * time.Second)
 		}
