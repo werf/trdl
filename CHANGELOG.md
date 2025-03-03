@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.8.6](https://www.github.com/werf/trdl/compare/v0.8.5...v0.8.6) (2025-03-03)
+
+
+### Bug Fixes
+
+* **server:** fix artifact export and build commands leak ([3e2e854](https://www.github.com/werf/trdl/commit/3e2e854ed35a8349bbe8947da2a09cc670f8ae27))
+
 ### [0.8.5](https://www.github.com/werf/trdl/compare/v0.8.4...v0.8.5) (2025-02-27)
 
 
