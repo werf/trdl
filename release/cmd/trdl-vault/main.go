@@ -12,7 +12,7 @@ import (
 	"github.com/werf/trdl/release/pkg/vault"
 )
 
-func newVaultClient(vaultAddress, vaultToken string, Retry bool, maxAttempts int, Delay time.Duration, log *logger.Logger) (*vault.TrdlClient, error) {
+func newVaultClient(vaultAddress, vaultToken string, Retry bool, maxAttempts int, Delay time.Duration, log *logger.Logger) *vault.TrdlClient {
 	return vault.NewTrdlClient(vaultAddress, vaultToken, log, Retry, maxAttempts, Delay)
 }
 
@@ -29,9 +29,9 @@ func main() {
 		Use:   "publish <project-name>",
 		Short: "Publish operation",
 		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			projectName := args[0]
-			client, err := newVaultClient(
+			client := newVaultClient(
 				*commonCmdData.VaultAddress,
 				*commonCmdData.VaultToken,
 				*commonCmdData.Retry,
@@ -39,15 +39,8 @@ func main() {
 				*commonCmdData.Delay,
 				log,
 			)
-			if err != nil {
-				return err
-			}
 
-			err = client.Publish(projectName)
-			if err != nil {
-				return err
-			}
-			return nil
+			client.Publish(projectName)
 		},
 	}
 
@@ -55,10 +48,10 @@ func main() {
 		Use:   "release <project-name> <git-tag>",
 		Short: "Release operation",
 		Args:  cobra.MinimumNArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			projectName := args[0]
 			gitTag := args[1]
-			client, err := newVaultClient(
+			client := newVaultClient(
 				*commonCmdData.VaultAddress,
 				*commonCmdData.VaultToken,
 				*commonCmdData.Retry,
@@ -66,16 +59,8 @@ func main() {
 				*commonCmdData.Delay,
 				log,
 			)
-			if err != nil {
-				return err
-			}
 
-			err = client.Release(projectName, gitTag)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			client.Release(projectName, gitTag)
 		},
 	}
 
