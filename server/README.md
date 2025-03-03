@@ -26,7 +26,7 @@ This command will:
 | `GIT_TRDL_PATH`          | `p1/trdl.yaml`                              | Path to TRDL configuration in the repository. |
 | `GIT_TRDL_CHANNELS_PATH` | `p1/trdl_channels.yaml`                     | Path to TRDL channels configuration.          |
 
-## Custom Setup
+## Custom setup
 
 You can override default values by passing them as arguments:
 
