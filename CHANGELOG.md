@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.8.7](https://www.github.com/werf/trdl/compare/v0.8.6...v0.8.7) (2025-03-04)
+
+
+### Bug Fixes
+
+* **server:** resolve lock in docker build ([#312](https://www.github.com/werf/trdl/issues/312)) ([c0aba74](https://www.github.com/werf/trdl/commit/c0aba74749f3e43e82169b1f9c213c4ca8640d22))
+
 ### [0.8.6](https://www.github.com/werf/trdl/compare/v0.8.5...v0.8.6) (2025-03-03)
 
 
