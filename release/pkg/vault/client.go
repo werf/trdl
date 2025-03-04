@@ -82,6 +82,9 @@ func (c *TrdlClient) withBackoffRequest(
 	data map[string]interface{},
 	action func(taskID string, logger TaskLogger) error,
 ) error {
+	if !c.enableRetry {
+		c.maxAttempts = 0
+	}
 	bo := backoff.WithMaxRetries(backoff.NewConstantBackOff(c.delay), uint64(c.maxAttempts))
 
 	operation := func() error {
