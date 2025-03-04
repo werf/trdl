@@ -110,14 +110,14 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 func RunCliBuild(ctx context.Context, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
 	finalArgs := append([]string{"buildx", "build"}, args...)
 	cmd := exec.CommandContext(ctx, "docker", finalArgs...)
-	var stdErr bytes.Buffer
+	var stdErrBuf bytes.Buffer
 	cmd.Stdout = tarWriter
 	cmd.Stdin = contextReader
-	cmd.Stderr = &stdErr
+	cmd.Stderr = &stdErrBuf
 
 	if err := cmd.Run(); err != nil {
-		if len := stdErr.Len(); len > 0 {
-			errSection, parseErr := extractRelevantLogs(&stdErr)
+		if len := stdErrBuf.Len(); len > 0 {
+			errSection, parseErr := extractRelevantLogs(&stdErrBuf)
 			if parseErr == nil {
 				return fmt.Errorf("build failed: %s %w", errSection.String(), err)
 			}
