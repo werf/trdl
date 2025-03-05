@@ -2,19 +2,13 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
+	"log"
 	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/werf/trdl/release/common"
-	"github.com/werf/trdl/release/pkg/logger"
-	"github.com/werf/trdl/release/pkg/vault"
+	"github.com/werf/trdl/release/pkg/client"
 )
-
-func newVaultClient(vaultAddress, vaultToken string, Retry bool, maxAttempts int, Delay time.Duration, log *logger.Logger) *vault.TrdlClient {
-	return vault.NewTrdlClient(vaultAddress, vaultToken, log, Retry, maxAttempts, Delay)
-}
 
 func main() {
 	var commonCmdData common.CmdData
@@ -23,7 +17,6 @@ func main() {
 		Use:   "trdl-vault",
 		Short: "Trdl CLI for Vault operations",
 	}
-	log := logger.NewLogger(slog.LevelInfo)
 
 	var publishCmd = &cobra.Command{
 		Use:   "publish <project-name>",
@@ -31,15 +24,9 @@ func main() {
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			projectName := args[0]
-			client := newVaultClient(
-				*commonCmdData.VaultAddress,
-				*commonCmdData.VaultToken,
-				*commonCmdData.Retry,
-				*commonCmdData.MaxAttempts,
-				*commonCmdData.Delay,
-				log,
-			)
-			client.Publish(projectName)
+			if err := publishCmd(&commonCmdData, projectName); err != nil {
+				log.Fatalf("Publish failed: %s", err.Error())
+			}
 		},
 	}
 
@@ -50,15 +37,9 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			projectName := args[0]
 			gitTag := args[1]
-			client := newVaultClient(
-				*commonCmdData.VaultAddress,
-				*commonCmdData.VaultToken,
-				*commonCmdData.Retry,
-				*commonCmdData.MaxAttempts,
-				*commonCmdData.Delay,
-				log,
-			)
-			client.Release(projectName, gitTag)
+			if err := releaseCmd(&commonCmdData, projectName, gitTag); err != nil {
+				log.Fatalf("Release failed: %s", err.Error())
+			}
 		},
 	}
 
@@ -71,8 +52,43 @@ func main() {
 	cmd.AddCommand(publishCmd)
 	cmd.AddCommand(releaseCmd)
 
+	cmd.SilenceUsage = true
+
 	if err := cmd.Execute(); err != nil {
-		log.Error("", fmt.Sprintf("Command execution failed: %v", err))
 		os.Exit(1)
 	}
+}
+
+func publishCmd(c *common.CmdData, projectName string) error {
+	trdlClient, err := client.NewTrdlVaultClient(client.NewTrdlVaultClientOpts{
+		VaultAddress: *c.VaultAddress,
+		VaultToken:   *c.VaultToken,
+		Retry:        *c.Retry,
+		MaxAttempts:  *c.MaxAttempts,
+		Delay:        *c.Delay,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to create client: %w", err)
+	}
+	if err := trdlClient.Publish(projectName); err != nil {
+		return fmt.Errorf("unable to publish project: %w", err)
+	}
+	return nil
+}
+
+func releaseCmd(c *common.CmdData, projectName, gitTag string) error {
+	trdlClient, err := client.NewTrdlVaultClient(client.NewTrdlVaultClientOpts{
+		VaultAddress: *c.VaultAddress,
+		VaultToken:   *c.VaultToken,
+		Retry:        *c.Retry,
+		MaxAttempts:  *c.MaxAttempts,
+		Delay:        *c.Delay,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to create client: %w", err)
+	}
+	if err := trdlClient.Release(projectName, gitTag); err != nil {
+		return fmt.Errorf("unable to release project: %w", err)
+	}
+	return nil
 }

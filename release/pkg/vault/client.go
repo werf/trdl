@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/vault/api"
+	"golang.org/x/sync/errgroup"
 )
 
 type TaskLogger interface {
@@ -40,25 +40,33 @@ var (
 	ErrTaskFailed            = errors.New("task failed")
 )
 
+type NewTrdlClientOpts struct {
+	VaultAddress string
+	VaultToken   string
+	Retry        bool
+	MaxAttempts  int
+	Delay        time.Duration
+	Logger       TaskLogger
+}
+
 // NewTrdlClient initializes the Vault client using DefaultConfig
-func NewTrdlClient(vaultAddr string, vaultToken string, logger TaskLogger, enableRetry bool, maxAttempts int, delay time.Duration) *TrdlClient {
+func NewTrdlClient(opts NewTrdlClientOpts) (*TrdlClient, error) {
 	config := api.DefaultConfig()
-	config.Address = vaultAddr
+	config.Address = opts.VaultAddress
 	client, err := api.NewClient(config)
 	if err != nil {
-		logger.Error("", fmt.Sprintf("failed to create Vault client: %v", err))
-		os.Exit(1)
+		return nil, err
 	}
 
-	client.SetToken(vaultToken)
+	client.SetToken(opts.VaultToken)
 
 	return &TrdlClient{
 		vaultClient: client,
-		logger:      logger,
-		enableRetry: enableRetry,
-		maxAttempts: maxAttempts,
-		delay:       delay,
-	}
+		logger:      opts.Logger,
+		enableRetry: opts.Retry,
+		maxAttempts: opts.MaxAttempts,
+		delay:       opts.Delay,
+	}, nil
 }
 
 func (c *TrdlClient) longRunningWrite(path string, data map[string]interface{}) (*api.Secret, error) {
@@ -77,11 +85,7 @@ func (c *TrdlClient) longRunningWrite(path string, data map[string]interface{}) 
 	}
 }
 
-func (c *TrdlClient) withBackoffRequest(
-	path string,
-	data map[string]interface{},
-	action func(taskID string, logger TaskLogger) error,
-) error {
+func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}, action func(taskID string, logger TaskLogger) error) error {
 	if !c.enableRetry {
 		c.maxAttempts = 0
 	}
@@ -119,119 +123,137 @@ func (c *TrdlClient) withBackoffRequest(
 	return err
 }
 
-func (c *TrdlClient) Publish(projectName string) {
+func (c *TrdlClient) Publish(projectName string) error {
 	err := c.withBackoffRequest(
 		fmt.Sprintf("%s/publish", projectName),
 		nil,
 		func(taskID string, logger TaskLogger) error {
-			return c.watchTask(projectName, taskID, logger)
+			return c.watchTask(projectName, taskID)
 		},
 	)
 	if err != nil {
-		c.logger.Error("", fmt.Sprintf("Failed to publish project %s: %v", projectName, err))
-		os.Exit(1)
+		c.logger.Error("", fmt.Sprintf("failed to publish project %s: %s", projectName, err.Error()))
+		return fmt.Errorf("failed to publish project %s: %w", projectName, err)
 	}
+	return nil
 }
 
-func (c *TrdlClient) Release(projectName, gitTag string) {
+func (c *TrdlClient) Release(projectName, gitTag string) error {
 	err := c.withBackoffRequest(
 		fmt.Sprintf("%s/release", projectName),
 		map[string]interface{}{"git_tag": gitTag},
 		func(taskID string, logger TaskLogger) error {
-			return c.watchTask(projectName, taskID, logger)
+			return c.watchTask(projectName, taskID)
 		},
 	)
 	if err != nil {
-		c.logger.Error("", fmt.Sprintf("Failed to release project %s: %v", projectName, err))
-		os.Exit(1)
+		c.logger.Error("", fmt.Sprintf("failed to release project %s: %s", projectName, err.Error()))
+		return fmt.Errorf("failed to release project %s: %w", projectName, err)
 	}
+	return nil
 }
 
-func (c *TrdlClient) watchTask(projectName, taskID string, logger TaskLogger) error {
+func (c *TrdlClient) watchTask(projectName, taskID string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go c.WatchTaskLog(ctx, projectName, taskID, logger)
-	for {
-		status, reason := c.getTaskStatus(projectName, taskID)
-		if status == "" {
-			cancel()
-			c.logger.Error("", "task status not available")
-			return ErrTaskStatusUnavailable
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		return c.watchTaskLog(ctx, projectName, taskID)
+	})
+
+	g.Go(func() error {
+		for {
+			status, reason, err := c.getTaskStatus(projectName, taskID)
+			if err != nil {
+				c.logger.Error("", fmt.Sprintf("failed to get task status: %v", err))
+				return ErrTaskStatusUnavailable
+			}
+
+			switch status {
+			case "FAILED":
+				c.logger.Error("", fmt.Sprintf("Task %s failed: %s", taskID, reason))
+				cancel()
+				return ErrTaskFailed
+			case "SUCCEEDED":
+				cancel()
+				return nil
+			default:
+				time.Sleep(2 * time.Second)
+			}
 		}
-		switch status {
-		case "FAILED":
-			cancel()
-			c.logger.Error("", fmt.Sprintf("Task %s failed: %s", taskID, reason))
-			return ErrTaskFailed
-		case "SUCCEEDED":
-			cancel()
-			return nil
-		default:
-			time.Sleep(2 * time.Second)
-		}
+	})
+
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("watchTask failed: %w", err)
 	}
+
+	return nil
 }
 
-func (c *TrdlClient) getTaskStatus(projectName, taskID string) (string, string) {
+func (c *TrdlClient) getTaskStatus(projectName, taskID string) (string, string, error) {
 	resp, err := c.vaultClient.Logical().Read(fmt.Sprintf("%s/task/%s", projectName, taskID))
 	if err != nil {
 		c.logger.Error(taskID, fmt.Sprintf("failed to fetch task status: %v", err))
-		return "", ""
+		return "", "", fmt.Errorf("failed to fetch task status: %w", err)
 	}
 	if resp == nil || resp.Data == nil {
-		return "", ""
+		return "", "", fmt.Errorf("no response data")
 	}
 
 	dataBytes, err := json.Marshal(resp.Data)
 	if err != nil {
 		c.logger.Error(taskID, fmt.Sprintf("failed to marshal resp.Data: %v", err))
-		return "", ""
+		return "", "", fmt.Errorf("failed to marshal resp.Data: %w", err)
 	}
 
 	var task Task
 	if err := json.Unmarshal(dataBytes, &task); err != nil {
 		c.logger.Error(taskID, fmt.Sprintf("failed to unmarshal task status: %v", err))
-		return "", ""
+		return "", "", fmt.Errorf("failed to unmarshal task status: %w", err)
 	}
 
-	return task.Status, task.Reason
+	return task.Status, task.Reason, nil
 }
 
-func (c *TrdlClient) getTaskLogs(projectName, taskID string) string {
+func (c *TrdlClient) getTaskLogs(projectName, taskID string) (string, error) {
 	resp, err := c.vaultClient.Logical().Read(fmt.Sprintf("%s/task/%s/log", projectName, taskID))
 	if err != nil {
 		c.logger.Error(taskID, fmt.Sprintf("failed to fetch task logs: %v", err))
-		return ""
+		return "", nil
 	}
 	if resp == nil || resp.Data == nil {
-		return ""
+		return "", nil
 	}
 
 	dataBytes, err := json.Marshal(resp.Data)
 	if err != nil {
 		c.logger.Error(taskID, fmt.Sprintf("failed to marshal resp.Data: %v", err))
-		os.Exit(1)
+		return "", fmt.Errorf("failed to marshal resp.Data: %w", err)
 	}
 
 	var task Task
 	if err := json.Unmarshal(dataBytes, &task); err != nil {
 		c.logger.Error(taskID, fmt.Sprintf("failed to unmarshal task logs: %v", err))
-		os.Exit(1)
+		return "", fmt.Errorf("failed to unmarshal task logs: %w", err)
 	}
 
-	return task.Log
+	return task.Log, nil
 }
 
-func (c *TrdlClient) WatchTaskLog(ctx context.Context, projectName, taskID string, logger TaskLogger) {
+func (c *TrdlClient) watchTaskLog(ctx context.Context, projectName, taskID string) error {
 	var lastLines []string
 
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		default:
-			logData := c.getTaskLogs(projectName, taskID)
+			logData, err := c.getTaskLogs(projectName, taskID)
+			if err != nil {
+				return fmt.Errorf("failed to get task logs: %w", err)
+			}
 			if logData == "" {
 				time.Sleep(2 * time.Second)
 				continue
@@ -241,7 +263,7 @@ func (c *TrdlClient) WatchTaskLog(ctx context.Context, projectName, taskID strin
 
 			newLines := diffLines(lastLines, lines)
 			for _, line := range newLines {
-				logger.Info(taskID, line)
+				c.logger.Info(taskID, line)
 			}
 
 			lastLines = lines
