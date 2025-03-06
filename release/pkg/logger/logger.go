@@ -15,6 +15,19 @@ func NewLogger(level slog.Level) *Logger {
 	return &Logger{logger: slog.New(handler)}
 }
 
+func ParseLogLevel(level string) slog.Level {
+	switch level {
+	case "debug":
+		return slog.LevelDebug
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
 func (l *Logger) Debug(taskID, msg string) {
 	l.log(context.Background(), slog.LevelDebug, taskID, msg)
 }

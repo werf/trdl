@@ -1,11 +1,13 @@
 package common
 
 import (
+	"log/slog"
 	"net/url"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/werf/trdl/release/pkg/logger"
 )
 
 func SetupVaultAddress(cmdData *CmdData, cmd *cobra.Command) {
@@ -53,4 +55,12 @@ func SetupDelay(cmdData *CmdData, cmd *cobra.Command) {
 	cmdData.Delay = new(time.Duration)
 	cmd.PersistentFlags().DurationVarP(cmdData.Delay, "delay", "", 10*time.Second, "Set max delay between retries")
 
+}
+func SetupLogLevel(cmdData *CmdData, cmd *cobra.Command) {
+	cmdData.LogLevel = new(string)
+	cmd.PersistentFlags().StringVarP(cmdData.LogLevel, "log-level", "", "", "Set log level (debug, info, warn, error)")
+}
+
+func (c *CmdData) GetLogLevel() slog.Level {
+	return logger.ParseLogLevel(*c.LogLevel)
 }

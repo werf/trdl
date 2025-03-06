@@ -36,10 +36,11 @@ type NewTrdlVaultClientOpts struct {
 	Retry        bool
 	MaxAttempts  int
 	Delay        time.Duration
+	LogLevel     slog.Level
 }
 
 func NewTrdlVaultClient(opts NewTrdlVaultClientOpts) (*Client, error) {
-	log := logger.NewLogger(slog.LevelInfo) // TODO: add logger level to opts
+	log := logger.NewLogger(opts.LogLevel)
 	trdlClient, err := vault.NewTrdlClient(vault.NewTrdlClientOpts{
 		VaultAddress: opts.VaultAddress,
 		VaultToken:   opts.VaultToken,

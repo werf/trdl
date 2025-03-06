@@ -48,6 +48,7 @@ func main() {
 	common.SetupRetry(&commonCmdData, cmd)
 	common.SetupMaxAttemps(&commonCmdData, cmd)
 	common.SetupDelay(&commonCmdData, cmd)
+	common.SetupLogLevel(&commonCmdData, cmd)
 
 	cmd.AddCommand(publishCmd)
 	cmd.AddCommand(releaseCmd)
@@ -66,6 +67,7 @@ func publishCmd(c *common.CmdData, projectName string) error {
 		Retry:        *c.Retry,
 		MaxAttempts:  *c.MaxAttempts,
 		Delay:        *c.Delay,
+		LogLevel:     c.GetLogLevel(),
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create client: %w", err)
@@ -83,6 +85,7 @@ func releaseCmd(c *common.CmdData, projectName, gitTag string) error {
 		Retry:        *c.Retry,
 		MaxAttempts:  *c.MaxAttempts,
 		Delay:        *c.Delay,
+		LogLevel:     c.GetLogLevel(),
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create client: %w", err)
