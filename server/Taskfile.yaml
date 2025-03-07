@@ -1,0 +1,171 @@
+version: "3"
+
+silent: true
+
+vars:
+  project_name: "trdl-test-project1"
+  signatures_count: "0"
+  git_repo_url: "https://github.com/werf/trdl-test-project"
+  git_trdl_path: "p1/trdl.yaml"
+  git_trdl_channels_path: "p1/trdl_channels.yaml"
+  vault_addr: "http://localhost:8200"
+  minio_data_dir: ".minio_data"
+  minio_container: "trdl_dev_minio"
+  vault_container: "trdl_dev_vault"
+  s3_access_key: "minioadmin"
+  s3_secret_key: "minioadmin"
+  minio_port: "9000"
+  minio_console_port: "9001"
+  vault_port: "8200"
+
+tasks:
+  format:
+    desc: 'Run all code formatters. Important vars: "paths".'
+    run: once
+    cmds:
+      - task: format:gci
+      - task: format:gofumpt
+      - task: format:prettier
+
+  format:gci:
+    desc: 'Format code with gci. Important vars: "paths".'
+    cmds:
+      - gci write -s standard -s default -s 'Prefix(github.com/werf/)' {{.CLI_ARGS}} {{.paths | default "pkg/ cmd/ *.go"}}
+
+  format:gofumpt:
+    desc: 'Format code with gofumpt. Important vars: "paths".'
+    cmds:
+      - gofumpt -extra -w {{.CLI_ARGS}} {{.paths | default "pkg/ cmd/ *.go"}}
+
+  format:prettier:
+    desc: "Format with prettier."
+    deps:
+      - format:prettier:yaml
+
+  format:prettier:yaml:
+    desc: "Check if yaml files are prettier-formatted."
+    cmds:
+      - echo $(pwd)
+      - docker run --rm -v $(pwd):/work tmknom/prettier -w "**/*.yaml"
+
+  lint:
+    desc: 'Run all linters in parallel. Important vars: "paths".'
+    deps:
+      - lint:golangci-lint
+      - lint:prettier
+
+  lint:golangci-lint:go:
+    desc: 'Lint with golangci-lint. Important vars: "paths".'
+    cmds:
+      - golangci-lint run {{.CLI_ARGS}} --config ../.golangci.yaml {{.paths | default "./..."}}
+    env:
+      CGO_ENABLED: "0"
+
+  _lint:golangci-lint:go:
+    deps:
+      - task: lint:golangci-lint:go
+        vars:
+          paths: "{{.paths}}"
+
+  lint:golangci-lint:
+    desc: 'Lint with golangci-lint. Important vars: "paths".'
+    deps:
+      - task: _lint:golangci-lint:go
+        vars:
+          paths: "{{.paths}}"
+
+  lint:prettier:
+    desc: "Check if prettier-formatted."
+    deps:
+      - lint:prettier:yaml
+
+  lint:prettier:yaml:
+    desc: "Check if yaml files are prettier-formatted."
+    cmds:
+      - docker run --rm -v $(pwd):/work tmknom/prettier -c "**/*.yaml"
+
+  build:
+    desc: "Build Vault plugin"
+    cmds:
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
+
+  restart:
+    desc: "Restart Minio and Vault"
+    cmds:
+      - docker rm -f {{.minio_container}} || true
+      - docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} -p {{.minio_console_port}}:{{.minio_console_port}} --volume ./{{.minio_data_dir}}:/data minio/minio server /data --console-address ":{{.minio_console_port}}"
+      - task: configure-vault
+
+  setup:dev-environment:
+    desc: "Set up Vault with TRDL plugin and MinIO."
+    cmds:
+      - task: setup-minio
+      - task: setup-vault
+      - task: configure-vault-plugin
+
+  setup-minio:
+    desc: "Set up MinIO container and create bucket."
+    cmds:
+      - docker rm -f {{.minio_container}} || true
+      - docker run --rm --volume ./:/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+      - mkdir -p {{.minio_data_dir}}
+      - |
+        docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} \
+        -p {{.minio_console_port}}:{{.minio_console_port}} --volume ./{{.minio_data_dir}}:/data minio/minio server /data \
+        --console-address ":{{.minio_console_port}}"
+      - |
+        while ! docker exec {{.minio_container}} mc ls main; do
+          sleep 1;
+        done
+      - docker exec {{.minio_container}} mc mb main/{{.project_name}}
+      - docker exec {{.minio_container}} mc anonymous set public main/{{.project_name}}
+
+  setup-vault:
+    desc: "Run Vault server in development mode."
+    cmds:
+      - docker rm -f {{.vault_container}} || true
+      - |
+        docker run --workdir /app --privileged --name {{.vault_container}} -e VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE=1 \
+        -e VAULT_PLUGIN_SECRETS_TRDL_DEBUG=1 --detach --volume /var/run/docker.sock:/var/run/docker.sock \
+        --volume ./:/app -p {{.vault_port}}:{{.vault_port}} ghcr.io/werf/trdl-dev-vault:latest server -dev \
+        -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
+      - |
+        while ! docker exec {{.vault_container}} vault status; do
+          sleep 1;
+        done
+    deps:
+      - build
+
+  _get-minio-ip:
+    cmds:
+      - echo $(docker inspect --format "{{`{{`}} .NetworkSettings.IPAddress {{`}}`}}" {{.minio_container}})
+    silent: true
+
+  configure-vault-plugin:
+    desc: "Enable and configure TRDL Vault plugin."
+    cmds:
+      - docker exec {{.vault_container}} vault secrets enable -path={{.project_name}} vault-plugin-secrets-trdl
+      - |
+        docker exec {{.vault_container}} vault write {{.project_name}}/configure \
+        s3_secret_access_key={{.s3_secret_key}} \
+        s3_access_key_id={{.s3_access_key}} \
+        s3_bucket_name={{.project_name}} \
+        s3_region=ru-central1 \
+        s3_endpoint=http://$(task _get-minio-ip):{{.minio_port}} \
+        required_number_of_verified_signatures_on_commit={{.signatures_count}} \
+        git_repo_url={{.git_repo_url}} \
+        git_trdl_path={{.git_trdl_path}} \
+        git_trdl_channels_path={{.git_trdl_channels_path}}
+
+  tail:
+    desc: "Tail Vault logs"
+    cmds:
+      - docker logs -f {{.vault_container}}
+
+  clean:
+    desc: "Clean up build artifacts and stop services"
+    cmds:
+      - rm -f ./vault/plugins/vault-plugin-secrets-trdl
+      - docker rm -f {{.minio_container}} || true
+      - docker rm -f {{.vault_container}} || true
+      - docker run --rm --volume ./:/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
