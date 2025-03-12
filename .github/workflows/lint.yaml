@@ -17,9 +17,27 @@ on:
 
 jobs:
   lint:
-    uses: werf/common-ci/.github/workflows/lint.yml@main
-    with:
-      go-version-file-dir: '["client", "server", "e2e"]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install golangci-lint
+        run: task -p deps:install:golangci-lint
+
+      - name: Lint
+        run: task -p lint
 
   notification:
     needs:
