@@ -1,6 +1,5 @@
 version: "3"
 
-silent: true
 
 includes:
   server:
@@ -32,19 +31,19 @@ tasks:
 
   format:
     desc: "Run all formattes in parallel."
-    deps:
-      - server:format
-      - client:format
-      - e2e:format
-      - docs:format
+    cmds:
+      - task: server:format
+      - task: client:format
+      - task: e2e:format
+      - task: docs:format
 
   lint:
     desc: "Run all linters in parallel."
-    deps:
-      - server:lint
-      - client:lint
-      - e2e:lint
-      - docs:lint
+    cmds:
+      - task: server:lint
+      - task: client:lint
+      - task: e2e:lint
+      - task: docs:lint
 
   deps:install:
     desc: "Install all dependencies"
@@ -79,17 +78,17 @@ tasks:
 
   build:dev:all:
     desc: "Build all dev binaries"
-    cmds:
-      - task: build:client:dev
-      - task: build:server:dev
+    deps:
+      - build:client:dev
+      - build:server:dev
     vars:
       version: "{{.version}}"
 
   build:dist:all:
     desc: "Build all release binaries"
-    cmds:
-      - task: build:client:all
-      - task: build:server:all
+    deps:
+      - build:client:all
+      - build:server:all
     vars:
       version: "{{.version}}"
 

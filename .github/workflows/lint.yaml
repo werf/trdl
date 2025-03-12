@@ -36,7 +36,7 @@ jobs:
         run: task -p deps:install:golangci-lint
 
       - name: Lint
-        run: task -p lint
+        run: task lint
 
   notification:
     needs:
