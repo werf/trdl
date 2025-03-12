@@ -1,8 +1,7 @@
 name: Lint
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "Taskfile.dist.yaml"
       - ".github/**"

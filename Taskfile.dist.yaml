@@ -81,6 +81,7 @@ tasks:
     desc: "Build all dev binaries"
     cmds:
       - task: build:client:dev
+      - task: build:server:dev
     vars:
       version: "{{.version}}"
 
@@ -88,6 +89,7 @@ tasks:
     desc: "Build all release binaries"
     cmds:
       - task: build:client:all
+      - task: build:server:all
     vars:
       version: "{{.version}}"
 
@@ -102,6 +104,20 @@ tasks:
     desc: "Build all client release binaries"
     cmds:
       - task: client:build:dist
+    vars:
+      version: "{{.version}}"
+
+  build:server:dev:
+    desc: "Build all server binaries"
+    cmds:
+      - task: server:build:dev
+    vars:
+      version: "{{.version}}"
+
+  build:server:dist:
+    desc: "Build all server release binaries"
+    cmds:
+      - task: server:build:dist
     vars:
       version: "{{.version}}"
 

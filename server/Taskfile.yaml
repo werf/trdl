@@ -17,6 +17,7 @@ vars:
   minio_port: "9000"
   minio_console_port: "9001"
   vault_port: "8200"
+  version: '{{.version | default "dev"}}'
 
 tasks:
   format:
@@ -84,11 +85,6 @@ tasks:
     cmds:
       - docker run --rm -v $(pwd):/work tmknom/prettier -c "**/*.yaml"
 
-  build:
-    desc: "Build Vault plugin"
-    cmds:
-      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o vault/plugins/vault-plugin-secrets-trdl cmd/vault-plugin-secrets-trdl/main.go
-
   restart:
     desc: "Restart Minio and Vault"
     cmds:
@@ -134,7 +130,7 @@ tasks:
           sleep 1;
         done
     deps:
-      - build
+      - build:dev:linux:amd64
 
   _get-minio-ip:
     cmds:
@@ -169,3 +165,132 @@ tasks:
       - docker rm -f {{.minio_container}} || true
       - docker rm -f {{.vault_container}} || true
       - docker run --rm --volume ./:/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+
+  build:all:
+    desc: "Build all server binaries"
+    deps:
+      - build:dev
+      - build:dist
+
+  build:dev:
+    desc: "Build all server dev binaries"
+    deps:
+      - build:dev:linux:amd64
+      - build:dev:linux:arm64
+      - build:dev:darwin:amd64
+      - build:dev:darwin:arm64
+      - build:dev:windows:amd64
+
+  build:dist:
+    desc: "Build all server release binaries"
+    deps:
+      - build:dist:linux:amd64
+      - build:dist:linux:arm64
+      - build:dist:darwin:amd64
+      - build:dist:darwin:arm64
+      - build:dist:windows:amd64
+
+  build:dev:linux:amd64:
+    desc: "Build server dev binary for linux/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:linux:arm64:
+    desc: "Build server dev binary for linux/arm64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:darwin:amd64:
+    desc: "Build server dev binary for darwin/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:darwin:arm64:
+    desc: "Build server dev binary for darwin/arm64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:windows:amd64:
+    desc: "Build server dev binary for windows/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dist:linux:amd64:
+    desc: "Build server release binary for linux/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          extraGoBuildArgs: "-s -w"
+          outputDir: "../release-build/{{.version}}/linux-amd64/bin/"
+
+  build:dist:linux:arm64:
+    desc: "Build server release binary for linux/arm64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          extraGoBuildArgs: "-s -w"
+          outputDir: "../release-build/{{.version}}/linux-arm64/bin/"
+
+  build:dist:darwin:amd64:
+    desc: "Build server release binary for darwin/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          extraGoBuildArgs: "-s -w"
+          outputDir: "../release-build/{{.version}}/darwin-amd64/bin/"
+
+  build:dist:darwin:arm64:
+    desc: "Build server release binary for darwin/arm64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          extraGoBuildArgs: "-s -w"
+          outputDir: "../release-build/{{.version}}/darwin-arm64/bin/"
+
+  build:dist:windows:amd64:
+    desc: "Build server release binary for windows/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          extraGoBuildArgs: "-s -w"
+          outputDir: "../release-build/{{.version}}/windows-amd64/bin/"
+
+  _build:go:
+    internal: true
+    cmds:
+      - |
+        go build -o {{.outputDir | default (printf "../build/%s/%s-%s/bin" .version .targetOS .targetArch)}}/vault-plugin-secrets-trdl{{if (eq .targetOS "windows")}}.exe{{end}} \
+        {{.extraGoBuildArgs}} {{.CLI_ARGS}} github.com/werf/trdl/server/cmd/vault-plugin-secrets-trdl
+    env:
+      GOOS: "{{.targetOS}}"
+      GOARCH: "{{.targetArch}}"
