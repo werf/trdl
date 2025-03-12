@@ -2,6 +2,9 @@ version: "3"
 
 silent: true
 
+vars:
+  version: '{{.version | default "dev"}}'
+
 tasks:
   format:
     desc: 'Run all code formatters. Important vars: "paths".'
@@ -66,3 +69,140 @@ tasks:
     desc: "Check if yaml files are prettier-formatted."
     cmds:
       - docker run --rm -v $(pwd):/work tmknom/prettier -c "**/*.yaml"
+
+  build:all:
+    desc: "Build all client binaries"
+    deps:
+      - build:dev
+      - build:dist
+
+  build:dev:
+    desc: "Build all client dev binaries"
+    deps:
+      - build:dev:linux:amd64
+      - build:dev:linux:arm64
+      - build:dev:darwin:amd64
+      - build:dev:darwin:arm64
+      - build:dev:windows:amd64
+
+  build:dist:
+    desc: "Build all client release binaries"
+    deps:
+      - build:dist:linux:amd64
+      - build:dist:linux:arm64
+      - build:dist:darwin:amd64
+      - build:dist:darwin:arm64
+      - build:dist:windows:amd64
+
+  build:dev:linux:amd64:
+    desc: "Build client dev binary for linux/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:linux:arm64:
+    desc: "Build client dev binary for linux/arm64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:darwin:amd64:
+    desc: "Build client dev binary for darwin/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:darwin:arm64:
+    desc: "Build client dev binary for darwin/arm64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:windows:amd64:
+    desc: "Build client dev binary for windows/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dist:linux:amd64:
+    desc: "Build client release binary for linux/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "../../release-build/{{.version}}/linux-amd64/bin/"
+
+  build:dist:linux:arm64:
+    desc: "Build client release binary for linux/arm64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "../../release-build/{{.version}}/linux-arm64/bin/"
+
+  build:dist:darwin:amd64:
+    desc: "Build client release binary for darwin/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "../../release-build/{{.version}}/darwin-amd64/bin/"
+
+  build:dist:darwin:arm64:
+    desc: "Build client release binary for darwin/arm64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "../../release-build/{{.version}}/darwin-arm64/bin/"
+
+  build:dist:windows:amd64:
+    desc: "Build client release binary for windows/amd64"
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
+          outputDir: "../../release-build/{{.version}}/windows-amd64/bin/trdl"
+
+  _build:go:
+    internal: true
+    dir: cmd/trdl
+    cmds:
+      - go build -o {{.outputDir | default (printf "../../../build/%s/%s-%s/bin" .version .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}} {{.extraGoBuildArgs}} {{.CLI_ARGS}}
+    env:
+      GOOS: "{{.targetOS}}"
+      GOARCH: "{{.targetArch}}"
+
+  build-with-coverage:
+    desc: "Build client binary to run E2E tests with coverage."
+    cmds:
+      - task: build:dev:{{OS}}:{{ARCH}}
+        vars:
+          outputDir: ../../../bin/coverage
+          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
+          goTags: test_coverage

@@ -36,6 +36,7 @@ tasks:
       - server:format
       - client:format
       - e2e:format
+      - docs:format
 
   lint:
     desc: "Run all linters in parallel."
@@ -43,6 +44,7 @@ tasks:
       - server:lint
       - client:lint
       - e2e:lint
+      - docs:lint
 
   deps:install:
     desc: "Install all dependencies"
@@ -74,3 +76,36 @@ tasks:
     desc: "Install gofumpt binary."
     cmds:
       - go install mvdan.cc/gofumpt@v0.7.0
+
+  build:dev:all:
+    desc: "Build all dev binaries"
+    cmds:
+      - task: build:client:dev
+    vars:
+      version: "{{.version}}"
+
+  build:dist:all:
+    desc: "Build all release binaries"
+    cmds:
+      - task: build:client:all
+    vars:
+      version: "{{.version}}"
+
+  build:client:dev:
+    desc: "Build all client binaries"
+    cmds:
+      - task: client:build:dev
+    vars:
+      version: "{{.version}}"
+
+  build:client:dist:
+    desc: "Build all client release binaries"
+    cmds:
+      - task: client:build:dist
+    vars:
+      version: "{{.version}}"
+
+  build-with-coverage:
+    desc: "Build dev binaries to run E2E tests with coverage."
+    cmds:
+      - task: client:build-with-coverage
