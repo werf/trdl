@@ -1,11 +1,14 @@
 version: "3"
 
+silent: true
+
 vars:
   built_trdl_bin_path: "trdl"
   reference_sidebar_path: "./_data/sidebars/reference.yml"
   cli_partial_path: "./_data/sidebars/_cli.yml"
   vault_plugin_partial_path: "./_data/sidebars/_vault_plugin.yml"
   reference_partial_path: "./_data/sidebars/_reference.yml"
+  language: '{{.language | default "ru"}}'
 
 tasks:
   gen:
@@ -75,3 +78,49 @@ tasks:
     desc: "Check if yaml files are prettier-formatted."
     cmds:
       - docker run --rm -v $(pwd):/work -v ./../.prettierignore/:/work/.prettierignore tmknom/prettier -w "**/*.yaml" "**/*.yml"
+
+  check-broken-links:
+    desc: "Check if links in docs is broken"
+    cmds:
+      - task: jekyll:run-container
+      - defer: { task: jekyll:cleanup }
+      - task: jekyll:prepare-environment
+      - task: jekyll:build
+      - task: jekyll:check-links
+
+      
+  jekyll:run-container:
+    desc: Run jekyll/builder:3 container.
+    cmds:
+      - mkdir -p .jekyll-cache docs/_site
+      - chmod 777 .jekyll-cache docs/_site
+      - docker run  -d -v "$(pwd)/:/srv/jekyll" --name jekyll_builder jekyll/builder:3 sh -c "tail -f /dev/null"
+
+  jekyll:prepare-environment:
+    desc: Prepare environment.
+    cmds:
+      - docker exec jekyll_builder sh -c "gem install bundler -v 2.2.28 && bundle install"
+
+  jekyll:build:
+    desc: Build Jekyll site
+    cmds:
+      - |
+        docker exec jekyll_builder sh -c \
+        'bundle exec jekyll build --config _config.yml{{if eq .language "ru"}},_config_ru.yml{{end}} --destination docs/_site/'
+
+  jekyll:check-links:
+    desc: Run link checker
+    cmds:
+      - |
+        docker exec jekyll_builder sh -c \
+        "bundle exec htmlproofer \
+          --allow-hash-href \
+          --empty-alt-ignore \
+          --check_html \
+          --url_ignore 'https://fonts.googleapis.com,https://fonts.gstatic.com' \
+          --http-status-ignore '0' \
+          docs/_site/"
+
+  jekyll:cleanup:
+    desc: Run cleanup
+    cmd: docker rm -f jekyll_builder || true
