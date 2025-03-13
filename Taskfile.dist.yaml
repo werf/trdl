@@ -104,6 +104,5 @@ tasks:
     desc: "Install 3p-git-signatires."
     cmds:
       - git clone https://github.com/werf/3p-git-signatures.git
-      - cd 3p-git-signatures
-      - make install
+      - cd 3p-git-signatures && make install
       - echo "~/.local/bin" >> $GITHUB_PATH
