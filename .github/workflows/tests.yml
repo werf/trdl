@@ -45,19 +45,16 @@ jobs:
         run: task ci:install:3p-git-signatures
 
       - name: Install ginkgo
-        working-directory: server
-        run: task -p deps:install:ginkgo
+        run: task deps:install:ginkgo
 
       - name: Test
-        run: task -p test:unit
-        env:
-          TRDL_TEST_COVERAGE_DIR: ${{github.workspace}}/coverage
+        run: task server:test:unit
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tests_coverage
-          path: ${{github.workspace}}/coverage
+          name: test_coverage
+          path: ${{github.workspace}}/server/test_coverage
 
   e2e_client:
     name: End-to-end tests
@@ -76,10 +73,8 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up prebuilt werf test binary
-        uses: ./.github/actions/set-up-prebuilt-trdl-test-binary
-        with:
-          coverage: "true"
+      - name: Set up prebuilt trdl test binary
+        run: task client:build-with-coverage
 
       - name: Set up git config
         run: task ci:setup:git-config
@@ -93,27 +88,25 @@ jobs:
         uses: task ci:install:3p-git-signatures
 
       - name: Install ginkgo
-        working-directory: e2e
         run: task -p deps:install:ginkgo
 
       - name: Test
-        run: task -p test:e2e
-        env:
-          GOCOVERDIR: ${{github.workspace}}/covdata
+        run: task e2e:test:e2e
 
       - name: Upload coverage artifact
-        uses: ./.github/actions/upload-coverage-artifact
+        uses: actions/upload-artifact@v4
         with:
-          coverage: "true"
+          name: e2e_coverage
+          path: ${{github.workspace}}/e2e/e2e_coverage
 
-  notification:
-    name: Notification
-    if: always()
-    needs:
-      - tests
-      - e2e_tests
-    uses: werf/common-ci/.github/workflows/notification.yml@main
-    secrets:
-      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
-      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
-      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
+  # notification:
+  #   name: Notification
+  #   if: always()
+  #   needs:
+  #     - unit_server
+  #     - e2e_client
+  #   uses: werf/common-ci/.github/workflows/notification.yml@main
+  #   secrets:
+  #     loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+  #     webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+  #     notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}

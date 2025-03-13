@@ -153,8 +153,8 @@ tasks:
         git_trdl_path={{.git_trdl_path}} \
         git_trdl_channels_path={{.git_trdl_channels_path}}
 
-  tail:
-    desc: "Tail Vault logs"
+  logs:
+    desc: "Get Vault logs"
     cmds:
       - docker logs -f {{.vault_container}}
 
@@ -165,6 +165,16 @@ tasks:
       - docker rm -f {{.minio_container}} || true
       - docker rm -f {{.vault_container}} || true
       - docker run --rm --volume ./:/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+
+  build:
+    desc: "Build server dev binary."
+    run: once
+    cmds:
+      - task: build:dev:{{OS}}:{{ARCH}}
+        vars:
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+          outputDir: vault/plugins
 
   build:all:
     desc: "Build all server binaries"
@@ -197,7 +207,7 @@ tasks:
         vars:
           targetOS: "linux"
           targetArch: "amd64"
-          outputDir: "{{.outputDir}}"
+          outputDir: vault/plugins
 
   build:dev:linux:arm64:
     desc: "Build server dev binary for linux/arm64"
@@ -242,8 +252,8 @@ tasks:
         vars:
           targetOS: "linux"
           targetArch: "amd64"
-          extraGoBuildArgs: "-s -w"
-          outputDir: "../release-build/{{.version}}/linux-amd64/bin/"
+          extraGoBuildArgs: -ldflags="-s -w" 
+          outputDir: "release-build/{{.version}}/linux-amd64/bin/"
 
   build:dist:linux:arm64:
     desc: "Build server release binary for linux/arm64"
@@ -252,8 +262,8 @@ tasks:
         vars:
           targetOS: "linux"
           targetArch: "arm64"
-          extraGoBuildArgs: "-s -w"
-          outputDir: "../release-build/{{.version}}/linux-arm64/bin/"
+          extraGoBuildArgs: -ldflags="-s -w" 
+          outputDir: "release-build/{{.version}}/linux-arm64/bin/"
 
   build:dist:darwin:amd64:
     desc: "Build server release binary for darwin/amd64"
@@ -262,8 +272,8 @@ tasks:
         vars:
           targetOS: "darwin"
           targetArch: "amd64"
-          extraGoBuildArgs: "-s -w"
-          outputDir: "../release-build/{{.version}}/darwin-amd64/bin/"
+          extraGoBuildArgs: -ldflags="-s -w" 
+          outputDir: "release-build/{{.version}}/darwin-amd64/bin/"
 
   build:dist:darwin:arm64:
     desc: "Build server release binary for darwin/arm64"
@@ -272,8 +282,8 @@ tasks:
         vars:
           targetOS: "darwin"
           targetArch: "arm64"
-          extraGoBuildArgs: "-s -w"
-          outputDir: "../release-build/{{.version}}/darwin-arm64/bin/"
+          extraGoBuildArgs: -ldflags="-s -w" 
+          outputDir: "release-build/{{.version}}/darwin-arm64/bin/"
 
   build:dist:windows:amd64:
     desc: "Build server release binary for windows/amd64"
@@ -282,15 +292,30 @@ tasks:
         vars:
           targetOS: "windows"
           targetArch: "amd64"
-          extraGoBuildArgs: "-s -w"
-          outputDir: "../release-build/{{.version}}/windows-amd64/bin/"
+          extraGoBuildArgs: -ldflags="-s -w" 
+          outputDir: "release-build/{{.version}}/windows-amd64/bin/"
 
   _build:go:
     internal: true
     cmds:
       - |
-        go build -o {{.outputDir | default (printf "../build/%s/%s-%s/bin" .version .targetOS .targetArch)}}/vault-plugin-secrets-trdl{{if (eq .targetOS "windows")}}.exe{{end}} \
+        go build -o {{.outputDir | default (printf "vault/plugins/%s/%s-%s/bin" .version .targetOS .targetArch)}}/vault-plugin-secrets-trdl{{if (eq .targetOS "windows")}}.exe{{end}} \
         {{.extraGoBuildArgs}} {{.CLI_ARGS}} github.com/werf/trdl/server/cmd/vault-plugin-secrets-trdl
     env:
       GOOS: "{{.targetOS}}"
       GOARCH: "{{.targetArch}}"
+
+  build-with-coverage:
+    desc: "Build server binary to run E2E tests with coverage."
+    cmds:
+      - task: build:dev:{{OS}}:{{ARCH}}
+        vars:
+          outputDir: ../bin/trdl
+          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
+          goTags: test_coverage
+
+  test:unit:
+    desc: "Run server unit tests."
+    cmd: ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir={{.outputDir}} ./...
+    vars:
+      outputDir: '{{.outputDir | default "tests_coverage"}}'

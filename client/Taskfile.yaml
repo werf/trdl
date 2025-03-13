@@ -70,6 +70,16 @@ tasks:
     cmds:
       - docker run --rm -v $(pwd):/work tmknom/prettier -c "**/*.yaml"
 
+  build:
+    desc: "Build client dev binary."
+    run: once
+    cmds:
+      - task: build:dev:{{OS}}:{{ARCH}}
+        vars:
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+          outputDir: ../bin/trdl
+
   build:all:
     desc: "Build all client binaries"
     deps:
@@ -147,7 +157,7 @@ tasks:
           targetOS: "linux"
           targetArch: "amd64"
           extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
-          outputDir: "../release-build/{{.version}}/linux-amd64/bin/"
+          outputDir: "release-build/{{.version}}/linux-amd64/bin/"
 
   build:dist:linux:arm64:
     desc: "Build client release binary for linux/arm64"
@@ -157,7 +167,7 @@ tasks:
           targetOS: "linux"
           targetArch: "arm64"
           extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
-          outputDir: "../release-build/{{.version}}/linux-arm64/bin/"
+          outputDir: "release-build/{{.version}}/linux-arm64/bin/"
 
   build:dist:darwin:amd64:
     desc: "Build client release binary for darwin/amd64"
@@ -167,7 +177,7 @@ tasks:
           targetOS: "darwin"
           targetArch: "amd64"
           extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
-          outputDir: "../release-build/{{.version}}/darwin-amd64/bin/"
+          outputDir: "release-build/{{.version}}/darwin-amd64/bin/"
 
   build:dist:darwin:arm64:
     desc: "Build client release binary for darwin/arm64"
@@ -177,7 +187,7 @@ tasks:
           targetOS: "darwin"
           targetArch: "arm64"
           extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
-          outputDir: "../release-build/{{.version}}/darwin-arm64/bin/"
+          outputDir: "release-build/{{.version}}/darwin-arm64/bin/"
 
   build:dist:windows:amd64:
     desc: "Build client release binary for windows/amd64"
@@ -187,13 +197,13 @@ tasks:
           targetOS: "windows"
           targetArch: "amd64"
           extraGoBuildArgs: "-tags='dfrunmount dfssh' -ldflags='-s -w -X github.com/werf/trdl/client/pkg/trdl.Version={{.version}}'"
-          outputDir: "../release-build/{{.version}}/windows-amd64/bin/"
+          outputDir: "release-build/{{.version}}/windows-amd64/bin/"
 
   _build:go:
     internal: true
     cmds:
       - |
-        go build -o {{.outputDir | default (printf "../build/%s/%s-%s/bin" .version .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}} \
+        go build -o {{.outputDir | default (printf "../bin/%s/%s-%s" .version .targetOS .targetArch)}}/trdl{{if (eq .targetOS "windows")}}.exe{{end}} \
         {{.extraGoBuildArgs}} {{.CLI_ARGS}} github.com/werf/trdl/client/cmd/trdl
     env:
       GOOS: "{{.targetOS}}"

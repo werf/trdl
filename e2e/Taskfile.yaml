@@ -44,3 +44,9 @@ tasks:
       - task: _lint:golangci-lint:go
         vars:
           paths: "{{.paths}}"
+
+  test:e2e:
+    desc: "Run client e2e test."
+    cmd: ginkgo -p --keep-going --cover --coverpkg=../client/... --output-dir={{.outputDir}} ./...
+    vars:
+      outputDir: '{{.outputDir | default "e2e_coverage" }}'

@@ -27,5 +27,3 @@ server/release-build
 _includes
 pages_en
 .task
-
-docs/.prettierignore

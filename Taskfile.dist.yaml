@@ -80,16 +80,16 @@ tasks:
   build:dev:all:
     desc: "Build all dev binaries."
     deps:
-      - build:client:dev
-      - build:server:dev
+      - client:build:dev
+      - server:build:dev
     vars:
       version: "{{.version}}"
 
   build:dist:all:
     desc: "Build all release binaries."
     deps:
-      - build:client:all
-      - build:server:all
+      - client:build:dist
+      - server:build:dist
     vars:
       version: "{{.version}}"
 
