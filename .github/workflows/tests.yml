@@ -85,7 +85,7 @@ jobs:
           sudo apt-get install -y gpg
 
       - name: Install 3p-git-signatures
-        uses: task ci:install:3p-git-signatures
+        run: task ci:install:3p-git-signatures
 
       - name: Install ginkgo
         run: task -p deps:install:ginkgo
