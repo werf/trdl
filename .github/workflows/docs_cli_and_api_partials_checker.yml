@@ -26,7 +26,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up git config
-        uses: ./.github/actions/set-up-git-config
-
+        run: task ci:setup:git-config
+        
       - name: Regen partials
         run: task docs:gen

@@ -38,7 +38,7 @@ tasks:
       - task: docs:format
 
   lint:
-    desc: "Run all linters in parallel."
+    desc: "Run all linters."
     cmds:
       - task: server:lint
       - task: client:lint
@@ -46,7 +46,7 @@ tasks:
       - task: docs:lint
 
   deps:install:
-    desc: "Install all dependencies"
+    desc: "Install all dependencies."
     deps:
       - deps:install:gci
       - deps:install:ginkgo
@@ -77,7 +77,7 @@ tasks:
       - go install mvdan.cc/gofumpt@v0.7.0
 
   build:dev:all:
-    desc: "Build all dev binaries"
+    desc: "Build all dev binaries."
     deps:
       - build:client:dev
       - build:server:dev
@@ -85,42 +85,24 @@ tasks:
       version: "{{.version}}"
 
   build:dist:all:
-    desc: "Build all release binaries"
+    desc: "Build all release binaries."
     deps:
       - build:client:all
       - build:server:all
     vars:
       version: "{{.version}}"
 
-  build:client:dev:
-    desc: "Build all client binaries"
-    cmds:
-      - task: client:build:dev
-    vars:
-      version: "{{.version}}"
+  ci:setup:git-config:
+    desc: "Setup git config."
+    cmds: 
+      - git config --global init.defaultBranch main
+      - git config --global user.name "borya"
+      - git config --global user.email "borya@flant.com"
 
-  build:client:dist:
-    desc: "Build all client release binaries"
+  ci:install:3p-git-signatures:
+    desc: "Install 3p-git-signatires."
     cmds:
-      - task: client:build:dist
-    vars:
-      version: "{{.version}}"
-
-  build:server:dev:
-    desc: "Build all server binaries"
-    cmds:
-      - task: server:build:dev
-    vars:
-      version: "{{.version}}"
-
-  build:server:dist:
-    desc: "Build all server release binaries"
-    cmds:
-      - task: server:build:dist
-    vars:
-      version: "{{.version}}"
-
-  build-with-coverage:
-    desc: "Build dev binaries to run E2E tests with coverage."
-    cmds:
-      - task: client:build-with-coverage
+      - git clone https://github.com/werf/3p-git-signatures.git
+      - cd 3p-git-signatures
+      - make install
+      - echo "~/.local/bin" >> $GITHUB_PATH
