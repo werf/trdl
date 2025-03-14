@@ -148,14 +148,15 @@ jobs:
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
           
-# notification:
-  #   name: Notification
-  #   if: always()
-  #   needs:
-  #     - unit_server
-  #     - e2e_tests
-  #   uses: werf/common-ci/.github/workflows/notification.yml@main
-  #   secrets:
-  #     loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
-  #     webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
-  #     notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
+  notification:
+    name: Notification
+    if: always()
+    needs:
+      - unit_server
+      - e2e_tests
+      - upload_coverage
+    uses: werf/common-ci/.github/workflows/notification.yml@main
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
