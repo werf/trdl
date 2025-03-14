@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/spf13/cobra"
 
+	"github.com/werf/common-go/pkg/util"
 	"github.com/werf/trdl/client/pkg/trdl"
 )
 
@@ -22,16 +22,12 @@ func ValidateChannel(channel string) error {
 }
 
 func SetupNoSelfUpdate(cmd *cobra.Command, noSelfUpdate *bool) {
-	cmd.Flags().BoolVar(noSelfUpdate, "no-self-update", GetBoolEnvironmentDefaultFalse("TRDL_NO_SELF_UPDATE"), "Do not perform self-update (default $TRDL_NO_SELF_UPDATE or false)")
-}
+	envKey := "TRDL_NO_SELF_UPDATE"
 
-func GetBoolEnvironmentDefaultFalse(environmentName string) bool {
-	switch os.Getenv(environmentName) {
-	case "1", "true", "yes":
-		return true
-	default:
-		return false
-	}
+	cmd.Flags().BoolVar(noSelfUpdate,
+		"no-self-update",
+		util.GetBoolEnvironmentDefaultFalse(envKey),
+		fmt.Sprintf("Do not perform self-update (default $%s or false)", envKey))
 }
 
 func PrintHelp(cmd *cobra.Command) {
