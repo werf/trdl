@@ -318,4 +318,4 @@ tasks:
     desc: "Run server unit tests."
     cmd: ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir={{.outputDir}} ./...
     vars:
-      outputDir: '{{.outputDir | default "tests_coverage"}}'
+      outputDir: '{{.outputDir | default "../tests_coverage/unit"}}'

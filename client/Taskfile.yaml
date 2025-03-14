@@ -215,5 +215,5 @@ tasks:
       - task: build:dev:{{OS}}:{{ARCH}}
         vars:
           outputDir: ../bin/coverage
-          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
+          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... -c cmd/trdl/*.go"
           goTags: test_coverage

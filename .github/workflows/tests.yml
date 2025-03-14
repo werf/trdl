@@ -48,15 +48,16 @@ jobs:
         run: task deps:install:ginkgo
 
       - name: Test
-        run: task server:test:unit
+        run: |
+          task server:test:unit
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: test_coverage
-          path: ${{github.workspace}}/server/test_coverage
+          name: unit_coverage
+          path: tests_coverage
 
-  e2e_client:
+  e2e_tests:
     name: End-to-end tests
     runs-on: ubuntu-22.04
     steps:
@@ -74,7 +75,9 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up prebuilt trdl test binary
-        run: task client:build-with-coverage
+        run: |
+          task client:build-with-coverage
+          echo TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/bin/coverage/trdl >> $GITHUB_ENV
 
       - name: Set up git config
         run: task ci:setup:git-config
@@ -97,14 +100,54 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e_coverage
-          path: ${{github.workspace}}/e2e/e2e_coverage
+          path: tests_coverage
+
+  upload_coverage:
+    name: Upload coverage
+    needs:
+      - unit_server
+      - e2e_tests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: e2e/go.mod
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: tests_coverage
+
+      - name: Prepare coverage file
+        run: |
+          if [ "$(ls -A tests_coverage)" ]; then
+            export COVER_PROFILE_FILE=$(openssl rand -hex 6)-coverage.out
+            go tool covdata textfmt -i=tests_coverage -o=tests_coverage/$COVER_PROFILE_FILE
+            go tool cover -func=tests_coverage/$COVER_PROFILE_FILE | awk '/^total:/{print $3}'
+          else
+            echo "No coverage data found in tests_coverage"
+          fi
+
+      - name: Set timestamp
+        shell: bash
+        run: echo "TIMESTAMP=$(date +%H%M%S%N)" >> $GITHUB_ENV
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ env.TIMESTAMP }}
+          path: tests_coverage
 
   # notification:
   #   name: Notification
   #   if: always()
   #   needs:
   #     - unit_server
-  #     - e2e_client
+  #     - e2e_tests
   #   uses: werf/common-ci/.github/workflows/notification.yml@main
   #   secrets:
   #     loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
