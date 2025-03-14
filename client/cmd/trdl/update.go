@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/werf/common-go/pkg/util"
 	trdlClient "github.com/werf/trdl/client/pkg/client"
 	"github.com/werf/trdl/client/pkg/trdl"
 )
@@ -85,10 +86,10 @@ func updateCmd() *cobra.Command {
 	}
 
 	SetupNoSelfUpdate(cmd, &noSelfUpdate)
-	cmd.Flags().BoolVar(&autoclean, "autoclean", true, "Erase old downloaded releases")
-	cmd.Flags().BoolVar(&inBackground, "in-background", false, "Perform update in background")
-	cmd.Flags().StringVarP(&backgroundStdoutFile, "background-stdout-file", "", "", "Redirect the stdout of the background update to a file")
-	cmd.Flags().StringVarP(&backgroundStderrFile, "background-stderr-file", "", "", "Redirect the stderr of the background update to a file")
+	setupAutoclean(cmd, &autoclean)
+	setupInBackground(cmd, &inBackground)
+	setupBackgroundStdoutFile(cmd, &backgroundStdoutFile)
+	setupBackgroundStderrFile(cmd, &backgroundStderrFile)
 
 	return cmd
 }
@@ -126,4 +127,42 @@ func StartUpdateInBackground(name string, args []string, backgroundStdoutFile, b
 	}
 
 	return nil
+}
+
+func setupAutoclean(cmd *cobra.Command, autoclean *bool) {
+	envKey := "TRDL_AUTOCLEAN"
+
+	cmd.Flags().BoolVar(autoclean,
+		"autoclean",
+		util.GetBoolEnvironmentDefaultTrue(envKey),
+		fmt.Sprintf("Erase old downloaded releases (default $%s or true)", envKey))
+}
+
+func setupInBackground(cmd *cobra.Command, inBackground *bool) {
+	envKey := "TRDL_IN_BACKGROUND"
+
+	cmd.Flags().BoolVar(inBackground,
+		"in-background",
+		util.GetBoolEnvironmentDefaultFalse(envKey),
+		fmt.Sprintf("Perform update in background (default $%s or false)", envKey))
+}
+
+func setupBackgroundStdoutFile(cmd *cobra.Command, backgroundStdoutFile *string) {
+	envKey := "TRDL_BACKGROUND_STDOUT_FILE"
+
+	cmd.Flags().StringVarP(backgroundStdoutFile,
+		"background-stdout-file",
+		"",
+		os.Getenv(envKey),
+		fmt.Sprintf("Redirect the stdout of the background update to a file (default $%s or none)", envKey))
+}
+
+func setupBackgroundStderrFile(cmd *cobra.Command, backgroundStderrFile *string) {
+	envKey := "TRDL_BACKGROUND_STDERR_FILE"
+
+	cmd.Flags().StringVarP(backgroundStderrFile,
+		"background-stderr-file",
+		"",
+		os.Getenv(envKey),
+		fmt.Sprintf("Redirect the stderr of the background update to a file (default $%s or none)", envKey))
 }
