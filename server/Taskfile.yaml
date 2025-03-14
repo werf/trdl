@@ -184,21 +184,21 @@ tasks:
 
   build:dev:
     desc: "Build all server dev binaries"
-    deps:
-      - build:dev:linux:amd64
-      - build:dev:linux:arm64
-      - build:dev:darwin:amd64
-      - build:dev:darwin:arm64
-      - build:dev:windows:amd64
+    cmds:
+      - task: build:dev:linux:amd64
+      - task: build:dev:linux:arm64
+      - task: build:dev:darwin:amd64
+      - task: build:dev:darwin:arm64
+      - task: build:dev:windows:amd64
 
   build:dist:
     desc: "Build all server release binaries"
-    deps:
-      - build:dist:linux:amd64
-      - build:dist:linux:arm64
-      - build:dist:darwin:amd64
-      - build:dist:darwin:arm64
-      - build:dist:windows:amd64
+    cmds:
+      - task: build:dist:linux:amd64
+      - task: build:dist:linux:arm64
+      - task: build:dist:darwin:amd64
+      - task: build:dist:darwin:arm64
+      - task: build:dist:windows:amd64
 
   build:dev:linux:amd64:
     desc: "Build server dev binary for linux/amd64"

@@ -93,6 +93,19 @@ tasks:
     vars:
       version: "{{.version}}"
 
+  _build:image:
+    cmds:
+      - docker build --platform=linux/amd64 {{.CLI_ARGS}} -f "{{.dfilePath}}" -t "{{.imageName}}" "{{.context | default "."}}"
+
+  build:image:builder:
+    desc: 'Build trdl builder image. Important vars: "imageName".'
+    cmds:
+      - task: _build:image
+        vars:
+          dfilePath: trdl.Dockerfile
+          imageName:
+            sh: "echo registry-write.werf.io/trdl/builder:$(git rev-parse HEAD)"
+
   ci:setup:git-config:
     desc: "Setup git config."
     cmds: 
@@ -106,3 +119,4 @@ tasks:
       - git clone https://github.com/werf/3p-git-signatures.git
       - cd 3p-git-signatures && make install
       - echo "~/.local/bin" >> $GITHUB_PATH
+
