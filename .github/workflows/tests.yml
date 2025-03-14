@@ -78,7 +78,7 @@ jobs:
         run: |
           task client:build-with-coverage
           echo TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/bin/coverage/trdl >> $GITHUB_ENV
-          echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/e2e_coverage >> $GITHUB_ENV
+          echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/e2e >> $GITHUB_ENV
 
       - name: Set up git config
         run: task ci:setup:git-config
