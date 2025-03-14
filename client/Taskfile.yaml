@@ -211,9 +211,8 @@ tasks:
 
   build-with-coverage:
     desc: "Build client binary to run E2E tests with coverage."
-    cmds:
-      - task: build:dev:{{OS}}:{{ARCH}}
-        vars:
-          outputDir: ../bin/coverage
-          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... -c cmd/trdl/*.go"
-          goTags: test_coverage
+    cmd: |
+      GOOS=linux GOARCH=amd64 go test {{.extraGoBuildArgs}} -o {{.outputBin }}
+    vars:
+      outputBin: ../bin/coverage/trdl
+      extraGoBuildArgs: '-ldflags="-s -w" -tags "test_coverage" -cover -covermode=atomic -coverpkg=./... -c cmd/trdl/*.go'
