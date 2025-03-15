@@ -2,6 +2,7 @@ package tuf
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -85,7 +86,16 @@ func (c *Client) initTufClient() error {
 		}
 	}
 
-	remote, err := tufClient.HTTPRemoteStore(c.repoUrl, nil, nil)
+	var remote tufClient.RemoteStore
+	var httpClient *http.Client
+	if os.Getenv("TRDL_TUF_REMOTE_CLIENT_TRACE") == "1" {
+		httpClient = &http.Client{
+			Transport: &TracingTransport{
+				Transport: http.DefaultTransport,
+			},
+		}
+	}
+	remote, err = tufClient.HTTPRemoteStore(c.repoUrl, nil, httpClient)
 	if err != nil {
 		return fmt.Errorf("unable to init http remote store: %w", err)
 	}
