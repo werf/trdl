@@ -12,6 +12,14 @@ jobs:
     name: Publish release channels using trdl server
     runs-on: ubuntu-22.04
     steps:
+      - name: Notify
+        uses: mattermost/action-mattermost-notify@master
+        with:
+          MATTERMOST_WEBHOOK_URL: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+          MATTERMOST_CHANNEL: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
+          TEXT: |
+            ${{ secrets.LOOP_NOTIFICATION_GROUP }} [${{ github.repository }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) task sign pls
+
       - name: Publish client channels
         uses: werf/trdl-vault-actions/publish@main
         with:
