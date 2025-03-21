@@ -9,6 +9,14 @@ jobs:
     name: Perform trdl release using trdl server
     runs-on: ubuntu-22.04
     steps:
+      - name: Notify
+        uses: mattermost/action-mattermost-notify@master
+        with:
+          MATTERMOST_WEBHOOK_URL: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+          MATTERMOST_CHANNEL: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}
+          TEXT: |
+            ${{ secrets.LOOP_NOTIFICATION_GROUP }} [${{ github.repository }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) task sign pls
+
       - name: Release client
         uses: werf/trdl-vault-actions/release@main
         with:
