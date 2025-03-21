@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
@@ -66,6 +67,26 @@ func rootCmd() *cobra.Command {
 	groups.Add(rootCmd)
 
 	command.ActsAsRootCommand(rootCmd, *groups...)
+	
+	for _, cmd := range rootCmd.Commands() {
+		copyCmdRunE := cmd.RunE 
+		cmd.RunE = func(cmd *cobra.Command, args []string) error {
+			startTime := time.Now()
+			
+			log := func(event, format string, args ...interface{}) {
+				fmt.Printf("[%s] [%.2fs] %s: %s\n",
+					time.Now().Format("15:04:05.000"), time.Since(startTime).Seconds(), event, fmt.Sprintf(format, args...))
+			}
+
+			log("COMMAND_STARTED", cmd.Name())
+			
+			err := copyCmdRunE(cmd, args)
+			
+			log("COMMAND_DONE", "(Total: %.2fs)", time.Since(startTime).Seconds())
+			
+			return err
+		}
+	}
 
 	return rootCmd
 }
