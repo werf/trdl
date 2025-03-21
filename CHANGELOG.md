@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://www.github.com/werf/trdl/compare/v0.8.7...v0.9.0) (2025-03-21)
+
+
+### Features
+
+* **client:** support more envs for `trdl update` ([5f76cb5](https://www.github.com/werf/trdl/commit/5f76cb5646366798a0eace6cd547e32a30637536))
+
 ### [0.8.7](https://www.github.com/werf/trdl/compare/v0.8.6...v0.8.7) (2025-03-04)
 
 
