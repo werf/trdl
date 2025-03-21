@@ -1,5 +1,33 @@
 # Changelog
 
+### [0.8.7](https://www.github.com/werf/trdl/compare/v0.8.6...v0.8.7) (2025-03-04)
+
+
+### Bug Fixes
+
+* **server:** resolve lock in docker build ([#312](https://www.github.com/werf/trdl/issues/312)) ([c0aba74](https://www.github.com/werf/trdl/commit/c0aba74749f3e43e82169b1f9c213c4ca8640d22))
+
+### [0.8.6](https://www.github.com/werf/trdl/compare/v0.8.5...v0.8.6) (2025-03-03)
+
+
+### Bug Fixes
+
+* **server:** fix artifact export and build commands leak ([3e2e854](https://www.github.com/werf/trdl/commit/3e2e854ed35a8349bbe8947da2a09cc670f8ae27))
+
+### [0.8.5](https://www.github.com/werf/trdl/compare/v0.8.4...v0.8.5) (2025-02-27)
+
+
+### Bug Fixes
+
+* **server**: mask sensetive data in debug output ([eef4e2c](https://www.github.com/werf/trdl/commit/eef4e2c61c37045f4fc77be38bf3d4033177eb05))
+
+### [0.8.4](https://www.github.com/werf/trdl/compare/v0.8.3...v0.8.4) (2025-02-26)
+
+
+### Bug Fixes
+
+* **server**: fix secrets create error ([#305](https://www.github.com/werf/trdl/issues/305)) ([e0ca0de](https://www.github.com/werf/trdl/commit/e0ca0debf3a8f49dd696b550a18e6861f2769704))
+
 ### [0.8.3](https://www.github.com/werf/trdl/compare/v0.8.2...v0.8.3) (2025-01-17)
 
 

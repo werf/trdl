@@ -2,36 +2,121 @@ version: "3"
 
 silent: true
 
+includes:
+  server:
+    taskfile: ./server/Taskfile.yaml
+    dir: ./server
+  client:
+    taskfile: ./client/Taskfile.yaml
+    dir: ./client
+  e2e:
+    taskfile: ./e2e/Taskfile.yaml
+    dir: ./e2e
+  docs:
+    taskfile: ./docs/Taskfile.yaml
+    dir: ./docs
+
 tasks:
   sign:
-    desc: 'Sign last version tag + origin/main and push signatures. Important vars: "refs".'
+    desc: "Sign last version tag + origin/main and push signatures."
     cmds:
       - git fetch --tags -f
       - git signatures pull {{.CLI_ARGS}}
       - |
         for ref in {{.refs | default "$(git tag --sort=v:refname | tail -n1) origin/main"}}; do
-          echo Signing $ref...
+          echo "Signing $ref..."
           git signatures add {{.CLI_ARGS}} $ref
           git signatures show {{.CLI_ARGS}} $ref
         done
       - git signatures push {{.CLI_ARGS}}
 
-  deps:install:prettier:
-    desc: "Install prettier."
+  format:
+    desc: "Run all formattes in parallel."
     cmds:
-      - npm install -g prettier
+      - task: server:format
+      - task: client:format
+      - task: e2e:format
+      - task: docs:format
 
   lint:
-    desc: "Run all linters in parallel."
-    deps:
-      - lint:prettier
-
-  lint:prettier:
-    desc: "Check if prettier-formatted."
-    deps:
-      - lint:prettier:yaml
-
-  lint:prettier:yaml:
-    desc: "Check if yaml files are prettier-formatted."
+    desc: "Run all linters."
     cmds:
-      - prettier -c "**/*.yaml" "**/*.yml"
+      - task: server:lint
+      - task: client:lint
+      - task: e2e:lint
+      - task: docs:lint
+
+  deps:install:
+    desc: "Install all dependencies."
+    deps:
+      - deps:install:gci
+      - deps:install:ginkgo
+      - deps:install:golangci-lint
+      - deps:install:gofumpt
+
+  deps:install:gci:
+    desc: "Install gci binary."
+    cmds:
+      - go install github.com/daixiang0/gci@v0.13.5
+
+  deps:install:ginkgo:
+    desc: "Install ginkgo binary."
+    cmds:
+      - |
+        version="$(go list -m -f '{{ printf `{{ .Version }}` }}' github.com/onsi/ginkgo/v2)"
+        go install {{.CLI_ARGS}} github.com/onsi/ginkgo/v2/ginkgo@${version}
+    dir: e2e
+
+  deps:install:golangci-lint:
+    desc: "Install golangci-lint binary."
+    cmds:
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin {{.golangcilintVersion | default "v1.57.1"}}
+
+  deps:install:gofumpt:
+    desc: "Install gofumpt binary."
+    cmds:
+      - go install mvdan.cc/gofumpt@v0.7.0
+
+  build:dev:all:
+    desc: "Build all dev binaries."
+    deps:
+      - client:build:dev
+      - server:build:dev
+    vars:
+      version: "{{.version}}"
+
+  build:dist:all:
+    desc: "Build all release binaries."
+    deps:
+      - client:build:dist
+      - server:build:dist
+    vars:
+      version: "{{.version}}"
+
+  _build:image:
+    cmds:
+      - docker build --platform=linux/amd64 {{.CLI_ARGS}} -f "{{.dfilePath}}" -t "{{.imageName}}" "{{.context | default "."}}"
+
+  build:image:builder:
+    desc: 'Build trdl builder image. Important vars: "imageName".'
+    cmds:
+      - task: _build:image
+        vars:
+          dfilePath: trdl.Dockerfile
+          imageName:
+            sh: "echo registry-write.werf.io/trdl/builder:$(git rev-parse HEAD)"
+
+  ci:setup:git-config:
+    desc: "Setup git config."
+    cmds: 
+      - git config --global init.defaultBranch main
+      - git config --global user.name "borya"
+      - git config --global user.email "borya@flant.com"
+
+  ci:install:3p-git-signatures:
+    desc: "Install 3p-git-signatires."
+    cmds:
+      - git clone https://github.com/werf/3p-git-signatures.git
+      - cd 3p-git-signatures && make install
+      - echo "~/.local/bin" >> $GITHUB_PATH
+

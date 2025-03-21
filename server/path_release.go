@@ -152,24 +152,32 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		tarBuf := buffer.New(64 * 1024 * 1024)
 		tarReader, tarWriter := nio.Pipe(tarBuf)
 
-		err, cleanupFunc := docker.BuildReleaseArtifacts(ctx,
-			docker.BuildReleaseArtifactsOpts{
-				TarWriter:   tarWriter,
-				GitRepo:     gitRepo,
-				FromImage:   trdlCfg.GetDockerImage(),
-				RunCommands: trdlCfg.Commands,
-				Storage:     req.Storage,
-			}, b.Logger())
-		if err != nil {
-			return fmt.Errorf("unable to build release artifacts: %w", err)
-		}
-		defer func() {
-			if err := cleanupFunc(); err != nil {
-				b.Logger().Error(fmt.Sprintf("unable to remove service docker image: %s", err))
+		errCh := make(chan error, 1)
+		go func() {
+			err, cleanupFunc := docker.BuildReleaseArtifacts(ctx,
+				docker.BuildReleaseArtifactsOpts{
+					TarWriter:   tarWriter,
+					GitRepo:     gitRepo,
+					FromImage:   trdlCfg.GetDockerImage(),
+					RunCommands: trdlCfg.Commands,
+					Storage:     req.Storage,
+				}, b.Logger())
+			if err != nil {
+				errCh <- err
+				tarWriter.CloseWithError(err)
+				return
 			}
+			defer func() {
+				if err := cleanupFunc(); err != nil {
+					b.Logger().Error(fmt.Sprintf("unable to remove service docker image: %s", err))
+				}
+			}()
+			errCh <- nil
 		}()
 
 		{
+			logboek.Context(ctx).Default().LogF("Starting to read tar artifacts...\n")
+			b.Logger().Debug("Starting to read tar artifacts...")
 			twArtifacts := tar.NewReader(tarReader)
 			for {
 				hdr, err := twArtifacts.Next()
@@ -193,12 +201,16 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 				}
 			}
 
-			logboek.Context(ctx).Default().LogF("Committing TUF repository state\n")
-			b.Logger().Debug("Committing TUF repository state")
-
-			if err := publisherRepository.CommitStaged(ctx); err != nil {
-				return fmt.Errorf("unable to commit new tuf repository state: %w", err)
+			if err := <-errCh; err != nil {
+				return fmt.Errorf("unable to build release artifacts: %w", err)
 			}
+		}
+
+		logboek.Context(ctx).Default().LogF("Committing TUF repository state\n")
+		b.Logger().Debug("Committing TUF repository state")
+
+		if err := publisherRepository.CommitStaged(ctx); err != nil {
+			return fmt.Errorf("unable to commit new tuf repository state: %w", err)
 		}
 
 		logboek.Context(ctx).Default().LogF("Task finished\n")

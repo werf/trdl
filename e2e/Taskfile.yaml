@@ -1,0 +1,52 @@
+version: "3"
+
+silent: true
+
+tasks:
+  format:
+    desc: 'Run all code formatters. Important vars: "paths".'
+    run: once
+    cmds:
+      - task: format:gci
+      - task: format:gofumpt
+
+  format:gci:
+    desc: 'Format code with gci. Important vars: "paths".'
+    cmds:
+      - gci write -s standard -s default -s 'Prefix(github.com/werf/)' {{.CLI_ARGS}} {{.paths | default "tests/" }}
+
+  format:gofumpt:
+    desc: 'Format code with gofumpt. Important vars: "paths".'
+    cmds:
+      - gofumpt -extra -w {{.CLI_ARGS}} {{.paths | default "tests/"}}
+
+  lint:
+    desc: 'Run all linters in parallel. Important vars: "paths".'
+    deps:
+      - lint:golangci-lint
+
+  lint:golangci-lint:go:
+    desc: 'Lint with golangci-lint. Important vars: "paths".'
+    cmds:
+      - golangci-lint run {{.CLI_ARGS}} --config ../.golangci.yaml {{.paths | default "./..."}}
+    env:
+      CGO_ENABLED: "0"
+
+  _lint:golangci-lint:go:
+    deps:
+      - task: lint:golangci-lint:go
+        vars:
+          paths: "{{.paths}}"
+
+  lint:golangci-lint:
+    desc: 'Lint with golangci-lint. Important vars: "paths".'
+    deps:
+      - task: _lint:golangci-lint:go
+        vars:
+          paths: "{{.paths}}"
+
+  test:e2e:
+    desc: "Run client e2e test."
+    cmd: ginkgo -p --keep-going --cover --coverpkg=../client/...,../server/... --output-dir={{.outputDir}} ./...
+    vars:
+      outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'

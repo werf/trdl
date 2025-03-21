@@ -1,0 +1,326 @@
+version: "3"
+
+silent: true
+
+vars:
+  project_name: '{{.project_name | default "trdl-test-project1"}}'
+  signatures_count: '{{.signatures_count | default "0"}}'
+  git_repo_url: '{{.git_repo_url | default "https://github.com/werf/trdl-test-project"}}'
+  git_trdl_path: '{{.git_trdl_path | default "p1/trdl.yaml"}}'
+  git_trdl_channels_path: '{{.git_trdl_channels_path | default "p1/trdl_channels.yaml"}}'
+  vault_addr: '{{.vault_addr | default "http://localhost:8200"}}'
+  minio_data_dir: '{{.minio_data_dir | default ".minio_data"}}'
+  minio_container: '{{.minio_container | default "trdl_dev_minio"}}'
+  vault_container: '{{.vault_container | default "trdl_dev_vault"}}'
+  s3_access_key: '{{.s3_access_key | default "minioadmin"}}'
+  s3_secret_key: '{{.s3_secret_key | default "minioadmin"}}'
+  minio_port: '{{.minio_port | default "9000"}}'
+  minio_console_port: '{{.minio_console_port | default "9001"}}'
+  vault_port: '{{.vault_port | default "8200"}}'
+  version: '{{.version | default "dev"}}'
+
+tasks:
+  format:
+    desc: 'Run all code formatters. Important vars: "paths".'
+    run: once
+    cmds:
+      - task: format:gci
+      - task: format:gofumpt
+      - task: format:prettier
+
+  format:gci:
+    desc: 'Format code with gci. Important vars: "paths".'
+    cmds:
+      - gci write -s standard -s default -s 'Prefix(github.com/werf/)' {{.CLI_ARGS}} {{.paths | default "pkg/ cmd/ *.go"}}
+
+  format:gofumpt:
+    desc: 'Format code with gofumpt. Important vars: "paths".'
+    cmds:
+      - gofumpt -extra -w {{.CLI_ARGS}} {{.paths | default "pkg/ cmd/ *.go"}}
+
+  format:prettier:
+    desc: "Format with prettier."
+    deps:
+      - format:prettier:yaml
+
+  format:prettier:yaml:
+    desc: "Check if yaml files are prettier-formatted."
+    cmds:
+      - docker run --rm -v $(pwd):/work tmknom/prettier -w "**/*.yaml"
+
+  lint:
+    desc: 'Run all linters in parallel. Important vars: "paths".'
+    deps:
+      - lint:golangci-lint
+      - lint:prettier
+
+  lint:golangci-lint:go:
+    desc: 'Lint with golangci-lint. Important vars: "paths".'
+    cmds:
+      - golangci-lint run {{.CLI_ARGS}} --config ../.golangci.yaml {{.paths | default "./..."}}
+    env:
+      CGO_ENABLED: "0"
+
+  _lint:golangci-lint:go:
+    deps:
+      - task: lint:golangci-lint:go
+        vars:
+          paths: "{{.paths}}"
+
+  lint:golangci-lint:
+    desc: 'Lint with golangci-lint. Important vars: "paths".'
+    deps:
+      - task: _lint:golangci-lint:go
+        vars:
+          paths: "{{.paths}}"
+
+  lint:prettier:
+    desc: "Check if prettier-formatted."
+    deps:
+      - lint:prettier:yaml
+
+  lint:prettier:yaml:
+    desc: "Check if yaml files are prettier-formatted."
+    cmds:
+      - docker run --rm -v $(pwd):/work tmknom/prettier -c "**/*.yaml"
+
+  restart:
+    desc: "Restart Minio and Vault."
+    cmds:
+      - docker rm -f {{.minio_container}} || true
+      - docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} -p {{.minio_console_port}}:{{.minio_console_port}} --volume ./{{.minio_data_dir}}:/data minio/minio server /data --console-address ":{{.minio_console_port}}"
+      - task: configure-vault
+
+  setup:dev-environment:
+    desc: "Set up Vault with TRDL plugin and MinIO."
+    cmds:
+      - task: setup-minio
+      - task: setup-vault
+      - task: configure-vault-plugin
+
+  setup-minio:
+    desc: "Set up MinIO container and create bucket."
+    cmds:
+      - docker rm -f {{.minio_container}} || true
+      - docker run --rm --volume ./:/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+      - mkdir -p {{.minio_data_dir}}
+      - |
+        docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} \
+        -p {{.minio_console_port}}:{{.minio_console_port}} --volume ./{{.minio_data_dir}}:/data minio/minio server /data \
+        --console-address ":{{.minio_console_port}}"
+      - |
+        while ! docker exec {{.minio_container}} mc ls main; do
+          sleep 1;
+        done
+      - docker exec {{.minio_container}} mc mb main/{{.project_name}}
+      - docker exec {{.minio_container}} mc anonymous set public main/{{.project_name}}
+
+  setup-vault:
+    desc: "Run Vault server in development mode."
+    cmds:
+      - docker rm -f {{.vault_container}} || true
+      - |
+        docker run --workdir /app --privileged --name {{.vault_container}} -e VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE=1 \
+        -e VAULT_PLUGIN_SECRETS_TRDL_DEBUG=1 --detach --volume /var/run/docker.sock:/var/run/docker.sock \
+        --volume ./:/app -p {{.vault_port}}:{{.vault_port}} ghcr.io/werf/trdl-dev-vault:latest server -dev \
+        -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
+      - |
+        while ! docker exec {{.vault_container}} vault status; do
+          sleep 1;
+        done
+    deps:
+      - build:dev:linux:amd64
+
+  _get-minio-ip:
+    cmds:
+      - echo $(docker inspect --format "{{`{{`}} .NetworkSettings.IPAddress {{`}}`}}" {{.minio_container}})
+    silent: true
+
+  configure-vault-plugin:
+    desc: "Enable and configure TRDL Vault plugin."
+    cmds:
+      - docker exec {{.vault_container}} vault secrets enable -path={{.project_name}} vault-plugin-secrets-trdl
+      - |
+        docker exec {{.vault_container}} vault write {{.project_name}}/configure \
+        s3_secret_access_key={{.s3_secret_key}} \
+        s3_access_key_id={{.s3_access_key}} \
+        s3_bucket_name={{.project_name}} \
+        s3_region=ru-central1 \
+        s3_endpoint=http://$(task _get-minio-ip):{{.minio_port}} \
+        required_number_of_verified_signatures_on_commit={{.signatures_count}} \
+        git_repo_url={{.git_repo_url}} \
+        git_trdl_path={{.git_trdl_path}} \
+        git_trdl_channels_path={{.git_trdl_channels_path}}
+
+  logs:
+    desc: "Get Vault logs."
+    cmds:
+      - docker logs -f {{.vault_container}}
+
+  clean:
+    desc: "Clean up build artifacts and stop services."
+    cmds:
+      - rm -f ./vault/plugins/vault-plugin-secrets-trdl
+      - docker rm -f {{.minio_container}} || true
+      - docker rm -f {{.vault_container}} || true
+      - docker run --rm --volume ./:/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+
+  build:
+    desc: "Build server dev binary."
+    run: once
+    cmds:
+      - task: build:dev:{{OS}}:{{ARCH}}
+        vars:
+          extraGoBuildArgs: "{{.extraGoBuildArgs}}"
+          raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
+          outputDir: vault/plugins
+
+  build:all:
+    desc: "Build all server binaries."
+    deps:
+      - build:dev
+      - build:dist
+
+  build:dev:
+    desc: "Build all server dev binaries."
+    cmds:
+      - task: build:dev:linux:amd64
+      - task: build:dev:linux:arm64
+      - task: build:dev:darwin:amd64
+      - task: build:dev:darwin:arm64
+      - task: build:dev:windows:amd64
+
+  build:dist:
+    desc: "Build all server release binaries."
+    cmds:
+      - task: build:dist:linux:amd64
+      - task: build:dist:linux:arm64
+      - task: build:dist:darwin:amd64
+      - task: build:dist:darwin:arm64
+      - task: build:dist:windows:amd64
+
+  build:dev:linux:amd64:
+    desc: "Build server dev binary for linux/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          outputDir: vault/plugins
+
+  build:dev:linux:arm64:
+    desc: "Build server dev binary for linux/arm64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:darwin:amd64:
+    desc: "Build server dev binary for darwin/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:darwin:arm64:
+    desc: "Build server dev binary for darwin/arm64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          outputDir: "{{.outputDir}}"
+
+  build:dev:windows:amd64:
+    desc: "Build server dev binary for windows/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          outputDir: "{{.outputDir}}"
+
+  build:dist:linux:amd64:
+    desc: "Build server release binary for linux/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          extraGoBuildArgs: -ldflags="-s -w"
+          outputDir: "dist/{{.version}}/linux-amd64/bin/"
+
+  build:dist:linux:arm64:
+    desc: "Build server release binary for linux/arm64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "arm64"
+          extraGoBuildArgs: -ldflags="-s -w"
+          outputDir: "dist/{{.version}}/linux-arm64/bin/"
+
+  build:dist:darwin:amd64:
+    desc: "Build server release binary for darwin/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "amd64"
+          extraGoBuildArgs: -ldflags="-s -w"
+          outputDir: "dist/{{.version}}/darwin-amd64/bin/"
+
+  build:dist:darwin:arm64:
+    desc: "Build server release binary for darwin/arm64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "darwin"
+          targetArch: "arm64"
+          extraGoBuildArgs: -ldflags="-s -w"
+          outputDir: "dist/{{.version}}/darwin-arm64/bin/"
+
+  build:dist:windows:amd64:
+    desc: "Build server release binary for windows/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "windows"
+          targetArch: "amd64"
+          extraGoBuildArgs: -ldflags="-s -w"
+          outputDir: "dist/{{.version}}/windows-amd64/bin/"
+
+  _build:go:
+    internal: true
+    cmds:
+      - |
+        go build -o {{.outputDir | default (printf "vault/plugins/%s/%s-%s/bin" .version .targetOS .targetArch)}}/vault-plugin-secrets-trdl{{if (eq .targetOS "windows")}}.exe{{end}} \
+        {{.extraGoBuildArgs}} {{.CLI_ARGS}} github.com/werf/trdl/server/cmd/vault-plugin-secrets-trdl
+    env:
+      GOOS: "{{.targetOS}}"
+      GOARCH: "{{.targetArch}}"
+      CGO_ENABLED: 0
+
+  build-with-coverage:
+    desc: "Build server binary to run E2E tests with coverage."
+    cmds:
+      - task: build:dev:{{OS}}:{{ARCH}}
+        vars:
+          outputDir: ../bin/trdl
+          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
+          goTags: test_coverage
+
+  test:unit:
+    desc: "Run server unit tests."
+    cmd: ginkgo --vet=off --race --keep-going --cover --coverpkg=./... --output-dir={{.outputDir}} ./...
+    vars:
+      outputDir: '{{.outputDir | default "../tests_coverage/unit"}}'
+
+  verify:dist:binaries:
+    desc: "Verify that the distributable binaries are built and have correct platform/arch."
+    cmds:
+      - ./scripts/verify-dist-binaries.sh {{.version}}

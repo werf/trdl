@@ -1,13 +1,18 @@
 name: Broken links checker
 on:
   push:
+    branches: [main]
     paths:
       - docs
+  schedule:
+    - cron: "0 8 * * *"
+  pull_request:
+  repository_dispatch:
+    types: [check-broken-links]
   workflow_dispatch:
 
 jobs:
   check_links:
-    container: jekyll/builder:3
     name: Links checker
     runs-on: ubuntu-22.04
     strategy:
@@ -17,31 +22,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare environment
-        working-directory: docs
-        run: |
-          mkdir -m 777 .jekyll-cache _site
-          gem update bundler
-          bundle install
-
-      - name: Build (ru)
+      - name: Check ru broken links 
         if: matrix.lang == 'ru'
-        working-directory: docs
-        run: bundle exec jekyll build --config _config.yml,_config_ru.yml
+        run: task docs:check-broken-links
 
-      - name: Build (en)
+      - name: Check en broken links
         if: matrix.lang == 'en'
-        working-directory: docs
-        run: bundle exec jekyll build --config _config.yml
+        run: task docs:check-broken-links language=en
 
-      - name: Check links
-        working-directory: docs
-        run: |
-          bundle exec htmlproofer \
-            --allow-hash-href \
-            --empty-alt-ignore \
-            --check_html \
-            --url_ignore "https://fonts.googleapis.com,https://fonts.gstatic.com" \
-            --http-status-ignore "0" \
-            _site/
+  notification:
+    name: Notification
+    if: always()
+    needs: check_links
+    uses: werf/common-ci/.github/workflows/notification.yml@main
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}

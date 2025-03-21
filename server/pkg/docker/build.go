@@ -2,10 +2,13 @@ package docker
 
 import (
 	"archive/tar"
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
 	"path"
+	"regexp"
 
 	"github.com/djherbis/buffer"
 	"github.com/djherbis/nio/v3"
@@ -87,9 +90,11 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 		return fmt.Errorf("unable to set cli args: %w", err), nil
 	}
 
-	if err := RunCliBuild(contextReader, opts.TarWriter, args...); err != nil {
+	if err := RunCliBuild(ctx, contextReader, opts.TarWriter, args...); err != nil {
 		return fmt.Errorf("can't build artifacts: %w", err), nil
 	}
+
+	logboek.Context(ctx).Default().LogF("Build is successful\n")
 
 	cleanupFunc := func() error {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -102,17 +107,62 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	return nil, cleanupFunc
 }
 
-func RunCliBuild(contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
+func RunCliBuild(ctx context.Context, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
 	finalArgs := append([]string{"buildx", "build"}, args...)
-	cmd := exec.Command("docker", finalArgs...)
+	cmd := exec.CommandContext(ctx, "docker", finalArgs...)
+	var stdErrBuf bytes.Buffer
 	cmd.Stdout = tarWriter
 	cmd.Stdin = contextReader
+	cmd.Stderr = &stdErrBuf
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to execute docker build: %w", err)
+		if len := stdErrBuf.Len(); len > 0 {
+			errSection, parseErr := extractRelevantLogs(&stdErrBuf)
+			if parseErr == nil {
+				return fmt.Errorf("build failed: %s %w", errSection.String(), err)
+			}
+		}
+		return fmt.Errorf("build failed: %w", err)
+	}
+
+	if err := tarWriter.Close(); err != nil {
+		return fmt.Errorf("unable to close tar writer: %w", err)
 	}
 
 	return nil
+}
+
+// this needs for parsing buildx logs due to the fact that buildx writes all to stderr
+// it will look for the first error section of the logs that contains the error
+// or if not found just lines starts with "error:" or "ERROR:"
+func extractRelevantLogs(stderr *bytes.Buffer) (bytes.Buffer, error) {
+	scanner := bufio.NewScanner(stderr)
+
+	var errSection bytes.Buffer
+	var foundSection bool
+	reSectionStart := regexp.MustCompile(`^------$`)
+	reError := regexp.MustCompile(`(?i)^error:`)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if reSectionStart.MatchString(line) {
+			if foundSection {
+				break
+			}
+			foundSection = true
+		}
+
+		if foundSection || reError.MatchString(line) {
+			errSection.WriteString(line + "\n")
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return errSection, fmt.Errorf("error reading stderr: %w", err)
+	}
+
+	return errSection, nil
 }
 
 func setCliArgs(serviceDockerfilePathInContext string, secrets []secrets.Secret) ([]string, error) {
@@ -120,7 +170,6 @@ func setCliArgs(serviceDockerfilePathInContext string, secrets []secrets.Secret)
 		"--file", serviceDockerfilePathInContext,
 		"--pull",
 		"--no-cache",
-		"-o", "-",
 	}
 
 	if len(secrets) > 0 {
@@ -130,6 +179,6 @@ func setCliArgs(serviceDockerfilePathInContext string, secrets []secrets.Secret)
 		args = append(args, GetSecretsCommandMounts(secrets)...)
 	}
 
-	args = append(args, "-")
+	args = append(args, "-o", "-", "-")
 	return args, nil
 }

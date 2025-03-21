@@ -1,4 +1,3 @@
-docker_image: golang:1.23-alpine@sha256:47d337594bd9e667d35514b241569f95fb6d95727c24b19468813d596d5ae596
+docker_image: registry-write.werf.io/trdl/builder:d198735c3aedab19f6a2c94098d2cafac54669e2@sha256:5e048641b812a0ff906acf67471c0f568869165f31c785231e86c08832e3f4b7
 commands:
-  - go install github.com/mitchellh/gox@8c3b2b9e647dc52457d6ee7b5adcf97e2bafe131
-  - cd client && ./scripts/ci/build_release_v2.sh {{ .Tag }} && cp -a release-build/{{ .Tag }}/* /result
+  - cd client && task build:dist version={{ .Tag }} && task verify:dist:binaries version={{ .Tag }} && cp -a dist/{{ .Tag }}/* /result

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/fatih/structs"
@@ -215,4 +216,30 @@ func putConfiguration(ctx context.Context, storage logical.Storage, config *conf
 
 func deleteConfiguration(ctx context.Context, storage logical.Storage) error {
 	return storage.Delete(ctx, storageKeyConfiguration)
+}
+
+func (c *configuration) maskConfigSensetiveDataForDebug() (string, error) {
+	jsonData, err := json.Marshal(c)
+	if err != nil {
+		return "", err
+	}
+
+	var configMap map[string]interface{}
+	if err := json.Unmarshal(jsonData, &configMap); err != nil {
+		return "", err
+	}
+
+	sensitiveKeys := []string{"s3_secret_access_key", "s3_access_key_id"}
+	for _, key := range sensitiveKeys {
+		if _, exists := configMap[key]; exists {
+			configMap[key] = "******"
+		}
+	}
+
+	maskedJSON, err := json.MarshalIndent(configMap, "", "  ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(maskedJSON), nil
 }
