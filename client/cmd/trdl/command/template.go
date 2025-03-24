@@ -14,7 +14,6 @@ const (
 		`{{$optionsCmdFor := optionsCmdFor .}}` +
 		`{{$usageLine := usageLine .}}` +
 		`{{$versionLine := versionLine .}}`
-		
 
 	// SectionAliases is the help template section that displays command aliases.
 	SectionAliases = `{{if gt .Aliases 0}}Aliases:

@@ -11,8 +11,10 @@ import (
 	"github.com/werf/trdl/client/internal/logger"
 )
 
-var homeDir string
-var debug bool
+var (
+	homeDir string
+	debug   bool
+)
 
 func main() {
 	if err := rootCmd().Execute(); err != nil {
