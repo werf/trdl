@@ -3,15 +3,16 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 
 	"github.com/werf/trdl/client/cmd/trdl/command"
+	"github.com/werf/trdl/client/internal/logger"
 )
 
 var homeDir string
+var debug bool
 
 func main() {
 	if err := rootCmd().Execute(); err != nil {
@@ -27,6 +28,16 @@ func rootCmd() *cobra.Command {
 		Long:          "The universal package manager for delivering your software updates securely from a TUF repository (more details on https://trdl.dev)",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			logLevel := "info"
+			if debug {
+				logLevel = "debug"
+			}
+			logger.GlobalLogger = logger.SetupGlobalLogger(logger.LoggerOptions{
+				Level:     logLevel,
+				LogFormat: "text",
+			})
+		},
 		CompletionOptions: cobra.CompletionOptions{
 			DisableDefaultCmd: true,
 		},
@@ -34,6 +45,8 @@ func rootCmd() *cobra.Command {
 
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	SetupHomeDir(rootCmd)
+
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
 
 	groups := &command.Groups{}
 	*groups = append(*groups, command.Groups{
@@ -67,26 +80,6 @@ func rootCmd() *cobra.Command {
 	groups.Add(rootCmd)
 
 	command.ActsAsRootCommand(rootCmd, *groups...)
-	
-	for _, cmd := range rootCmd.Commands() {
-		copyCmdRunE := cmd.RunE 
-		cmd.RunE = func(cmd *cobra.Command, args []string) error {
-			startTime := time.Now()
-			
-			log := func(event, format string, args ...interface{}) {
-				fmt.Printf("[%s] [%.2fs] %s: %s\n",
-					time.Now().Format("15:04:05.000"), time.Since(startTime).Seconds(), event, fmt.Sprintf(format, args...))
-			}
-
-			log("COMMAND_STARTED", cmd.Name())
-			
-			err := copyCmdRunE(cmd, args)
-			
-			log("COMMAND_DONE", "(Total: %.2fs)", time.Since(startTime).Seconds())
-			
-			return err
-		}
-	}
 
 	return rootCmd
 }

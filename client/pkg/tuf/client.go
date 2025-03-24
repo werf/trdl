@@ -12,6 +12,7 @@ import (
 
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
+	"github.com/werf/trdl/client/internal/logger"
 	"github.com/werf/trdl/client/pkg/util"
 )
 
@@ -87,13 +88,11 @@ func (c *Client) initTufClient() error {
 	}
 
 	var remote tufClient.RemoteStore
-	var httpClient *http.Client
-	if os.Getenv("TRDL_TUF_REMOTE_CLIENT_TRACE") == "1" {
-		httpClient = &http.Client{
-			Transport: &TracingTransport{
-				Transport: http.DefaultTransport,
-			},
-		}
+	httpClient := &http.Client{
+		Transport: &TracingTransport{
+			Transport: http.DefaultTransport,
+			Logger:    *logger.GlobalLogger,
+		},
 	}
 	remote, err = tufClient.HTTPRemoteStore(c.repoUrl, nil, httpClient)
 	if err != nil {

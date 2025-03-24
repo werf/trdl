@@ -17,7 +17,7 @@ var _ = Describe("Basic", func() {
 	It("add", func() {
 		testutil.RunSucceedCommand(
 			"",
-			trdlBinPath,
+			trdlBinPath, "--debug",
 			"add", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
 		)
 
@@ -28,7 +28,7 @@ var _ = Describe("Basic", func() {
 		BeforeEach(func() {
 			testutil.RunSucceedCommand(
 				"",
-				trdlBinPath,
+				trdlBinPath, "--debug",
 				"add", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
 			)
 		})
