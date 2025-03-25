@@ -6,7 +6,16 @@ RUN apt-get -y update && \
     apt-get -y install ./task_linux_amd64.deb && \
     rm -rf ./task_linux_amd64.deb /var/cache/apt/* /var/lib/apt/lists/* /var/log/*
 
-WORKDIR /trdl
+ADD server /.trdl-deps/server
+ADD client /.trdl-deps/client
+ADD e2e /.trdl-deps/e2e
+ADD docs /.trdl-deps/docs
+ADD Taskfile.dist.yaml /.trdl-deps
 
-COPY client ./client
-COPY server ./server
+RUN cd /.trdl-deps && \
+    task build:dist:all version=base && \
+    task client:verify:dist:binaries version=base && \
+    task server:verify:dist:binaries version=base && \
+    rm -rf /.trdl-deps
+
+RUN git config --global --add safe.directory /git
