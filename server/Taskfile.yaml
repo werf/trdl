@@ -157,8 +157,8 @@ tasks:
     cmds:
       - docker logs -f {{.vault_container}}
 
-  clean:
-    desc: "Clean up build artifacts and stop services."
+  dev:cleanup:
+    desc: "Cleanup build artifacts and stop services."
     cmds:
       - rm -f ./vault/plugins/vault-plugin-secrets-trdl
       - docker rm -f {{.minio_container}} || true
@@ -324,3 +324,19 @@ tasks:
     desc: "Verify that the distributable binaries are built and have correct platform/arch."
     cmds:
       - ./scripts/verify-dist-binaries.sh {{.version}}
+
+  clean:binaries:
+    desc: "Clean all built binaries."
+    deps:
+      - clean:binaries:dev
+      - clean:binaries:dist
+
+  clean:binaries:dev:
+    desc: "Clean built dev binaries."
+    cmds:
+      - rm -rf ./vault
+
+  clean:binaries:dist:
+    desc: "Clean built release binaries."
+    cmds:
+      - rm -rf ./dist

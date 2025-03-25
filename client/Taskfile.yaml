@@ -222,3 +222,19 @@ tasks:
     desc: "Verify that the distributable binaries are built and have correct platform/arch."
     cmds:
       - ./scripts/verify-dist-binaries.sh {{.version}}
+
+  clean:binaries:
+    desc: "Clean all built binaries."
+    deps:
+      - clean:binaries:dev
+      - clean:binaries:dist
+
+  clean:binaries:dev:
+    desc: "Clean built dev binaries."
+    cmds:
+      - rm -rf ./bin
+
+  clean:binaries:dist:
+    desc: "Clean built release binaries."
+    cmds:
+      - rm -rf ./dist
