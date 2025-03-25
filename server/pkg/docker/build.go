@@ -3,9 +3,9 @@ package docker
 import (
 	"archive/tar"
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 	"path"
 
@@ -110,20 +110,12 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 func RunCliBuild(ctx context.Context, logger hclog.Logger, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
 	finalArgs := append([]string{"buildx", "build"}, args...)
 	cmd := exec.CommandContext(ctx, "docker", finalArgs...)
-	var stdErrBuf bytes.Buffer
+
 	cmd.Stdout = tarWriter
 	cmd.Stdin = contextReader
-	cmd.Stderr = &stdErrBuf
 
-	defer func() {
-		if stdErrBuf.Len() > 0 {
-			scanner := bufio.NewScanner(&stdErrBuf)
-			for scanner.Scan() {
-				logger.Info(scanner.Text())
-				logboek.Context(ctx).Default().LogLn(scanner.Text())
-			}
-		}
-	}()
+	multiWriter := io.MultiWriter(logboek.Context(ctx).OutStream(), logWriter(logger))
+	cmd.Stderr = multiWriter
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("build failed: %w", err)
@@ -134,6 +126,22 @@ func RunCliBuild(ctx context.Context, logger hclog.Logger, contextReader *nio.Pi
 	}
 
 	return nil
+}
+
+func logWriter(logger hclog.Logger) *io.PipeWriter {
+	pr, pw := io.Pipe()
+	go func() {
+		scanner := bufio.NewScanner(pr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			logger.Info(line)
+		}
+		if err := scanner.Err(); err != nil {
+			logger.Error("error reading stderr", "err", err)
+		}
+	}()
+
+	return pw
 }
 
 func setCliArgs(serviceDockerfilePathInContext string, secrets []secrets.Secret) ([]string, error) {
