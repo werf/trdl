@@ -3,6 +3,8 @@ The universal package manager for delivering your software updates securely from
 ## Options
 
 ```shell
+  -d, --debug=false
+            Enable debug output (default $TRDL_DEBUG or false)
       --home-dir='~/.trdl'
             Set trdl home directory (default $TRDL_HOME_DIR or ~/.trdl)
 ```

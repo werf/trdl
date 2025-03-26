@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/werf/common-go/pkg/util"
 	"os"
 
 	"github.com/gookit/color"
@@ -48,7 +49,7 @@ func rootCmd() *cobra.Command {
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	SetupHomeDir(rootCmd)
 
-	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", util.GetBoolEnvironmentDefaultFalse("TRDL_DEBUG"), "Enable debug output (default $TRDL_DEBUG or false)")
 
 	groups := &command.Groups{}
 	*groups = append(*groups, command.Groups{
