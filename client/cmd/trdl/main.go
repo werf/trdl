@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/werf/common-go/pkg/util"
 	"os"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 
+	"github.com/werf/common-go/pkg/util"
 	"github.com/werf/trdl/client/cmd/trdl/command"
 	"github.com/werf/trdl/client/pkg/logger"
 )
