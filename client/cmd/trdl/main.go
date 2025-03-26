@@ -7,10 +7,15 @@ import (
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 
+	"github.com/werf/common-go/pkg/util"
 	"github.com/werf/trdl/client/cmd/trdl/command"
+	"github.com/werf/trdl/client/pkg/logger"
 )
 
-var homeDir string
+var (
+	homeDir string
+	debug   bool
+)
 
 func main() {
 	if err := rootCmd().Execute(); err != nil {
@@ -26,6 +31,16 @@ func rootCmd() *cobra.Command {
 		Long:          "The universal package manager for delivering your software updates securely from a TUF repository (more details on https://trdl.dev)",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			logLevel := "info"
+			if debug {
+				logLevel = "debug"
+			}
+			logger.GlobalLogger = logger.SetupGlobalLogger(logger.LoggerOptions{
+				Level:     logLevel,
+				LogFormat: "text",
+			})
+		},
 		CompletionOptions: cobra.CompletionOptions{
 			DisableDefaultCmd: true,
 		},
@@ -33,6 +48,8 @@ func rootCmd() *cobra.Command {
 
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	SetupHomeDir(rootCmd)
+
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", util.GetBoolEnvironmentDefaultFalse("TRDL_DEBUG"), "Enable debug output (default $TRDL_DEBUG or false)")
 
 	groups := &command.Groups{}
 	*groups = append(*groups, command.Groups{

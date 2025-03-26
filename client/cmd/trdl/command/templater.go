@@ -13,6 +13,7 @@ import (
 
 	"github.com/werf/logboek"
 	"github.com/werf/logboek/pkg/types"
+	"github.com/werf/trdl/client/pkg/trdl"
 )
 
 type FlagExposer interface {
@@ -82,6 +83,7 @@ func (t *templater) templateFuncs(exposedFlags ...string) template.FuncMap {
 		"isRootCmd":           t.isRootCmd,
 		"optionsCmdFor":       t.optionsCmdFor,
 		"usageLine":           t.usageLine,
+		"versionLine":         t.versionLine,
 		"exposed": func(c *cobra.Command) *flag.FlagSet {
 			exposed := flag.NewFlagSet("exposed", flag.ContinueOnError)
 			if len(exposedFlags) > 0 {
@@ -184,6 +186,10 @@ func UsageLine(c *cobra.Command) string {
 	}
 
 	return usage
+}
+
+func (t *templater) versionLine(c *cobra.Command) string {
+	return fmt.Sprintf("Version: %s\n", trdl.Version)
 }
 
 func FlagsUsages(f *flag.FlagSet) string {

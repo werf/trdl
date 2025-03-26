@@ -18,7 +18,7 @@ var _ = Describe("Basic", func() {
 		testutil.RunSucceedCommand(
 			"",
 			trdlBinPath,
-			"add", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
+			"add", "-d", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
 		)
 
 		AssertRepoFieldsInListOutput([]string{testRepoName, validRepoUrl, trdl.DefaultChannel})
@@ -29,7 +29,7 @@ var _ = Describe("Basic", func() {
 			testutil.RunSucceedCommand(
 				"",
 				trdlBinPath,
-				"add", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
+				"add", "-d", testRepoName, validRepoUrl, validRootVersion, validRootSHA512,
 			)
 		})
 

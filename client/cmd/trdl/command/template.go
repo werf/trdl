@@ -12,7 +12,8 @@ const (
 		`{{$visibleFlags := visibleFlags .Flags}}` +
 		`{{$explicitlyExposedFlags := exposed .}}` +
 		`{{$optionsCmdFor := optionsCmdFor .}}` +
-		`{{$usageLine := usageLine .}}`
+		`{{$usageLine := usageLine .}}` +
+		`{{$versionLine := versionLine .}}`
 
 	// SectionAliases is the help template section that displays command aliases.
 	SectionAliases = `{{if gt .Aliases 0}}Aliases:
@@ -45,6 +46,10 @@ const (
 	// SectionTipsHelp is the help template section that displays the '--help' hint.
 	SectionTipsHelp = `{{if .HasSubCommands}}Use "{{$rootCmd}} <command> --help" for more information about a given command.
 {{end}}`
+
+	// SectionVersion is the help template section that displays the command's version.
+	SectionVersion = `
+{{ $versionLine }}`
 )
 
 // MainHelpTemplate if the template for 'help' used by most commands.
@@ -63,6 +68,7 @@ func MainUsageTemplate() string {
 		SectionFlags,
 		SectionUsage,
 		SectionTipsHelp,
+		SectionVersion,
 	}
 	return strings.TrimRightFunc(strings.Join(sections, ""), unicode.IsSpace)
 }

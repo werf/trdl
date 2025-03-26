@@ -2,6 +2,7 @@ package tuf
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
+	"github.com/werf/trdl/client/pkg/logger"
 	"github.com/werf/trdl/client/pkg/util"
 )
 
@@ -85,7 +87,14 @@ func (c *Client) initTufClient() error {
 		}
 	}
 
-	remote, err := tufClient.HTTPRemoteStore(c.repoUrl, nil, nil)
+	var remote tufClient.RemoteStore
+	httpClient := &http.Client{
+		Transport: &TracingTransport{
+			Transport: http.DefaultTransport,
+			Logger:    *logger.GlobalLogger,
+		},
+	}
+	remote, err = tufClient.HTTPRemoteStore(c.repoUrl, nil, httpClient)
 	if err != nil {
 		return fmt.Errorf("unable to init http remote store: %w", err)
 	}
