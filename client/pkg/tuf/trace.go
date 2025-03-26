@@ -14,7 +14,7 @@ type TracingTransport struct {
 }
 
 func (t *TracingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	log := t.Logger.With("sorce", "tuf-client")
+	log := t.Logger.With("source", "tuf-client")
 	startTime := time.Now()
 
 	log.Debug("Request started",
