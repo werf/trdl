@@ -3,12 +3,11 @@ package docker
 import (
 	"archive/tar"
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 	"path"
-	"regexp"
 
 	"github.com/djherbis/buffer"
 	"github.com/djherbis/nio/v3"
@@ -82,19 +81,20 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 		}
 	}()
 
-	logboek.Context(ctx).Default().LogF("Building docker image with artifacts\n")
-	logger.Debug("Building docker image with artifacts")
+	logboek.Context(ctx).Default().LogLn("Building docker image with artifacts")
+	logger.Info("Building docker image with artifacts")
 
 	args, err := setCliArgs(serviceDockerfilePathInContext, secrets)
 	if err != nil {
 		return fmt.Errorf("unable to set cli args: %w", err), nil
 	}
 
-	if err := RunCliBuild(ctx, contextReader, opts.TarWriter, args...); err != nil {
+	if err := RunCliBuild(ctx, logger, contextReader, opts.TarWriter, args...); err != nil {
 		return fmt.Errorf("can't build artifacts: %w", err), nil
 	}
 
-	logboek.Context(ctx).Default().LogF("Build is successful\n")
+	logboek.Context(ctx).Default().LogLn("Build is successful")
+	logger.Info("Build is successful")
 
 	cleanupFunc := func() error {
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -107,21 +107,17 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	return nil, cleanupFunc
 }
 
-func RunCliBuild(ctx context.Context, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
+func RunCliBuild(ctx context.Context, logger hclog.Logger, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
 	finalArgs := append([]string{"buildx", "build"}, args...)
 	cmd := exec.CommandContext(ctx, "docker", finalArgs...)
-	var stdErrBuf bytes.Buffer
+
 	cmd.Stdout = tarWriter
 	cmd.Stdin = contextReader
-	cmd.Stderr = &stdErrBuf
+
+	multiWriter := io.MultiWriter(logboek.Context(ctx).OutStream(), logWriter(logger))
+	cmd.Stderr = multiWriter
 
 	if err := cmd.Run(); err != nil {
-		if len := stdErrBuf.Len(); len > 0 {
-			errSection, parseErr := extractRelevantLogs(&stdErrBuf)
-			if parseErr == nil {
-				return fmt.Errorf("build failed: %s %w", errSection.String(), err)
-			}
-		}
 		return fmt.Errorf("build failed: %w", err)
 	}
 
@@ -132,37 +128,20 @@ func RunCliBuild(ctx context.Context, contextReader *nio.PipeReader, tarWriter *
 	return nil
 }
 
-// this needs for parsing buildx logs due to the fact that buildx writes all to stderr
-// it will look for the first error section of the logs that contains the error
-// or if not found just lines starts with "error:" or "ERROR:"
-func extractRelevantLogs(stderr *bytes.Buffer) (bytes.Buffer, error) {
-	scanner := bufio.NewScanner(stderr)
-
-	var errSection bytes.Buffer
-	var foundSection bool
-	reSectionStart := regexp.MustCompile(`^------$`)
-	reError := regexp.MustCompile(`(?i)^error:`)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if reSectionStart.MatchString(line) {
-			if foundSection {
-				break
-			}
-			foundSection = true
+func logWriter(logger hclog.Logger) *io.PipeWriter {
+	pr, pw := io.Pipe()
+	go func() {
+		scanner := bufio.NewScanner(pr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			logger.Info(line)
 		}
-
-		if foundSection || reError.MatchString(line) {
-			errSection.WriteString(line + "\n")
+		if err := scanner.Err(); err != nil {
+			logger.Error("error reading stderr", "err", err)
 		}
-	}
+	}()
 
-	if err := scanner.Err(); err != nil {
-		return errSection, fmt.Errorf("error reading stderr: %w", err)
-	}
-
-	return errSection, nil
+	return pw
 }
 
 func setCliArgs(serviceDockerfilePathInContext string, secrets []secrets.Secret) ([]string, error) {
