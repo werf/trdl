@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/werf/trdl/client/cmd/trdl/command"
-	"github.com/werf/trdl/client/internal/logger"
+	"github.com/werf/trdl/client/pkg/logger"
 )
 
 var (

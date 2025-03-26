@@ -5,7 +5,7 @@ import (
 	"net/http/httptrace"
 	"time"
 
-	"github.com/werf/trdl/client/internal/logger"
+	"github.com/werf/trdl/client/pkg/logger"
 )
 
 type TracingTransport struct {
