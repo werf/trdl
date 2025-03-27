@@ -102,7 +102,7 @@ tasks:
     cmds:
       - task: _image:build
         vars:
-          dfilePath: builder/Dockerfile
+          dfilePath: trdl-builder.Dockerfile
           imageName:
             sh: "echo registry-write.werf.io/trdl/builder:$(git rev-parse HEAD)"
 
