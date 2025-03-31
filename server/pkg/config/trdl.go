@@ -19,6 +19,7 @@ type Trdl struct {
 	DockerImage    string   `yaml:"dockerImage,omitempty"`
 	DockerImageOld string   `yaml:"docker_image,omitempty"` // legacy
 	Commands       []string `yaml:"commands,omitempty"`
+	BuilderImage   string   `yaml:"builderImage,omitempty"`
 }
 
 func (c *Trdl) GetDockerImage() string {
@@ -38,6 +39,12 @@ func (c *Trdl) Validate() error {
 
 	if len(c.Commands) == 0 {
 		return errors.New(`"commands" field must be set`)
+	}
+
+	if c.BuilderImage != "" {
+		if err := docker.ValidateImageNameWithDigest(c.BuilderImage); err != nil {
+			return fmt.Errorf(`"builderImage" field validation failed: %w'`, err)
+		}
 	}
 
 	return nil
