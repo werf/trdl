@@ -41,24 +41,24 @@ var (
 )
 
 type NewTrdlClientOpts struct {
-	VaultAddress string
-	VaultToken   string
-	Retry        bool
-	MaxAttempts  int
-	Delay        time.Duration
-	Logger       TaskLogger
+	Address     string
+	Token       string
+	Retry       bool
+	MaxAttempts int
+	Delay       time.Duration
+	Logger      TaskLogger
 }
 
 // NewTrdlClient initializes the Vault client using DefaultConfig
 func NewTrdlClient(opts NewTrdlClientOpts) (*TrdlClient, error) {
 	config := api.DefaultConfig()
-	config.Address = opts.VaultAddress
+	config.Address = opts.Address
 	client, err := api.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
-	client.SetToken(opts.VaultToken)
+	client.SetToken(opts.Token)
 
 	return &TrdlClient{
 		vaultClient: client,
