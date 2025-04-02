@@ -31,23 +31,23 @@ func (c *Client) Release(projectName, gitTag string) error {
 }
 
 type NewTrdlVaultClientOpts struct {
-	VaultAddress string
-	VaultToken   string
-	Retry        bool
-	MaxAttempts  int
-	Delay        time.Duration
-	LogLevel     slog.Level
+	Address     string
+	Token       string
+	Retry       bool
+	MaxAttempts int
+	Delay       time.Duration
+	LogLevel    slog.Level
 }
 
 func NewTrdlVaultClient(opts NewTrdlVaultClientOpts) (*Client, error) {
 	log := logger.NewLogger(opts.LogLevel)
 	trdlClient, err := vault.NewTrdlClient(vault.NewTrdlClientOpts{
-		VaultAddress: opts.VaultAddress,
-		VaultToken:   opts.VaultToken,
-		Retry:        opts.Retry,
-		MaxAttempts:  opts.MaxAttempts,
-		Delay:        opts.Delay,
-		Logger:       log,
+		Address:     opts.Address,
+		Token:       opts.Token,
+		Retry:       opts.Retry,
+		MaxAttempts: opts.MaxAttempts,
+		Delay:       opts.Delay,
+		Logger:      log,
 	})
 	if err != nil {
 		log.Error("", fmt.Sprintf("Unable to create Vault client: %s", err.Error()))

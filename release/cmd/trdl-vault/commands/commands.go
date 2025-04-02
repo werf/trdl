@@ -59,12 +59,12 @@ func createReleaseCommand() *cobra.Command {
 
 func publish(c *common.CmdData, projectName string) error {
 	trdlClient, err := client.NewTrdlVaultClient(client.NewTrdlVaultClientOpts{
-		VaultAddress: *c.VaultAddress,
-		VaultToken:   *c.VaultToken,
-		Retry:        *c.Retry,
-		MaxAttempts:  *c.MaxAttempts,
-		Delay:        *c.Delay,
-		LogLevel:     c.GetLogLevel(),
+		Address:     *c.Address,
+		Token:       *c.Token,
+		Retry:       *c.Retry,
+		MaxAttempts: *c.MaxAttempts,
+		Delay:       *c.Delay,
+		LogLevel:    c.GetLogLevel(),
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create client: %w", err)
@@ -77,12 +77,12 @@ func publish(c *common.CmdData, projectName string) error {
 
 func release(c *common.CmdData, projectName, gitTag string) error {
 	trdlClient, err := client.NewTrdlVaultClient(client.NewTrdlVaultClientOpts{
-		VaultAddress: *c.VaultAddress,
-		VaultToken:   *c.VaultToken,
-		Retry:        *c.Retry,
-		MaxAttempts:  *c.MaxAttempts,
-		Delay:        *c.Delay,
-		LogLevel:     c.GetLogLevel(),
+		Address:     *c.Address,
+		Token:       *c.Token,
+		Retry:       *c.Retry,
+		MaxAttempts: *c.MaxAttempts,
+		Delay:       *c.Delay,
+		LogLevel:    c.GetLogLevel(),
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create client: %w", err)

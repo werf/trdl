@@ -15,8 +15,8 @@ import (
 
 type CmdDataKey struct{}
 
-func SetupVaultAddress(cmdData *CmdData, cmd *cobra.Command) {
-	cmdData.VaultAddress = new(string)
+func SetupAddress(cmdData *CmdData, cmd *cobra.Command) {
+	cmdData.Address = new(string)
 	defaultValue := getEnvOrDefault("TRDL_VAULT_ADDR", "http://localhost:8200")
 
 	_, err := url.ParseRequestURI(defaultValue)
@@ -24,14 +24,14 @@ func SetupVaultAddress(cmdData *CmdData, cmd *cobra.Command) {
 		panic(err)
 	}
 
-	cmd.Flags().StringVarP(cmdData.VaultAddress, "vault-address", "", defaultValue, "Set vault address (env: TRDL_VAULT_ADDR)")
+	cmd.Flags().StringVarP(cmdData.Address, "address", "", defaultValue, "Set vault address (env: TRDL_VAULT_ADDR)")
 }
 
-func SetupVaultToken(cmdData *CmdData, cmd *cobra.Command) {
-	cmdData.VaultToken = new(string)
+func SetupToken(cmdData *CmdData, cmd *cobra.Command) {
+	cmdData.Token = new(string)
 	defaultValue := getEnvOrDefault("TRDL_VAULT_TOKEN", "root")
 
-	cmd.Flags().StringVarP(cmdData.VaultToken, "vault-token", "", defaultValue, "Set vault token (env: TRDL_VAULT_TOKEN)")
+	cmd.Flags().StringVarP(cmdData.Token, "token", "", defaultValue, "Set vault token (env: TRDL_VAULT_TOKEN)")
 }
 
 func SetupRetry(cmdData *CmdData, cmd *cobra.Command) {
@@ -74,8 +74,8 @@ func FromCmdData(ctx context.Context) *CmdData {
 }
 
 func SetupCmdData(cmdData *CmdData, cmd *cobra.Command) {
-	SetupVaultAddress(cmdData, cmd)
-	SetupVaultToken(cmdData, cmd)
+	SetupAddress(cmdData, cmd)
+	SetupToken(cmdData, cmd)
 	SetupRetry(cmdData, cmd)
 	SetupMaxAttemps(cmdData, cmd)
 	SetupDelay(cmdData, cmd)
