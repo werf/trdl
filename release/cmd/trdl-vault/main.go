@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
 	"github.com/werf/trdl/release/common"
 	"github.com/werf/trdl/release/pkg/client"
 )
@@ -13,12 +14,12 @@ import (
 func main() {
 	var commonCmdData common.CmdData
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "trdl-vault",
 		Short: "Trdl CLI for Vault operations",
 	}
 
-	var publishCmd = &cobra.Command{
+	publishCmd := &cobra.Command{
 		Use:   "publish <project-name>",
 		Short: "Publish operation",
 		Args:  cobra.MinimumNArgs(1),
@@ -30,7 +31,7 @@ func main() {
 		},
 	}
 
-	var releaseCmd = &cobra.Command{
+	releaseCmd := &cobra.Command{
 		Use:   "release <project-name> <git-tag>",
 		Short: "Release operation",
 		Args:  cobra.MinimumNArgs(2),

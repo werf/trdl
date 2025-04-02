@@ -15,6 +15,9 @@ includes:
   docs:
     taskfile: ./docs/Taskfile.yaml
     dir: ./docs
+  release:
+    taskfile: ./release/Taskfile.yaml
+    dir: ./release
 
 tasks:
   sign:
@@ -37,6 +40,7 @@ tasks:
       - task: client:format
       - task: e2e:format
       - task: docs:format
+      - task: release:format
 
   lint:
     desc: "Run all linters."
@@ -45,6 +49,7 @@ tasks:
       - task: client:lint
       - task: e2e:lint
       - task: docs:lint
+      - task: release:lint
 
   deps:install:
     desc: "Install all dependencies."
@@ -82,6 +87,7 @@ tasks:
     deps:
       - client:build:dev
       - server:build:dev
+      - release:build:dev
     vars:
       version: "{{.version}}"
 
@@ -90,6 +96,7 @@ tasks:
     deps:
       - client:build:dist
       - server:build:dist
+      - release:build:dist
     vars:
       version: "{{.version}}"
 
@@ -125,6 +132,7 @@ tasks:
     deps:
       - server:clean:binaries
       - client:clean:binaries
+      - release:clean:binaries
 
   ci:setup:git-config:
     desc: "Setup git config."
