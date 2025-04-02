@@ -26,11 +26,10 @@ type Builder struct {
 }
 
 type NewBuilderOpts struct {
-	BuildId      string
-	ContextPath  string
-	Secrets      []secrets.Secret
-	BuilderImage string
-	Logger       Logger
+	BuildId     string
+	ContextPath string
+	Secrets     []secrets.Secret
+	Logger      Logger
 }
 
 func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
@@ -40,10 +39,6 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 		"create",
 		"--name", builderName,
 		"--driver=docker-container",
-	}
-
-	if opts.BuilderImage != "" {
-		builderArgs = append(builderArgs, "--driver-opt", fmt.Sprintf("image=%s", opts.BuilderImage))
 	}
 
 	if err := runDockerCmd(ctx, builderArgs); err != nil {

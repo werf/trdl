@@ -156,12 +156,11 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		go func() {
 			err := docker.BuildReleaseArtifacts(ctx,
 				docker.BuildReleaseArtifactsOpts{
-					TarWriter:    tarWriter,
-					GitRepo:      gitRepo,
-					FromImage:    trdlCfg.GetDockerImage(),
-					RunCommands:  trdlCfg.Commands,
-					Storage:      req.Storage,
-					BuilderImage: trdlCfg.BuilderImage,
+					TarWriter:   tarWriter,
+					GitRepo:     gitRepo,
+					FromImage:   trdlCfg.GetDockerImage(),
+					RunCommands: trdlCfg.Commands,
+					Storage:     req.Storage,
 				}, b.Logger())
 			if err != nil {
 				errCh <- err

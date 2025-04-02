@@ -24,12 +24,11 @@ const (
 )
 
 type BuildReleaseArtifactsOpts struct {
-	FromImage    string
-	RunCommands  []string
-	GitRepo      *git.Repository
-	TarWriter    *nio.PipeWriter
-	Storage      logical.Storage
-	BuilderImage string
+	FromImage   string
+	RunCommands []string
+	GitRepo     *git.Repository
+	TarWriter   *nio.PipeWriter
+	Storage     logical.Storage
 }
 
 func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, logger hclog.Logger) error {
