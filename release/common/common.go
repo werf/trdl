@@ -1,7 +1,6 @@
 package common
 
 import (
-	"context"
 	"log/slog"
 	"net/url"
 	"os"
@@ -11,8 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/werf/trdl/release/pkg/logger"
 )
-
-type CmdDataKey struct{}
 
 func SetupAddress(cmdData *CmdData, cmd *cobra.Command) {
 	cmdData.Address = new(string)
@@ -59,17 +56,6 @@ func SetupLogLevel(cmdData *CmdData, cmd *cobra.Command) {
 
 func (c *CmdData) GetLogLevel() slog.Level {
 	return logger.ParseLogLevel(*c.LogLevel)
-}
-
-func WithCmdData(ctx context.Context, cmdData *CmdData) context.Context {
-	return context.WithValue(ctx, CmdDataKey{}, cmdData)
-}
-
-func FromCmdData(ctx context.Context) *CmdData {
-	if v, ok := ctx.Value(CmdDataKey{}).(*CmdData); ok {
-		return v
-	}
-	return nil
 }
 
 func SetupCmdData(cmdData *CmdData, cmd *cobra.Command) {
