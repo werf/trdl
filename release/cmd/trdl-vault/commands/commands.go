@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"log"
 
@@ -33,7 +32,6 @@ func createPublishCommand() *cobra.Command {
 	}
 
 	common.SetupCmdData(cmdData, publishCmd)
-	publishCmd.SetContext(common.WithCmdData(context.Background(), cmdData))
 	return publishCmd
 }
 
@@ -53,7 +51,6 @@ func createReleaseCommand() *cobra.Command {
 	}
 
 	common.SetupCmdData(cmdData, releaseCmd)
-	releaseCmd.SetContext(common.WithCmdData(context.Background(), cmdData))
 	return releaseCmd
 }
 
