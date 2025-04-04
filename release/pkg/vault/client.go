@@ -114,7 +114,6 @@ func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}
 			c.logger.Info("", fmt.Sprintf("Retrying %s after %v...", path, c.delay))
 		},
 	)
-
 	if err != nil {
 		c.logger.Error("", fmt.Sprintf("operation exceeded maximum duration: %v", err))
 		return err
