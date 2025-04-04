@@ -2,16 +2,13 @@ package docker
 
 import (
 	"archive/tar"
-	"bufio"
 	"context"
 	"fmt"
-	"io"
-	"os/exec"
 	"path"
+	"time"
 
 	"github.com/djherbis/buffer"
 	"github.com/djherbis/nio/v3"
-	"github.com/docker/docker/client"
 	"github.com/go-git/go-git/v5"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -22,6 +19,10 @@ import (
 	"github.com/werf/trdl/server/pkg/secrets"
 )
 
+const (
+	defaultTimeOut = 30
+)
+
 type BuildReleaseArtifactsOpts struct {
 	FromImage   string
 	RunCommands []string
@@ -30,11 +31,12 @@ type BuildReleaseArtifactsOpts struct {
 	Storage     logical.Storage
 }
 
-func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, logger hclog.Logger) (error, func() error) {
+func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, logger hclog.Logger) error {
 	serviceDirInContext := ".trdl"
 	serviceDockerfilePathInContext := path.Join(serviceDirInContext, "Dockerfile")
+	buildId := uuid.NewV4().String()
 	serviceLabels := map[string]string{
-		"vault-trdl-release-uuid": uuid.NewV4().String(),
+		"vault-trdl-release-uuid": buildId,
 	}
 
 	contextBuf := buffer.New(64 * 1024 * 1024)
@@ -42,7 +44,7 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 
 	secrets, err := secrets.GetSecrets(ctx, opts.Storage)
 	if err != nil {
-		return fmt.Errorf("unable to get build secrets: %w", err), nil
+		return fmt.Errorf("unable to get build secrets: %w", err)
 	}
 
 	go func() {
@@ -84,80 +86,31 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	logboek.Context(ctx).Default().LogLn("Building docker image with artifacts")
 	logger.Info("Building docker image with artifacts")
 
-	args, err := setCliArgs(serviceDockerfilePathInContext, secrets)
+	builder, err := NewBuilder(ctx, &NewBuilderOpts{
+		BuildId:     buildId,
+		ContextPath: serviceDockerfilePathInContext,
+		Secrets:     secrets,
+		Logger:      logger,
+	})
 	if err != nil {
-		return fmt.Errorf("unable to set cli args: %w", err), nil
+		return fmt.Errorf("unable to create docker builder: %w", err)
 	}
+	defer func() {
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), defaultTimeOut*time.Second)
+		defer cancel()
+		if err := builder.Remove(cleanupCtx); err != nil {
+			errStr := fmt.Sprintf("Unable to remove builder `%s`: %s", builder.builderName, err.Error())
+			logboek.Context(ctx).Default().LogLn(errStr)
+			logger.Info(errStr)
+		}
+	}()
 
-	if err := RunCliBuild(ctx, logger, contextReader, opts.TarWriter, args...); err != nil {
-		return fmt.Errorf("can't build artifacts: %w", err), nil
+	if err := builder.Build(ctx, contextReader, opts.TarWriter); err != nil {
+		return fmt.Errorf("can't build artifacts: %w", err)
 	}
 
 	logboek.Context(ctx).Default().LogLn("Build is successful")
 	logger.Info("Build is successful")
 
-	cleanupFunc := func() error {
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err != nil {
-			return fmt.Errorf("unable to create docker client: %w", err)
-		}
-		return RemoveImagesByLabels(ctx, cli, serviceLabels)
-	}
-
-	return nil, cleanupFunc
-}
-
-func RunCliBuild(ctx context.Context, logger hclog.Logger, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter, args ...string) error {
-	finalArgs := append([]string{"buildx", "build"}, args...)
-	cmd := exec.CommandContext(ctx, "docker", finalArgs...)
-
-	cmd.Stdout = tarWriter
-	cmd.Stdin = contextReader
-
-	multiWriter := io.MultiWriter(logboek.Context(ctx).OutStream(), logWriter(logger))
-	cmd.Stderr = multiWriter
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("build failed: %w", err)
-	}
-
-	if err := tarWriter.Close(); err != nil {
-		return fmt.Errorf("unable to close tar writer: %w", err)
-	}
-
 	return nil
-}
-
-func logWriter(logger hclog.Logger) *io.PipeWriter {
-	pr, pw := io.Pipe()
-	go func() {
-		scanner := bufio.NewScanner(pr)
-		for scanner.Scan() {
-			line := scanner.Text()
-			logger.Info(line)
-		}
-		if err := scanner.Err(); err != nil {
-			logger.Error("error reading stderr", "err", err)
-		}
-	}()
-
-	return pw
-}
-
-func setCliArgs(serviceDockerfilePathInContext string, secrets []secrets.Secret) ([]string, error) {
-	args := []string{
-		"--file", serviceDockerfilePathInContext,
-		"--pull",
-		"--no-cache",
-	}
-
-	if len(secrets) > 0 {
-		if err := SetTempEnvVars(secrets); err != nil {
-			return nil, fmt.Errorf("unable to set secrets")
-		}
-		args = append(args, GetSecretsCommandMounts(secrets)...)
-	}
-
-	args = append(args, "-o", "-", "-")
-	return args, nil
 }

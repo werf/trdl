@@ -154,7 +154,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 		errCh := make(chan error, 1)
 		go func() {
-			err, cleanupFunc := docker.BuildReleaseArtifacts(ctx,
+			err := docker.BuildReleaseArtifacts(ctx,
 				docker.BuildReleaseArtifactsOpts{
 					TarWriter:   tarWriter,
 					GitRepo:     gitRepo,
@@ -167,11 +167,6 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 				tarWriter.CloseWithError(err)
 				return
 			}
-			defer func() {
-				if err := cleanupFunc(); err != nil {
-					b.Logger().Error(fmt.Sprintf("unable to remove service docker image: %s", err))
-				}
-			}()
 			errCh <- nil
 		}()
 
