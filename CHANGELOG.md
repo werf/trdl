@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.0](https://www.github.com/werf/trdl/compare/v0.8.7...v0.9.0) (2025-04-04)
+
+
+### Features
+
+* **client:** add debug struct logging ([#304](https://www.github.com/werf/trdl/issues/304)) ([239b401](https://www.github.com/werf/trdl/commit/239b40130aadd3be28916435e4082bec33dc559c))
+* **client:** support more envs for `trdl update` ([5f76cb5](https://www.github.com/werf/trdl/commit/5f76cb5646366798a0eace6cd547e32a30637536))
+* **release:** add trdl-vault cli for release and publish ([#301](https://www.github.com/werf/trdl/issues/301)) ([5c70b51](https://www.github.com/werf/trdl/commit/5c70b51995cdb848a365f7458a92303e7a403b7e))
+* **server:** add a one-time docker builder for build tasks ([#320](https://www.github.com/werf/trdl/issues/320)) ([a055240](https://www.github.com/werf/trdl/commit/a0552406be0073b7cbc03acb7709d7e66b7ad28b))
+* **server:** add build log ([#316](https://www.github.com/werf/trdl/issues/316)) ([aee04d8](https://www.github.com/werf/trdl/commit/aee04d82bfc8c7764af00661fff250a6044ba73a))
+
 ### [0.8.7](https://www.github.com/werf/trdl/compare/v0.8.6...v0.8.7) (2025-03-04)
 
 
