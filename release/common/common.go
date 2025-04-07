@@ -68,7 +68,7 @@ func SetupCmdData(cmdData *CmdData, cmd *cobra.Command) {
 	SetupLogLevel(cmdData, cmd)
 }
 
-func getEnvOrDefault(envVar string, defaultValue string) string {
+func getEnvOrDefault(envVar, defaultValue string) string {
 	if val, exists := os.LookupEnv(envVar); exists {
 		return val
 	}
