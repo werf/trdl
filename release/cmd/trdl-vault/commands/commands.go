@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+
 	"github.com/werf/trdl/release/common"
 	"github.com/werf/trdl/release/pkg/client"
 )
