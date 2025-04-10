@@ -85,7 +85,7 @@ function requireUtils$1 () {
 	    };
 	}
 	utils$1.toCommandProperties = toCommandProperties;
-
+	
 	return utils$1;
 }
 
@@ -188,7 +188,7 @@ function requireCommand () {
 	        .replace(/:/g, '%3A')
 	        .replace(/,/g, '%2C');
 	}
-
+	
 	return command;
 }
 
@@ -259,7 +259,7 @@ function requireFileCommand () {
 	    return `${key}<<${delimiter}${os.EOL}${convertedValue}${os.EOL}${delimiter}`;
 	}
 	fileCommand.prepareKeyValueMessage = prepareKeyValueMessage;
-
+	
 	return fileCommand;
 }
 
@@ -367,7 +367,7 @@ function requireProxy () {
 	        return this._decodedPassword;
 	    }
 	}
-
+	
 	return proxy;
 }
 
@@ -8216,7 +8216,7 @@ function requireUtils () {
 	    return res;
 	}
 	utils.enumToMap = enumToMap;
-
+	
 	return utils;
 }
 
@@ -8496,7 +8496,7 @@ function requireConstants$2 () {
 		    'transfer-encoding': HEADER_STATE.TRANSFER_ENCODING,
 		    'upgrade': HEADER_STATE.UPGRADE,
 		};
-
+		
 	} (constants$2));
 	return constants$2;
 }
@@ -25008,7 +25008,7 @@ function requireLib () {
 	}
 	lib.HttpClient = HttpClient;
 	const lowercaseKeys = (obj) => Object.keys(obj).reduce((c, k) => ((c[k.toLowerCase()] = obj[k]), c), {});
-
+	
 	return lib;
 }
 
@@ -25098,7 +25098,7 @@ function requireAuth () {
 	    }
 	}
 	auth.PersonalAccessTokenCredentialHandler = PersonalAccessTokenCredentialHandler;
-
+	
 	return auth;
 }
 
@@ -25182,7 +25182,7 @@ function requireOidcUtils () {
 	    }
 	}
 	oidcUtils.OidcClient = OidcClient;
-
+	
 	return oidcUtils;
 }
 
@@ -25475,7 +25475,7 @@ function requireSummary () {
 		 */
 		exports.markdownSummary = _summary;
 		exports.summary = _summary;
-
+		
 	} (summary));
 	return summary;
 }
@@ -25547,7 +25547,7 @@ function requirePathUtils () {
 	    return pth.replace(/[/\\]/g, path.sep);
 	}
 	pathUtils.toPlatformPath = toPlatformPath;
-
+	
 	return pathUtils;
 }
 
@@ -25748,7 +25748,7 @@ function requireIoUtil () {
 		    return (_a = process.env['COMSPEC']) !== null && _a !== void 0 ? _a : `cmd.exe`;
 		}
 		exports.getCmdPath = getCmdPath;
-
+		
 	} (ioUtil));
 	return ioUtil;
 }
@@ -26055,7 +26055,7 @@ function requireIo () {
 	        }
 	    });
 	}
-
+	
 	return io;
 }
 
@@ -26680,7 +26680,7 @@ function requireToolrunner () {
 	        state._setResult();
 	    }
 	}
-
+	
 	return toolrunner;
 }
 
@@ -26790,7 +26790,7 @@ function requireExec () {
 	    });
 	}
 	exec.getExecOutput = getExecOutput;
-
+	
 	return exec;
 }
 
@@ -26892,7 +26892,7 @@ function requirePlatform () {
 		    });
 		}
 		exports.getDetails = getDetails;
-
+		
 	} (platform));
 	return platform;
 }
@@ -27245,7 +27245,7 @@ function requireCore () {
 		 * Platform utilities exports
 		 */
 		exports.platform = __importStar(requirePlatform());
-
+		
 	} (core));
 	return core;
 }
@@ -27257,6 +27257,7 @@ var preset;
     preset["unknown"] = "unknown";
     preset["werf"] = "werf";
     preset["kubedog"] = "kubedog";
+    preset["nelm"] = "nelm";
 })(preset || (preset = {}));
 const cmdAddArgsMap = {
     [preset.unknown]: {
@@ -27276,6 +27277,12 @@ const cmdAddArgsMap = {
         url: 'https://tuf.kubedog.werf.io',
         rootVersion: '12',
         rootSha512: '6462a80292eb6d7712d8a18126366511f9c47a566f121a7745cfd68b624dc340b6591c2cadfe20690eb38296c399a3f4e6948aca90be60e446ed05c3c238294c'
+    },
+    [preset.nelm]: {
+        repo: preset.nelm,
+        url: 'https://storage.googleapis.com/nelm-tuf',
+        rootVersion: '1',
+        rootSha512: '2122fb476c48de4609fe6d3636759645996088ff6796857fc23ba4b8331a6e3a58fc40f1714c31bda64c709ef6f49bcc4691d091bad6cb1b9a631d8e06e1f308'
     }
 };
 const cmdUpdateArgsMap = {
@@ -27292,6 +27299,11 @@ const cmdUpdateArgsMap = {
     [preset.kubedog]: {
         repo: preset.kubedog,
         group: '0',
+        channel: 'stable'
+    },
+    [preset.nelm]: {
+        repo: preset.nelm,
+        group: '1',
         channel: 'stable'
     }
 };
@@ -29083,7 +29095,7 @@ function requireSemver () {
 		  return parse(match[2] +
 		    '.' + (match[3] || '0') +
 		    '.' + (match[4] || '0'), options)
-		}
+		} 
 	} (semver, semver.exports));
 	return semver.exports;
 }
@@ -29223,7 +29235,7 @@ function requireManifest () {
 		    return contents;
 		}
 		exports._readLinuxVersionFile = _readLinuxVersionFile;
-
+		
 	} (manifest$1, manifest$1.exports));
 	return manifest$1.exports;
 }
@@ -29320,7 +29332,7 @@ function requireRetryHelper () {
 	    }
 	}
 	retryHelper.RetryHelper = RetryHelper;
-
+	
 	return retryHelper;
 }
 
@@ -29993,7 +30005,7 @@ function requireToolCache () {
 	function _unique(values) {
 	    return Array.from(new Set(values));
 	}
-
+	
 	return toolCache;
 }
 
@@ -30222,7 +30234,7 @@ function requireSlugify () {
 		  };
 
 		  return replace
-		}));
+		})); 
 	} (slugify$2));
 	return slugify$2.exports;
 }
