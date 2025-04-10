@@ -1,6 +1,6 @@
 import { which } from '@actions/io'
 import { execOutput } from './exec'
-import { optionalToArray } from './optional'
+import { optionalToArray, optionalToObject } from './optional'
 
 export class TrdlCli {
   private readonly name: string
@@ -83,16 +83,16 @@ export interface ListItem {
   name: string
   url: string
   default: string
-  channel: string
+  channel?: string
 }
 
 function parseLineToItem(line: string): ListItem {
-  const [name, url, default_, channel] = line.split(/ +/)
+  const [name, url, default_, channel] = line.trim().split(/ +/)
   return {
     name,
     url,
     default: default_,
-    channel
+    ...optionalToObject('channel', channel)
   }
 }
 
