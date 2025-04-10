@@ -1,5 +1,5 @@
 import { getInput } from '@actions/core'
-import { AddArgs, BinPathArgs, UpdateArgs } from '../../lib/trdl-cli'
+import { AddArgs, UpdateArgs } from '../../lib/trdl-cli'
 
 export enum preset {
   unknown = 'unknown',
@@ -30,7 +30,7 @@ const cmdAddArgsMap: Record<preset, AddArgs> = {
   }
 }
 
-const cmdUpdateArgsMap: Record<preset, UpdateArgs | BinPathArgs> = {
+const cmdUpdateArgsMap: Record<preset, UpdateArgs> = {
   [preset.unknown]: {
     repo: preset.unknown,
     group: ''
@@ -52,7 +52,7 @@ export function getAddArgs(presetVal: preset): AddArgs {
   return cmdAddArgsMap[presetVal]
 }
 
-export function getUpdateArgs(presetVal: preset): UpdateArgs | BinPathArgs {
+export function getUpdateArgs(presetVal: preset): UpdateArgs {
   return cmdUpdateArgsMap[presetVal]
 }
 
