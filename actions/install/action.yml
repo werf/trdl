@@ -1,0 +1,17 @@
+name: Install trdl CLI
+author: 'Flant'
+description: 'Install trdl CLI'
+branding:
+  color: blue
+  icon: anchor
+inputs:
+  channel:
+    description: 'The one of the following channel: alpha, stable'
+    default: 'stable'
+    required: false
+  version:
+    description: 'The certain version'
+    required: false
+runs:
+  using: 'node20'
+  main: 'dist/index.mjs'

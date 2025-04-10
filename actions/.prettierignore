@@ -1,0 +1,7 @@
+.DS_Store
+.licenses/
+dist/
+node_modules/
+coverage/
+README.md
+rollup.config.mjs
