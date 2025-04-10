@@ -163,7 +163,7 @@ describe('trdl-cli.ts', function () {
       libExec.execOutput.mockResolvedValueOnce({ stdout, stderr: [], exitCode: 0 })
       const result = await cli.version()
       expect(result).toEqual(stdout.join(''))
-      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['version'], { silent: false })
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['version'])
     })
   })
 })
