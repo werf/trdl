@@ -1,9 +1,8 @@
 import { which } from '@actions/io'
 import { execOutput } from './exec'
-import { optionalToArray, optionalToObject } from './optional'
 
 export class TrdlCli {
-  private readonly name: string
+  readonly name: string
 
   constructor() {
     this.name = 'trdl'
@@ -35,7 +34,8 @@ export class TrdlCli {
   async update(args: UpdateArgs, opts?: UpdateOptions) {
     const { repo, group, channel } = args
     const env = { ...(process.env as execOptionsEnvs), ...(opts && toUpdateEnvs(opts)) }
-    await execOutput(this.name, ['update', repo, group, ...optionalToArray(channel)], { env })
+    const channelOpt = channel !== undefined ? [channel] : [] // optional field
+    await execOutput(this.name, ['update', repo, group, ...channelOpt], { env })
   }
 
   async binPath(args: UpdateArgs): Promise<string> {
@@ -44,7 +44,8 @@ export class TrdlCli {
       failOnStdErr: false,
       ignoreReturnCode: true
     }
-    const { stdout } = await execOutput(this.name, ['bin-path', repo, group, ...optionalToArray(channel)], execOpts)
+    const channelOpt = channel !== undefined ? [channel] : [] // optional field
+    const { stdout } = await execOutput(this.name, ['bin-path', repo, group, ...channelOpt], execOpts)
     return stdout.join('')
   }
 
@@ -92,7 +93,7 @@ function parseLineToItem(line: string): ListItem {
     name,
     url,
     default: default_,
-    ...optionalToObject('channel', channel)
+    ...(channel !== undefined ? { channel } : {}) // optional field
   }
 }
 
