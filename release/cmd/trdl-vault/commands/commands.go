@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -11,16 +11,14 @@ import (
 	"github.com/werf/trdl/release/pkg/client"
 )
 
-func CreateCommands() []*cobra.Command {
+func CreateCommands(cmdData *common.CmdData) []*cobra.Command {
 	return []*cobra.Command{
-		createPublishCommand(),
-		createReleaseCommand(),
+		createPublishCommand(cmdData),
+		createReleaseCommand(cmdData),
 	}
 }
 
-func createPublishCommand() *cobra.Command {
-	cmdData := &common.CmdData{}
-
+func createPublishCommand(cmdData *common.CmdData) *cobra.Command {
 	publishCmd := &cobra.Command{
 		Use:   "publish <project-name>",
 		Short: "Publish operation",
@@ -28,7 +26,8 @@ func createPublishCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			projectName := args[0]
 			if err := publish(cmdData, projectName); err != nil {
-				log.Fatalf("Publish failed: %s", err.Error())
+				logger.GlobalLogger.Error(fmt.Sprintf("Publish failed: %s", err))
+				os.Exit(1)
 			}
 		},
 	}
@@ -37,8 +36,7 @@ func createPublishCommand() *cobra.Command {
 	return publishCmd
 }
 
-func createReleaseCommand() *cobra.Command {
-	cmdData := &common.CmdData{}
+func createReleaseCommand(cmdData *common.CmdData) *cobra.Command {
 
 	releaseCmd := &cobra.Command{
 		Use:   "release <project-name> <git-tag>",
@@ -47,7 +45,8 @@ func createReleaseCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			projectName, gitTag := args[0], args[1]
 			if err := release(cmdData, projectName, gitTag); err != nil {
-				log.Fatalf("Release failed: %s", err.Error())
+				logger.GlobalLogger.Error(fmt.Sprintf("Release failed: %s", err))
+				os.Exit(1)
 			}
 		},
 	}
@@ -57,8 +56,6 @@ func createReleaseCommand() *cobra.Command {
 }
 
 func publish(c *common.CmdData, projectName string) error {
-	log := initLogger(c)
-
 	trdlClient, err := client.NewTrdlVaultClient(client.NewTrdlVaultClientOpts{
 		Address:     *c.Address,
 		Token:       *c.Token,
@@ -67,7 +64,7 @@ func publish(c *common.CmdData, projectName string) error {
 		Delay:       *c.Delay,
 		LogLevel:    *c.LogLevel,
 		LogFormat:   *c.LogFormat,
-		Logger:      log.LoggerInterface,
+		Logger:      logger.GlobalLogger.LoggerInterface,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create client: %w", err)
@@ -79,7 +76,6 @@ func publish(c *common.CmdData, projectName string) error {
 }
 
 func release(c *common.CmdData, projectName, gitTag string) error {
-	log := initLogger(c)
 	trdlClient, err := client.NewTrdlVaultClient(client.NewTrdlVaultClientOpts{
 		Address:     *c.Address,
 		Token:       *c.Token,
@@ -88,7 +84,7 @@ func release(c *common.CmdData, projectName, gitTag string) error {
 		Delay:       *c.Delay,
 		LogLevel:    *c.LogLevel,
 		LogFormat:   *c.LogFormat,
-		Logger:      log.LoggerInterface,
+		Logger:      logger.GlobalLogger.LoggerInterface,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create client: %w", err)
@@ -97,13 +93,4 @@ func release(c *common.CmdData, projectName, gitTag string) error {
 		return fmt.Errorf("unable to release project: %w", err)
 	}
 	return nil
-}
-
-func initLogger(c *common.CmdData) *logger.Logger {
-	log := logger.SetupGlobalLogger(logger.LoggerOptions{
-		Level:     *c.LogLevel,
-		LogFormat: *c.LogFormat,
-	})
-	logger.GlobalLogger = log
-	return log
 }
