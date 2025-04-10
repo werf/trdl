@@ -49,13 +49,13 @@ func SetupDelay(cmdData *CmdData, cmd *cobra.Command) {
 func SetupLogLevel(cmdData *CmdData, cmd *cobra.Command) {
 	cmdData.LogLevel = new(string)
 	defaultValue := getEnvOrDefault("TRDL_VAULT_LOG_LEVEL", "info")
-	cmd.Flags().StringVarP(cmdData.LogLevel, "log-level", "", defaultValue, "Set log level (debug, info, warn, error) (env: TRDL_VAULT_LOG_LEVEL)")
+	cmd.PersistentFlags().StringVarP(cmdData.LogLevel, "log-level", "", defaultValue, "Set log level (debug, info, warn, error) (env: TRDL_VAULT_LOG_LEVEL)")
 }
 
 func SetupLogFormat(cmdData *CmdData, cmd *cobra.Command) {
 	cmdData.LogFormat = new(string)
 	defaultValue := getEnvOrDefault("TRDL_VAULT_LOG_FORMAT", "json")
-	cmd.Flags().StringVarP(cmdData.LogFormat, "log-format", "", defaultValue, "Set log format (text, json) (env: TRDL_VAULT_LOG_FORMAT)")
+	cmd.PersistentFlags().StringVarP(cmdData.LogFormat, "log-format", "", defaultValue, "Set log format (text, json) (env: TRDL_VAULT_LOG_FORMAT)")
 }
 
 func SetupCmdData(cmdData *CmdData, cmd *cobra.Command) {
@@ -64,8 +64,6 @@ func SetupCmdData(cmdData *CmdData, cmd *cobra.Command) {
 	SetupRetry(cmdData, cmd)
 	SetupMaxAttemps(cmdData, cmd)
 	SetupDelay(cmdData, cmd)
-	SetupLogLevel(cmdData, cmd)
-	SetupLogFormat(cmdData, cmd)
 }
 
 func getEnvOrDefault(envVar, defaultValue string) string {
