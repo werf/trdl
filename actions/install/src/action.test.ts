@@ -4,6 +4,7 @@ import * as toolCache from '../../test/mocks/tool-cache'
 import * as fs from '../../test/mocks/fs'
 import { trdlCli } from '../../test/mocks/trdl-cli'
 import { gpgCli } from '../../test/mocks/gpg-cli'
+import { join } from 'node:path'
 
 // Mocks should be declared before the module being tested is imported.
 jest.unstable_mockModule('@actions/core', () => core)
@@ -81,12 +82,13 @@ describe('install/action.ts', function () {
 
       await Do(trdlCli, gpgCli, inputs)
 
-      expect(toolCache.find).toHaveBeenCalledWith(defaults.repo, inputs.version)
+      expect(toolCache.find).toHaveBeenCalledWith(trdlCli.name, inputs.version)
       expect(trdlCli.mustExist).toHaveBeenCalled()
+      expect(trdlCli.version).toHaveBeenCalledTimes(2)
       expect(trdlCli.update).toHaveBeenCalledWith(defaults)
     })
     it('should install trdl if tool cache is not found', async function () {
-      const binPath = 'bin path'
+      const binPath = '/tmp/cache/path'
       const sigPath = 'sig path'
       const ascPath = 'asc path'
 
@@ -94,18 +96,19 @@ describe('install/action.ts', function () {
       toolCache.downloadTool.mockResolvedValueOnce(sigPath)
       toolCache.downloadTool.mockResolvedValueOnce(ascPath)
 
-      const installedPath = '/tmp/installed/path'
-      toolCache.cacheFile.mockResolvedValueOnce(installedPath)
+      const cachedPath = '/tmp/installed/path'
+      toolCache.cacheFile.mockResolvedValueOnce(cachedPath)
 
       await Do(trdlCli, gpgCli, inputs)
 
-      expect(toolCache.find).toHaveBeenCalledWith(defaults.repo, inputs.version)
+      expect(toolCache.find).toHaveBeenCalledWith(trdlCli.name, inputs.version)
       expect(gpgCli.mustGnuGP).toHaveBeenCalled()
       expect(gpgCli.import).toHaveBeenCalledWith(ascPath)
       expect(gpgCli.verify).toHaveBeenCalledWith(sigPath, binPath)
-      expect(toolCache.cacheFile).toHaveBeenCalledWith(binPath, defaults.repo, defaults.repo, inputs.version)
-      expect(fs.chmodSync).toHaveBeenCalledWith(installedPath, 0o755)
-      expect(core.addPath).toHaveBeenCalledWith(installedPath)
+      expect(toolCache.cacheFile).toHaveBeenCalledWith(binPath, trdlCli.name, trdlCli.name, inputs.version)
+      expect(core.addPath).toHaveBeenCalledWith(cachedPath)
+      expect(fs.chmodSync).toHaveBeenCalledWith(join(cachedPath, trdlCli.name), 0o755)
+      expect(trdlCli.version).toHaveBeenCalled()
     })
   })
 })

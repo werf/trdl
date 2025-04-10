@@ -53,6 +53,11 @@ export class TrdlCli {
     const { stdout } = await execOutput(this.name, ['list'])
     return stdout.slice(1).map(parseLineToItem)
   }
+
+  async version(): Promise<string> {
+    const { stdout } = await execOutput(this.name, ['version'])
+    return stdout.join('')
+  }
 }
 
 export interface AddArgs {

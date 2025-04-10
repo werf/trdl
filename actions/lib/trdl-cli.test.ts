@@ -157,4 +157,13 @@ describe('trdl-cli.ts', function () {
       expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['list'])
     })
   })
+  describe('version', function () {
+    it('should work', async function () {
+      const stdout: string[] = ['1.2.3']
+      libExec.execOutput.mockResolvedValueOnce({ stdout, stderr: [], exitCode: 0 })
+      const result = await cli.version()
+      expect(result).toEqual(stdout.join(''))
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['version'], { silent: false })
+    })
+  })
 })

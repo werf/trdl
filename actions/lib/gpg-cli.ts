@@ -15,15 +15,15 @@ export class GpgCli {
   }
 
   async import(ascPath: string): Promise<void> {
-    await execOutput(this.name, ['--import', ascPath])
+    await execOutput(this.name, ['--import', ascPath], { failOnStdErr: false })
   }
 
   async verify(sigPath: string, binPath: string): Promise<void> {
-    await execOutput(this.name, ['--verify', sigPath, binPath])
+    await execOutput(this.name, ['--verify', sigPath, binPath], { failOnStdErr: false })
   }
 
   async help(): Promise<string> {
-    const { stdout } = await execOutput(this.name, ['--help'])
+    const { stdout } = await execOutput(this.name, ['--help'], { silent: true })
     return stdout.join('\n')
   }
 }

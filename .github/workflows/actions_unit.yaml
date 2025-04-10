@@ -3,7 +3,7 @@ name: Test Unit
 on: [push]
 
 jobs:
-  _:
+  test-unit:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
