@@ -13,10 +13,10 @@ interface envVar {
   value: string
 }
 
-function parseInputs(required: boolean): inputs {
+export function parseInputs(required: boolean): inputs {
   const channel = getInput('channel')
   return {
-    force: getBooleanInput('force', { required }),
+    force: getBooleanInput('force'),
     repo: getInput('repo', { required }),
     group: getInput('group', { required }),
     ...(channel !== '' ? { channel } : {}) // optional field
@@ -32,12 +32,12 @@ function mapInputsToCmdArgs(inputs: inputs): UpdateArgs {
   }
 }
 
-function formatTrdlUseEnv(args: UpdateArgs): envVar {
+export function formatTrdlUseEnv(args: UpdateArgs): envVar {
   const slugOpts = {
     strict: true
   }
   return {
-    key: format('TRDL_USE_%s_GROUP_CHANNEL', slugify(args.repo, slugOpts)),
+    key: format('TRDL_USE_%s_GROUP_CHANNEL', slugify(args.repo, slugOpts).toUpperCase()),
     value: format(`%s %s`, args.group, args.channel || '')
   }
 }
@@ -58,18 +58,15 @@ export async function Do(trdlCli: TrdlCli, p: preset) {
   let appPath = await trdlCli.binPath(args)
   debug(format(`"trdl bin-path" application path=%s`, appPath))
 
-  if (!appPath) {
-    const opts = { inBackground: false }
-    info(format('Updating application via "trdl update" with args=%o and options=%o.', args, opts))
-    await trdlCli.update(args, opts)
+  const hasAppPath = appPath !== ''
 
+  const opts = { inBackground: hasAppPath }
+  info(format('Updating application via "trdl update" with args=%o and options=%o.', args, opts))
+  await trdlCli.update(args, opts)
+
+  if (!hasAppPath) {
     appPath = await trdlCli.binPath(args)
     debug(format(`"trdl bin-path" application path=%s`, appPath))
-  } else {
-    const opts = { inBackground: true }
-    info(format('Updating application via "trdl update" with args=%o and options=%o.', args, opts))
-
-    await trdlCli.update(args, opts)
   }
 
   const trdlUseEnv = formatTrdlUseEnv(args)

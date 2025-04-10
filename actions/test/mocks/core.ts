@@ -11,6 +11,7 @@ export const setFailed = jest.fn<typeof core.setFailed>()
 export const addPath = jest.fn<typeof core.addPath>()
 export const startGroup = jest.fn<typeof core.startGroup>()
 export const endGroup = jest.fn<typeof core.endGroup>()
+export const exportVariable = jest.fn<typeof core.exportVariable>()
 
 export const platform = Object.create(
   {},
