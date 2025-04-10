@@ -3,62 +3,64 @@
 </p>
 ___
 
-This repository allows you to organize CI/CD with GitHub Actions and
-[trdl](https://trdl.dev/).
+This repository provides actions for seamless integration of trdl into your GitHub Workflows.
 
-**Ready-to-use GitHub Actions Workflows** for different CI/CD workflows.
+## Table of contents
+
+* [Workflows](#workflows)
+  * [Install trdl with `werf/trdl-actions/install` action](#install-trdl-with-werftrdl-actionsinstall-action)
+  * [Set up your application executable files with `werf/trdl-actions/setup-app` action](#set-up-your-application-executable-files-with-werftrdl-actionssetup-app-action)
+    * [A specific application](#a-specific-application)
+    * [A preset application](#a-preset-application)
+* [License](#license)
+
+## Workflows
+
+### Install trdl with `werf/trdl-actions/install` action
 
 ```yaml
 - name: Install trdl
   uses: werf/trdl-actions/install@v0
-```
 
-## Examples
-
-### Add and use `werf` manually via trdl CLI
-
-```yaml
-- name: Install trdl
-  uses: werf/trdl-actions/install@v0
-
-- name: Run werf
+- name: Use trdl binary
   run: |
-    . $(trdl add werf https://tuf.werf.io 12 e1d3c7bcfdf473fe1466c5e9d9030bea0fed857d0563db1407754d2795256e4d063b099156807346cdcdc21d747326cc43f96fa2cacda5f1c67c8349fe09894d)
-    . $(trdl use werf 2 stable)
-    . $(werf ci-env github --as-file)
-    werf converge
-  env:
-    WERF_KUBECONFIG_BASE64: ${{ secrets.KUBE_CONFIG_BASE64_DATA }}
-    WERF_ENV: production
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    . $(trdl add app https://s3.example.com 12 e1d3c7bcfdf473fe1466c5e9d9030bea0fed857d0563db1407754d2795256e4d063b099156807346cdcdc21d747326cc43f96fa2cacda5f1c67c8349fe09894d)
+    . $(trdl use app 2 stable)
+
+    app version
 ```
 
-## Versioning
+### Set up your application executable files with `werf/trdl-actions/setup-app` action
 
-When using action, select the version corresponding to the required `MAJOR`
-version of trdl.
-
-By default, the action installs actual trdl version within _stable_ channel
-(more details about channels, trdl release cycle and compatibility promise
-[here](https://werf.io/installation.html#all-changes-in-werf-go-through-all-stability-channels)).
-Using the `channel` input the user can switch the release channel.
-
-> This is recommended approach to be up-to-date and to use actual trdl version
-> without changing configurations.
+#### A specific application
 
 ```yaml
-- uses: werf/trdl-actions/install@v0
-  with:
+- name: Setup application
+  uses: werf/trdl-actions/setup-app@v0
+  inputs:
+    repo: app
+    url: https://s3.example.com
+    root-version: 12
+    root-sha512: e1d3c7bcfdf473fe1466c5e9d9030bea0fed857d0563db1407754d2795256e4d063b099156807346cdcdc21d747326cc43f96fa2cacda5f1c67c8349fe09894d
+    group: 2
     channel: stable
+
+- name: Use application binaries
+  run: app version
 ```
 
-Withal, it is not necessary to work within release channels, and the user might
-specify certain trdl version with `version` input.
+#### A preset application
 
 ```yaml
-- uses: werf/trdl-actions/install@v0
-  with:
-    version: v2.1.0
+- name: Setup werf
+  uses: werf/trdl-actions/setup-app@v0
+  inputs:
+    preset: werf
+    group: 2
+    channel: stable
+
+- name: Use werf binaries
+  run: werf version
 ```
 
 ## License
