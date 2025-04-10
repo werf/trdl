@@ -14,8 +14,11 @@
 bin/
 build/
 dist/
-!actions/dist/
+
+# actions
 actions/node_modules/
+actions/coverage
+!actions/*/dist/
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out

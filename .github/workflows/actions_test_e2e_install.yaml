@@ -1,4 +1,4 @@
-name: Test e2e install
+name: Actions. Test e2e install
 
 on: [push]
 
@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install trdl
-        uses: ./install
+        uses: ./actions/install
 
       - name: Use trdl binary
         run: |
