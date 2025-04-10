@@ -29864,19 +29864,11 @@ class GpgCli {
     }
     async help() {
         const { stdout } = await execOutput(this.name, ['--help']);
-        return stdout.join('');
+        return stdout.join('\n');
     }
 }
 
 var ioExports = requireIo();
-
-// optional array element
-function optionalToArray(arg) {
-    return arg ? [arg] : [];
-}
-function optionalToObject(key, value) {
-    return value ? { [key]: value } : {};
-}
 
 class TrdlCli {
     name;
@@ -29905,7 +29897,8 @@ class TrdlCli {
     async update(args, opts) {
         const { repo, group, channel } = args;
         const env = { ...process.env, ...(opts && toUpdateEnvs(opts)) };
-        await execOutput(this.name, ['update', repo, group, ...optionalToArray(channel)], { env });
+        const channelOpt = channel !== undefined ? [channel] : []; // optional field
+        await execOutput(this.name, ['update', repo, group, ...channelOpt], { env });
     }
     async binPath(args) {
         const { repo, group, channel } = args;
@@ -29913,7 +29906,8 @@ class TrdlCli {
             failOnStdErr: false,
             ignoreReturnCode: true
         };
-        const { stdout } = await execOutput(this.name, ['bin-path', repo, group, ...optionalToArray(channel)], execOpts);
+        const channelOpt = channel !== undefined ? [channel] : []; // optional field
+        const { stdout } = await execOutput(this.name, ['bin-path', repo, group, ...channelOpt], execOpts);
         return stdout.join('');
     }
     async list() {
@@ -29922,26 +29916,29 @@ class TrdlCli {
     }
 }
 function parseLineToItem(line) {
-    const [name, url, default_, channel] = line.split(/ +/);
+    const [name, url, default_, channel] = line.trim().split(/ +/);
     return {
         name,
         url,
         default: default_,
-        channel
+        ...(channel !== undefined ? { channel } : {}) // optional field
     };
 }
 function toUpdateEnvs(opts) {
     const env = {};
-    if (opts?.inBackground) {
+    // eslint-disable-next-line no-prototype-builtins
+    if (opts.hasOwnProperty('inBackground')) {
         env['TRDL_IN_BACKGROUND'] = String(opts.inBackground);
     }
     return env;
 }
 
 function parseInputs() {
+    const channel = coreExports.getInput('channel');
+    const version = coreExports.getInput('version');
     return {
-        ...optionalToObject('channel', coreExports.getInput('channel')), // optional field
-        ...optionalToObject('version', coreExports.getInput('version')) // optional field
+        ...(channel !== '' ? { channel } : {}), // optional field
+        ...(version !== '' ? { version } : {}) // optional field
     };
 }
 async function fetchVersion(group, channel) {
@@ -29951,8 +29948,8 @@ async function fetchVersion(group, channel) {
     return version.trim();
 }
 async function getOptions(inputs, defaults) {
-    const channel = inputs?.channel || defaults.channel;
-    const version = inputs?.version || await fetchVersion(defaults.group, defaults.channel); // prettier-ignore
+    const channel = inputs.channel ?? defaults.channel;
+    const version = inputs.version ?? await fetchVersion(defaults.group, defaults.channel); // prettier-ignore
     return {
         channel,
         version
@@ -30011,10 +30008,11 @@ async function installTrdl(toolName, toolVersion, binPath) {
 }
 async function Run() {
     const trdlCli = new TrdlCli();
+    const gpgCli = new GpgCli();
     const inputs = parseInputs();
-    await Do(trdlCli, inputs);
+    await Do(trdlCli, gpgCli, inputs);
 }
-async function Do(trdlCli, inputs) {
+async function Do(trdlCli, gpgCli, inputs) {
     coreExports.startGroup('Install or self-update trdl.');
     coreExports.debug(format(`parsed inputs=%o`, inputs));
     const defaults = trdlCli.defaults();
@@ -30030,7 +30028,6 @@ async function Do(trdlCli, inputs) {
         coreExports.endGroup();
         return;
     }
-    const gpgCli = new GpgCli();
     await gpgCli.mustGnuGP();
     const [binUrl, sigUrl, ascUrl] = formatDownloadUrls(options.version);
     coreExports.debug(format('%s bin_url=%s', defaults.repo, binUrl));
