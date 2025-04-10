@@ -4,7 +4,7 @@
 export default {
   clearMocks: true,
   collectCoverage: true,
-  collectCoverageFrom: ['./src/**'],
+  collectCoverageFrom: ['./*/src/*', './lib/*'],
   coverageDirectory: './coverage',
   coveragePathIgnorePatterns: ['/node_modules/', '/dist/'],
   coverageReporters: ['json-summary', 'text', 'lcov'],
@@ -24,6 +24,7 @@ export default {
   preset: 'ts-jest',
   reporters: ['default'],
   resolver: 'ts-jest-resolver',
+  restoreMocks: true,
   testEnvironment: 'node',
   testMatch: ['**/*.test.ts'],
   testPathIgnorePatterns: ['/dist/', '/node_modules/'],
