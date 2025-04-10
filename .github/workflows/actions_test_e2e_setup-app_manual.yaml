@@ -1,0 +1,26 @@
+name: Test e2e setup-app manually
+
+on: [push]
+
+jobs:
+  test-e2e-setup-app-manually:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup application
+        uses: ./setup-app
+        with:
+          repo: kubedog
+          url: https://tuf.kubedog.werf.io
+          root-version: 12
+          root-sha512: 6462a80292eb6d7712d8a18126366511f9c47a566f121a7745cfd68b624dc340b6591c2cadfe20690eb38296c399a3f4e6948aca90be60e446ed05c3c238294c
+          group: 0
+#          channel: stable # optional
+
+      - name: Use kubedog binary
+        run: |
+          kubedog --help

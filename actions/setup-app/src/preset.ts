@@ -38,13 +38,13 @@ const cmdUpdateArgsMap: Record<preset, UpdateArgs> = {
   },
   [preset.werf]: {
     repo: preset.werf,
-    group: 'stable',
-    channel: '2'
+    group: '2',
+    channel: 'stable'
   },
   [preset.kubedog]: {
     repo: preset.kubedog,
-    group: 'stable',
-    channel: '0'
+    group: '0',
+    channel: 'stable'
   }
 }
 

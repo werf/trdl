@@ -1,4 +1,4 @@
-import { addPath, debug, endGroup, exportVariable, getBooleanInput, getInput, info, startGroup } from '@actions/core'
+import { addPath, endGroup, exportVariable, getBooleanInput, getInput, info, startGroup } from '@actions/core'
 import { TrdlCli, UpdateArgs } from '../../lib/trdl-cli'
 import { getUpdateArgs, preset } from './preset'
 import { format } from 'util'
@@ -43,37 +43,37 @@ export function formatTrdlUseEnv(args: UpdateArgs): envVar {
 }
 
 export async function Do(trdlCli: TrdlCli, p: preset) {
-  startGroup('Using application via "trdl update" and "trdl bin-path"')
+  startGroup(`Using application via "${trdlCli.name} update" and "${trdlCli.name} bin-path".`)
   const noPreset = p === preset.unknown
-  debug(format(`using preset=%s`, !noPreset))
+  info(format(`Using preset=%s`, !noPreset))
 
   const inputs = parseInputs(noPreset)
-  debug(format(`parsed inputs=%o`, inputs))
+  info(format(`Parsed inputs=%o`, inputs))
 
   const args = noPreset ? mapInputsToCmdArgs(inputs) : getUpdateArgs(p)
-  debug(format(`merged(preset, inputs) args=%o`, args))
+  info(format(`Options for using application=%o`, args))
 
   await trdlCli.mustExist()
 
   let appPath = await trdlCli.binPath(args)
-  debug(format(`"trdl bin-path" application path=%s`, appPath))
+  info(`Found application path=${appPath}`)
 
   const hasAppPath = appPath !== ''
 
   const opts = { inBackground: hasAppPath }
-  info(format('Updating application via "trdl update" with args=%o and options=%o.', args, opts))
+  info(format(`Updating application via "${trdlCli.name} update" with options=%o`, opts))
   await trdlCli.update(args, opts)
 
   if (!hasAppPath) {
     appPath = await trdlCli.binPath(args)
-    debug(format(`"trdl bin-path" application path=%s`, appPath))
+    info(`Found application path=${appPath}`)
   }
 
   const trdlUseEnv = formatTrdlUseEnv(args)
-  info(format('Exporting $%s=%s', trdlUseEnv.key, trdlUseEnv.value))
+  info(format('Exporting variable $%s=%s', trdlUseEnv.key, trdlUseEnv.value))
   exportVariable(trdlUseEnv.key, trdlUseEnv.value)
 
-  info(format('Extending $PATH variable with app_path=%s', appPath))
+  info(`Extending $PATH variable with app_path=${appPath}`)
   addPath(appPath)
   endGroup()
 }

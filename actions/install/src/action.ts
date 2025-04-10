@@ -111,7 +111,7 @@ export async function Run(): Promise<void> {
 
 export async function Do(trdlCli: TrdlCli, gpgCli: GpgCli, inputs: inputs): Promise<void> {
   startGroup(`Install or self-update ${trdlCli.name}.`)
-  info(format(`parsed inputs=%o`, inputs))
+  info(format(`Parsed inputs=%o`, inputs))
 
   const defaults = trdlCli.defaults()
   info(format(`${trdlCli.name} repository defaults=%o`, defaults))

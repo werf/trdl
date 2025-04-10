@@ -1,4 +1,4 @@
-name: Test e2e Install
+name: Test e2e install
 
 on: [push]
 

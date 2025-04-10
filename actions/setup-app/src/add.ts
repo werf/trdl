@@ -1,4 +1,4 @@
-import { debug, endGroup, getBooleanInput, getInput, info, startGroup } from '@actions/core'
+import { endGroup, getBooleanInput, getInput, info, startGroup } from '@actions/core'
 import { AddArgs, TrdlCli } from '../../lib/trdl-cli'
 import { getAddArgs, preset } from './preset'
 import { format } from 'util'
@@ -28,15 +28,16 @@ function mapInputsCmdArgs(inputs: inputs): AddArgs {
 }
 
 export async function Do(trdlCli: TrdlCli, p: preset) {
-  startGroup('Adding application via "trdl add".')
+  startGroup(`Adding application via "${trdlCli.name} add".`)
+
   const noPreset = p === preset.unknown
-  debug(format(`using preset=%s`, !noPreset))
+  info(format(`Using preset=%s.`, !noPreset))
 
   const inputs = parseInputs(noPreset)
-  debug(format(`parsed inputs=%o`, inputs))
+  info(format(`Parsed inputs=%o.`, inputs))
 
   const args = noPreset ? mapInputsCmdArgs(inputs) : getAddArgs(p)
-  debug(format(`merged(preset, inputs) args=%o`, args))
+  info(format(`Options for finding and/or adding application=%o.`, args))
 
   await trdlCli.mustExist()
 
@@ -44,7 +45,7 @@ export async function Do(trdlCli: TrdlCli, p: preset) {
   const found = list.find((item) => args.repo === item.name)
 
   if (!found) {
-    info(format('Application not found. Adding it via "trdl add" with args=%o.', args))
+    info(`Application not found. Adding application via "${trdlCli.name} add".`)
     await trdlCli.add(args)
     endGroup()
     return
@@ -53,16 +54,16 @@ export async function Do(trdlCli: TrdlCli, p: preset) {
   if (!inputs.force) {
     if (found.url !== args.url) {
       throw new Error(
-        `Already added repo.url=${found.url} is not matched with given input.url=${args.url}. Use the force input to overwrite.`
+        `Application is already added with repo.url=${found.url} which is not matched with given input.url=${args.url}. Use the force input to overwrite.`
       )
     }
-    info(format('Adding skipped. Application is already added with inputs.url=%s.', args.url))
+    info(`Application addition skipped because it is already added with inputs.url=${args.url}.`)
     endGroup()
     return
   }
 
   // force adding
-  info(format('Force adding application using sequence of "trdl remove" and "trdl add" with args=%o.', args))
+  info(`Force adding application using "${trdlCli.name} remove" and "${trdlCli.name} add".`)
   await trdlCli.remove(args)
   await trdlCli.add(args)
   endGroup()

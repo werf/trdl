@@ -78,7 +78,7 @@ describe('setup-app/src/add.ts', function () {
       trdlCli.list.mockResolvedValueOnce([listItem])
 
       const expectedErr = new Error(
-        `Already added repo.url=${listItem.url} is not matched with given input.url=${addArgs.url}. Use the force input to overwrite.`
+        `Application is already added with repo.url=${listItem.url} which is not matched with given input.url=${addArgs.url}. Use the force input to overwrite.`
       )
       await expect(Do(trdlCli, preset.werf)).rejects.toThrow(expectedErr)
 

@@ -30020,7 +30020,7 @@ async function Run() {
 }
 async function Do(trdlCli, gpgCli, inputs) {
     coreExports.startGroup(`Install or self-update ${trdlCli.name}.`);
-    coreExports.info(format(`parsed inputs=%o`, inputs));
+    coreExports.info(format(`Parsed inputs=%o`, inputs));
     const defaults = trdlCli.defaults();
     coreExports.info(format(`${trdlCli.name} repository defaults=%o`, defaults));
     const options = await getOptions(inputs, defaults);
