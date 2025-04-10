@@ -7,6 +7,10 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
+    strategy:
+      matrix:
+        app: [werf, nelm, kubedog]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -14,8 +18,7 @@ jobs:
       - name: Setup application
         uses: ./actions/setup-app
         with:
-          preset: werf
+          preset: ${{ matrix.app }}
 
-      - name: Use werf binary
-        run: |
-          werf --help
+      - name: Use ${{ matrix.app }} binary
+        run: ${{ matrix.app }} version
