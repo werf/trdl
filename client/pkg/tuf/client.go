@@ -134,7 +134,7 @@ func (c *Client) setup(rootVersion int64, rootSha512 string) error {
 	}
 
 	rootFileChecksum := util.Sha512Checksum(jsonData)
-	if rootFileChecksum != rootSha512 {
+	if rootSha512 != "" && rootFileChecksum != rootSha512 {
 		return fmt.Errorf("expected hash sum of the root file %q not matched", rootFileChecksum)
 	}
 

@@ -54,6 +54,9 @@ func addCmd() *cobra.Command {
 }
 
 func parseRootVersionArgument(arg string) (int64, error) {
+	if arg == "" {
+		return 0, nil
+	}
 	if !govalidator.IsNumeric(arg) {
 		return 0, fmt.Errorf("value (%q) must be an integer", arg)
 	}
