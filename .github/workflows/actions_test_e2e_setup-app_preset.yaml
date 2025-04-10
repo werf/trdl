@@ -1,4 +1,4 @@
-name: Test e2e setup-app preset
+name: Actions. Test e2e setup-app preset
 
 on: [push]
 
@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup application
-        uses: ./setup-app
+        uses: ./actions/setup-app
         with:
           preset: werf
 
