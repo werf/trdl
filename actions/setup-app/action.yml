@@ -1,0 +1,37 @@
+name: Setup application via trdl
+author: 'Flant'
+description: 'Setup application via preset of trdl-actions or manually passing another arguments'
+branding:
+  color: blue
+  icon: anchor
+inputs:
+  preset:
+    description:
+      'The certain repository preset. It will be translated into "trdl add", "trdl update" and "trdl bin-path"
+      arguments. For example: werf'
+    required: false
+  force:
+    description: 'Perform operation anyway if set to true. For both "trdl add" and "trdl update"'
+    required: false
+    default: 'true'
+  repo:
+    description: 'The certain repository name. For "trdl add", "trdl update" and "trdl bin-path"'
+    required: true
+  url:
+    description: 'The certain repository url. For "trdl add"'
+    required: true
+  root-version:
+    description: 'The certain repository root version. For "trdl add"'
+    required: false
+  root-sha512:
+    description: 'The certain repository root sha512. For "trdl add"'
+    required: false
+  group:
+    description: 'The certain group. For both "trdl update" and "trdl bin-path"'
+    required: true
+  channel:
+    description: 'The one from allowed channels. For both "trdl update" and "trdl bin-path"'
+    required: false
+runs:
+  using: 'node20'
+  main: 'dist/index.mjs'
