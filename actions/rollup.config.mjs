@@ -7,7 +7,8 @@ import typescript from '@rollup/plugin-typescript'
 
 export default [
   // prettier-ignore
-  buildActionConfig('install')
+  buildActionConfig('install'),
+  buildActionConfig('use'),
 ]
 
 function buildActionConfig(action) {
