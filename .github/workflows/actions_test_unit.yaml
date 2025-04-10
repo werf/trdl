@@ -1,4 +1,4 @@
-name: Test Unit
+name: Actions. Test Unit
 
 on: [push]
 
@@ -17,7 +17,9 @@ jobs:
           node-version: '18.x'
 
       - name: Clean install a project
+        working-directory: actions
         run: npm ci
 
       - name: Test Unit
+        working-directory: actions
         run: npm run test
