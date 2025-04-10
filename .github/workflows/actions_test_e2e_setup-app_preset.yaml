@@ -1,0 +1,21 @@
+name: Test e2e setup-app preset
+
+on: [push]
+
+jobs:
+  test-e2e-setup-app-preset:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup application
+        uses: ./setup-app
+        with:
+          preset: werf
+
+      - name: Use werf binary
+        run: |
+          werf --help
