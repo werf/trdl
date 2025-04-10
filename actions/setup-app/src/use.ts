@@ -1,7 +1,6 @@
 import { addPath, debug, endGroup, exportVariable, getBooleanInput, getInput, info, startGroup } from '@actions/core'
 import { TrdlCli, UpdateArgs } from '../../lib/trdl-cli'
 import { getUpdateArgs, preset } from './preset'
-import { optionalToObject } from '../../lib/optional'
 import { format } from 'util'
 import slugify from 'slugify'
 
@@ -15,11 +14,12 @@ interface envVar {
 }
 
 function parseInputs(required: boolean): inputs {
+  const channel = getInput('channel')
   return {
     force: getBooleanInput('force', { required }),
     repo: getInput('repo', { required }),
     group: getInput('group', { required }),
-    ...optionalToObject('channel', getInput('channel')) // optional field
+    ...(channel !== '' ? { channel } : {}) // optional field
   }
 }
 
@@ -28,7 +28,7 @@ function mapInputsToCmdArgs(inputs: inputs): UpdateArgs {
   return {
     repo,
     group,
-    ...optionalToObject('channel', channel) // optional field
+    ...(channel !== undefined ? { channel } : {}) // optional field
   }
 }
 

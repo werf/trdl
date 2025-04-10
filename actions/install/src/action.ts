@@ -4,7 +4,6 @@ import { downloadTool, find, cacheFile } from '@actions/tool-cache'
 import { chmodSync } from 'node:fs'
 import { GpgCli } from '../../lib/gpg-cli'
 import { Defaults, TrdlCli } from '../../lib/trdl-cli'
-import { optionalToObject } from '../../lib/optional'
 import { format } from 'util'
 
 interface inputs {
@@ -17,10 +16,12 @@ interface options {
   version: string
 }
 
-function parseInputs(): inputs {
+export function parseInputs(): inputs {
+  const channel = getInput('channel')
+  const version = getInput('version')
   return {
-    ...optionalToObject('channel', getInput('channel')), // optional field
-    ...optionalToObject('version', getInput('version')) // optional field
+    ...(channel !== '' ? { channel } : {}), // optional field
+    ...(version !== '' ? { version } : {}) // optional field
   }
 }
 
@@ -31,9 +32,9 @@ async function fetchVersion(group: string, channel: string): Promise<string> {
   return version.trim()
 }
 
-async function getOptions(inputs: inputs, defaults: Defaults): Promise<options> {
-  const channel = inputs?.channel || defaults.channel
-  const version = inputs?.version || await fetchVersion(defaults.group, defaults.channel) // prettier-ignore
+export async function getOptions(inputs: inputs, defaults: Defaults): Promise<options> {
+  const channel = inputs.channel ?? defaults.channel
+  const version = inputs.version ?? await fetchVersion(defaults.group, defaults.channel) // prettier-ignore
 
   return {
     channel,
@@ -41,7 +42,7 @@ async function getOptions(inputs: inputs, defaults: Defaults): Promise<options> 
   }
 }
 
-function formatDownloadUrls(version: string): string[] {
+export function formatDownloadUrls(version: string): string[] {
   // https://github.com/actions/toolkit/blob/main/packages/core/README.md#platform-helper
   const plat = translateNodeJSPlatformToTrdlPlatform(platform.platform)
   const arch = translateNodeJSArchToTrdlArch(platform.arch)
@@ -100,12 +101,13 @@ async function installTrdl(toolName: string, toolVersion: string, binPath: strin
 
 export async function Run(): Promise<void> {
   const trdlCli = new TrdlCli()
+  const gpgCli = new GpgCli()
   const inputs = parseInputs()
 
-  await Do(trdlCli, inputs)
+  await Do(trdlCli, gpgCli, inputs)
 }
 
-export async function Do(trdlCli: TrdlCli, inputs: inputs): Promise<void> {
+export async function Do(trdlCli: TrdlCli, gpgCli: GpgCli, inputs: inputs): Promise<void> {
   startGroup('Install or self-update trdl.')
   debug(format(`parsed inputs=%o`, inputs))
 
@@ -128,7 +130,6 @@ export async function Do(trdlCli: TrdlCli, inputs: inputs): Promise<void> {
     return
   }
 
-  const gpgCli = new GpgCli()
   await gpgCli.mustGnuGP()
 
   const [binUrl, sigUrl, ascUrl] = formatDownloadUrls(options.version)
