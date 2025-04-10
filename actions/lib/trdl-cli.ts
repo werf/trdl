@@ -38,7 +38,7 @@ export class TrdlCli {
     await execOutput(this.name, ['update', repo, group, ...optionalToArray(channel)], { env })
   }
 
-  async binPath(args: BinPathArgs): Promise<string> {
+  async binPath(args: UpdateArgs): Promise<string> {
     const { repo, group, channel } = args
     const execOpts = {
       failOnStdErr: false,
@@ -75,8 +75,6 @@ export interface UpdateOptions {
   inBackground: boolean
 }
 
-export interface BinPathArgs extends UpdateArgs {}
-
 export interface Defaults extends UpdateArgs {
   channel: string
 }
@@ -104,7 +102,8 @@ interface execOptionsEnvs {
 
 function toUpdateEnvs(opts: UpdateOptions): execOptionsEnvs {
   const env: execOptionsEnvs = {}
-  if (opts?.inBackground) {
+  // eslint-disable-next-line no-prototype-builtins
+  if (opts.hasOwnProperty('inBackground')) {
     env['TRDL_IN_BACKGROUND'] = String(opts.inBackground)
   }
   return env
