@@ -10,19 +10,21 @@ This repository allows you to organize CI/CD with GitHub Actions and
 
 ```yaml
 - name: Install trdl
-  uses: werf/trdl-actions/install@v2
-  inputs:
-    channel: ...
-    version: ...
+  uses: werf/trdl-actions/install@v0
+```
 
-- name: Setup werf
-  uses: werf/trdl-actions/setup-repo@v2
-  inputs:
-    app: werf
+## Examples
+
+### Add and use `werf` manually via trdl CLI
+
+```yaml
+- name: Install trdl
+  uses: werf/trdl-actions/install@v0
 
 - name: Run werf
   run: |
-    . $(trdl use werf 2 alpha)
+    . $(trdl add werf https://tuf.werf.io 12 e1d3c7bcfdf473fe1466c5e9d9030bea0fed857d0563db1407754d2795256e4d063b099156807346cdcdc21d747326cc43f96fa2cacda5f1c67c8349fe09894d)
+    . $(trdl use werf 2 stable)
     . $(werf ci-env github --as-file)
     werf converge
   env:
@@ -45,7 +47,7 @@ Using the `channel` input the user can switch the release channel.
 > without changing configurations.
 
 ```yaml
-- uses: werf/trdl-actions/install@v2
+- uses: werf/trdl-actions/install@v0
   with:
     channel: stable
 ```
@@ -54,7 +56,7 @@ Withal, it is not necessary to work within release channels, and the user might
 specify certain trdl version with `version` input.
 
 ```yaml
-- uses: werf/trdl-actions/install@v2
+- uses: werf/trdl-actions/install@v0
   with:
     version: v2.1.0
 ```
