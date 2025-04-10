@@ -1,0 +1,22 @@
+name: trdl use command
+author: 'Flant'
+description: 'trdl use command using GitHub action. See https://trdl.dev/reference/cli/trdl_use.html'
+branding:
+  color: blue
+  icon: anchor
+inputs:
+  repo:
+    description: 'The certain repository'
+    required: true
+  group:
+    description: 'The certain group'
+    required: true
+  channel:
+    description: 'The one from allowed channels'
+    required: false
+  options:
+    description: 'Some options'
+    required: false
+runs:
+  using: 'node20'
+  main: 'dist/index.mjs'
