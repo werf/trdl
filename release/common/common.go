@@ -1,15 +1,12 @@
 package common
 
 import (
-	"log/slog"
 	"net/url"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
-
-	"github.com/werf/trdl/release/pkg/logger"
 )
 
 func SetupAddress(cmdData *CmdData, cmd *cobra.Command) {
@@ -55,8 +52,10 @@ func SetupLogLevel(cmdData *CmdData, cmd *cobra.Command) {
 	cmd.Flags().StringVarP(cmdData.LogLevel, "log-level", "", defaultValue, "Set log level (debug, info, warn, error) (env: TRDL_VAULT_LOG_LEVEL)")
 }
 
-func (c *CmdData) GetLogLevel() slog.Level {
-	return logger.ParseLogLevel(*c.LogLevel)
+func SetupLogFormat(cmdData *CmdData, cmd *cobra.Command) {
+	cmdData.LogFormat = new(string)
+	defaultValue := getEnvOrDefault("TRDL_VAULT_LOG_FORMAT", "json")
+	cmd.Flags().StringVarP(cmdData.LogFormat, "log-format", "", defaultValue, "Set log format (text, json) (env: TRDL_VAULT_LOG_FORMAT)")
 }
 
 func SetupCmdData(cmdData *CmdData, cmd *cobra.Command) {
@@ -66,6 +65,7 @@ func SetupCmdData(cmdData *CmdData, cmd *cobra.Command) {
 	SetupMaxAttemps(cmdData, cmd)
 	SetupDelay(cmdData, cmd)
 	SetupLogLevel(cmdData, cmd)
+	SetupLogFormat(cmdData, cmd)
 }
 
 func getEnvOrDefault(envVar, defaultValue string) string {

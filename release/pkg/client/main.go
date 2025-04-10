@@ -2,10 +2,9 @@ package client
 
 import (
 	"fmt"
-	"log/slog"
 	"time"
 
-	"github.com/werf/trdl/release/pkg/logger"
+	"github.com/werf/trdl/client/pkg/logger"
 	"github.com/werf/trdl/release/pkg/vault"
 )
 
@@ -36,18 +35,23 @@ type NewTrdlVaultClientOpts struct {
 	Retry       bool
 	MaxAttempts int
 	Delay       time.Duration
-	LogLevel    slog.Level
+	LogLevel    string
+	LogFormat   string
+	Logger      logger.LoggerInterface
 }
 
 func NewTrdlVaultClient(opts NewTrdlVaultClientOpts) (*Client, error) {
-	log := logger.NewLogger(opts.LogLevel)
+	log := logger.SetupGlobalLogger(logger.LoggerOptions{
+		Level:     opts.LogLevel,
+		LogFormat: opts.LogFormat,
+	})
 	trdlClient, err := vault.NewTrdlClient(vault.NewTrdlClientOpts{
 		Address:     opts.Address,
 		Token:       opts.Token,
 		Retry:       opts.Retry,
 		MaxAttempts: opts.MaxAttempts,
 		Delay:       opts.Delay,
-		Logger:      log,
+		Logger:      log.LoggerInterface,
 	})
 	if err != nil {
 		log.Error("", fmt.Sprintf("Unable to create Vault client: %s", err.Error()))
