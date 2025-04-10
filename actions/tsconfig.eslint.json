@@ -5,11 +5,11 @@
     "allowJs": true,
     "noEmit": true
   },
-  "exclude": ["dist", "node_modules"],
+  "exclude": ["*/dist", "node_modules"],
   "include": [
     "__fixtures__",
     "__tests__",
-    "src",
+    "*/src",
     "eslint.config.mjs",
     "jest.config.js",
     "rollup.config.ts"
