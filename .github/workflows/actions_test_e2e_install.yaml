@@ -1,0 +1,19 @@
+name: Test e2e Install
+
+on: [push]
+
+jobs:
+  test-e2e-install:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install trdl
+        uses: ./install
+
+      - name: Use trdl binary
+        run: |
+          trdl --help

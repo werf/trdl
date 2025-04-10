@@ -3,7 +3,7 @@ name: Lint
 on: [push]
 
 jobs:
-  _:
+  lint:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 

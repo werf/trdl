@@ -1,7 +1,8 @@
-import { getInput, platform, addPath, info, startGroup, endGroup, debug } from '@actions/core'
+import { getInput, platform, addPath, info, startGroup, endGroup } from '@actions/core'
 import { HttpClient } from '@actions/http-client'
 import { downloadTool, find, cacheFile } from '@actions/tool-cache'
 import { chmodSync } from 'node:fs'
+import { join } from 'node:path'
 import { GpgCli } from '../../lib/gpg-cli'
 import { Defaults, TrdlCli } from '../../lib/trdl-cli'
 import { format } from 'util'
@@ -90,13 +91,14 @@ function findTrdlCache(toolName: string, toolVersion: string): string {
   return find(toolName, toolVersion)
 }
 
-async function installTrdl(toolName: string, toolVersion: string, binPath: string): Promise<void> {
+async function installTrdl(binPath: string, toolName: string, toolVersion: string): Promise<void> {
   // install tool
-  const installedPath = await cacheFile(binPath, toolName, toolName, toolVersion)
-  // set permissions
-  chmodSync(installedPath, 0o755)
+  const cachedPath = await cacheFile(binPath, toolName, toolName, toolVersion)
   // add tool to $PATH
-  addPath(installedPath)
+  addPath(cachedPath)
+  const cachedFile = join(cachedPath, toolName)
+  // set permissions
+  chmodSync(cachedFile, 0o755)
 }
 
 export async function Run(): Promise<void> {
@@ -108,23 +110,29 @@ export async function Run(): Promise<void> {
 }
 
 export async function Do(trdlCli: TrdlCli, gpgCli: GpgCli, inputs: inputs): Promise<void> {
-  startGroup('Install or self-update trdl.')
-  debug(format(`parsed inputs=%o`, inputs))
+  startGroup(`Install or self-update ${trdlCli.name}.`)
+  info(format(`parsed inputs=%o`, inputs))
 
   const defaults = trdlCli.defaults()
-  debug(format(`trdl defaults=%o`, defaults))
+  info(format(`${trdlCli.name} repository defaults=%o`, defaults))
 
   const options = await getOptions(inputs, defaults)
-  debug(format(`installation options=%o`, options))
+  info(format(`${trdlCli.name} installation options=%o`, options))
 
-  const toolCache = findTrdlCache(defaults.repo, options.version)
+  const toolCache = findTrdlCache(trdlCli.name, options.version)
 
   if (toolCache) {
-    info(`Installation skipped. trdl@v${options.version} is found at path ${toolCache}.`)
-
+    info(`Installation skipped. ${trdlCli.name}@v${options.version} is found in tool cache ${toolCache}.`)
     await trdlCli.mustExist()
-    info(`Updating trdl to group=${defaults.group} and channel=${defaults.channel}`)
+
+    info(`Checking ${trdlCli.name} version before updating.`)
+    await trdlCli.version()
+
+    info(`Updating ${trdlCli.name} to group=${defaults.group} and channel=${defaults.channel}.`)
     await trdlCli.update(defaults)
+
+    info(`Checking ${trdlCli.name} version after updating.`)
+    await trdlCli.version()
 
     endGroup()
     return
@@ -133,18 +141,21 @@ export async function Do(trdlCli: TrdlCli, gpgCli: GpgCli, inputs: inputs): Prom
   await gpgCli.mustGnuGP()
 
   const [binUrl, sigUrl, ascUrl] = formatDownloadUrls(options.version)
-  debug(format('%s bin_url=%s', defaults.repo, binUrl))
-  debug(format('%s sig_url=%s', defaults.repo, sigUrl))
-  debug(format('%s asc_url=%s', defaults.repo, ascUrl))
+  info(`${trdlCli.name} binUrl=${binUrl}`)
+  info(`${trdlCli.name} sigUrl=${sigUrl}`)
+  info(`${trdlCli.name} ascUrl=${ascUrl}`)
 
-  info('Downloading signatures.')
+  info('Downloading binary and signatures.')
   const [binPath, sigPath, ascPath] = await downloadParallel(binUrl, sigUrl, ascUrl)
 
   info('Importing and verifying gpg keys.')
   await gpgCli.import(ascPath)
   await gpgCli.verify(sigPath, binPath)
 
-  info('Installing trdl and adding it to the $PATH.')
-  await installTrdl(defaults.repo, options.version, binPath)
+  info(`Installing ${trdlCli.name} and adding it to the $PATH.`)
+  await installTrdl(binPath, trdlCli.name, options.version)
+
+  info(`Checking installed ${trdlCli.name} version.`)
+  await trdlCli.version()
   endGroup()
 }
