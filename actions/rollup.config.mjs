@@ -6,15 +6,16 @@ import nodeResolve from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 
 export default [
+  // prettier-ignore
   buildActionConfig('install')
 ]
 
-function buildActionConfig (action) {
+function buildActionConfig(action) {
   return {
     input: path.join(action, 'src/index.ts'),
     output: {
       esModule: true,
-      file: path.join(action, 'dist/index.js'),
+      file: path.join(action, 'dist/index.mjs'),
       format: 'es',
       sourcemap: true
     },
