@@ -24,6 +24,6 @@ export class GpgCli {
 
   async help(): Promise<string> {
     const { stdout } = await execOutput(this.name, ['--help'])
-    return stdout.join('')
+    return stdout.join('\n')
   }
 }

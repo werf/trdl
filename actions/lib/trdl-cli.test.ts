@@ -13,17 +13,17 @@ const { TrdlCli } = await import('./trdl-cli')
 
 describe('trdl-cli.ts', function () {
   let cli: TrdlCliType
-  let trdlName: string
+  let cliName: string
 
   beforeEach(function () {
     cli = new TrdlCli()
-    trdlName = cli.defaults().repo
+    cliName = cli.defaults().repo
   })
 
   describe('defaults', function () {
     it('should work', function () {
       expect(cli.defaults()).toEqual({
-        repo: trdlName,
+        repo: cliName,
         group: '0',
         channel: 'stable'
       })
@@ -34,13 +34,13 @@ describe('trdl-cli.ts', function () {
     it('should not throw error if io.which does not throws an error', async function () {
       const result = await cli.mustExist()
       expect(result).toBeUndefined()
-      expect(io.which).toHaveBeenCalledWith(trdlName, true)
+      expect(io.which).toHaveBeenCalledWith(cliName, true)
     })
     it('should throw error if io.which throws an error', async function () {
       const err0 = new Error('some err')
       io.which.mockRejectedValueOnce(err0)
-      await expect(cli.mustExist()).rejects.toEqual(err0)
-      expect(io.which).toHaveBeenCalledWith(trdlName, true)
+      await expect(cli.mustExist()).rejects.toThrow(err0)
+      expect(io.which).toHaveBeenCalledWith(cliName, true)
     })
   })
 
@@ -52,7 +52,7 @@ describe('trdl-cli.ts', function () {
       const rootVersion = 'some root version'
       const result = await cli.add({ repo, url, rootVersion, rootSha512 })
       expect(result).toBeUndefined()
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['add', repo, url, rootVersion, rootSha512])
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['add', repo, url, rootVersion, rootSha512])
     })
   })
 
@@ -61,7 +61,7 @@ describe('trdl-cli.ts', function () {
       const repo = 'some repo'
       const result = await cli.remove({ repo })
       expect(result).toBeUndefined()
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['remove', repo])
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['remove', repo])
     })
   })
 
@@ -71,7 +71,7 @@ describe('trdl-cli.ts', function () {
       const group = 'some group'
       const result = await cli.update({ repo, group })
       expect(result).toBeUndefined()
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['update', repo, group], { env: process.env })
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['update', repo, group], { env: process.env })
     })
     it('should work with all args but w/o options', async function () {
       const repo = 'some repo'
@@ -79,7 +79,7 @@ describe('trdl-cli.ts', function () {
       const channel = 'some channel'
       const result = await cli.update({ repo, group, channel })
       expect(result).toBeUndefined()
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['update', repo, group, channel], { env: process.env })
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['update', repo, group, channel], { env: process.env })
     })
     it('should work with all args and options', async function () {
       const repo = 'some repo'
@@ -89,7 +89,7 @@ describe('trdl-cli.ts', function () {
       const result = await cli.update({ repo, group, channel }, { inBackground })
       expect(result).toBeUndefined()
       const expectedEnv = { ...process.env, TRDL_IN_BACKGROUND: String(inBackground) }
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['update', repo, group, channel], { env: expectedEnv })
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['update', repo, group, channel], { env: expectedEnv })
     })
   })
 
@@ -105,7 +105,7 @@ describe('trdl-cli.ts', function () {
       }
       const result = await cli.binPath({ repo, group })
       expect(result).toEqual(stdout.join(''))
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['bin-path', repo, group], execOpts)
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['bin-path', repo, group], execOpts)
     })
     it('should work with all args', async function () {
       const stdout = ['some', 'stdout']
@@ -119,7 +119,7 @@ describe('trdl-cli.ts', function () {
       }
       const result = await cli.binPath({ repo, group, channel })
       expect(result).toEqual(stdout.join(''))
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['bin-path', repo, group, channel], execOpts)
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['bin-path', repo, group, channel], execOpts)
     })
   })
 
@@ -129,7 +129,7 @@ describe('trdl-cli.ts', function () {
       libExec.execOutput.mockResolvedValueOnce({ stdout, stderr: [], exitCode: 0 })
       const result = await cli.list()
       expect(result).toEqual(stdout)
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['list'])
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['list'])
     })
     it('should work if underlined call return array with item which has required fields', async function () {
       const stdout: string[] = ['Name  URL                   Default Channel ', 'trdl  https://tuf.trdl.dev  stable ']
@@ -141,7 +141,7 @@ describe('trdl-cli.ts', function () {
         default: 'stable'
       }
       expect(result).toEqual([item])
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['list'])
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['list'])
     })
     it('should work if underlined call return array with item which all fields', async function () {
       const stdout: string[] = ['Name  URL                   Default Channel ', 'trdl  https://tuf.trdl.dev  stable 2 ']
@@ -154,7 +154,7 @@ describe('trdl-cli.ts', function () {
         channel: '2'
       }
       expect(result).toEqual([item])
-      expect(libExec.execOutput).toHaveBeenCalledWith(trdlName, ['list'])
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['list'])
     })
   })
 })
