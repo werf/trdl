@@ -12,6 +12,8 @@ export const addPath = jest.fn<typeof core.addPath>()
 export const startGroup = jest.fn<typeof core.startGroup>()
 export const endGroup = jest.fn<typeof core.endGroup>()
 export const exportVariable = jest.fn<typeof core.exportVariable>()
+export const isDebug = jest.fn<typeof core.isDebug>()
+export const setCommandEcho = jest.fn<typeof core.setCommandEcho>()
 
 export const platform = Object.create(
   {},

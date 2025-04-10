@@ -12,5 +12,6 @@ export const trdlCli = {
   remove: jest.fn<typeof cli.remove>(),
   update: jest.fn<typeof cli.update>(),
   binPath: jest.fn<typeof cli.binPath>(),
-  list: jest.fn<typeof cli.list>()
+  list: jest.fn<typeof cli.list>(),
+  version: jest.fn<typeof cli.version>()
 }

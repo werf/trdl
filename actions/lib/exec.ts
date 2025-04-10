@@ -16,7 +16,7 @@ export async function execOutput(
 
   const defaultOptions = {
     // https://github.com/actions/toolkit/blob/%40actions/exec%401.0.1/packages/exec/src/interfaces.ts#L39
-    silent: true,
+    silent: false,
     failOnStdErr: true,
     listeners: {
       stdline(data: string) {

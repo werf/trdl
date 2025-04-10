@@ -23,7 +23,7 @@ describe('gpg-cli.ts', function () {
       const ascPath = 'asc path'
       const result = await cli.import(ascPath)
       expect(result).toBeUndefined()
-      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['--import', ascPath])
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['--import', ascPath], { failOnStdErr: false })
     })
   })
 
@@ -33,7 +33,7 @@ describe('gpg-cli.ts', function () {
       const binPath = 'bin path'
       const result = await cli.verify(sigPath, binPath)
       expect(result).toBeUndefined()
-      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['--verify', sigPath, binPath])
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['--verify', sigPath, binPath], { failOnStdErr: false })
     })
   })
 
@@ -43,7 +43,7 @@ describe('gpg-cli.ts', function () {
       libExec.execOutput.mockResolvedValueOnce({ stdout, stderr: [], exitCode: 0 })
       const result = await cli.help()
       expect(result).toEqual(stdout.join('\n'))
-      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['--help'])
+      expect(libExec.execOutput).toHaveBeenCalledWith(cliName, ['--help'], { silent: true })
     })
   })
 
