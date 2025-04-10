@@ -20,5 +20,4 @@ jobs:
         run: npm ci
 
       - name: Test Unit
-        run: |
-          npm run test
+        run: npm run test
