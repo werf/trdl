@@ -7,9 +7,9 @@ interface inputs extends AddArgs {
   force: boolean
 }
 
-function parseInputs(required: boolean): inputs {
+export function parseInputs(required: boolean): inputs {
   return {
-    force: getBooleanInput('force', { required }),
+    force: getBooleanInput('force'),
     repo: getInput('repo', { required }),
     url: getInput('url', { required }),
     rootVersion: getInput('root-version', { required }),
