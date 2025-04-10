@@ -1,0 +1,25 @@
+name: xxxxx(internal)
+
+on: [push]
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Clean install a project
+        run: npm ci
+
+      - name: Lint
+        run: | 
+          npm lint
+          npm format:check
