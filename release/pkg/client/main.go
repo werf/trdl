@@ -41,21 +41,18 @@ type NewTrdlVaultClientOpts struct {
 }
 
 func NewTrdlVaultClient(opts NewTrdlVaultClientOpts) (*Client, error) {
-	log := logger.SetupGlobalLogger(logger.LoggerOptions{
-		Level:     opts.LogLevel,
-		LogFormat: opts.LogFormat,
-	})
+	log := opts.Logger
 	trdlClient, err := vault.NewTrdlClient(vault.NewTrdlClientOpts{
 		Address:     opts.Address,
 		Token:       opts.Token,
 		Retry:       opts.Retry,
 		MaxAttempts: opts.MaxAttempts,
 		Delay:       opts.Delay,
-		Logger:      log.LoggerInterface,
+		Logger:      log,
 	})
 	if err != nil {
-		log.Error("", fmt.Sprintf("Unable to create Vault client: %s", err.Error()))
-		return nil, fmt.Errorf("new Vault client error: %w", err)
+		log.Error(fmt.Sprintf("Unable to create Vault client: %s", err.Error()))
+		return nil, fmt.Errorf("New Vault client error: %w", err)
 	}
 	return newClient(trdlClient), nil
 }
