@@ -24,7 +24,7 @@ function buildActionConfig(action) {
       typescript({
         compilerOptions: {
           // IMPORTANT NOTE
-          // tsconfig.base.json configured to use >= Node14
+          // tsconfig.base.json configured to use >= Node16
           // https://github.com/tsconfig/bases?tab=readme-ov-file#table-of-tsconfigs
           // ---------------
           // Suppress warning: TS5110: Option 'module' must be set to 'Node16' when option 'moduleResolution' is set to 'Node16'
