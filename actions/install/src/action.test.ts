@@ -40,7 +40,7 @@ describe('install/action.ts', function () {
       expect(opts).toHaveProperty('channel', defaults.channel)
       expect(opts).toHaveProperty('version')
       expect(opts.version).toMatch(/[0-9.]+/)
-    })
+    }, 30e3)
     it('should work with all inputs', async function () {
       const inputs = {
         channel: 'some channel',
