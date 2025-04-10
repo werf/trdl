@@ -1,26 +1,21 @@
 {
-  "name": "typescript-action",
-  "description": "GitHub Actions TypeScript template",
+  "name": "trdl-actions",
+  "description": "",
   "version": "0.0.0",
-  "author": "",
-  "type": "module",
+  "author": "flant",
+  "license": "Apache-2.0",
   "private": true,
-  "homepage": "https://github.com/actions/typescript-action",
+  "homepage": "https://github.com/werf/trdl-actions#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/werf/trdl-actions.git"
   },
   "bugs": {
-    "url": "https://github.com/actions/typescript-action/issues"
+    "url": "https://github.com/werf/trdl-actions/issues"
   },
-  "keywords": [
-    "actions"
-  ],
-  "exports": {
-    ".": "./dist/index.js"
-  },
+  "keywords": [],
   "engines": {
-    "node": ">=19"
+    "node": ">=18"
   },
   "scripts": {
     "bundle": "npm run format:write && npm run package",
@@ -29,13 +24,12 @@
     "format:write": "npx prettier --write .",
     "format:check": "npx prettier --check .",
     "lint": "npx eslint .",
-    "local-action": "npx local-action . src/main.ts .env",
-    "package": "npx rollup --config rollup.config.mjs --input src/index.ts --file dist/index.js",
+    "local-action": "npx local-action . install/src/main.ts .env",
+    "package": "npx rollup --config rollup.config.mjs",
     "package:watch": "npm run package -- --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
     "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package"
   },
-  "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.11.1"
   },
