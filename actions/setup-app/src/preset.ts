@@ -60,7 +60,7 @@ export function parsePresetInput(): preset {
   const p = (getInput('preset') as preset) || preset.unknown
 
   if (!(p in preset)) {
-    throw new Error(`preset "${p}" not found. Available presets: ${Object.values(preset).join(' ,')}`)
+    throw new Error(`preset "${p}" not found. Available presets: ${Object.values(preset).join(', ')}`)
   }
 
   return p
