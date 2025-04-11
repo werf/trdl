@@ -1,0 +1,24 @@
+name: Actions. Test e2e setup-app preset
+
+on: [push]
+
+jobs:
+  test-e2e-setup-app-preset:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    strategy:
+      matrix:
+        app: [werf, nelm, kubedog]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup application
+        uses: ./actions/setup-app
+        with:
+          preset: ${{ matrix.app }}
+
+      - name: Use ${{ matrix.app }} binary
+        run: ${{ matrix.app }} version

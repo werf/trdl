@@ -1,0 +1,25 @@
+name: Actions. Test Unit
+
+on: [push]
+
+jobs:
+  test-unit:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Clean install a project
+        working-directory: actions
+        run: npm ci
+
+      - name: Test Unit
+        working-directory: actions
+        run: npm run test
