@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -18,6 +19,7 @@ func main() {
 	cmd.SilenceUsage = true
 
 	if err := cmd.Execute(); err != nil {
+		fmt.Errorf("Execution failed: %s", err)
 		os.Exit(1)
 	}
 }
