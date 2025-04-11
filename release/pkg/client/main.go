@@ -35,8 +35,6 @@ type NewTrdlVaultClientOpts struct {
 	Retry       bool
 	MaxAttempts int
 	Delay       time.Duration
-	LogLevel    string
-	LogFormat   string
 	Logger      *logger.Logger
 }
 
@@ -52,7 +50,7 @@ func NewTrdlVaultClient(opts NewTrdlVaultClientOpts) (*Client, error) {
 	})
 	if err != nil {
 		log.Error(fmt.Sprintf("Unable to create Vault client: %s", err.Error()))
-		return nil, fmt.Errorf("New Vault client error: %w", err)
+		return nil, fmt.Errorf("new Vault client error: %w", err)
 	}
 	return newClient(trdlClient), nil
 }
