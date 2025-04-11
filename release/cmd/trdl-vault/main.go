@@ -14,11 +14,6 @@ import (
 func main() {
 	cmdData := &common.CmdData{}
 
-	log := logger.NewSlogLogger(logger.LoggerOptions{
-		Level:     *cmdData.LogLevel,
-		LogFormat: *cmdData.LogFormat,
-	})
-
 	cmd := &cobra.Command{
 		Use:   "trdl-vault",
 		Short: "Trdl CLI for Vault operations",
@@ -26,6 +21,11 @@ func main() {
 
 	common.SetupLogFormat(cmdData, cmd)
 	common.SetupLogLevel(cmdData, cmd)
+
+	log := logger.NewSlogLogger(logger.LoggerOptions{
+		Level:     *cmdData.LogLevel,
+		LogFormat: *cmdData.LogFormat,
+	})
 
 	cmd.AddCommand(commands.CreateCommands(cmdData, log)...)
 	cmd.SilenceUsage = true
