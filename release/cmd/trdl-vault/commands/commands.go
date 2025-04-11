@@ -44,7 +44,7 @@ func createReleaseCommand(cmdData *common.CmdData, log *logger.Logger) *cobra.Co
 		Run: func(cmd *cobra.Command, args []string) {
 			projectName, gitTag := args[0], args[1]
 			if err := release(cmdData, projectName, gitTag, log); err != nil {
-				logger.GlobalLogger.Error(fmt.Sprintf("Release failed: %s", err))
+				log.Error(fmt.Sprintf("Release failed: %s", err))
 				os.Exit(1)
 			}
 		},
