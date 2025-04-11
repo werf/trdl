@@ -61,8 +61,6 @@ func publish(c *common.CmdData, projectName string, log *logger.Logger) error {
 		Retry:       *c.Retry,
 		MaxAttempts: *c.MaxAttempts,
 		Delay:       *c.Delay,
-		LogLevel:    *c.LogLevel,
-		LogFormat:   *c.LogFormat,
 		Logger:      log,
 	})
 	if err != nil {
@@ -81,8 +79,6 @@ func release(c *common.CmdData, projectName, gitTag string, log *logger.Logger) 
 		Retry:       *c.Retry,
 		MaxAttempts: *c.MaxAttempts,
 		Delay:       *c.Delay,
-		LogLevel:    *c.LogLevel,
-		LogFormat:   *c.LogFormat,
 		Logger:      log,
 	})
 	if err != nil {
