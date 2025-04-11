@@ -8,6 +8,4 @@ type CmdData struct {
 	Retry       *bool
 	MaxAttempts *int
 	Delay       *time.Duration
-	LogLevel    *string
-	LogFormat   *string
 }

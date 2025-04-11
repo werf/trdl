@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	var logLevel, logFormat string
 	cmdData := &common.CmdData{}
 
 	cmd := &cobra.Command{
@@ -19,14 +20,31 @@ func main() {
 		Short: "Trdl CLI for Vault operations",
 	}
 
-	common.SetupLogFormat(cmdData, cmd)
-	common.SetupLogLevel(cmdData, cmd)
+	common.SetupLogFormat(&logFormat, cmd)
+	common.SetupLogLevel(&logLevel, cmd)
+
+	// parse flags before cmd.execute
+	if err := cmd.ParseFlags(os.Args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse flags: %v\n", err)
+		os.Exit(1)
+	}
+	var err error
+	logLevel, err = cmd.Flags().GetString("log-level")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get log-level flag: %v\n", err)
+		os.Exit(1)
+	}
+
+	logFormat, err = cmd.Flags().GetString("log-format")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get log-format flag: %v\n", err)
+		os.Exit(1)
+	}
 
 	log := logger.NewSlogLogger(logger.LoggerOptions{
-		Level:     *cmdData.LogLevel,
-		LogFormat: *cmdData.LogFormat,
+		Level:     logLevel,
+		LogFormat: logFormat,
 	})
-
 	cmd.AddCommand(commands.CreateCommands(cmdData, log)...)
 	cmd.SilenceUsage = true
 
