@@ -64,15 +64,16 @@ func NewTrdlClient(opts NewTrdlClientOpts) (*TrdlClient, error) {
 }
 
 func (c *TrdlClient) longRunningWrite(path string, data map[string]interface{}) (*api.Secret, error) {
+	log := c.logger.With("path", path)
 	for {
 		resp, err := c.vaultClient.Logical().Write(path, data)
 		if err != nil {
 			if err.Error() == "busy" {
-				c.logger.Warn(fmt.Sprintf("Vault is busy. Retrying request to %s in 5s...", path))
+				log.Warn(fmt.Sprintf("Vault is busy. Retrying request to %s in 5s...", path))
 				time.Sleep(c.delay)
 				continue
 			}
-			c.logger.Error(fmt.Sprintf("failed to write to Vault at %s: %v", path, err))
+			log.Error(fmt.Sprintf("failed to write to Vault at %s", path), "error", err)
 			return nil, err
 		}
 		return resp, nil
@@ -80,6 +81,7 @@ func (c *TrdlClient) longRunningWrite(path string, data map[string]interface{}) 
 }
 
 func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}, action func(taskID string, logger *logger.Logger) error) error {
+	log := c.logger.With("path", path)
 	if !c.enableRetry {
 		c.maxAttempts = 0
 	}
@@ -88,13 +90,13 @@ func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}
 	operation := func() error {
 		resp, err := c.longRunningWrite(path, data)
 		if err != nil {
-			c.logger.Error(fmt.Sprintf("%v", err))
+			log.Error(fmt.Sprintf("%v", err))
 			return err
 		}
 
 		taskID, ok := resp.Data["task_uuid"].(string)
 		if !ok {
-			c.logger.Error("invalid response from Vault: missing task_uuid")
+			log.Error("invalid response from Vault: missing task_uuid")
 			return err
 		}
 
@@ -105,11 +107,11 @@ func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}
 		operation,
 		bo,
 		func(err error, duration time.Duration) {
-			c.logger.Info(fmt.Sprintf("Retrying %s after %v...", path, c.delay))
+			log.Info(fmt.Sprintf("Retrying after %v...", c.delay))
 		},
 	)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("operation exceeded maximum duration: %v", err))
+		log.Error(fmt.Sprintf("operation exceeded maximum duration: %v", err))
 		return err
 	}
 
@@ -125,7 +127,7 @@ func (c *TrdlClient) Publish(projectName string) error {
 		},
 	)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to publish project %s: %s", projectName, err.Error()))
+		c.logger.Error(fmt.Sprintf("failed to publish project: %s", err.Error()), "project", projectName)
 		return fmt.Errorf("failed to publish project %s: %w", projectName, err)
 	}
 	return nil
@@ -140,13 +142,14 @@ func (c *TrdlClient) Release(projectName, gitTag string) error {
 		},
 	)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to release project %s: %s", projectName, err.Error()))
+		c.logger.Error(fmt.Sprintf("failed to release project: %s", err.Error()), "project", projectName)
 		return fmt.Errorf("failed to release project %s: %w", projectName, err)
 	}
 	return nil
 }
 
 func (c *TrdlClient) watchTask(projectName, taskID string) error {
+	log := c.logger.With("taskId", taskID, "project", projectName)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -160,13 +163,13 @@ func (c *TrdlClient) watchTask(projectName, taskID string) error {
 		for {
 			status, reason, err := c.getTaskStatus(projectName, taskID)
 			if err != nil {
-				c.logger.Error(fmt.Sprintf("failed to get task status: %v", err))
+				log.Error(fmt.Sprintf("failed to get task status: %v", err))
 				return ErrTaskStatusUnavailable
 			}
 
 			switch status {
 			case "FAILED":
-				c.logger.Error(fmt.Sprintf("Task %s failed: %s", taskID, reason))
+				log.Error(fmt.Sprintf("Task failed: %s", reason))
 				cancel()
 				return ErrTaskFailed
 			case "SUCCEEDED":
@@ -186,9 +189,10 @@ func (c *TrdlClient) watchTask(projectName, taskID string) error {
 }
 
 func (c *TrdlClient) getTaskStatus(projectName, taskID string) (string, string, error) {
+	log := c.logger.With("taskID", taskID, "project", projectName)
 	resp, err := c.vaultClient.Logical().Read(fmt.Sprintf("%s/task/%s", projectName, taskID))
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to fetch task status: %v", err), "taskID", taskID)
+		log.Error(fmt.Sprintf("failed to fetch task status: %v", err))
 		return "", "", fmt.Errorf("failed to fetch task status: %w", err)
 	}
 	if resp == nil || resp.Data == nil {
@@ -197,13 +201,13 @@ func (c *TrdlClient) getTaskStatus(projectName, taskID string) (string, string, 
 
 	dataBytes, err := json.Marshal(resp.Data)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to marshal resp.Data: %v", err), "taskID", taskID)
+		log.Error(fmt.Sprintf("failed to marshal resp.Data: %v", err))
 		return "", "", fmt.Errorf("failed to marshal resp.Data: %w", err)
 	}
 
 	var task Task
 	if err := json.Unmarshal(dataBytes, &task); err != nil {
-		c.logger.Error(fmt.Sprintf("failed to unmarshal task status: %v", err), "taskID", taskID)
+		log.Error(fmt.Sprintf("failed to unmarshal task status: %v", err))
 		return "", "", fmt.Errorf("failed to unmarshal task status: %w", err)
 	}
 
@@ -211,9 +215,10 @@ func (c *TrdlClient) getTaskStatus(projectName, taskID string) (string, string, 
 }
 
 func (c *TrdlClient) getTaskLogs(projectName, taskID string) (string, error) {
+	log := c.logger.With("taskID", taskID, "project", projectName)
 	resp, err := c.vaultClient.Logical().Read(fmt.Sprintf("%s/task/%s/log", projectName, taskID))
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to fetch task logs: %v", err), "taskID", taskID)
+		log.Error(fmt.Sprintf("failed to fetch task logs: %v", err))
 		return "", nil
 	}
 	if resp == nil || resp.Data == nil {
@@ -222,13 +227,13 @@ func (c *TrdlClient) getTaskLogs(projectName, taskID string) (string, error) {
 
 	dataBytes, err := json.Marshal(resp.Data)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to marshal resp.Data: %v", err), "taskID", taskID)
+		log.Error(fmt.Sprintf("failed to marshal resp.Data: %v", err))
 		return "", fmt.Errorf("failed to marshal resp.Data: %w", err)
 	}
 
 	var task Task
 	if err := json.Unmarshal(dataBytes, &task); err != nil {
-		c.logger.Error(fmt.Sprintf("failed to unmarshal task logs: %v", err), "taskID", taskID)
+		log.Error(fmt.Sprintf("failed to unmarshal task logs: %v", err))
 		return "", fmt.Errorf("failed to unmarshal task logs: %w", err)
 	}
 
@@ -236,6 +241,7 @@ func (c *TrdlClient) getTaskLogs(projectName, taskID string) (string, error) {
 }
 
 func (c *TrdlClient) watchTaskLog(ctx context.Context, projectName, taskID string) error {
+	log := c.logger.With("taskId", taskID, "project", projectName)
 	var lastLines []string
 
 	for {
@@ -256,7 +262,7 @@ func (c *TrdlClient) watchTaskLog(ctx context.Context, projectName, taskID strin
 
 			newLines := diffLines(lastLines, lines)
 			for _, line := range newLines {
-				c.logger.Info(line, "taskID", taskID)
+				log.Info(line)
 			}
 
 			lastLines = lines
