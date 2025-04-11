@@ -17,7 +17,7 @@ import (
 
 type TrdlClient struct {
 	vaultClient *api.Client
-	logger      logger.LoggerInterface
+	logger      *logger.Logger
 	enableRetry bool
 	maxAttempts int
 	delay       time.Duration
@@ -40,7 +40,7 @@ type NewTrdlClientOpts struct {
 	Retry       bool
 	MaxAttempts int
 	Delay       time.Duration
-	Logger      logger.LoggerInterface
+	Logger      *logger.Logger
 }
 
 // NewTrdlClient initializes the Vault client using DefaultConfig
@@ -79,7 +79,7 @@ func (c *TrdlClient) longRunningWrite(path string, data map[string]interface{}) 
 	}
 }
 
-func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}, action func(taskID string, logger logger.LoggerInterface) error) error {
+func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}, action func(taskID string, logger *logger.Logger) error) error {
 	if !c.enableRetry {
 		c.maxAttempts = 0
 	}
@@ -120,7 +120,7 @@ func (c *TrdlClient) Publish(projectName string) error {
 	err := c.withBackoffRequest(
 		fmt.Sprintf("%s/publish", projectName),
 		nil,
-		func(taskID string, logger logger.LoggerInterface) error {
+		func(taskID string, logger *logger.Logger) error {
 			return c.watchTask(projectName, taskID)
 		},
 	)
@@ -135,7 +135,7 @@ func (c *TrdlClient) Release(projectName, gitTag string) error {
 	err := c.withBackoffRequest(
 		fmt.Sprintf("%s/release", projectName),
 		map[string]interface{}{"git_tag": gitTag},
-		func(taskID string, logger logger.LoggerInterface) error {
+		func(taskID string, logger *logger.Logger) error {
 			return c.watchTask(projectName, taskID)
 		},
 	)
