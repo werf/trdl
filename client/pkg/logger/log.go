@@ -24,9 +24,10 @@ type LoggerOptions struct {
 	LogFormat string
 }
 
+// don't use this logger. it's workaround and will be deprecated after refactoring
 func SetupGlobalLogger(opts LoggerOptions) *Logger {
 	return NewLogger(&SlogWrapper{
-		logger: NewSlogLogger(SlogOptions{
+		logger: newSlogLogger(SlogOptions{
 			Handler: slogHandler(opts.LogFormat, slogLevel(opts.Level)),
 		}),
 	})
@@ -40,7 +41,15 @@ type SlogOptions struct {
 	Handler slog.Handler
 }
 
-func NewSlogLogger(opts SlogOptions) *slog.Logger {
+func NewSlogLogger(opts LoggerOptions) *Logger {
+	return NewLogger(&SlogWrapper{
+		logger: newSlogLogger(SlogOptions{
+			Handler: slogHandler(opts.LogFormat, slogLevel(opts.Level)),
+		}),
+	})
+}
+
+func newSlogLogger(opts SlogOptions) *slog.Logger {
 	return slog.New(opts.Handler)
 }
 

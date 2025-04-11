@@ -37,7 +37,7 @@ type NewTrdlVaultClientOpts struct {
 	Delay       time.Duration
 	LogLevel    string
 	LogFormat   string
-	Logger      logger.LoggerInterface
+	Logger      *logger.Logger
 }
 
 func NewTrdlVaultClient(opts NewTrdlVaultClientOpts) (*Client, error) {
