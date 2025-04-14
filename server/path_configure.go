@@ -218,7 +218,7 @@ func deleteConfiguration(ctx context.Context, storage logical.Storage) error {
 	return storage.Delete(ctx, storageKeyConfiguration)
 }
 
-func (c *configuration) maskConfigSensetiveDataForDebug() (string, error) {
+func (c *configuration) maskConfigSensitiveDataForDebug() (string, error) {
 	jsonData, err := json.Marshal(c)
 	if err != nil {
 		return "", err

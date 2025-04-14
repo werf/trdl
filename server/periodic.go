@@ -54,7 +54,7 @@ func (b *Backend) Periodic(ctx context.Context, req *logical.Request) error {
 	}
 
 	{
-		cfgData, err := config.maskConfigSensetiveDataForDebug()
+		cfgData, err := config.maskConfigSensitiveDataForDebug()
 		b.Logger().Debug(fmt.Sprintf("Got configuration (err=%v):\n%s", err, cfgData))
 	}
 
