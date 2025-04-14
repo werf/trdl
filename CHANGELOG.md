@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://www.github.com/werf/trdl/compare/v0.9.0...v0.10.0) (2025-04-14)
+
+
+### Features
+
+* **server:** add configure/last_published_git_commit endpoint to unlock  publication when Git history rebased ([838aa5b](https://www.github.com/werf/trdl/commit/838aa5b5fb094bd426fb7615434303bf58adda05))
+
 ## [0.9.0](https://www.github.com/werf/trdl/compare/v0.8.7...v0.9.0) (2025-04-04)
 
 
