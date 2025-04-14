@@ -9,7 +9,10 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
+	"github.com/werf/trdl/server/pkg/git"
+	"github.com/werf/trdl/server/pkg/pgp"
 	"github.com/werf/trdl/server/pkg/publisher"
+	"github.com/werf/trdl/server/pkg/secrets"
 	"github.com/werf/trdl/server/pkg/util"
 )
 
@@ -30,6 +33,18 @@ const (
 )
 
 var errorResponseConfigurationNotFound = logical.ErrorResponse("Configuration not found")
+
+func configurePaths(b *Backend) []*framework.Path {
+	return framework.PathAppend(
+		[]*framework.Path{
+			configurePath(b),
+			configureLastPublishedGitCommitPath(b),
+		},
+		git.CredentialsPaths(),
+		pgp.Paths(),
+		secrets.Paths(),
+	)
+}
 
 func configurePath(b *Backend) *framework.Path {
 	return &framework.Path{
@@ -242,4 +257,44 @@ func (c *configuration) maskConfigSensitiveDataForDebug() (string, error) {
 	}
 
 	return string(maskedJSON), nil
+}
+
+func configureLastPublishedGitCommitPath(b *Backend) *framework.Path {
+	return &framework.Path{
+		Pattern:         "configure/last_published_git_commit$",
+		HelpSynopsis:    "Read or delete the last published Git commit",
+		HelpDescription: "This endpoint allows reading or deleting the last published Git commit recorded by the plugin.",
+		Operations: map[logical.Operation]framework.OperationHandler{
+			logical.ReadOperation: &framework.PathOperation{
+				Description: "Get the last published Git commit",
+				Callback:    b.pathConfigureLastPublishedGitCommitRead,
+			},
+			logical.DeleteOperation: &framework.PathOperation{
+				Description: "Delete the last published Git commit",
+				Callback:    b.pathConfigureLastPublishedGitCommitDelete,
+			},
+		},
+	}
+}
+
+func (b *Backend) pathConfigureLastPublishedGitCommitRead(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
+	entry, err := req.Storage.Get(ctx, storageKeyLastPublishedGitCommit)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get %q from storage: %w", storageKeyLastPublishedGitCommit, err)
+	}
+
+	var lastPublishedGitCommit string
+	if entry != nil {
+		lastPublishedGitCommit = string(entry.Value)
+	}
+
+	return &logical.Response{
+		Data: map[string]interface{}{
+			storageKeyLastPublishedGitCommit: lastPublishedGitCommit,
+		},
+	}, nil
+}
+
+func (b *Backend) pathConfigureLastPublishedGitCommitDelete(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
+	return nil, req.Storage.Delete(ctx, storageKeyLastPublishedGitCommit)
 }
