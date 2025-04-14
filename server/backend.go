@@ -8,10 +8,7 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
-	"github.com/werf/trdl/server/pkg/git"
-	"github.com/werf/trdl/server/pkg/pgp"
 	"github.com/werf/trdl/server/pkg/publisher"
-	"github.com/werf/trdl/server/pkg/secrets"
 	"github.com/werf/trdl/server/pkg/tasks_manager"
 )
 
@@ -72,14 +69,11 @@ func NewBackend(logger hclog.Logger) (*Backend, error) {
 
 func (b *Backend) InitPaths(modules ...BackendModuleInterface) {
 	b.Paths = framework.PathAppend(
+		configurePaths(b),
 		[]*framework.Path{
-			configurePath(b),
 			releasePath(b),
 			publishPath(b),
 		},
-		git.CredentialsPaths(),
-		pgp.Paths(),
-		secrets.Paths(),
 	)
 
 	for _, module := range modules {
