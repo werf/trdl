@@ -14,11 +14,12 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
+	"gopkg.in/yaml.v2"
+
 	clientUtil "github.com/werf/trdl/client/pkg/util"
 	trdl_release "github.com/werf/trdl/release/pkg/client"
 	"github.com/werf/trdl/server/pkg/publisher"
 	"github.com/werf/trdl/server/pkg/testutil"
-	"gopkg.in/yaml.v2"
 )
 
 func BuildTrdlServerBin() {
@@ -52,7 +53,7 @@ func removeGPGKeys(keys []string) {
 	}
 }
 
-func initGitRepo(testDir string, branchName string) {
+func initGitRepo(testDir, branchName string) {
 	testutil.CopyIn(testutil.FixturePath("complete_cycle"), testDir)
 
 	testutil.RunSucceedCommand(
