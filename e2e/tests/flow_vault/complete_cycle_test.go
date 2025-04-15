@@ -164,7 +164,8 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				clientUpdate(SuiteData.TrdlBinPath, testOpts.repo, TrdlChannelsConfiguration{
 					Group:   testOpts.group,
 					Channel: testOpts.channel,
-					Version: testOpts.version2},
+					Version: testOpts.version2,
+				},
 				)
 			}
 
@@ -199,7 +200,8 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				clientUpdate(SuiteData.TrdlBinPath, testOpts.repo, TrdlChannelsConfiguration{
 					Group:   testOpts.group,
 					Channel: testOpts.channel,
-					Version: testOpts.version3},
+					Version: testOpts.version3,
+				},
 				)
 			}
 		},
