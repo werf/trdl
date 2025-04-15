@@ -313,6 +313,18 @@ tasks:
           outputDir: ../bin/trdl
           extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
           goTags: test_coverage
+          
+  build:test:with-coverage:
+    desc: "Build server binary for E2E tests with coverage on linux/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          outputDir: vault/plugins
+          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./..."
+          goTags: "test_coverage"
+          CLI_ARGS: "-tags={{.goTags}}"
 
   test:unit:
     desc: "Run server unit tests."
