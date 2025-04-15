@@ -12,6 +12,6 @@ includes:
 tasks:
   test:e2e:
     desc: "Run client e2e test."
-    cmd: ginkgo --vv --keep-going --cover --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./...
+    cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./...
     vars:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
