@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
@@ -250,18 +251,21 @@ var _ = Describe("Complete cycle", func() {
 	}
 
 	clientAdd := func(repo string, rootVersion int) {
-		resp, err := http.Get(minioRepoAddress + fmt.Sprintf("/%d.root.json", rootVersion))
-		Ω(err).ShouldNot(HaveOccurred())
-		defer func() { _ = resp.Body.Close() }()
-
-		data, err := ioutil.ReadAll(resp.Body)
-		Ω(err).ShouldNot(HaveOccurred())
-		rootRoleSha512 := clientUtil.Sha512Checksum(data)
+		cmdArgs := []string{"add", repo, minioRepoAddress}
+		if rootVersion > 0 {
+			resp, err := http.Get(minioRepoAddress + fmt.Sprintf("/%d.root.json", rootVersion))
+			Ω(err).ShouldNot(HaveOccurred())
+			defer func() { _ = resp.Body.Close() }()
+			data, err := io.ReadAll(resp.Body)
+			Ω(err).ShouldNot(HaveOccurred())
+			rootRoleSha512 := clientUtil.Sha512Checksum(data)
+			cmdArgs = append(cmdArgs, fmt.Sprintf("%d", rootVersion), rootRoleSha512)
+		}
 
 		testutil.RunSucceedCommand(
 			testDir,
 			trdlBinPath,
-			"add", repo, minioRepoAddress, fmt.Sprintf("%d", rootVersion), rootRoleSha512,
+			cmdArgs...,
 		)
 	}
 

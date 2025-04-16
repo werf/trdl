@@ -236,7 +236,7 @@ func serverAddGPGKeys(testDir, projectName string, keys map[string]string) {
 	}
 }
 
-func serverRelease(projectName, tagName string) {
+func serverRelease(projectName, tagName string, expectFail bool) {
 	trdlClient, err := trdl_release.NewTrdlVaultClient(trdl_release.NewTrdlVaultClientOpts{
 		Address:     "http://localhost:8200",
 		Token:       "root",
@@ -247,7 +247,12 @@ func serverRelease(projectName, tagName string) {
 	})
 	Ω(err).ShouldNot(HaveOccurred())
 	err = trdlClient.Release(projectName, tagName)
-	Ω(err).ShouldNot(HaveOccurred())
+	if expectFail {
+		Ω(err).Should(HaveOccurred())
+	} else {
+		Ω(err).ShouldNot(HaveOccurred())
+	}
+
 }
 
 func clientAdd(testDir, repo string, rootVersion int, trdlBinPath string) {

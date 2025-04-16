@@ -46,7 +46,7 @@ services:
       server -dev
       -dev-root-token-id=root
       -dev-plugin-dir=/app/vault/plugins
-      -log-level trace
+      -log-level debug
     healthcheck:
       test: ["CMD", "vault", "status"]
       interval: 2s
