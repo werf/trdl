@@ -135,7 +135,13 @@ func (c *Client) setup(rootVersion int64, rootSha512 string) error {
 
 	rootFileChecksum := util.Sha512Checksum(jsonData)
 	if rootSha512 != "" && rootFileChecksum != rootSha512 {
-		return fmt.Errorf("expected hash sum of the root file %q not matched", rootFileChecksum)
+		return fmt.Errorf(
+			`expected root metadata hash (%q) does not match the actual one (%q) returned by the server
+
+This may indicate an attempt to use an untrusted TUF repository or arguments mismatched. Please verify the repository URL and other arguments. If the issue persists, contact the vendor or repository maintainer for clarification.`,
+			rootSha512,
+			rootFileChecksum,
+		)
 	}
 
 	if err := os.RemoveAll(c.metaLocalStoreDir); err != nil {
