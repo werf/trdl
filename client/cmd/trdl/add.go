@@ -12,7 +12,7 @@ import (
 
 func addCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "add REPO URL ROOT_VERSION ROOT_SHA512",
+		Use:                   "add REPO URL [ROOT_VERSION] [ROOT_SHA512]",
 		Short:                 "Add a software repository",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ type addCommandArgs struct {
 func parseAddCommandArgs(cmd *cobra.Command, args []string) (*addCommandArgs, error) {
 	if len(args) != 2 && len(args) != 4 {
 		PrintHelp(cmd)
-		return nil, fmt.Errorf("expected 2 or 4 arguments: REPO URL [ROOT_VERSION ROOT_SHA512], got %d", len(args))
+		return nil, fmt.Errorf("expected 2 or 4 arguments: REPO URL [ROOT_VERSION] [ROOT_SHA512], got %d", len(args))
 	}
 
 	repoName := args[0]
