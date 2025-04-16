@@ -128,11 +128,13 @@ export async function Do(trdlCli: TrdlCli, gpgCli: GpgCli, inputs: inputs): Prom
     info(`Checking ${trdlCli.name} version before updating.`)
     await trdlCli.version()
 
+    /*
     info(`Updating ${trdlCli.name} to group=${defaults.group} and channel=${defaults.channel}.`)
     await trdlCli.update(defaults)
 
     info(`Checking ${trdlCli.name} version after updating.`)
     await trdlCli.version()
+    */
 
     endGroup()
     return
