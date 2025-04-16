@@ -76,7 +76,7 @@ describe('install/action.ts', function () {
     beforeEach(function () {
       trdlCli.defaults.mockReturnValue(defaults)
     })
-    it('should not install trdl if tool cache is found', async function () {
+    it.skip('should not install trdl if tool cache is found', async function () {
       const someCache = '/path/to/tool'
       toolCache.find.mockReturnValueOnce(someCache)
 

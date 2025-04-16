@@ -30031,10 +30031,13 @@ async function Do(trdlCli, gpgCli, inputs) {
         await trdlCli.mustExist();
         coreExports.info(`Checking ${trdlCli.name} version before updating.`);
         await trdlCli.version();
-        coreExports.info(`Updating ${trdlCli.name} to group=${defaults.group} and channel=${defaults.channel}.`);
-        await trdlCli.update(defaults);
-        coreExports.info(`Checking ${trdlCli.name} version after updating.`);
-        await trdlCli.version();
+        /*
+        info(`Updating ${trdlCli.name} to group=${defaults.group} and channel=${defaults.channel}.`)
+        await trdlCli.update(defaults)
+    
+        info(`Checking ${trdlCli.name} version after updating.`)
+        await trdlCli.version()
+        */
         coreExports.endGroup();
         return;
     }
