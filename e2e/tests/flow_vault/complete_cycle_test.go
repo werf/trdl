@@ -54,7 +54,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 					ProjectName:        testOpts.projectName,
 					RepoURL:            "/test_dir",
 					TrdlChannelsBranch: testOpts.branchName,
-					RequiredNumberOfVerifiedSignaturesOnCommit: 0,
+					RequiredNumberOfVerifiedSignaturesOnCommit: 3,
 					S3Endpoint:        "http://minio:9000",
 					S3Region:          "ru-central1",
 					S3AccessKeyID:     "minioadmin",
@@ -82,7 +82,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 			}
 			By("[server] Publishing channels ...")
 			{
-				commit := gitAddTrdlChannelsConfiguration(
+				_ = gitAddTrdlChannelsConfiguration(
 					SuiteData.TestDir,
 					testOpts.pgpKeys["developer"],
 					TrdlChannelsConfiguration{
@@ -90,7 +90,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 						Channel: testOpts.channel,
 						Version: testOpts.version1,
 					})
-				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], commit)
+				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.branchName)
 				serverPublish(testOpts.projectName)
 			}
 			By("[client] Using channel release ...")
@@ -113,13 +113,13 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				gitTag(SuiteData.TestDir, currentTag, testOpts.pgpKeys["developer"])
 
 				By(fmt.Sprintf("[server] Signing tag %q", currentTag))
-				quorumSignTag(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.tag2)
+				quorumSignTag(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], currentTag)
 
 				By(fmt.Sprintf("[server] Releasing tag %q", currentTag))
 				serverRelease(testOpts.projectName, currentTag)
 
 				By("[server] Publishing channels ...")
-				commit := gitAddTrdlChannelsConfiguration(
+				_ = gitAddTrdlChannelsConfiguration(
 					SuiteData.TestDir,
 					testOpts.pgpKeys["developer"],
 					TrdlChannelsConfiguration{
@@ -127,7 +127,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 						Channel: testOpts.channel,
 						Version: curentVersion,
 					})
-				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], commit)
+				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.branchName)
 				serverPublish(testOpts.projectName)
 			}
 
@@ -177,13 +177,13 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				gitTag(SuiteData.TestDir, currentTag, testOpts.pgpKeys["developer"])
 
 				By(fmt.Sprintf("[server] Signing tag %q", currentTag))
-				quorumSignTag(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.tag2)
+				quorumSignTag(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], currentTag)
 
 				By(fmt.Sprintf("[server] Releasing tag %q", currentTag))
 				serverRelease(testOpts.projectName, currentTag)
 
 				By("[server] Publishing channels ...")
-				commit := gitAddTrdlChannelsConfiguration(
+				_ = gitAddTrdlChannelsConfiguration(
 					SuiteData.TestDir,
 					testOpts.pgpKeys["developer"],
 					TrdlChannelsConfiguration{
@@ -191,7 +191,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 						Channel: testOpts.channel,
 						Version: curentVersion,
 					})
-				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], commit)
+				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.branchName)
 				serverPublish(testOpts.projectName)
 			}
 
