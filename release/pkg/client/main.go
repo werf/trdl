@@ -8,16 +8,16 @@ import (
 	"github.com/werf/trdl/release/pkg/vault"
 )
 
-type Clientinterface interface {
+type Interface interface {
 	Publish(projectName string) error
 	Release(projectName, gitTag string) error
 }
 
 type Client struct {
-	client Clientinterface
+	client Interface
 }
 
-func newClient(client Clientinterface) *Client {
+func newClient(client Interface) *Client {
 	return &Client{client: client}
 }
 
