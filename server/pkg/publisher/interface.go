@@ -30,4 +30,5 @@ type RepositoryInterface interface {
 	StageTarget(ctx context.Context, pathInsideTargets string, data io.Reader) error
 	CommitStaged(ctx context.Context) error
 	GetTargets(ctx context.Context) ([]string, error)
+	GetRolePublicKeysFromS3Meta(file, role string) ([]string, error)
 }

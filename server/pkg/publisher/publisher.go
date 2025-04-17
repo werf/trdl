@@ -3,12 +3,14 @@ package publisher
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -18,6 +20,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 
+	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/config"
 	"github.com/werf/trdl/server/pkg/pgp"
 	"github.com/werf/trdl/server/pkg/util"
@@ -94,6 +97,9 @@ type setRepositoryKeysOptions struct {
 	InitializeKeys bool
 }
 
+var TufRepoAlreadyInitializedMsg = `Tuf repository already initialized by another instance of vault-plugin. 
+Verify the project settings. If settings are correct, consider cleaning up the TUF repository by removing orphaned metadata.`
+
 func (publisher *Publisher) setRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface, opts setRepositoryKeysOptions) error {
 	entry, err := storage.Get(ctx, storageKeyTufRepositoryKeys)
 	if err != nil {
@@ -103,6 +109,16 @@ func (publisher *Publisher) setRepositoryKeys(ctx context.Context, storage logic
 	if entry == nil {
 		if !opts.InitializeKeys {
 			return ErrUninitializedRepositoryKeys
+		}
+
+		rootPublicKeysFromS3, err := repository.GetRolePublicKeysFromS3Meta("root.json", "root")
+		if err != nil {
+			return fmt.Errorf("unable to get root keys from repository: %w", err)
+		}
+		if len(rootPublicKeysFromS3) > 0 {
+			publisher.logger.Error(TufRepoAlreadyInitializedMsg)
+			logboek.Context(context.Background()).Default().LogF("%s\n", TufRepoAlreadyInitializedMsg)
+			return fmt.Errorf("tuf repository already initialized by another instance of vault-plugin")
 		}
 
 		publisher.logger.Debug("Will generate new repository private keys")
@@ -130,6 +146,24 @@ func (publisher *Publisher) setRepositoryKeys(ctx context.Context, storage logic
 	var privKeys TufRepoPrivKeys
 	if err := entry.DecodeJSON(&privKeys); err != nil {
 		return fmt.Errorf("unable to decode keys json by the %q storage key:\n%s---\n%w", storageKeyTufRepositoryKeys, entry.Value, err)
+	}
+
+	rootPublicKeysFromS3, err := repository.GetRolePublicKeysFromS3Meta("root.json", "root")
+	if err != nil {
+		return fmt.Errorf("unable to get root keys from repository: %w", err)
+	}
+
+	var data KeyVal
+	if err := json.Unmarshal(privKeys.Root.Value, &data); err != nil {
+		return err
+	}
+
+	if len(rootPublicKeysFromS3) > 0 {
+		if !slices.Contains(rootPublicKeysFromS3, data.Public) {
+			publisher.logger.Error(TufRepoAlreadyInitializedMsg)
+			logboek.Context(context.Background()).Default().LogF("%s\n", TufRepoAlreadyInitializedMsg)
+			return fmt.Errorf("tuf repository already initialized by another instance of vault-plugin")
+		}
 	}
 
 	if err := repository.SetPrivKeys(privKeys); err != nil {
