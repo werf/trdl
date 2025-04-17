@@ -3,9 +3,15 @@ module github.com/werf/trdl/release
 go 1.23.2
 
 require (
+	github.com/gookit/color v1.5.4
 	github.com/hashicorp/vault/api v1.16.0
 	github.com/spf13/cobra v1.9.1
 	github.com/werf/trdl/client v0.0.0-00010101000000-000000000000
+)
+
+require (
+	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	golang.org/x/sys v0.29.0 // indirect
 )
 
 require (
