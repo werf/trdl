@@ -4,20 +4,17 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
 	clientUtil "github.com/werf/trdl/client/pkg/util"
-	trdl_release "github.com/werf/trdl/release/pkg/client"
 	"github.com/werf/trdl/server/pkg/publisher"
 	"github.com/werf/trdl/server/pkg/testutil"
 )
@@ -29,6 +26,17 @@ func BuildTrdlServerBin() {
 		"build:test:with-coverage",
 		"-d", "../../../server",
 	)
+}
+
+func ComputeTrdlVaultClientPath() string {
+	testutil.RunSucceedCommand(
+		"",
+		"task",
+		"build:test:with-coverage",
+		"-d", "../../../release",
+	)
+	p, _ := filepath.Abs("../../../bin/trdl-vault/trdl-vault")
+	return p
 }
 
 func importGPGKeys(keys map[string]string) {
@@ -236,18 +244,24 @@ func serverAddGPGKeys(testDir, projectName string, keys map[string]string) {
 	}
 }
 
-func serverRelease(projectName, tagName string) {
-	trdlClient, err := trdl_release.NewTrdlVaultClient(trdl_release.NewTrdlVaultClientOpts{
-		Address:     "http://localhost:8200",
-		Token:       "root",
-		Retry:       true,
-		MaxAttempts: 1,
-		Delay:       1 * time.Second,
-		LogLevel:    slog.LevelDebug,
-	})
-	Ω(err).ShouldNot(HaveOccurred())
-	err = trdlClient.Release(projectName, tagName)
-	Ω(err).ShouldNot(HaveOccurred())
+func serverRelease(bin, projectName, tagName string) {
+	testutil.RunSucceedCommand(
+		"",
+		bin,
+		"release", projectName, tagName,
+		"--token", "root",
+		"--max-attempts", "1",
+	)
+}
+
+func serverPublish(bin, projectName string) {
+	testutil.RunSucceedCommand(
+		"",
+		bin,
+		"publish", projectName,
+		"--token", "root",
+		"--max-attempts", "1",
+	)
 }
 
 func clientAdd(testDir, repo string, rootVersion int, trdlBinPath string) {
@@ -322,20 +336,6 @@ func gitAddTrdlChannelsConfiguration(testDir, pgpSigningKeyDeveloper string, cha
 	)
 
 	return testutil.GetHeadCommit(testDir)
-}
-
-func serverPublish(projectName string) {
-	trdlClient, err := trdl_release.NewTrdlVaultClient(trdl_release.NewTrdlVaultClientOpts{
-		Address:     "http://localhost:8200",
-		Token:       "root",
-		Retry:       true,
-		MaxAttempts: 1,
-		Delay:       1 * time.Second,
-		LogLevel:    slog.LevelDebug,
-	})
-	Ω(err).ShouldNot(HaveOccurred())
-	err = trdlClient.Publish(projectName)
-	Ω(err).ShouldNot(HaveOccurred())
 }
 
 func clientUse(trdlBinPath, tmpDir, repo string, channelCfg TrdlChannelsConfiguration) {
