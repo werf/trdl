@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-billy/v5/memfs"
@@ -169,15 +170,34 @@ func ReadWorktreeFile(gitRepo *git.Repository, path string) ([]byte, error) {
 	return data, nil
 }
 
+type AncestorCommitLookupError struct {
+	Commit string
+	Err    error
+}
+
+func (e *AncestorCommitLookupError) Error() string {
+	return fmt.Sprintf("unable to get ancestor commit %q object: %v", e.Commit, e.Err)
+}
+
+func (e *AncestorCommitLookupError) Unwrap() error {
+	return e.Err
+}
+
 func IsAncestor(gitRepo *git.Repository, ancestorCommit, descendantCommit string) (bool, error) {
 	ancestorCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(ancestorCommit))
 	if err != nil {
-		return false, fmt.Errorf("unable to get commit %q object: %w", ancestorCommit, err)
+		if strings.Contains(err.Error(), "object not found") {
+			return false, &AncestorCommitLookupError{
+				Commit: ancestorCommit,
+				Err:    err,
+			}
+		}
+		return false, fmt.Errorf("unable to get ancestor commit %q object: %w", ancestorCommit, err)
 	}
 
 	descendantCommitObj, err := gitRepo.CommitObject(plumbing.NewHash(descendantCommit))
 	if err != nil {
-		return false, fmt.Errorf("unable to get commit %q object: %w", descendantCommitObj, err)
+		return false, fmt.Errorf("unable to get descendant commit %q object: %w", descendantCommitObj, err)
 	}
 
 	isAncestor, err := ancestorCommitObj.IsAncestor(descendantCommitObj)
