@@ -19,8 +19,9 @@ func Test(t *testing.T) {
 }
 
 var SuiteData = struct {
-	TrdlBinPath string
-	TrdlHomeDir string
+	TrdlBinPath            string
+	TrdlHomeDir            string
+	TrdlVaultClientBinPath string
 
 	TmpDir  string
 	TestDir string
@@ -34,6 +35,7 @@ var (
 	_ = BeforeSuite(func() {
 		BuildTrdlServerBin()
 		SuiteData.TrdlBinPath = testutil.ComputeTrdlBinPath()
+		SuiteData.TrdlVaultClientBinPath = ComputeTrdlVaultClientPath()
 	})
 
 	_ = BeforeEach(func() {

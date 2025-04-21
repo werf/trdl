@@ -74,7 +74,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				quorumSignTag(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.tag1)
 
 				By(fmt.Sprintf("[server] Releasing tag %q", testOpts.tag1))
-				serverRelease(testOpts.projectName, testOpts.tag1)
+				serverRelease(SuiteData.TrdlVaultClientBinPath, testOpts.projectName, testOpts.tag1)
 			}
 			By("[client] Adding repo ...")
 			{
@@ -91,7 +91,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 						Version: testOpts.version1,
 					})
 				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.branchName)
-				serverPublish(testOpts.projectName)
+				serverPublish(SuiteData.TrdlVaultClientBinPath, testOpts.projectName)
 			}
 			By("[client] Using channel release ...")
 			{
@@ -116,7 +116,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				quorumSignTag(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], currentTag)
 
 				By(fmt.Sprintf("[server] Releasing tag %q", currentTag))
-				serverRelease(testOpts.projectName, currentTag)
+				serverRelease(SuiteData.TrdlVaultClientBinPath, testOpts.projectName, currentTag)
 
 				By("[server] Publishing channels ...")
 				_ = gitAddTrdlChannelsConfiguration(
@@ -128,7 +128,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 						Version: curentVersion,
 					})
 				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.branchName)
-				serverPublish(testOpts.projectName)
+				serverPublish(SuiteData.TrdlVaultClientBinPath, testOpts.projectName)
 			}
 
 			By("[client] Using new channel release ...")
@@ -180,7 +180,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				quorumSignTag(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], currentTag)
 
 				By(fmt.Sprintf("[server] Releasing tag %q", currentTag))
-				serverRelease(testOpts.projectName, currentTag)
+				serverRelease(SuiteData.TrdlVaultClientBinPath, testOpts.projectName, currentTag)
 
 				By("[server] Publishing channels ...")
 				_ = gitAddTrdlChannelsConfiguration(
@@ -192,7 +192,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 						Version: curentVersion,
 					})
 				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.branchName)
-				serverPublish(testOpts.projectName)
+				serverPublish(SuiteData.TrdlVaultClientBinPath, testOpts.projectName)
 			}
 
 			By("[client] Getting channel release when update available ...")
