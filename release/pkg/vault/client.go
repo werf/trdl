@@ -11,8 +11,9 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/vault/api"
-	"github.com/werf/trdl/client/pkg/logger"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/werf/trdl/client/pkg/logger"
 )
 
 type TrdlClient struct {

@@ -1,0 +1,8 @@
+dockerImage: alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a
+commands:
+  - '[ "$(cat /run/secrets/secretId0-test)" = "secretData" ] || (echo "output does not match the expected value" && exit 1)'
+  - '[ "$(cat /run/secrets/secretId1-test)" = "secretData" ] || (echo "output does not match the expected value" && exit 1)'
+  - mkdir -p /result/any-any/bin
+  - printf "echo {{ .Tag }}\n" > /result/any-any/bin/script.sh
+  - mkdir -p /result/windows-any/bin
+  - printf "@echo off\necho {{ .Tag }}\n" > /result/windows-any/bin/script.bat
