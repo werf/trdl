@@ -42,10 +42,10 @@ jobs:
         uses: werf/trdl-vault-actions/publish@main
         with:
           vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
-          project-name: trdl-vault
+          project-name: trdl-release
           vault-auth-method: approle
-          vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID }}
+          vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_RELEASE }}
+          vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_RELEASE }}
 
   notification:
     name: Notification
