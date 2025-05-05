@@ -26,11 +26,11 @@ jobs:
             These binaries were signed with PGP and could be verified with [this PGP public key](https://trdl.dev/trdl-server.asc).
 
             Download `trdl-vault` binary from here:
-            * [Linux amd64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/linux-amd64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/linux-amd64/bin/trdl-vault.sig))
-            * [Linux arm64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/linux-arm64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/linux-arm64/bin/trdl-vault.sig))
-            * [macOS amd64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/darwin-amd64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/darwin-amd64/bin/trdl-vault.sig))
-            * [macOS arm64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/darwin-arm64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/darwin-arm64/bin/trdl-vault.sig))
-            * [Windows amd64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/windows-amd64/bin/vault-plugin-secrets-trdl.exe) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/windows-amd64/bin/trdl-vault.exe.sig))
+            * [Linux amd64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/linux-amd64/bin/trdl-vault) ([PGP signature](https://storage.googleapis.com/trdl-release-tuf/targets/signatures/{{> version }}/linux-amd64/bin/trdl-vault.sig))
+            * [Linux arm64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/linux-arm64/bin/trdl-vault) ([PGP signature](https://storage.googleapis.com/trdl-release-tuf/targets/signatures/{{> version }}/linux-arm64/bin/trdl-vault.sig))
+            * [macOS amd64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/darwin-amd64/bin/trdl-vault) ([PGP signature](https://storage.googleapis.com/trdl-release-tuf/targets/signatures/{{> version }}/darwin-amd64/bin/trdl-vault.sig))
+            * [macOS arm64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/darwin-arm64/bin/trdl-vault) ([PGP signature](https://storage.googleapis.com/trdl-release-tuf/targets/signatures/{{> version }}/darwin-arm64/bin/trdl-vault.sig))
+            * [Windows amd64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/windows-amd64/bin/trdl-vault.exe) ([PGP signature](https://storage.googleapis.com/trdl-release-tuf/targets/signatures/{{> version }}/windows-amd64/bin/trdl-vault.exe.sig))
 
             These binaries were signed with PGP and could be verified with [this PGP public key](https://trdl.dev/trdl-vault.asc).
 
