@@ -32,7 +32,7 @@ jobs:
             * [macOS arm64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/darwin-arm64/bin/trdl-vault) ([PGP signature](https://storage.googleapis.com/trdl-release-tuf/targets/signatures/{{> version }}/darwin-arm64/bin/trdl-vault.sig))
             * [Windows amd64](https://storage.googleapis.com/trdl-release-tuf/targets/releases/{{> version }}/windows-amd64/bin/trdl-vault.exe) ([PGP signature](https://storage.googleapis.com/trdl-release-tuf/targets/signatures/{{> version }}/windows-amd64/bin/trdl-vault.exe.sig))
 
-            These binaries were signed with PGP and could be verified with [this PGP public key](https://trdl.dev/trdl-vault.asc).
+            These binaries were signed with PGP and could be verified with [this PGP public key](https://trdl.dev/trdl-release.asc).
 
             Download `trdl` client binaries from here:
             * [Linux amd64](https://tuf.trdl.dev/targets/releases/{{> version }}/linux-amd64/bin/trdl) ([PGP signature](https://tuf.trdl.dev/targets/signatures/{{> version }}/linux-amd64/bin/trdl.sig))
