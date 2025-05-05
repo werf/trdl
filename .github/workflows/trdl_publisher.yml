@@ -38,6 +38,15 @@ jobs:
           vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_SERVER }}
           vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_SERVER }}
 
+      - name: Publish trdl-vault channels
+        uses: werf/trdl-vault-actions/publish@main
+        with:
+          vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
+          project-name: trdl-release
+          vault-auth-method: approle
+          vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_RELEASE }}
+          vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_RELEASE }}
+
   notification:
     name: Notification
     if: always()

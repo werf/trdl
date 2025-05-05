@@ -37,6 +37,16 @@ jobs:
           vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_SERVER }}
           vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_SERVER }}
 
+      - name: Release trdl-vault
+        uses: werf/trdl-vault-actions/release@main
+        with:
+          vault-addr: ${{ secrets.TRDL_VAULT_ADDR }}
+          project-name: trdl-release
+          git-tag: ${{ github.event.ref }}
+          vault-auth-method: approle
+          vault-role-id: ${{ secrets.TRDL_VAULT_ROLE_ID_FOR_TRDL_RELEASE }}
+          vault-secret-id: ${{ secrets.TRDL_VAULT_SECRET_ID_FOR_TRDL_RELEASE }}
+
   notification:
     name: Notification
     if: always() && startsWith(github.ref, 'refs/tags/v')
