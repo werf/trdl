@@ -5,8 +5,20 @@
 
 ### Features
 
-* **actions:** add install, setup-app actions
+* **actions:** add GitHub action for installation of trdl ([9c43048](https://www.github.com/werf/trdl/commit/9c430485b845c16acea24a95285ba1c0cbe44a11))
+* **actions:** add GitHub action for installation of trdl ([b6b773d](https://www.github.com/werf/trdl/commit/b6b773d196f2bb5581816af600e85a084b1425d8))
+* **actions:** add trdl use GitHub action ([e16d215](https://www.github.com/werf/trdl/commit/e16d215e775615d35198652fb4a9170b995b69f9))
+* **actions:** add typescript boilerplate from https://github.com/actions/typescript-action ([ad53009](https://www.github.com/werf/trdl/commit/ad53009897be35ea4539b27626f03a6ae9f1928e))
+* **actions:** create setup-app action ([a1097f2](https://www.github.com/werf/trdl/commit/a1097f25230ca9947e024867c2e83b11e6618955))
+* **actions:** initial commit ([d84d3e6](https://www.github.com/werf/trdl/commit/d84d3e6877e5da02ae89777c4b39795fc5a2e883))
+* **actions:** update typescript boilerplate for werf/trdl-actions ([7ae303a](https://www.github.com/werf/trdl/commit/7ae303a61984cc540a48fa73952c11b7a670d933))
 * **client, add:** make root version and sha parameters optional ([ba6f254](https://www.github.com/werf/trdl/commit/ba6f25424599c4a3df4cb0f98f04639bf69b60f1))
+* **release:** add release process ([#323](https://www.github.com/werf/trdl/issues/323)) ([6bbfc9a](https://www.github.com/werf/trdl/commit/6bbfc9a413bf6270448d03f9e81bdbe4fa7bf718))
+
+
+### Bug Fixes
+
+* **actions:** disable trdl self updating ([e27dd18](https://www.github.com/werf/trdl/commit/e27dd18462177d7ad4752e69c0309431458d4d4a))
 
 ## [0.10.0](https://www.github.com/werf/trdl/compare/v0.9.0...v0.10.0) (2025-04-14)
 
