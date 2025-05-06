@@ -2,6 +2,6 @@ groups:
   - name: "0"
     channels:
       - name: alpha
-        version: 0.8.3
+        version: 0.11.0
       - name: stable
         version: 0.8.3
