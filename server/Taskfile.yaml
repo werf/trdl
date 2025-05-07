@@ -105,7 +105,7 @@ tasks:
       - docker run --rm --volume ./:/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
       - mkdir -p {{.minio_data_dir}}
       - |
-        docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} \
+        docker run --name {{.minio_container}} --detach --rm -e MC_HOST_main=http://minioadmin:minioadmin@localhost:{{.minio_port}} -p {{.minio_port}}:{{.minio_port}} \
         -p {{.minio_console_port}}:{{.minio_console_port}} --volume ./{{.minio_data_dir}}:/data minio/minio server /data \
         --console-address ":{{.minio_console_port}}"
       - |
