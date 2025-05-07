@@ -154,7 +154,6 @@ func (c *TrdlClient) watchTask(projectName, taskID string) error {
 	defer cancel()
 
 	g, ctx := errgroup.WithContext(ctx)
-
 	g.Go(func() error {
 		return c.watchTaskLog(ctx, projectName, taskID)
 	})
@@ -214,9 +213,18 @@ func (c *TrdlClient) getTaskStatus(projectName, taskID string) (string, string, 
 	return task.Status, task.Reason, nil
 }
 
-func (c *TrdlClient) getTaskLogs(projectName, taskID string) (string, error) {
+func (c *TrdlClient) getTaskLogs(projectName, taskID string, offset int) (string, error) {
 	log := c.logger.With("taskID", taskID, "project", projectName)
-	resp, err := c.vaultClient.Logical().Read(fmt.Sprintf("%s/task/%s/log", projectName, taskID))
+
+	data := map[string][]string{
+		"offset": {fmt.Sprintf("%d", offset)},
+		"limit":  {"1000000000"},
+	}
+	resp, err := c.vaultClient.Logical().ReadWithData(
+		fmt.Sprintf("%s/task/%s/log", projectName, taskID),
+		data,
+	)
+
 	if err != nil {
 		log.Error(fmt.Sprintf("failed to fetch task logs: %v", err))
 		return "", nil
@@ -242,14 +250,13 @@ func (c *TrdlClient) getTaskLogs(projectName, taskID string) (string, error) {
 
 func (c *TrdlClient) watchTaskLog(ctx context.Context, projectName, taskID string) error {
 	log := c.logger.With("taskId", taskID, "project", projectName)
-	var lastLines []string
-
+	offset := 0
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		default:
-			logData, err := c.getTaskLogs(projectName, taskID)
+			logData, err := c.getTaskLogs(projectName, taskID, offset)
 			if err != nil {
 				return fmt.Errorf("failed to get task logs: %w", err)
 			}
@@ -259,13 +266,10 @@ func (c *TrdlClient) watchTaskLog(ctx context.Context, projectName, taskID strin
 			}
 
 			lines := cleanAndSplitLog(logData)
-
-			newLines := diffLines(lastLines, lines)
-			for _, line := range newLines {
+			for _, line := range lines {
 				log.Info(line)
 			}
-
-			lastLines = lines
+			offset += len(logData)
 			time.Sleep(2 * time.Second)
 		}
 	}
@@ -278,24 +282,11 @@ func cleanAndSplitLog(log string) []string {
 
 	var cleanedLines []string
 	for _, line := range lines {
-		cleanedLine := re.ReplaceAllString(line, "")
-		if cleanedLine != "" {
-			cleanedLines = append(cleanedLines, cleanedLine)
+		line = re.ReplaceAllString(line, "")
+		if line != "" {
+			cleanedLines = append(cleanedLines, line)
 		}
 	}
 
 	return cleanedLines
-}
-
-func diffLines(oldLines, newLines []string) []string {
-	if len(oldLines) == 0 {
-		return newLines
-	}
-
-	lastIndex := len(oldLines)
-	if lastIndex >= len(newLines) {
-		return nil
-	}
-
-	return newLines[lastIndex:]
 }
