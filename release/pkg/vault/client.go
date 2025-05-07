@@ -15,6 +15,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	requestLimit = 1000000000
+)
+
 type TrdlClient struct {
 	vaultClient *api.Client
 	logger      *logger.Logger
@@ -218,7 +222,7 @@ func (c *TrdlClient) getTaskLogs(projectName, taskID string, offset int) (string
 
 	data := map[string][]string{
 		"offset": {fmt.Sprintf("%d", offset)},
-		"limit":  {"1000000000"},
+		"limit":  {fmt.Sprintf("%d", requestLimit)},
 	}
 	resp, err := c.vaultClient.Logical().ReadWithData(
 		fmt.Sprintf("%s/task/%s/log", projectName, taskID),
