@@ -21,6 +21,7 @@ type TrdlClient struct {
 	enableRetry bool
 	maxAttempts int
 	delay       time.Duration
+	errorHelper ErrorHelper
 }
 
 type Task struct {
@@ -54,12 +55,18 @@ func NewTrdlClient(opts NewTrdlClientOpts) (*TrdlClient, error) {
 
 	client.SetToken(opts.Token)
 
+	errorHelper := NewErrorHelper([]string{
+		"server is busy",
+		"not enough verified PGP signatures",
+	})
+
 	return &TrdlClient{
 		vaultClient: client,
 		logger:      opts.Logger,
 		enableRetry: opts.Retry,
 		maxAttempts: opts.MaxAttempts,
 		delay:       opts.Delay,
+		errorHelper: *errorHelper,
 	}, nil
 }
 
@@ -90,8 +97,10 @@ func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}
 	operation := func() error {
 		resp, err := c.longRunningWrite(path, data)
 		if err != nil {
-			log.Error(fmt.Sprintf("%v", err))
-			return err
+			if c.errorHelper.isRetriableError(err) {
+				return err
+			}
+			return backoff.Permanent(err)
 		}
 
 		taskID, ok := resp.Data["task_uuid"].(string)
@@ -147,7 +156,6 @@ func (c *TrdlClient) Release(projectName, gitTag string) error {
 	}
 	return nil
 }
-
 func (c *TrdlClient) watchTask(projectName, taskID string) error {
 	log := c.logger.With("taskId", taskID, "project", projectName)
 	ctx, cancel := context.WithCancel(context.Background())
