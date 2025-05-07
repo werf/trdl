@@ -21,6 +21,7 @@ type TrdlClient struct {
 	enableRetry bool
 	maxAttempts int
 	delay       time.Duration
+	errorHelper ErrorHelper
 }
 
 type Task struct {
@@ -54,12 +55,18 @@ func NewTrdlClient(opts NewTrdlClientOpts) (*TrdlClient, error) {
 
 	client.SetToken(opts.Token)
 
+	errorHelper := NewErrorHelper([]string{
+		"server is busy",
+		"not enough verified PGP signatures",
+	})
+
 	return &TrdlClient{
 		vaultClient: client,
 		logger:      opts.Logger,
 		enableRetry: opts.Retry,
 		maxAttempts: opts.MaxAttempts,
 		delay:       opts.Delay,
+		errorHelper: *errorHelper,
 	}, nil
 }
 
@@ -90,17 +97,31 @@ func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}
 	operation := func() error {
 		resp, err := c.longRunningWrite(path, data)
 		if err != nil {
-			log.Error(fmt.Sprintf("%v", err))
-			return err
+			if c.errorHelper.isRetriableError(err) {
+				return err
+			}
+			return backoff.Permanent(err)
 		}
 
 		taskID, ok := resp.Data["task_uuid"].(string)
 		if !ok {
 			log.Error("invalid response from Vault: missing task_uuid")
-			return err
+			return backoff.Permanent(fmt.Errorf("missing task_uuid in response"))
 		}
 
-		return action(taskID, c.logger)
+		err = action(taskID, c.logger)
+		if err != nil {
+			if errors.Is(err, ErrTaskFailed) || errors.Is(err, ErrTaskStatusUnavailable) {
+				return backoff.Permanent(err)
+			}
+
+			if c.errorHelper.isRetriableError(err) {
+				return err
+			}
+			return backoff.Permanent(err)
+		}
+		return nil
+
 	}
 
 	err := backoff.RetryNotify(
@@ -132,7 +153,6 @@ func (c *TrdlClient) Publish(projectName string) error {
 	}
 	return nil
 }
-
 func (c *TrdlClient) Release(projectName, gitTag string) error {
 	err := c.withBackoffRequest(
 		fmt.Sprintf("%s/release", projectName),
@@ -147,7 +167,6 @@ func (c *TrdlClient) Release(projectName, gitTag string) error {
 	}
 	return nil
 }
-
 func (c *TrdlClient) watchTask(projectName, taskID string) error {
 	log := c.logger.With("taskId", taskID, "project", projectName)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -164,14 +183,14 @@ func (c *TrdlClient) watchTask(projectName, taskID string) error {
 			status, reason, err := c.getTaskStatus(projectName, taskID)
 			if err != nil {
 				log.Error(fmt.Sprintf("failed to get task status: %v", err))
-				return ErrTaskStatusUnavailable
+				return fmt.Errorf("%w: %s", ErrTaskStatusUnavailable, reason)
 			}
 
 			switch status {
 			case "FAILED":
 				log.Error(fmt.Sprintf("Task failed: %s", reason))
 				cancel()
-				return ErrTaskFailed
+				return fmt.Errorf("%w: %s", ErrTaskFailed, reason)
 			case "SUCCEEDED":
 				cancel()
 				return nil
@@ -270,7 +289,6 @@ func (c *TrdlClient) watchTaskLog(ctx context.Context, projectName, taskID strin
 		}
 	}
 }
-
 func cleanAndSplitLog(log string) []string {
 	lines := strings.Split(log, "\n")
 
