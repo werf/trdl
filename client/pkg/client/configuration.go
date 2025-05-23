@@ -111,7 +111,7 @@ func (c *configuration) load() error {
 func (c configuration) Save(configPath string) error {
 	data, err := yaml.Marshal(&c)
 	if err != nil {
-		return fmt.Errorf("yaml marshalling failed: %w", err)
+		return fmt.Errorf("yaml marshaling failed: %w", err)
 	}
 
 	if err := ioutil.WriteFile(configPath, data, os.ModePerm); err != nil {
