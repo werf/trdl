@@ -131,11 +131,15 @@ func (m *Manager) Paths() []*framework.Path {
 					Type:        framework.TypeInt,
 					Description: "Limit of characters",
 					Default:     fieldDefaultLimit,
+					Required:    false,
+					Query:       true,
 				},
 				fieldNameOffset: {
 					Type:        framework.TypeInt,
 					Description: "Offset",
 					Default:     0,
+					Required:    false,
+					Query:       true,
 				},
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
