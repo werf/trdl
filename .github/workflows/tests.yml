@@ -120,7 +120,7 @@ jobs:
         uses: qltysh/qlty-action/coverage@v1
         with:
           token: ${{secrets.QLTY_COVERAGE_TOKEN}}
-          files: tests_coverage/*.out
+          files: tests_coverage/*_coverage/*.out
           
   notification:
     name: Notification
