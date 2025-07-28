@@ -18,6 +18,9 @@ includes:
   release:
     taskfile: ./release/Taskfile.yaml
     dir: ./release
+  deps:
+    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/chore/taskfile/add-taskfile/Taskfile.deps.yml
+    flatten: true
 
 tasks:
   sign:
@@ -39,7 +42,7 @@ tasks:
       - task: server:format
       - task: client:format
       - task: e2e:format
-      - task: docs:format
+      - task: docs:format:prettier
       - task: release:format
 
   lint:
@@ -48,39 +51,8 @@ tasks:
       - task: server:lint
       - task: client:lint
       - task: e2e:lint
-      - task: docs:lint
+      - task: docs:lint:prettier
       - task: release:lint
-
-  deps:install:
-    desc: "Install all dependencies."
-    deps:
-      - deps:install:gci
-      - deps:install:ginkgo
-      - deps:install:golangci-lint
-      - deps:install:gofumpt
-
-  deps:install:gci:
-    desc: "Install gci binary."
-    cmds:
-      - go install github.com/daixiang0/gci@v0.13.5
-
-  deps:install:ginkgo:
-    desc: "Install ginkgo binary."
-    cmds:
-      - |
-        version="$(go list -m -f '{{ printf `{{ .Version }}` }}' github.com/onsi/ginkgo/v2)"
-        go install {{.CLI_ARGS}} github.com/onsi/ginkgo/v2/ginkgo@${version}
-    dir: e2e
-
-  deps:install:golangci-lint:
-    desc: "Install golangci-lint binary."
-    cmds:
-      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin {{.golangcilintVersion | default "v1.57.1"}}
-
-  deps:install:gofumpt:
-    desc: "Install gofumpt binary."
-    cmds:
-      - go install mvdan.cc/gofumpt@v0.7.0
 
   build:dev:all:
     desc: "Build all dev binaries."
