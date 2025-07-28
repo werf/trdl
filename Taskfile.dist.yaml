@@ -21,6 +21,8 @@ includes:
   deps:
     taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/chore/taskfile/add-taskfile/Taskfile.deps.yml
     flatten: true
+    vars:
+      paths: "e2e"
 
 tasks:
   sign:

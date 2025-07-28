@@ -35,10 +35,10 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install golangci-lint
-        run: task -p deps:install:golangci-lint
+        run: task --yes -p deps:install:golangci-lint
 
       - name: Lint
-        run: task lint
+        run: task --yes lint
 
   notification:
     needs:
