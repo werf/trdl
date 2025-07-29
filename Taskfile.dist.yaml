@@ -19,7 +19,7 @@ includes:
     taskfile: ./release/Taskfile.yaml
     dir: ./release
   deps:
-    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/chore/taskfile/add-taskfile/Taskfile.deps.yml
+    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/main/Taskfile.deps.yml
     flatten: true
     vars:
       paths: "e2e"

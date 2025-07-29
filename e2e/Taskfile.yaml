@@ -4,7 +4,7 @@ silent: true
 
 includes:
   e2e:
-    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/chore/taskfile/add-taskfile/Taskfile.format_lint.yml
+    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/main/Taskfile.format_lint.yml
     flatten: true
     vars:
       paths: "tests/**"
