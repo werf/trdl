@@ -11,8 +11,9 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/hashicorp/vault/api"
-	"github.com/werf/trdl/client/pkg/logger"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/werf/trdl/client/pkg/logger"
 )
 
 const (
@@ -109,7 +110,6 @@ func (c *TrdlClient) withBackoffRequest(path string, data map[string]interface{}
 			return backoff.Permanent(err)
 		}
 		return nil
-
 	}
 
 	err := backoff.RetryNotify(
@@ -140,6 +140,7 @@ func (c *TrdlClient) Publish(projectName string) error {
 	}
 	return nil
 }
+
 func (c *TrdlClient) Release(projectName, gitTag string) error {
 	err := c.withBackoffRequest(
 		fmt.Sprintf("%s/release", projectName),
@@ -154,6 +155,7 @@ func (c *TrdlClient) Release(projectName, gitTag string) error {
 	}
 	return nil
 }
+
 func (c *TrdlClient) watchTask(projectName, taskID string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -225,7 +227,6 @@ func (c *TrdlClient) getTaskLogs(projectName, taskID string, offset int) (string
 		fmt.Sprintf("%s/task/%s/log", projectName, taskID),
 		data,
 	)
-
 	if err != nil {
 		c.logger.Error(fmt.Sprintf("failed to fetch task logs: %v", err))
 		return "", nil
@@ -274,6 +275,7 @@ func (c *TrdlClient) watchTaskLog(ctx context.Context, projectName, taskID strin
 		}
 	}
 }
+
 func cleanAndSplitLog(log string) []string {
 	lines := strings.Split(log, "\n")
 

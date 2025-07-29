@@ -112,41 +112,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: e2e/go.mod
-
       - name: Download coverage artifact
         uses: actions/download-artifact@v4
         with:
           path: tests_coverage
-
-      - name: Prepare environment
-        run: |
-          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-          chmod +x ./cc-test-reporter
-          go install github.com/wadey/gocovmerge@latest
-
-      - name: Prepare coverage file
-        run: |
-          coverage_files=$(find tests_coverage -name '*.out')
-          gocovmerge ${coverage_files[@]} > coverage.out
-
-      - name: Format and upload
-        run: |
-          export GIT_BRANCH=${GITHUB_REF:11}
-          export GIT_COMMIT_SHA=$GITHUB_SHA
-
-          ./cc-test-reporter format-coverage \
-              -t=gocov \
-              -p=github.com/werf/trdl/ \
-              coverage.out
-
-          ./cc-test-reporter upload-coverage
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+      - name: Upload coverage report
+        uses: qltysh/qlty-action/coverage@v1
+        with:
+          token: ${{secrets.QLTY_COVERAGE_TOKEN}}
+          files: tests_coverage/*_coverage/*.out
           
   notification:
     name: Notification

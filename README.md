@@ -20,6 +20,7 @@ The project team releases new versions of the software and switches them in the 
 
 <p align="center">
   <img alt="Scheme" src="https://raw.githubusercontent.com/werf/trdl/main/docs/images/intro-scheme_en.svg" width="50%">
+  <a href="https://qlty.sh/gh/werf/projects/trdl"><img src="https://qlty.sh/gh/werf/projects/trdl/coverage.svg" alt="Code Coverage" /></a>
 </p>
 
 We have been successfully using trdl to continuously deliver our [werf CI/CD tool](https://github.com/werf/werf) to CI runners and user hosts.
