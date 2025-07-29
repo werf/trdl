@@ -5,10 +5,10 @@
 [![github discussions][discussions-badge]][discussions-link]
 [![coc][coc-badge]][coc-link]
 
-[maintainability-badge]:    https://api.codeclimate.com/v1/badges/a95ed9e90acae45f40ee/maintainability
-[maintainability-link]:     https://codeclimate.com/github/werf/trdl/maintainability
-[coverage-badge]:           https://api.codeclimate.com/v1/badges/a95ed9e90acae45f40ee/test_coverage
-[coverage-link]:            https://codeclimate.com/github/werf/trdl/test_coverage
+[maintainability-badge]:    https://qlty.sh/gh/werf/projects/trdl/maintainability.svg
+[maintainability-link]:     https://qlty.sh/gh/werf/projects/trdl
+[coverage-badge]:           https://qlty.sh/gh/werf/projects/trdl/coverage.svg
+[coverage-link]:            https://qlty.sh/gh/werf/projects/trdl
 [discussions-badge]:        https://img.shields.io/github/discussions/werf/trdl
 [discussions-link]:         https://github.com/werf/trdl/discussions
 [coc-badge]:                https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg
@@ -20,7 +20,6 @@ The project team releases new versions of the software and switches them in the 
 
 <p align="center">
   <img alt="Scheme" src="https://raw.githubusercontent.com/werf/trdl/main/docs/images/intro-scheme_en.svg" width="50%">
-  <a href="https://qlty.sh/gh/werf/projects/trdl"><img src="https://qlty.sh/gh/werf/projects/trdl/coverage.svg" alt="Code Coverage" /></a>
 </p>
 
 We have been successfully using trdl to continuously deliver our [werf CI/CD tool](https://github.com/werf/werf) to CI runners and user hosts.
