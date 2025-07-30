@@ -121,6 +121,7 @@ jobs:
         with:
           token: ${{secrets.QLTY_COVERAGE_TOKEN}}
           files: tests_coverage/*_coverage/*.out
+          skip-errors: false
           
   notification:
     name: Notification
