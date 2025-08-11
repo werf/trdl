@@ -1,5 +1,14 @@
 # Changelog
 
+### [0.11.1](https://www.github.com/werf/trdl/compare/v0.11.0...v0.11.1) (2025-08-11)
+
+
+### Bug Fixes
+
+* **dev:** fix dev minio setup ([#334](https://www.github.com/werf/trdl/issues/334)) ([81fd71b](https://www.github.com/werf/trdl/commit/81fd71bcdda4aec3d7d8203aa32dac3a1837d851))
+* **release, trdl-vault:** fix incomplete log ([#335](https://www.github.com/werf/trdl/issues/335)) ([d8ae4de](https://www.github.com/werf/trdl/commit/d8ae4de96943c94b552e19b0865fa9dcf578e69c))
+* **release, trdl-vault:** perform retry not on every error ([#336](https://www.github.com/werf/trdl/issues/336)) ([eb27857](https://www.github.com/werf/trdl/commit/eb27857869c3c7c66cf6ac9cfe21d95dab39393b))
+
 ## [0.11.0](https://www.github.com/werf/trdl/compare/v0.10.0...v0.11.0) (2025-05-05)
 
 
