@@ -2,6 +2,11 @@ version: "3"
 
 silent: true
 
+includes:
+  docs:
+    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/main/Taskfile.format_lint.yml
+    flatten: true
+
 vars:
   built_trdl_bin_path: "trdl"
   reference_sidebar_path: "./_data/sidebars/reference.yml"
@@ -48,37 +53,6 @@ tasks:
         cat {{.vault_plugin_partial_path}} >> {{.reference_sidebar_path}}
         echo "" >> {{.reference_sidebar_path}}
         cat {{.reference_partial_path}} >> {{.reference_sidebar_path}}
-
-  lint:
-    desc: 'Run all linters in parallel. Important vars: "paths".'
-    deps:
-      - lint:prettier
-
-  lint:prettier:
-    desc: "Check if prettier-formatted."
-    deps:
-      - lint:prettier:yaml
-
-  lint:prettier:yaml:
-    desc: "Check if yaml files are prettier-formatted."
-    cmds:
-      - docker run --rm -v $(pwd):/work -v ./../.prettierignore/:/work/.prettierignore tmknom/prettier -c "**/*.yaml" "**/*.yml"
-
-  format:
-    desc: 'Run all code formatters. Important vars: "paths".'
-    run: once
-    cmds:
-      - task: format:prettier
-
-  format:prettier:
-    desc: "Format with prettier."
-    deps:
-      - format:prettier:yaml
-
-  format:prettier:yaml:
-    desc: "Check if yaml files are prettier-formatted."
-    cmds:
-      - docker run --rm -v $(pwd):/work -v ./../.prettierignore/:/work/.prettierignore tmknom/prettier -w "**/*.yaml" "**/*.yml"
 
   check-broken-links:
     desc: "Check if links in docs is broken."

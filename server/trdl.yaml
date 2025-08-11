@@ -1,5 +1,5 @@
 docker_image: registry.werf.io/trdl/builder:51b030fe472ec6caa59b068a364bb835ea140588@sha256:f71af3da98446de12e5bb47a789517ba1a17cb19fb17cfc78699552ebcc2c3cf
 commands:
-  - task server:build:dist version={{ .Tag }}
-  - task server:verify:dist:binaries version={{ .Tag }}
+  - TASK_X_REMOTE_TASKFILES=1 task --yes server:build:dist version={{ .Tag }}
+  - TASK_X_REMOTE_TASKFILES=1 task --yes server:verify:dist:binaries version={{ .Tag }}
   - cp -a server/dist/{{ .Tag }}/* /result

@@ -11,6 +11,9 @@ on:
     types: [check-broken-links]
   workflow_dispatch:
 
+env:
+  TASK_X_REMOTE_TASKFILES: 1
+
 jobs:
   check_links:
     name: Links checker
@@ -22,19 +25,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Install Task
         uses: arduino/setup-task@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check ru broken links 
+      - name: Check ru broken links
         if: matrix.lang == 'ru'
-        run: task docs:check-broken-links
+        run: task --yes docs:check-broken-links
 
       - name: Check en broken links
         if: matrix.lang == 'en'
-        run: task docs:check-broken-links language=en
+        run: task --yes docs:check-broken-links language=en
 
   notification:
     name: Notification

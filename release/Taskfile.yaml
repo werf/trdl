@@ -2,71 +2,13 @@ version: "3"
 
 silent: true
 
+includes:
+  release:
+    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/main/Taskfile.format_lint.yml
+    flatten: true
+    vars:
+      paths: "cmd/** pkg/**"
 tasks:
-  format:
-    desc: 'Run all code formatters. Important vars: "paths".'
-    run: once
-    cmds:
-      - task: format:gci
-      - task: format:gofumpt
-      - task: format:prettier
-
-  format:gci:
-    desc: 'Format code with gci. Important vars: "paths".'
-    cmds:
-      - gci write -s standard -s default -s 'Prefix(github.com/werf/)' {{.CLI_ARGS}} {{.paths | default "pkg/ cmd/"}}
-
-  format:gofumpt:
-    desc: 'Format code with gofumpt. Important vars: "paths".'
-    cmds:
-      - gofumpt -extra -w {{.CLI_ARGS}} {{.paths | default "pkg/ cmd/ "}}
-
-  format:prettier:
-    desc: "Format with prettier."
-    deps:
-      - format:prettier:yaml
-
-  format:prettier:yaml:
-    desc: "Check if yaml files are prettier-formatted."
-    cmds:
-      - docker run --rm -v $(pwd):/work tmknom/prettier -w "**/*.yaml"
-
-  lint:
-    desc: 'Run all linters in parallel. Important vars: "paths".'
-    deps:
-      - lint:golangci-lint
-      - lint:prettier
-
-  lint:golangci-lint:go:
-    desc: 'Lint with golangci-lint. Important vars: "paths".'
-    cmds:
-      - golangci-lint run {{.CLI_ARGS}} --config ../.golangci.yaml {{.paths | default "./..."}}
-    env:
-      CGO_ENABLED: "0"
-
-  _lint:golangci-lint:go:
-    deps:
-      - task: lint:golangci-lint:go
-        vars:
-          paths: "{{.paths}}"
-
-  lint:golangci-lint:
-    desc: 'Lint with golangci-lint. Important vars: "paths".'
-    deps:
-      - task: _lint:golangci-lint:go
-        vars:
-          paths: "{{.paths}}"
-
-  lint:prettier:
-    desc: "Check if prettier-formatted."
-    deps:
-      - lint:prettier:yaml
-
-  lint:prettier:yaml:
-    desc: "Check if yaml files are prettier-formatted."
-    cmds:
-      - docker run --rm -v $(pwd):/work tmknom/prettier -c "**/*.yaml"
-
   build:
     desc: "Build client dev binary."
     run: once

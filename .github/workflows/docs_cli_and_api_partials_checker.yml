@@ -6,6 +6,8 @@ on:
       - "client/cmd/**"
       - "server/**"
   workflow_dispatch:
+env:
+  TASK_X_REMOTE_TASKFILES: 1
 
 jobs:
   check:
@@ -26,7 +28,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up git config
-        run: task ci:setup:git-config
-        
+        run: task --yes ci:setup:git-config
+
       - name: Regen partials
-        run: task docs:gen
+        run: task --yes docs:gen

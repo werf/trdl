@@ -15,6 +15,9 @@ on:
     types: [tests]
   workflow_dispatch:
 
+env:
+  TASK_X_REMOTE_TASKFILES: 1
+
 jobs:
   unit_server:
     name: Tests
@@ -39,17 +42,17 @@ jobs:
           sudo apt-get install -y gpg
 
       - name: Set up git config
-        run: task ci:setup:git-config
+        run: task --yes ci:setup:git-config
 
       - name: Install 3p-git-signatures
-        run: task ci:install:3p-git-signatures
+        run: task --yes ci:install:3p-git-signatures
 
       - name: Install ginkgo
-        run: task deps:install:ginkgo
+        run: task --yes deps:install:ginkgo
 
       - name: Test
         run: |
-          task server:test:unit
+          task --yes server:test:unit
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -76,12 +79,12 @@ jobs:
 
       - name: Set up prebuilt trdl test binary
         run: |
-          task client:build-with-coverage
+          task --yes client:build-with-coverage
           echo TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/bin/coverage/trdl >> $GITHUB_ENV
           echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/e2e >> $GITHUB_ENV
 
       - name: Set up git config
-        run: task ci:setup:git-config
+        run: task --yes ci:setup:git-config
 
       - name: Prepare environment
         run: |
@@ -89,13 +92,13 @@ jobs:
           sudo apt-get install -y gpg
 
       - name: Install 3p-git-signatures
-        run: task ci:install:3p-git-signatures
+        run: task --yes ci:install:3p-git-signatures
 
       - name: Install ginkgo
-        run: task -p deps:install:ginkgo
+        run: task --yes -p deps:install:ginkgo
 
       - name: Test
-        run: task e2e:test:e2e
+        run: task --yes e2e:test:e2e
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
