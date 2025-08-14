@@ -2,7 +2,7 @@ import { getInput, platform, addPath, info, startGroup, endGroup } from '@action
 import { HttpClient } from '@actions/http-client'
 import { downloadTool, find, cacheFile } from '@actions/tool-cache'
 import { chmodSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
 import { GpgCli } from '../../lib/gpg-cli'
 import { Defaults, TrdlCli } from '../../lib/trdl-cli'
 import { format } from 'util'
@@ -94,11 +94,15 @@ function findTrdlCache(toolName: string, toolVersion: string): string {
 async function installTrdl(binPath: string, toolName: string, toolVersion: string): Promise<void> {
   // install tool
   const cachedPath = await cacheFile(binPath, toolName, toolName, toolVersion)
-  // add tool to $PATH
-  addPath(cachedPath)
   const cachedFile = join(cachedPath, toolName)
+  configureTrdl(cachedFile)
+}
+
+function configureTrdl(cachedFile: string): void {
   // set permissions
   chmodSync(cachedFile, 0o755)
+  // add tool to $PATH
+  addPath(dirname(cachedFile))
 }
 
 export async function Run(): Promise<void> {
@@ -122,7 +126,12 @@ export async function Do(trdlCli: TrdlCli, gpgCli: GpgCli, inputs: inputs): Prom
   const toolCache = findTrdlCache(trdlCli.name, options.version)
 
   if (toolCache) {
-    info(`Installation skipped. ${trdlCli.name}@v${options.version} is found in tool cache ${toolCache}.`)
+    info(`Downloading skipped. ${trdlCli.name}@v${options.version} is already found in tool cache ${toolCache}.`)
+
+    info(`Configuring ${toolCache} permissions and adding it to the $PATH.`)
+    configureTrdl(toolCache)
+
+    info(`Verifying ${trdlCli.name} availability from $PATH.`)
     await trdlCli.mustExist()
 
     info(`Checking ${trdlCli.name} version before updating.`)
@@ -140,6 +149,7 @@ export async function Do(trdlCli: TrdlCli, gpgCli: GpgCli, inputs: inputs): Prom
     return
   }
 
+  info(`Verifying ${gpgCli.name} availability from $PATH.`)
   await gpgCli.mustGnuGP()
 
   const [binUrl, sigUrl, ascUrl] = formatDownloadUrls(options.version)
