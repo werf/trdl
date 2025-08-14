@@ -39,6 +39,7 @@ export async function Do(trdlCli: TrdlCli, p: preset) {
   const args = noPreset ? mapInputsCmdArgs(inputs) : getAddArgs(p)
   info(format(`Options for finding and/or adding application=%o.`, args))
 
+  info(`Verifying ${trdlCli.name} availability from $PATH.`)
   await trdlCli.mustExist()
 
   const list = await trdlCli.list()

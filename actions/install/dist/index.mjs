@@ -28,7 +28,7 @@ import require$$0$9 from 'diagnostics_channel';
 import require$$2$2 from 'child_process';
 import require$$6$1 from 'timers';
 import { chmodSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -30006,11 +30006,14 @@ function findTrdlCache(toolName, toolVersion) {
 async function installTrdl(binPath, toolName, toolVersion) {
     // install tool
     const cachedPath = await toolCacheExports.cacheFile(binPath, toolName, toolName, toolVersion);
-    // add tool to $PATH
-    coreExports.addPath(cachedPath);
     const cachedFile = join(cachedPath, toolName);
+    configureTrdl(cachedFile);
+}
+function configureTrdl(cachedFile) {
     // set permissions
     chmodSync(cachedFile, 0o755);
+    // add tool to $PATH
+    coreExports.addPath(dirname(cachedFile));
 }
 async function Run() {
     const trdlCli = new TrdlCli();
@@ -30027,7 +30030,10 @@ async function Do(trdlCli, gpgCli, inputs) {
     coreExports.info(format(`${trdlCli.name} installation options=%o`, options));
     const toolCache = findTrdlCache(trdlCli.name, options.version);
     if (toolCache) {
-        coreExports.info(`Installation skipped. ${trdlCli.name}@v${options.version} is found in tool cache ${toolCache}.`);
+        coreExports.info(`Downloading skipped. ${trdlCli.name}@v${options.version} is already found in tool cache ${toolCache}.`);
+        coreExports.info(`Configuring ${toolCache} permissions and adding it to the $PATH.`);
+        configureTrdl(toolCache);
+        coreExports.info(`Verifying ${trdlCli.name} availability from $PATH.`);
         await trdlCli.mustExist();
         coreExports.info(`Checking ${trdlCli.name} version before updating.`);
         await trdlCli.version();
@@ -30041,6 +30047,7 @@ async function Do(trdlCli, gpgCli, inputs) {
         coreExports.endGroup();
         return;
     }
+    coreExports.info(`Verifying ${gpgCli.name} availability from $PATH.`);
     await gpgCli.mustGnuGP();
     const [binUrl, sigUrl, ascUrl] = formatDownloadUrls(options.version);
     coreExports.info(`${trdlCli.name} binUrl=${binUrl}`);
