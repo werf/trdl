@@ -1,4 +1,4 @@
-name: Actions. Test e2e install
+name: Actions. Test e2e install and reuse
 
 on: [push]
 
@@ -15,5 +15,21 @@ jobs:
         uses: ./actions/install
 
       - name: Use trdl binary
-        run: |
-          trdl --help
+        run: trdl --help
+
+  test-e2e-reuse:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install trdl once
+        uses: ./actions/install
+
+      - name: Reuse trdl from cache
+        uses: ./actions/install
+
+      - name: Use trdl binary
+        run: trdl --help
