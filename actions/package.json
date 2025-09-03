@@ -24,7 +24,7 @@
     "format:check": "npx prettier --check .",
     "lint": "npx eslint .",
     "package": "npx rollup --config rollup.config.mjs",
-    "package:local-unix-debug": "npm run package && export $(grep -v '^#' .env.unix-debug) && node --inspect-brk setup-app/dist/index.mjs",
+    "package:local-unix-debug": "npm run package && export $(grep -v '^#' .env.unix-debug) && node --inspect-brk install/dist/index.mjs",
     "test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
     "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package"
   },

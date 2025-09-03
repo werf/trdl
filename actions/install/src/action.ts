@@ -87,7 +87,7 @@ async function downloadParallel(binUrl: string, sigUrl: string, ascUrl: string):
   ])
 }
 
-function findTrdlCache(toolName: string, toolVersion: string): string {
+function findTrdlCachePath(toolName: string, toolVersion: string): string {
   return find(toolName, toolVersion)
 }
 
@@ -123,13 +123,13 @@ export async function Do(trdlCli: TrdlCli, gpgCli: GpgCli, inputs: inputs): Prom
   const options = await getOptions(inputs, defaults)
   info(format(`${trdlCli.name} installation options=%o`, options))
 
-  const toolCache = findTrdlCache(trdlCli.name, options.version)
+  const trdlCachePath = findTrdlCachePath(trdlCli.name, options.version)
 
-  if (toolCache) {
-    info(`Downloading skipped. ${trdlCli.name}@v${options.version} is already found in tool cache ${toolCache}.`)
+  if (trdlCachePath) {
+    info(`Downloading skipped. ${trdlCli.name}@v${options.version} is already found in dir = ${trdlCachePath}.`)
 
-    info(`Configuring ${toolCache} permissions and adding it to the $PATH.`)
-    configureTrdl(toolCache)
+    info(`Configuring ${trdlCachePath} permissions and adding it to the $PATH.`)
+    configureTrdl(join(trdlCachePath, trdlCli.name))
 
     info(`Verifying ${trdlCli.name} availability from $PATH.`)
     await trdlCli.mustExist()
