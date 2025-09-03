@@ -76,16 +76,17 @@ describe('install/action.ts', function () {
     beforeEach(function () {
       trdlCli.defaults.mockReturnValue(defaults)
     })
-    it.skip('should not install trdl if tool cache is found', async function () {
-      const someCache = '/path/to/tool'
-      toolCache.find.mockReturnValueOnce(someCache)
+    it('should not install trdl if tool cache path is already found', async function () {
+      const cachedPath = '/tmp/installed/path'
+      toolCache.find.mockReturnValueOnce(cachedPath)
 
       await Do(trdlCli, gpgCli, inputs)
 
       expect(toolCache.find).toHaveBeenCalledWith(trdlCli.name, inputs.version)
+      expect(fs.chmodSync).toHaveBeenCalledWith(join(cachedPath, trdlCli.name), 0o755)
+      expect(core.addPath).toHaveBeenCalledWith(cachedPath)
       expect(trdlCli.mustExist).toHaveBeenCalled()
-      expect(trdlCli.version).toHaveBeenCalledTimes(2)
-      expect(trdlCli.update).toHaveBeenCalledWith(defaults)
+      expect(trdlCli.version).toHaveBeenCalled()
     })
     it('should install trdl if tool cache is not found', async function () {
       const binPath = '/tmp/cache/path'
@@ -106,8 +107,8 @@ describe('install/action.ts', function () {
       expect(gpgCli.import).toHaveBeenCalledWith(ascPath)
       expect(gpgCli.verify).toHaveBeenCalledWith(sigPath, binPath)
       expect(toolCache.cacheFile).toHaveBeenCalledWith(binPath, trdlCli.name, trdlCli.name, inputs.version)
-      expect(core.addPath).toHaveBeenCalledWith(cachedPath)
       expect(fs.chmodSync).toHaveBeenCalledWith(join(cachedPath, trdlCli.name), 0o755)
+      expect(core.addPath).toHaveBeenCalledWith(cachedPath)
       expect(trdlCli.version).toHaveBeenCalled()
     })
   })

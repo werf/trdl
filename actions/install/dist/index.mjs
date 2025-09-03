@@ -28,7 +28,7 @@ import require$$0$9 from 'diagnostics_channel';
 import require$$2$2 from 'child_process';
 import require$$6$1 from 'timers';
 import { chmodSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join, dirname } from 'node:path';
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -30000,7 +30000,7 @@ async function downloadParallel(binUrl, sigUrl, ascUrl) {
         toolCacheExports.downloadTool(ascUrl)
     ]);
 }
-function findTrdlCache(toolName, toolVersion) {
+function findTrdlCachePath(toolName, toolVersion) {
     return toolCacheExports.find(toolName, toolVersion);
 }
 async function installTrdl(binPath, toolName, toolVersion) {
@@ -30028,11 +30028,11 @@ async function Do(trdlCli, gpgCli, inputs) {
     coreExports.info(format(`${trdlCli.name} repository defaults=%o`, defaults));
     const options = await getOptions(inputs, defaults);
     coreExports.info(format(`${trdlCli.name} installation options=%o`, options));
-    const toolCache = findTrdlCache(trdlCli.name, options.version);
-    if (toolCache) {
-        coreExports.info(`Downloading skipped. ${trdlCli.name}@v${options.version} is already found in tool cache ${toolCache}.`);
-        coreExports.info(`Configuring ${toolCache} permissions and adding it to the $PATH.`);
-        configureTrdl(toolCache);
+    const trdlCachePath = findTrdlCachePath(trdlCli.name, options.version);
+    if (trdlCachePath) {
+        coreExports.info(`Downloading skipped. ${trdlCli.name}@v${options.version} is already found in dir = ${trdlCachePath}.`);
+        coreExports.info(`Configuring ${trdlCachePath} permissions and adding it to the $PATH.`);
+        configureTrdl(join(trdlCachePath, trdlCli.name));
         coreExports.info(`Verifying ${trdlCli.name} availability from $PATH.`);
         await trdlCli.mustExist();
         coreExports.info(`Checking ${trdlCli.name} version before updating.`);
