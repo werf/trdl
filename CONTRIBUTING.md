@@ -18,6 +18,23 @@ The first thing we recommend is to check the existing [issues](https://github.co
 3. Prepare an environment. To build and run trdl locally, you'll need to _at least_ have the following installed:
 
    - [Go](https://golang.org/doc/install) 1.23
+
+      **Important: Go Toolchain Configuration**
+
+      To prevent unwanted modifications to the `go.mod` file (specifically the automatic addition of a `toolchain` directive), you must set the following environment variable:
+
+      ```shell
+      export GOTOOLCHAIN=local
+      ```
+
+      We recommend adding this setting to your shell profile (e.g., `.bashrc`, `.zshrc`, or equivalent) to make it persistent across sessions:
+
+      ```shell
+      echo 'export GOTOOLCHAIN=local' >> ~/.bashrc
+      source ~/.bashrc
+      ```
+
+      This configuration ensures Go uses only the locally installed version of the tools instead of automatically selecting and potentially adding a toolchain version to `go.mod`, preventing unintended changes to the file.
    - [Docker](https://docs.docker.com/get-docker/)
    - [go-task](https://taskfile.dev/installation/) (build tool to run common workflows)
    - [ginkgo](https://onsi.github.io/ginkgo/#installing-ginkgo) (testing framework required to run tests)
