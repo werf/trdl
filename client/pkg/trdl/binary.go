@@ -3,12 +3,19 @@ package trdl
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func GetTrdlBinaryPath() (string, error) {
-	trdlBinaryPath, err := os.Executable()
+	exe, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("unable to determine trdl binary path: %w", err)
 	}
-	return trdlBinaryPath, nil
+
+	realExe, err := filepath.EvalSymlinks(exe)
+	if err == nil {
+		exe = realExe
+	}
+
+	return exe, nil
 }
