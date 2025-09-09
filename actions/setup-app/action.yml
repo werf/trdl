@@ -16,19 +16,19 @@ inputs:
     default: 'true'
   repo:
     description:
-      'The certain repository name. Required if present not given. For "trdl add", "trdl update" and "trdl bin-path".'
+      'The certain repository name. Required if preset not given. For "trdl add", "trdl update" and "trdl bin-path".'
     required: true
   url:
-    description: 'The certain repository url. Required if present not given. For "trdl add"'
+    description: 'The certain repository url. Required if preset not given. For "trdl add"'
     required: true
   root-version:
-    description: 'The certain repository root version. Required if present not given. For "trdl add"'
+    description: 'The certain repository root version. Required if preset not given. For "trdl add"'
     required: false
   root-sha512:
-    description: 'The certain repository root sha512. Required if present not given. For "trdl add"'
+    description: 'The certain repository root sha512. Required if preset not given. For "trdl add"'
     required: false
   group:
-    description: 'The certain group. Required if present not given. For both "trdl update" and "trdl bin-path"'
+    description: 'The certain group. Required if preset not given. For both "trdl update" and "trdl bin-path"'
     required: true
   channel:
     description: 'The one from allowed channels. For both "trdl update" and "trdl bin-path"'
