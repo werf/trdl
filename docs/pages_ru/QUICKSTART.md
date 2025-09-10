@@ -95,7 +95,7 @@ vault write trdl-test-project/configure @configuration.json
 **Добавление ключа**
 
 ```shell
-vault write werf/configure/trusted_pgp_public_key name=developer public_key=@developer.pgp
+vault write trdl-test-project/configure/trusted_pgp_public_key name=developer public_key=@developer.pgp
 ```
 
 где, `developer.pgp` — файл с публичным PGP-ключом, полученный в результате вызова команды `gpg --armor --output developer.pgp --export developer@trdl.dev`.
@@ -151,7 +151,7 @@ XaOlJrPDM5E9zw==
 **Листинг ключей**
 
 ```shell
-vault read werf/configure/trusted_pgp_public_key
+vault read trdl-test-project/configure/trusted_pgp_public_key
 ````
 
 ```shell
@@ -163,7 +163,7 @@ keys    [developer]
 **Просмотр ключа**
 
 ```shell
-vault read werf/configure/trusted_pgp_public_key/developer
+vault read trdl-test-project/configure/trusted_pgp_public_key/developer
 ```
 
 {% offtopic title="Вывод команды" %}
@@ -219,11 +219,11 @@ TJ9EZRY=
 **Удаление ключа**
 
 ```shell
-vault delete werf/configure/trusted_pgp_public_key/developer 
+vault delete trdl-test-project/configure/trusted_pgp_public_key/developer 
 ````
 
 ```
-Success! Data deleted (if it existed) at: werf/configure/trusted_pgp_public_key/developer
+Success! Data deleted (if it existed) at: trdl-test-project/configure/trusted_pgp_public_key/developer
 ```
 
 ## Для разработчика
