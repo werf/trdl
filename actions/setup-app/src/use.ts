@@ -50,7 +50,13 @@ export async function Do(trdlCli: TrdlCli, p: preset) {
   const inputs = parseInputs(noPreset)
   info(format(`Parsed inputs=%o`, inputs))
 
-  const args = noPreset ? mapInputsToCmdArgs(inputs) : getUpdateArgs(p)
+  let args = noPreset ? mapInputsToCmdArgs(inputs) : getUpdateArgs(p)
+
+  if (!noPreset) {
+    if (inputs.group) args.group = inputs.group
+    if (inputs.channel) args.channel = inputs.channel
+  }
+
   info(format(`Options for using application=%o`, args))
 
   info(`Verifying ${trdlCli.name} availability from $PATH.`)

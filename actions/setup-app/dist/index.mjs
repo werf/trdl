@@ -30285,7 +30285,13 @@ async function Do(trdlCli, p) {
     coreExports.info(format(`Using preset=%s`, !noPreset));
     const inputs = parseInputs(noPreset);
     coreExports.info(format(`Parsed inputs=%o`, inputs));
-    const args = noPreset ? mapInputsToCmdArgs(inputs) : getUpdateArgs(p);
+    let args = noPreset ? mapInputsToCmdArgs(inputs) : getUpdateArgs(p);
+    if (!noPreset) {
+        if (inputs.group)
+            args.group = inputs.group;
+        if (inputs.channel)
+            args.channel = inputs.channel;
+    }
     coreExports.info(format(`Options for using application=%o`, args));
     coreExports.info(`Verifying ${trdlCli.name} availability from $PATH.`);
     await trdlCli.mustExist();
