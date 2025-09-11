@@ -53,7 +53,10 @@ func updateCmd() *cobra.Command {
 			}
 
 			if inBackground {
-				trdlBinPath := os.Args[0]
+				trdlBinPath, err := trdl.GetTrdlBinaryPath()
+				if err != nil {
+					return err
+				}
 
 				var backgroundUpdateArgs []string
 				for _, arg := range os.Args[1:] {
