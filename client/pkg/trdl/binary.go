@@ -13,9 +13,9 @@ func GetTrdlBinaryPath() (string, error) {
 	}
 
 	realExe, err := filepath.EvalSymlinks(exe)
-	if err == nil {
-		exe = realExe
+	if err != nil {
+		return "", fmt.Errorf("unable to resolve symlinks for %s: %w", exe, err)
 	}
 
-	return exe, nil
+	return realExe, nil
 }
