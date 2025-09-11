@@ -50,7 +50,7 @@ export async function Do(trdlCli: TrdlCli, p: preset) {
   const inputs = parseInputs(noPreset)
   info(format(`Parsed inputs=%o`, inputs))
 
-  let args = noPreset ? mapInputsToCmdArgs(inputs) : getUpdateArgs(p)
+  const args = noPreset ? mapInputsToCmdArgs(inputs) : getUpdateArgs(p)
 
   if (!noPreset) {
     if (inputs.group) args.group = inputs.group
