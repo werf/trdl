@@ -312,6 +312,12 @@ func (c Client) ExecRepoChannelReleaseBin(repoName, group, optionalChannel, opti
 		return err
 	}
 
+	// Pass group channel env to the binary be executed.
+	err = os.Setenv(repo.FormatRepoChannelGroupEnvName(repoName), fmt.Sprintf("%s %s", group, channel))
+	if err != nil {
+		return err
+	}
+
 	if err := repoClient.ExecChannelReleaseBin(group, channel, optionalBinName, args); err != nil {
 		switch e := err.(type) {
 		case repo.ChannelNotFoundLocallyError:
