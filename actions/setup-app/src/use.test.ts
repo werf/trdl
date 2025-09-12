@@ -117,7 +117,7 @@ describe('setup-app/src/use.ts', function () {
       expect(trdlCli.binPath).toHaveBeenCalledTimes(2)
       expect(trdlCli.update).toHaveBeenCalledWith(expectedArgs, { inBackground: false })
       expect(core.exportVariable).toHaveBeenCalledWith(
-        `TRDL_USE_${expectedArgs.repo.toUpperCase().replace(/ /g, '-')}_GROUP_CHANNEL`,
+        'TRDL_USE_WERF_GROUP_CHANNEL',
         `${expectedArgs.group} ${expectedArgs.channel}`
       )
       expect(core.addPath).toHaveBeenCalledWith(appPath)

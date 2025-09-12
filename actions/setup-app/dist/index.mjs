@@ -30270,6 +30270,16 @@ function mapInputsToCmdArgs(inputs) {
         ...(channel !== undefined ? { channel } : {}) // optional field
     };
 }
+function buildArgs(noPreset, inputArgs, presetArgs) {
+    if (noPreset) {
+        return inputArgs;
+    }
+    return {
+        ...presetArgs,
+        group: inputArgs.group || presetArgs.group,
+        channel: inputArgs.channel || presetArgs.channel
+    };
+}
 function formatTrdlUseEnv(args) {
     const slugOpts = {
         strict: true
@@ -30285,13 +30295,7 @@ async function Do(trdlCli, p) {
     coreExports.info(format(`Using preset=%s`, !noPreset));
     const inputs = parseInputs(noPreset);
     coreExports.info(format(`Parsed inputs=%o`, inputs));
-    const args = noPreset ? mapInputsToCmdArgs(inputs) : getUpdateArgs(p);
-    if (!noPreset) {
-        if (inputs.group)
-            args.group = inputs.group;
-        if (inputs.channel)
-            args.channel = inputs.channel;
-    }
+    const args = buildArgs(noPreset, mapInputsToCmdArgs(inputs), getUpdateArgs(p));
     coreExports.info(format(`Options for using application=%o`, args));
     coreExports.info(`Verifying ${trdlCli.name} availability from $PATH.`);
     await trdlCli.mustExist();
