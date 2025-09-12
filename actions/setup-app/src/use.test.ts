@@ -88,11 +88,15 @@ describe('setup-app/src/use.ts', function () {
       )
       expect(core.addPath).toHaveBeenCalledWith(appPath)
     })
-    it('should update app in foreground if preset=werf and appPath is not found', async function () {
-      core.getInput.mockReturnValueOnce(updArgs.channel as string)
-      core.getInput.mockReturnValueOnce(updArgs.repo)
-      core.getInput.mockReturnValueOnce(updArgs.group)
+    it('should update app in foreground if preset=werf and user inputs override group/channel', async function () {
+      const userInputs = {
+        group: 'user group',
+        channel: 'user channel'
+      }
 
+      core.getInput.mockReturnValueOnce(userInputs.channel)
+      core.getInput.mockReturnValueOnce('')
+      core.getInput.mockReturnValueOnce(userInputs.group)
       core.getBooleanInput.mockReturnValueOnce(false)
 
       const appPath = '/app/path'
@@ -101,13 +105,20 @@ describe('setup-app/src/use.ts', function () {
 
       await Do(trdlCli, preset.werf)
 
+      const presetArgs = getUpdateArgs(preset.werf)
+      const expectedArgs = {
+        ...presetArgs,
+        group: userInputs.group,
+        channel: userInputs.channel
+      }
+
       expect(trdlCli.mustExist).toHaveBeenCalled()
-      expect(trdlCli.binPath).toHaveBeenCalledWith(updArgs)
+      expect(trdlCli.binPath).toHaveBeenCalledWith(expectedArgs)
       expect(trdlCli.binPath).toHaveBeenCalledTimes(2)
-      expect(trdlCli.update).toHaveBeenCalledWith(updArgs, { inBackground: false })
+      expect(trdlCli.update).toHaveBeenCalledWith(expectedArgs, { inBackground: false })
       expect(core.exportVariable).toHaveBeenCalledWith(
         'TRDL_USE_WERF_GROUP_CHANNEL',
-        `${updArgs.group} ${updArgs.channel}`
+        `${expectedArgs.group} ${expectedArgs.channel}`
       )
       expect(core.addPath).toHaveBeenCalledWith(appPath)
     })

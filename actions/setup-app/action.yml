@@ -28,10 +28,13 @@ inputs:
     description: 'The certain repository root sha512. Required if preset not given. For "trdl add"'
     required: false
   group:
-    description: 'The certain group. Required if preset not given. For both "trdl update" and "trdl bin-path"'
+    description:
+      'The certain group. Required if preset not given. Also can be used with preset. For both "trdl update" and "trdl
+      bin-path"'
     required: true
   channel:
-    description: 'The one from allowed channels. For both "trdl update" and "trdl bin-path"'
+    description:
+      'The one from allowed channels. Also can be used with preset. For both "trdl update" and "trdl bin-path"'
     required: false
 runs:
   using: 'node20'

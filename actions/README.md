@@ -14,6 +14,7 @@ This repository provides actions for seamless integration of trdl into your GitH
       - [werf](#werf)
       - [nelm](#nelm)
       - [kubedog](#kubedog)
+    - [Set up with preset group and channel](#set-up-with-preset-group-and-channel)
     - [Manual set up](#manual-set-up)
   - [Installation of `trdl` with `werf/trdl/actions/install` action](#installation-of-trdl-with-werftrdlactionsinstall-action)
 - [License](#license)
@@ -58,6 +59,20 @@ This repository provides actions for seamless integration of trdl into your GitH
 
 - name: Use kubedog binary
   run: kubedog version
+```
+
+#### Set up with preset group and channel
+
+```yaml
+- name: Setup werf
+  uses: werf/trdl/actions/setup-app@main
+  with:
+    preset: werf
+    group: 2
+    channel: alpha
+
+- name: Use werf binary
+  run: werf version
 ```
 
 #### Manual set up
