@@ -14,6 +14,7 @@ import (
 const (
 	ContainerSourceDir    = "git"
 	ContainerArtifactsDir = "result"
+	quill_image           = "registry.werf.io/trdl/quill:028f446b1b76be918781b24e7f77a6b4c0c74972"
 )
 
 type DockerfileOpts struct {
@@ -80,8 +81,6 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	}
 
 	if len(opts.Certificates) > 0 {
-		quill_image := "registry.werf.io/trdl/quill:028f446b1b76be918781b24e7f77a6b4c0c74972"
-
 		addLineFunc(fmt.Sprintf("FROM %s AS signer", quill_image))
 		addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
 		for _, cert := range opts.Certificates {
