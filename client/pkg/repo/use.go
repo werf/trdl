@@ -53,7 +53,6 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string,
 	foregroundUpdateArgsString := strings.Join(foregroundUpdateArgs, " ")
 	backgroundUpdateArgsString := strings.Join(backgroundUpdateArgs, " ")
 	_ = logPathBackgroundUpdateStderr
-
 	trdlBinaryPath, err := trdl.GetTrdlBinaryPath()
 	if err != nil {
 		return "", nil, err
