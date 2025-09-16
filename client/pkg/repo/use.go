@@ -57,7 +57,7 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string,
 	if err != nil {
 		return "", nil, err
 	}
-	trdlUseRepoGroupChannelEnvName := fmt.Sprintf("TRDL_USE_%s_GROUP_CHANNEL", formatRepoName(c.repoName))
+	trdlUseRepoGroupChannelEnvName := FormatRepoChannelGroupEnvName(c.repoName)
 	trdlUseRepoGroupChannelEnvValue := fmt.Sprintf("%s %s", group, channel)
 
 	var tmpl string
@@ -182,6 +182,11 @@ func (c Client) syncSourceScriptFile(group, channel, name string, data []byte) (
 	}
 
 	return scriptPath, nil
+}
+
+// FormatRepoChannelGroupEnvName returns a formatted repo channel group env name
+func FormatRepoChannelGroupEnvName(repoName string) string {
+	return fmt.Sprintf("TRDL_USE_%s_GROUP_CHANNEL", formatRepoName(repoName))
 }
 
 // formatRepoName returns a formatted repository name.
