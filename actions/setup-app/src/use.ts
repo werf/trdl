@@ -32,6 +32,18 @@ function mapInputsToCmdArgs(inputs: inputs): UpdateArgs {
   }
 }
 
+function buildArgs(noPreset: boolean, inputArgs: UpdateArgs, presetArgs: UpdateArgs): UpdateArgs {
+  if (noPreset) {
+    return inputArgs
+  }
+
+  return {
+    ...presetArgs,
+    group: inputArgs.group || presetArgs.group,
+    channel: inputArgs.channel || presetArgs.channel
+  }
+}
+
 export function formatTrdlUseEnv(args: UpdateArgs): envVar {
   const slugOpts = {
     strict: true
@@ -50,7 +62,7 @@ export async function Do(trdlCli: TrdlCli, p: preset) {
   const inputs = parseInputs(noPreset)
   info(format(`Parsed inputs=%o`, inputs))
 
-  const args = noPreset ? mapInputsToCmdArgs(inputs) : getUpdateArgs(p)
+  const args = buildArgs(noPreset, mapInputsToCmdArgs(inputs), getUpdateArgs(p))
   info(format(`Options for using application=%o`, args))
 
   info(`Verifying ${trdlCli.name} availability from $PATH.`)
@@ -60,8 +72,8 @@ export async function Do(trdlCli: TrdlCli, p: preset) {
   info(`Found application path=${appPath}`)
 
   const hasAppPath = appPath !== ''
-
   const opts = { inBackground: hasAppPath }
+
   info(format(`Updating application via "${trdlCli.name} update" with options=%o`, opts))
   await trdlCli.update(args, opts)
 

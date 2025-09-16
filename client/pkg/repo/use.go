@@ -9,11 +9,15 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/werf/trdl/client/pkg/trdl"
 	"github.com/werf/trdl/client/pkg/util"
 )
 
 func (c Client) UseChannelReleaseBinDir(group, channel, shell string, opts UseSourceOptions) (string, error) {
-	name, data := c.prepareSourceScriptFileNameAndData(group, channel, shell, opts)
+	name, data, err := c.prepareSourceScriptFileNameAndData(group, channel, shell, opts)
+	if err != nil {
+		return "", err
+	}
 	sourceScriptPath, err := c.syncSourceScriptFile(group, channel, name, data)
 	if err != nil {
 		return "", err
@@ -26,7 +30,7 @@ type UseSourceOptions struct {
 	NoSelfUpdate bool
 }
 
-func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string, opts UseSourceOptions) (string, []byte) {
+func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string, opts UseSourceOptions) (string, []byte, error) {
 	basename := c.prepareSourceScriptBasename(group, channel, shell, opts)
 	logPathBackgroundUpdateStdout := filepath.Join(c.logsDir, basename+"_background_update_stdout.log")
 	logPathBackgroundUpdateStderr := filepath.Join(c.logsDir, basename+"_background_update_stderr.log")
@@ -49,9 +53,12 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string,
 	foregroundUpdateArgsString := strings.Join(foregroundUpdateArgs, " ")
 	backgroundUpdateArgsString := strings.Join(backgroundUpdateArgs, " ")
 	_ = logPathBackgroundUpdateStderr
-	trdlBinaryPath := os.Args[0]
+
+	trdlBinaryPath, err := trdl.GetTrdlBinaryPath()
+	if err != nil {
+		return "", nil, err
+	}
 	trdlUseRepoGroupChannelEnvName := FormatRepoChannelGroupEnvName(c.repoName)
-	trdlUseRepoGroupChannelEnvValue := fmt.Sprintf("%s %s", group, channel)
 
 	var tmpl string
 	var ext string
@@ -119,7 +126,7 @@ export PATH="$trdl_repo_bin_path${PATH:+:${PATH}}"
 
 	data := []byte(fmt.Sprintln(strings.TrimSpace(script)))
 
-	return name, data
+	return name, data, nil
 }
 
 func (c Client) prepareSourceScriptBasename(group, channel, shell string, opts UseSourceOptions) string {
