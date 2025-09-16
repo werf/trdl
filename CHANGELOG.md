@@ -1,5 +1,18 @@
 # Changelog
 
+### [0.11.1](https://www.github.com/werf/trdl/compare/v0.11.0...v0.11.1) (2025-09-16)
+
+
+### Bug Fixes
+
+* **actions:** allow using group channel with preset ([#353](https://www.github.com/werf/trdl/issues/353)) ([4cb3108](https://www.github.com/werf/trdl/commit/4cb3108e0107ed778c1d00f53f1a4df91563c78f))
+* **actions:** handle tool cache path correctly ([f02d6c9](https://www.github.com/werf/trdl/commit/f02d6c9f8f5921c39ee79db237dc93bf950aad13))
+* **actions:** reuse trdl from GitHub CI cache ([c0f4667](https://www.github.com/werf/trdl/commit/c0f4667e2a1b24fb205c21dba3a43f2c9a3c61cb))
+* **client:** correct trdl binary path detection when not launched directly ([#350](https://www.github.com/werf/trdl/issues/350)) ([806bc5b](https://www.github.com/werf/trdl/commit/806bc5b8599ed03f8df85a4e91dadc7e1217eba0))
+* **dev:** fix dev minio setup ([#334](https://www.github.com/werf/trdl/issues/334)) ([81fd71b](https://www.github.com/werf/trdl/commit/81fd71bcdda4aec3d7d8203aa32dac3a1837d851))
+* **release, trdl-vault:** fix incomplete log ([#335](https://www.github.com/werf/trdl/issues/335)) ([d8ae4de](https://www.github.com/werf/trdl/commit/d8ae4de96943c94b552e19b0865fa9dcf578e69c))
+* **release, trdl-vault:** perform retry not on every error ([#336](https://www.github.com/werf/trdl/issues/336)) ([eb27857](https://www.github.com/werf/trdl/commit/eb27857869c3c7c66cf6ac9cfe21d95dab39393b))
+
 ## [0.11.0](https://www.github.com/werf/trdl/compare/v0.10.0...v0.11.0) (2025-05-05)
 
 
