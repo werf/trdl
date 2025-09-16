@@ -7,18 +7,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/werf/trdl/server/pkg/certificates"
 	"github.com/werf/trdl/server/pkg/secrets"
 )
 
 const (
 	ContainerSourceDir    = "git"
 	ContainerArtifactsDir = "result"
+	quill_image           = "registry.werf.io/trdl/quill:028f446b1b76be918781b24e7f77a6b4c0c74972"
 )
 
 type DockerfileOpts struct {
-	EnvVars map[string]string
-	Labels  map[string]string
-	Secrets []secrets.Secret
+	EnvVars      map[string]string
+	Labels       map[string]string
+	Secrets      []secrets.Secret
+	Certificates []certificates.Certificate
 }
 
 func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, fromImage string, runCommands []string, dockerfileOpts DockerfileOpts) error {
@@ -51,7 +54,7 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	}
 
 	// we use stages to reduce the size of output data to stdout
-	addLineFunc(fmt.Sprintf("FROM %s as builder", fromImage))
+	addLineFunc(fmt.Sprintf("FROM %s AS builder", fromImage))
 
 	for labelName, labelVal := range opts.Labels {
 		addLineFunc(fmt.Sprintf("LABEL %s=%q", labelName, labelVal))
@@ -77,10 +80,33 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 		}
 	}
 
-	// since we need only the artifacts from the build stage
-	// we use scratch as the final image containing ONLY artifacts
-	addLineFunc("FROM scratch")
-	addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
+	if len(opts.Certificates) > 0 {
+		addLineFunc(fmt.Sprintf("FROM %s AS signer", quill_image))
+		addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
+		for _, cert := range opts.Certificates {
+			addLineFunc(fmt.Sprintf(`RUN --mount=type=secret,id=%s --mount=type=secret,id=%s \
+	export QUILL_SIGN_P12="$(cat /run/secrets/%s)" && \
+	export QUILL_SIGN_PASSWORD="$(cat /run/secrets/%s)" && \
+	find /%s -type f | while read f; do \
+	  if file "$f" | grep -q "Mach-O"; then \
+		echo "Signing $f" && \
+		quill sign "$f"; \
+	  fi; \
+	done`,
+				cert.Name,
+				cert.Name+"_password",
+				cert.Name,
+				cert.Name+"_password",
+				ContainerArtifactsDir,
+			))
+		}
+
+		addLineFunc("FROM scratch")
+		addLineFunc(fmt.Sprintf("COPY --from=signer /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
+	} else {
+		addLineFunc("FROM scratch")
+		addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
+	}
 
 	return data
 }

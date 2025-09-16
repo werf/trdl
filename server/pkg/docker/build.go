@@ -15,6 +15,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/werf/logboek"
+	"github.com/werf/trdl/server/pkg/certificates"
 	trdlGit "github.com/werf/trdl/server/pkg/git"
 	"github.com/werf/trdl/server/pkg/secrets"
 )
@@ -46,6 +47,10 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	if err != nil {
 		return fmt.Errorf("unable to get build secrets: %w", err)
 	}
+	certificates, err := certificates.GetCertificates(ctx, opts.Storage)
+	if err != nil {
+		return fmt.Errorf("unable to get build certificates: %w", err)
+	}
 
 	go func() {
 		if err := func() error {
@@ -59,8 +64,9 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 			}
 
 			dockerfileOpts := DockerfileOpts{
-				Labels:  serviceLabels,
-				Secrets: secrets,
+				Labels:       serviceLabels,
+				Secrets:      secrets,
+				Certificates: certificates,
 			}
 			if err := GenerateAndAddDockerfileToTar(tw, serviceDockerfilePathInContext, opts.FromImage, opts.RunCommands, dockerfileOpts); err != nil {
 				return fmt.Errorf("unable to add service dockerfile to tar: %w", err)
@@ -87,10 +93,11 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	logger.Info("Building docker image with artifacts")
 
 	builder, err := NewBuilder(ctx, &NewBuilderOpts{
-		BuildId:     buildId,
-		ContextPath: serviceDockerfilePathInContext,
-		Secrets:     secrets,
-		Logger:      logger,
+		BuildId:      buildId,
+		ContextPath:  serviceDockerfilePathInContext,
+		Secrets:      secrets,
+		Certificates: certificates,
+		Logger:       logger,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create docker builder: %w", err)
