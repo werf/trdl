@@ -88,7 +88,7 @@ tasks:
         s3_access_key_id={{.s3_access_key}} \
         s3_bucket_name={{.project_name}} \
         s3_region=ru-central1 \
-        s3_endpoint=http://$(task _get-minio-ip):{{.minio_port}} \
+        s3_endpoint=http://$(TASK_X_REMOTE_TASKFILE=1 task --yes _get-minio-ip):{{.minio_port}} \
         required_number_of_verified_signatures_on_commit={{.signatures_count}} \
         git_repo_url={{.git_repo_url}} \
         git_trdl_path={{.git_trdl_path}} \
