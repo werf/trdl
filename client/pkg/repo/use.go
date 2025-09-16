@@ -59,6 +59,7 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string,
 		return "", nil, err
 	}
 	trdlUseRepoGroupChannelEnvName := FormatRepoChannelGroupEnvName(c.repoName)
+	trdlUseRepoGroupChannelEnvValue := fmt.Sprintf("%s %s", group, channel)
 
 	var tmpl string
 	var ext string
