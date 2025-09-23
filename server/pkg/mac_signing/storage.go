@@ -39,7 +39,7 @@ func GetCredentials(ctx context.Context, storage logical.Storage, name string) (
 		return nil, err
 	}
 	if entry == nil {
-		return nil, fmt.Errorf("credentials %s not found", name)
+		return nil, nil
 	}
 
 	var creds MacSigningCredentials
@@ -60,7 +60,7 @@ func GetDefaultCredentials(ctx context.Context, storage logical.Storage) (*MacSi
 	}
 
 	if len(list) == 0 {
-		return nil, fmt.Errorf("no signing credentials found")
+		return nil, nil
 	}
 
 	return GetCredentials(ctx, storage, list[0])
