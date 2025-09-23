@@ -11,7 +11,7 @@ import (
 	"github.com/djherbis/nio/v3"
 
 	"github.com/werf/logboek"
-	"github.com/werf/trdl/server/pkg/certificates"
+	"github.com/werf/trdl/server/pkg/mac_signing"
 	"github.com/werf/trdl/server/pkg/secrets"
 )
 
@@ -27,11 +27,11 @@ type Builder struct {
 }
 
 type NewBuilderOpts struct {
-	BuildId      string
-	ContextPath  string
-	Secrets      []secrets.Secret
-	Certificates []certificates.Certificate
-	Logger       Logger
+	BuildId               string
+	ContextPath           string
+	Secrets               []secrets.Secret
+	MacSigningCredentials *mac_signing.MacSigningCredentials
+	Logger                Logger
 }
 
 func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
@@ -47,7 +47,7 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 		return nil, fmt.Errorf("builder setup failed: %w", err)
 	}
 
-	args, err := setCliArgs(builderName, opts.ContextPath, opts.Secrets, opts.Certificates)
+	args, err := setCliArgs(builderName, opts.ContextPath, opts.Secrets, opts.MacSigningCredentials)
 	if err != nil {
 		return nil, fmt.Errorf("unable to set cli args: %w", err)
 	}
@@ -102,7 +102,7 @@ func logWriter(logger Logger) *io.PipeWriter {
 	return pw
 }
 
-func setCliArgs(builder, serviceDockerfilePathInContext string, secrets []secrets.Secret, certificates []certificates.Certificate) ([]string, error) {
+func setCliArgs(builder, serviceDockerfilePathInContext string, secrets []secrets.Secret, macSigningCredentials *mac_signing.MacSigningCredentials) ([]string, error) {
 	args := []string{
 		"--file", serviceDockerfilePathInContext,
 		"--pull",
@@ -117,11 +117,11 @@ func setCliArgs(builder, serviceDockerfilePathInContext string, secrets []secret
 		args = append(args, GetSecretsCommandMounts(secrets)...)
 	}
 
-	if len(certificates) > 0 {
-		if err := SetCertificatesTempEnvVars(certificates); err != nil {
-			return nil, fmt.Errorf("unable to set certiifcate")
+	if macSigningCredentials != nil {
+		if err := SetMacSigningTempEnvVars(macSigningCredentials); err != nil {
+			return nil, fmt.Errorf("unable to set mac signing credentials")
 		}
-		args = append(args, GetCertificatesCommandMounts(certificates)...)
+		args = append(args, GetMacSigningCommandMounts(macSigningCredentials)...)
 	}
 
 	args = append(args, "-o", "-", "-")

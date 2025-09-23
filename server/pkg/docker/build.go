@@ -15,8 +15,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/werf/logboek"
-	"github.com/werf/trdl/server/pkg/certificates"
 	trdlGit "github.com/werf/trdl/server/pkg/git"
+	"github.com/werf/trdl/server/pkg/mac_signing"
 	"github.com/werf/trdl/server/pkg/secrets"
 )
 
@@ -47,9 +47,9 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	if err != nil {
 		return fmt.Errorf("unable to get build secrets: %w", err)
 	}
-	certificates, err := certificates.GetCertificates(ctx, opts.Storage)
+	credentials, err := mac_signing.GetDefaultCredentials(ctx, opts.Storage)
 	if err != nil {
-		return fmt.Errorf("unable to get build certificates: %w", err)
+		return fmt.Errorf("unable to get build mac signing credentials: %w", err)
 	}
 
 	go func() {
@@ -64,9 +64,9 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 			}
 
 			dockerfileOpts := DockerfileOpts{
-				Labels:       serviceLabels,
-				Secrets:      secrets,
-				Certificates: certificates,
+				Labels:                serviceLabels,
+				Secrets:               secrets,
+				MacSigningCredentials: credentials,
 			}
 			if err := GenerateAndAddDockerfileToTar(tw, serviceDockerfilePathInContext, opts.FromImage, opts.RunCommands, dockerfileOpts); err != nil {
 				return fmt.Errorf("unable to add service dockerfile to tar: %w", err)
@@ -93,11 +93,11 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	logger.Info("Building docker image with artifacts")
 
 	builder, err := NewBuilder(ctx, &NewBuilderOpts{
-		BuildId:      buildId,
-		ContextPath:  serviceDockerfilePathInContext,
-		Secrets:      secrets,
-		Certificates: certificates,
-		Logger:       logger,
+		BuildId:               buildId,
+		ContextPath:           serviceDockerfilePathInContext,
+		Secrets:               secrets,
+		MacSigningCredentials: credentials,
+		Logger:                logger,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create docker builder: %w", err)
