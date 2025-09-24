@@ -5,14 +5,13 @@ Add or update build signing credentials.
 
 | Method | Path |
 |--------|------|
-| `POST` | `/configure/build/mac_signing` |
+| `POST` | `/configure/build/mac_signing_identity` |
 
 ### Parameters
 
-* `certificate` (string, required) — Certificate data base64 encoded.
-* `name` (string, required) — Credentials name.
+* `data` (string, required) — Certificate data base64 encoded.
 * `notary_issuer` (string, required) — Notary issuer.
-* `notary_key` (string, required) — Notary key ID.
+* `notary_key` (string, required) — Notary key.
 * `notary_key_id` (string, required) — Notary key ID.
 * `password` (string, required) — Certificate password.
 

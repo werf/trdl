@@ -21,7 +21,7 @@ const (
 func Paths() []*framework.Path {
 	return []*framework.Path{
 		{
-			Pattern:         "configure/build/mac_signing_identity/?",
+			Pattern:         "configure/build/mac_signing_identity",
 			HelpSynopsis:    "Add or update build signing credentials",
 			HelpDescription: "Add or update build signing credentials for macOS builds",
 			Fields: map[string]*framework.FieldSchema{
@@ -63,9 +63,9 @@ func Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern:         "configure/build/mac_signing_identity$",
+			Pattern:         "configure/build/mac_signing_identity/delete$",
 			HelpSynopsis:    "Delete build signing credentials",
-			HelpDescription: "Delete the default build signing credentials",
+			HelpDescription: "Delete current build signing credentials",
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.DeleteOperation: &framework.PathOperation{
 					Description: "Delete mac signing credentials",
