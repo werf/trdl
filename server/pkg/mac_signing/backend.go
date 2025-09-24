@@ -89,7 +89,6 @@ func Paths() []*framework.Path {
 	}
 }
 
-// pathMacSigningCreateOrUpdate создаёт или обновляет credentials
 func pathMacSigningCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
 		return errResp, nil
