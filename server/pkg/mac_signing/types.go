@@ -8,3 +8,5 @@ type Credentials struct {
 	NotaryKey    string
 	NotaryIssuer string
 }
+
+const macSigningCertificateName = "certificate"

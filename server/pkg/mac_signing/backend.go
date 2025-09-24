@@ -11,27 +11,21 @@ import (
 )
 
 const (
-	fieldNameMacSigningName         = "name"
-	fieldNameMacSigningCertificate  = "certificate"
-	fieldNameMacSigningPassword     = "password"
-	fieldNameMacSigningNotaryKeyID  = "notary_key_id"
-	fieldNameMacSigningNotaryKey    = "notary_key"
-	fieldNameMacSigningNotaryIssuer = "notary_issuer"
+	fieldNameMacSigningCertificateData = "data"
+	fieldNameMacSigningPassword        = "password"
+	fieldNameMacSigningNotaryKeyID     = "notary_key_id"
+	fieldNameMacSigningNotaryKey       = "notary_key"
+	fieldNameMacSigningNotaryIssuer    = "notary_issuer"
 )
 
 func Paths() []*framework.Path {
 	return []*framework.Path{
 		{
-			Pattern:         "configure/build/mac_signing/?",
+			Pattern:         "configure/build/mac_signing_identity/?",
 			HelpSynopsis:    "Add or update build signing credentials",
 			HelpDescription: "Add or update build signing credentials for macOS builds",
 			Fields: map[string]*framework.FieldSchema{
-				fieldNameMacSigningName: {
-					Type:        framework.TypeNameString,
-					Description: "Credentials name",
-					Required:    true,
-				},
-				fieldNameMacSigningCertificate: {
+				fieldNameMacSigningCertificateData: {
 					Type:        framework.TypeString,
 					Description: "Certificate data base64 encoded",
 					Required:    true,
@@ -48,7 +42,7 @@ func Paths() []*framework.Path {
 				},
 				fieldNameMacSigningNotaryKey: {
 					Type:        framework.TypeString,
-					Description: "Notary key ID",
+					Description: "Notary key",
 					Required:    true,
 				},
 				fieldNameMacSigningNotaryIssuer: {
@@ -69,16 +63,9 @@ func Paths() []*framework.Path {
 			},
 		},
 		{
-			Pattern:         "configure/build/mac_signing/" + framework.GenericNameRegex(fieldNameMacSigningName) + "$",
-			HelpSynopsis:    "Delete a build signing credentials",
-			HelpDescription: "Delete a build signing credentials by name",
-			Fields: map[string]*framework.FieldSchema{
-				fieldNameMacSigningName: {
-					Type:        framework.TypeNameString,
-					Description: "Credentials name",
-					Required:    true,
-				},
-			},
+			Pattern:         "configure/build/mac_signing_identity$",
+			HelpSynopsis:    "Delete build signing credentials",
+			HelpDescription: "Delete the default build signing credentials",
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.DeleteOperation: &framework.PathOperation{
 					Description: "Delete mac signing credentials",
@@ -95,8 +82,8 @@ func pathMacSigningCreateOrUpdate(ctx context.Context, req *logical.Request, fie
 	}
 
 	creds := Credentials{
-		Name:         fields.Get(fieldNameMacSigningName).(string),
-		Certificate:  fields.Get(fieldNameMacSigningCertificate).(string),
+		Name:         macSigningCertificateName,
+		Certificate:  fields.Get(fieldNameMacSigningCertificateData).(string),
 		Password:     fields.Get(fieldNameMacSigningPassword).(string),
 		NotaryKeyID:  fields.Get(fieldNameMacSigningNotaryKeyID).(string),
 		NotaryKey:    fields.Get(fieldNameMacSigningNotaryKey).(string),
@@ -111,12 +98,7 @@ func pathMacSigningCreateOrUpdate(ctx context.Context, req *logical.Request, fie
 }
 
 func pathMacSigningDelete(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
-	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
-		return errResp, nil
-	}
-
-	name := fields.Get(fieldNameMacSigningName).(string)
-	if err := DeleteCredentials(ctx, req, name); err != nil {
+	if err := DeleteCredentials(ctx, req); err != nil {
 		return nil, fmt.Errorf("failed to delete credentials: %w", err)
 	}
 

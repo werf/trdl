@@ -47,7 +47,7 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	if err != nil {
 		return fmt.Errorf("unable to get build secrets: %w", err)
 	}
-	credentials, err := mac_signing.GetDefaultCredentials(ctx, opts.Storage)
+	credentials, err := mac_signing.GetCredentials(ctx, opts.Storage)
 	if err != nil {
 		fmt.Printf("Warning: unable to get mac signing credentials: %v\n", err)
 		fmt.Println("Continue without mac signing...")

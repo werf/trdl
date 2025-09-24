@@ -9,10 +9,10 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
-const storageKeyPrefix = "mac_signing/"
+const storageKeyPrefix = "mac_signing_identity/"
 
-func storageKey(name string) string {
-	return storageKeyPrefix + name
+func storageKey() string {
+	return storageKeyPrefix + macSigningCertificateName
 }
 
 func PutCredentials(ctx context.Context, req *logical.Request, creds Credentials) error {
@@ -22,19 +22,22 @@ func PutCredentials(ctx context.Context, req *logical.Request, creds Credentials
 	if _, err := base64.StdEncoding.DecodeString(creds.NotaryKey); err != nil {
 		return fmt.Errorf("invalid base64 notary key: %w", err)
 	}
+
+	creds.Name = macSigningCertificateName
+
 	data, err := json.Marshal(creds)
 	if err != nil {
 		return fmt.Errorf("unable to marshal credentials: %w", err)
 	}
 
 	return req.Storage.Put(ctx, &logical.StorageEntry{
-		Key:   storageKey(creds.Name),
+		Key:   storageKey(),
 		Value: data,
 	})
 }
 
-func GetCredentials(ctx context.Context, storage logical.Storage, name string) (*Credentials, error) {
-	entry, err := storage.Get(ctx, storageKey(name))
+func GetCredentials(ctx context.Context, storage logical.Storage) (*Credentials, error) {
+	entry, err := storage.Get(ctx, storageKey())
 	if err != nil {
 		return nil, err
 	}
@@ -49,19 +52,6 @@ func GetCredentials(ctx context.Context, storage logical.Storage, name string) (
 	return &creds, nil
 }
 
-func DeleteCredentials(ctx context.Context, req *logical.Request, name string) error {
-	return req.Storage.Delete(ctx, storageKey(name))
-}
-
-func GetDefaultCredentials(ctx context.Context, storage logical.Storage) (*Credentials, error) {
-	list, err := storage.List(ctx, storageKeyPrefix)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) == 0 {
-		return nil, nil
-	}
-
-	return GetCredentials(ctx, storage, list[0])
+func DeleteCredentials(ctx context.Context, req *logical.Request) error {
+	return req.Storage.Delete(ctx, storageKey())
 }
