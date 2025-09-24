@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -138,6 +139,16 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 
 			isAncestor, err := trdlGit.IsAncestor(gitRepo, lastPublishedGitCommit, headRef.Hash().String())
 			if err != nil {
+				var ancestorErr *trdlGit.AncestorCommitLookupError
+				if errors.As(err, &ancestorErr) {
+					msg := fmt.Sprintf(
+						"Previously published commit %q not found in the Git repository: %v. This might have been caused by a force push rewriting history. If you're confident this is expected, you can override 'last_published_git_commit' option in the project configuration.",
+						lastPublishedGitCommit, ancestorErr,
+					)
+					logboek.Context(ctx).Default().LogF(msg)
+					b.Logger().Error(msg)
+					return err
+				}
 				return err
 			}
 
