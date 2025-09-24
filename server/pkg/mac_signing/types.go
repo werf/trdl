@@ -1,6 +1,6 @@
 package mac_signing
 
-type MacSigningCredentials struct {
+type Credentials struct {
 	Name         string
 	Certificate  string
 	Password     string

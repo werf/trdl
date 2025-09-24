@@ -7,7 +7,7 @@ import (
 	"github.com/werf/trdl/server/pkg/mac_signing"
 )
 
-func GetMacSigningCommandMounts(creds *mac_signing.MacSigningCredentials) []string {
+func GetMacSigningCommandMounts(creds *mac_signing.Credentials) []string {
 	args := make([]string, 0, 5)
 
 	if creds != nil {
@@ -22,7 +22,7 @@ func GetMacSigningCommandMounts(creds *mac_signing.MacSigningCredentials) []stri
 	return args
 }
 
-func SetMacSigningTempEnvVars(creds *mac_signing.MacSigningCredentials) error {
+func SetMacSigningTempEnvVars(creds *mac_signing.Credentials) error {
 	if creds == nil {
 		return nil
 	}

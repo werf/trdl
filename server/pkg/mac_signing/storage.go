@@ -15,7 +15,7 @@ func storageKey(name string) string {
 	return storageKeyPrefix + name
 }
 
-func PutCredentials(ctx context.Context, req *logical.Request, creds MacSigningCredentials) error {
+func PutCredentials(ctx context.Context, req *logical.Request, creds Credentials) error {
 	if _, err := base64.StdEncoding.DecodeString(creds.Certificate); err != nil {
 		return fmt.Errorf("invalid base64 certificate: %w", err)
 	}
@@ -33,7 +33,7 @@ func PutCredentials(ctx context.Context, req *logical.Request, creds MacSigningC
 	})
 }
 
-func GetCredentials(ctx context.Context, storage logical.Storage, name string) (*MacSigningCredentials, error) {
+func GetCredentials(ctx context.Context, storage logical.Storage, name string) (*Credentials, error) {
 	entry, err := storage.Get(ctx, storageKey(name))
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func GetCredentials(ctx context.Context, storage logical.Storage, name string) (
 		return nil, nil
 	}
 
-	var creds MacSigningCredentials
+	var creds Credentials
 	if err := json.Unmarshal(entry.Value, &creds); err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func DeleteCredentials(ctx context.Context, req *logical.Request, name string) e
 	return req.Storage.Delete(ctx, storageKey(name))
 }
 
-func GetDefaultCredentials(ctx context.Context, storage logical.Storage) (*MacSigningCredentials, error) {
+func GetDefaultCredentials(ctx context.Context, storage logical.Storage) (*Credentials, error) {
 	list, err := storage.List(ctx, storageKeyPrefix)
 	if err != nil {
 		return nil, err

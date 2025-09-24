@@ -30,7 +30,7 @@ type NewBuilderOpts struct {
 	BuildId               string
 	ContextPath           string
 	Secrets               []secrets.Secret
-	MacSigningCredentials *mac_signing.MacSigningCredentials
+	MacSigningCredentials *mac_signing.Credentials
 	Logger                Logger
 }
 
@@ -102,7 +102,7 @@ func logWriter(logger Logger) *io.PipeWriter {
 	return pw
 }
 
-func setCliArgs(builder, serviceDockerfilePathInContext string, secrets []secrets.Secret, macSigningCredentials *mac_signing.MacSigningCredentials) ([]string, error) {
+func setCliArgs(builder, serviceDockerfilePathInContext string, secrets []secrets.Secret, macSigningCredentials *mac_signing.Credentials) ([]string, error) {
 	args := []string{
 		"--file", serviceDockerfilePathInContext,
 		"--pull",

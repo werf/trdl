@@ -21,7 +21,7 @@ type DockerfileOpts struct {
 	EnvVars               map[string]string
 	Labels                map[string]string
 	Secrets               []secrets.Secret
-	MacSigningCredentials *mac_signing.MacSigningCredentials
+	MacSigningCredentials *mac_signing.Credentials
 }
 
 func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, fromImage string, runCommands []string, dockerfileOpts DockerfileOpts) error {
