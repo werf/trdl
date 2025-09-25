@@ -7,18 +7,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/werf/trdl/server/pkg/mac_signing"
 	"github.com/werf/trdl/server/pkg/secrets"
 )
 
 const (
 	ContainerSourceDir    = "git"
 	ContainerArtifactsDir = "result"
+	DefaultQuillImage     = "registry.werf.io/trdl/quill:028f446b1b76be918781b24e7f77a6b4c0c74972"
 )
 
 type DockerfileOpts struct {
-	EnvVars map[string]string
-	Labels  map[string]string
-	Secrets []secrets.Secret
+	EnvVars               map[string]string
+	Labels                map[string]string
+	Secrets               []secrets.Secret
+	MacSigningCredentials *mac_signing.Credentials
 }
 
 func GenerateAndAddDockerfileToTar(tw *tar.Writer, dockerfileTarPath, fromImage string, runCommands []string, dockerfileOpts DockerfileOpts) error {
@@ -51,7 +54,7 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	}
 
 	// we use stages to reduce the size of output data to stdout
-	addLineFunc(fmt.Sprintf("FROM %s as builder", fromImage))
+	addLineFunc(fmt.Sprintf("FROM %s AS builder", fromImage))
 
 	for labelName, labelVal := range opts.Labels {
 		addLineFunc(fmt.Sprintf("LABEL %s=%q", labelName, labelVal))
@@ -77,10 +80,54 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 		}
 	}
 
-	// since we need only the artifacts from the build stage
-	// we use scratch as the final image containing ONLY artifacts
-	addLineFunc("FROM scratch")
-	addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
+	if opts.MacSigningCredentials != nil {
+		creds := opts.MacSigningCredentials
+		quillImage := GetQuillImage()
+		addLineFunc(fmt.Sprintf("FROM %s AS signer", quillImage))
+		addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
+
+		addLineFunc(fmt.Sprintf(`RUN --mount=type=secret,id=%s_cert \
+	--mount=type=secret,id=%s_password \
+	--mount=type=secret,id=%s_notary_key_id \
+	--mount=type=secret,id=%s_notary_key \
+	--mount=type=secret,id=%s_notary_issuer \
+	export QUILL_SIGN_P12="$(cat /run/secrets/%s_cert)" && \
+	export QUILL_SIGN_PASSWORD="$(cat /run/secrets/%s_password)" && \
+	export QUILL_NOTARY_KEY_ID="$(cat /run/secrets/%s_notary_key_id)" && \
+	export QUILL_NOTARY_KEY="$(cat /run/secrets/%s_notary_key)" && \
+	export QUILL_NOTARY_ISSUER="$(cat /run/secrets/%s_notary_issuer)" && \
+	find /%s -type f | while read f; do \
+	  if file "$f" | grep -q "Mach-O"; then \
+		echo "Signing $f" && \
+		quill sign-and-notarize "$f"; \
+	  fi; \
+	done`,
+			creds.Name,
+			creds.Name,
+			creds.Name,
+			creds.Name,
+			creds.Name,
+			creds.Name,
+			creds.Name,
+			creds.Name,
+			creds.Name,
+			creds.Name,
+			ContainerArtifactsDir,
+		))
+
+		addLineFunc("FROM scratch")
+		addLineFunc(fmt.Sprintf("COPY --from=signer /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
+	} else {
+		addLineFunc("FROM scratch")
+		addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
+	}
 
 	return data
+}
+
+func GetQuillImage() string {
+	if image := os.Getenv("TRDL_QUILL_IMAGE"); image != "" {
+		return image
+	}
+	return DefaultQuillImage
 }

@@ -32,6 +32,10 @@ en:
     &reference-vault_plugin_secrets
     title: Secrets
     url: /reference/vault_plugin/configure/build/secrets.html
+  /reference/vault_plugin/configure/build/mac_signing_identity:
+    &reference-vault_plugin_mac_signing_identity
+    title: Mac signing identity
+    url: /reference/vault_plugin/configure/build/mac_signing_identity.html
 ru:
   /reference:
     <<: *reference
@@ -55,3 +59,5 @@ ru:
     <<: *reference-vault_plugin_secrets
   /reference/vault_plugin/configure/build:
     <<: *reference-vault_plugin_build
+  /reference/vault_plugin/configure/build/mac_signing_identity:
+    <<: *reference-vault_plugin_mac_signing_identity
