@@ -4,7 +4,7 @@ gem "jekyll-assets"
 gem "jekyll"
 gem "kramdown-parser-gfm"
 
-gem "sprockets", "~> 3.7"
+gem "sprockets", "~> 3.7", ">= 3.7.3"
 gem "nokogiri", ">= 1.10.8"
 gem "kramdown", ">= 2.3.0"
 
