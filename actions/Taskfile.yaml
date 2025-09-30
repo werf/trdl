@@ -22,38 +22,38 @@ tasks:
     desc: Run prettier --write
     deps: [_npm:install]
     cmds:
-      - '{{.DOCKER_RUN}} npx prettier --write .'
+      - '{{.DOCKER_RUN}} npm run format:write'
 
   format:check:
     desc: Run prettier --check
     deps: [_npm:install]
     cmds:
-      - '{{.DOCKER_RUN}} npx prettier --check .'
+      - '{{.DOCKER_RUN}} npm run format:check'
 
   lint:
     desc: Run eslint
     deps: [_npm:install]
     cmds:
-      - '{{.DOCKER_RUN}} npx eslint .'
+      - '{{.DOCKER_RUN}} npm run lint'
 
   package:
     desc: Build with rollup
     deps: [_npm:install]
     cmds:
-      - '{{.DOCKER_RUN}} npx rollup --config rollup.config.mjs'
+      - '{{.DOCKER_RUN}} npm run package'
 
   test:
     desc: Run jest tests
     deps: [_npm:install]
     cmds:
-      - "{{.DOCKER_RUN}} sh -c 'NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest'"
+      - "{{.DOCKER_RUN}} sh -c 'npm run test'"
 
   coverage:
     desc: Generate coverage badge
     deps: [test]
     cmds:
       - mkdir ./badges || true
-      - '{{.DOCKER_RUN}} npx make-coverage-badge --output-path ./badges/coverage.svg'
+      - "{{.DOCKER_RUN}} sh -c 'npm run coverage'"
 
   all:
     desc: Run formatter, linter, tests, coverage and package
