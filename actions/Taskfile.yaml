@@ -1,0 +1,66 @@
+version: '3'
+
+silent: true
+
+vars:
+  DOCKER_RUN: docker run --rm -v $(pwd):/app -w /app node:18
+
+tasks:
+  _npm:install:
+    cmds:
+      - |
+        {{.DOCKER_RUN}} sh -c '
+          if [ ! -d node_modules ]; then
+            echo "node_modules not found, installing dependencies..."
+            npm ci
+          else
+            echo "Dependencies already installed"
+          fi
+        '
+
+  format:write:
+    desc: Run prettier --write
+    deps: [_npm:install]
+    cmds:
+      - '{{.DOCKER_RUN}} npx prettier --write .'
+
+  format:check:
+    desc: Run prettier --check
+    deps: [_npm:install]
+    cmds:
+      - '{{.DOCKER_RUN}} npx prettier --check .'
+
+  lint:
+    desc: Run eslint
+    deps: [_npm:install]
+    cmds:
+      - '{{.DOCKER_RUN}} npx eslint .'
+
+  package:
+    desc: Build with rollup
+    deps: [_npm:install]
+    cmds:
+      - '{{.DOCKER_RUN}} npx rollup --config rollup.config.mjs'
+
+  test:
+    desc: Run jest tests
+    deps: [_npm:install]
+    cmds:
+      - "{{.DOCKER_RUN}} sh -c 'NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest'"
+
+  coverage:
+    desc: Generate coverage badge
+    deps: [test]
+    cmds:
+      - mkdir ./badges || true
+      - '{{.DOCKER_RUN}} npx make-coverage-badge --output-path ./badges/coverage.svg'
+
+  all:
+    desc: Run formatter, linter, tests, coverage and package
+    deps: [_npm:install]
+    cmds:
+      - task: format:write
+      - task: lint
+      - task: test
+      - task: coverage
+      - task: package
