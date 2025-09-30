@@ -23,6 +23,9 @@ includes:
     flatten: true
     vars:
       paths: "e2e"
+  actions:
+    taskfile: ./actions/Taskfile.yaml
+    dir: ./actions
 
 tasks:
   sign:
@@ -46,6 +49,7 @@ tasks:
       - task: e2e:format
       - task: docs:format:prettier
       - task: release:format
+      - task: actions:format:write
 
   lint:
     desc: "Run all linters."
@@ -55,6 +59,7 @@ tasks:
       - task: e2e:lint
       - task: docs:lint:prettier
       - task: release:lint
+      - task: actions:lint
 
   build:dev:all:
     desc: "Build all dev binaries."
