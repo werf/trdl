@@ -6,8 +6,6 @@ The trdl plugin builds and releases software versions, publishes the release cha
 
 * [`/configure/build/mac_signing_identity`]({{ "/reference/vault_plugin/configure/build/mac_signing_identity.html" | true_relative_url }}) — add or update build signing credentials.
 
-* [`/configure/build/mac_signing_identity/delete`]({{ "/reference/vault_plugin/configure/build/mac_signing_identity/delete.html" | true_relative_url }}) — delete build signing credentials.
-
 * [`/configure/build/secrets`]({{ "/reference/vault_plugin/configure/build/secrets.html" | true_relative_url }}) — add a build secret.
 
 * [`/configure/build/secrets/:id`]({{ "/reference/vault_plugin/configure/build/secrets/id.html" | true_relative_url }}) — delete a build secret.

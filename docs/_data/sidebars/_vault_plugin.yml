@@ -10,8 +10,6 @@ _vault_plugin: &_vault_plugin
       url: /reference/vault_plugin/configure.html
     - title: /configure/build/mac_signing_identity
       url: /reference/vault_plugin/configure/build/mac_signing_identity.html
-    - title: /configure/build/mac_signing_identity/delete
-      url: /reference/vault_plugin/configure/build/mac_signing_identity/delete.html
     - title: /configure/build/secrets
       url: /reference/vault_plugin/configure/build/secrets.html
     - title: /configure/build/secrets/:id

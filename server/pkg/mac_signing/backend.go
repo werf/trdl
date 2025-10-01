@@ -60,13 +60,6 @@ func Paths() []*framework.Path {
 					Description: "Add or update mac signing credentials",
 					Callback:    pathMacSigningCreateOrUpdate,
 				},
-			},
-		},
-		{
-			Pattern:         "configure/build/mac_signing_identity/delete$",
-			HelpSynopsis:    "Delete build signing credentials",
-			HelpDescription: "Delete current build signing credentials",
-			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.DeleteOperation: &framework.PathOperation{
 					Description: "Delete mac signing credentials",
 					Callback:    pathMacSigningDelete,
@@ -97,7 +90,7 @@ func pathMacSigningCreateOrUpdate(ctx context.Context, req *logical.Request, fie
 	return nil, nil
 }
 
-func pathMacSigningDelete(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
+func pathMacSigningDelete(ctx context.Context, req *logical.Request, _ *framework.FieldData) (*logical.Response, error) {
 	if err := DeleteCredentials(ctx, req); err != nil {
 		return nil, fmt.Errorf("failed to delete credentials: %w", err)
 	}

@@ -17,4 +17,17 @@ Add or update build signing credentials.
 
 ### Responses
 
-* 200 — OK.
+* 200 — OK. 
+
+
+## Delete mac signing credentials
+
+
+| Method | Path |
+|--------|------|
+| `DELETE` | `/configure/build/mac_signing_identity` |
+
+
+### Responses
+
+* 204 — empty body.
