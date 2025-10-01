@@ -86,31 +86,23 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 		addLineFunc(fmt.Sprintf("FROM %s AS signer", quillImage))
 		addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
 
-		addLineFunc(fmt.Sprintf(`RUN --mount=type=secret,id=%s_cert \
-	--mount=type=secret,id=%s_password \
-	--mount=type=secret,id=%s_notary_key_id \
-	--mount=type=secret,id=%s_notary_key \
-	--mount=type=secret,id=%s_notary_issuer \
-	export QUILL_SIGN_P12="$(cat /run/secrets/%s_cert)" && \
-	export QUILL_SIGN_PASSWORD="$(cat /run/secrets/%s_password)" && \
-	export QUILL_NOTARY_KEY_ID="$(cat /run/secrets/%s_notary_key_id)" && \
-	export QUILL_NOTARY_KEY="$(cat /run/secrets/%s_notary_key)" && \
-	export QUILL_NOTARY_ISSUER="$(cat /run/secrets/%s_notary_issuer)" && \
-	find /%s -type f | while read f; do \
+		addLineFunc(fmt.Sprintf(
+			`RUN --mount=type=secret,id=%[1]s_cert \
+	--mount=type=secret,id=%[1]s_password \
+	--mount=type=secret,id=%[1]s_notary_key_id \
+	--mount=type=secret,id=%[1]s_notary_key \
+	--mount=type=secret,id=%[1]s_notary_issuer \
+	export QUILL_SIGN_P12="$(cat /run/secrets/%[1]s_cert)" && \
+	export QUILL_SIGN_PASSWORD="$(cat /run/secrets/%[1]s_password)" && \
+	export QUILL_NOTARY_KEY_ID="$(cat /run/secrets/%[1]s_notary_key_id)" && \
+	export QUILL_NOTARY_KEY="$(cat /run/secrets/%[1]s_notary_key)" && \
+	export QUILL_NOTARY_ISSUER="$(cat /run/secrets/%[1]s_notary_issuer)" && \
+	find /%[2]s -type f | while read f; do \
 	  if file "$f" | grep -q "Mach-O"; then \
 		echo "Signing $f" && \
 		quill sign-and-notarize "$f"; \
 	  fi; \
 	done`,
-			creds.Name,
-			creds.Name,
-			creds.Name,
-			creds.Name,
-			creds.Name,
-			creds.Name,
-			creds.Name,
-			creds.Name,
-			creds.Name,
 			creds.Name,
 			ContainerArtifactsDir,
 		))
