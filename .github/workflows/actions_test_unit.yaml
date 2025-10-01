@@ -2,6 +2,9 @@ name: Actions. Test Unit
 
 on: [push]
 
+env:
+  TASK_X_REMOTE_TASKFILES: 1
+
 jobs:
   test-unit:
     runs-on: ubuntu-22.04
@@ -11,15 +14,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - name: Install Task
+        uses: arduino/setup-task@v2
         with:
-          node-version: "18.x"
-
-      - name: Clean install a project
-        working-directory: actions
-        run: npm ci
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test Unit
-        working-directory: actions
-        run: npm run test
+        run: task --yes actions:test

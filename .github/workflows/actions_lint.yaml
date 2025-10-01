@@ -2,6 +2,9 @@ name: Actions. Lint
 
 on: [push]
 
+env:
+  TASK_X_REMOTE_TASKFILES: 1
+
 jobs:
   lint:
     runs-on: ubuntu-22.04
@@ -11,17 +14,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - name: Install Task
+        uses: arduino/setup-task@v2
         with:
-          node-version: "18.x"
-
-      - name: Clean install a project
-        working-directory: actions
-        run: npm ci
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Lint
-        working-directory: actions
         run: |
-          npm run lint
-          npm run format:check
+          task --yes actions:lint
+          task --yes actions:format:check
