@@ -1,7 +1,6 @@
 package mac_signing
 
 type Credentials struct {
-	Name         string
 	Certificate  string
 	Password     string
 	NotaryKeyID  string
@@ -9,4 +8,4 @@ type Credentials struct {
 	NotaryIssuer string
 }
 
-const macSigningCertificateName = "certificate"
+const MacSigningCertificateName = "certificate"

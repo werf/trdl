@@ -12,7 +12,7 @@ import (
 const storageKeyPrefix = "mac_signing_identity/"
 
 func storageKey() string {
-	return storageKeyPrefix + macSigningCertificateName
+	return storageKeyPrefix + MacSigningCertificateName
 }
 
 func PutCredentials(ctx context.Context, req *logical.Request, creds Credentials) error {
@@ -22,8 +22,6 @@ func PutCredentials(ctx context.Context, req *logical.Request, creds Credentials
 	if _, err := base64.StdEncoding.DecodeString(creds.NotaryKey); err != nil {
 		return fmt.Errorf("invalid base64 notary key: %w", err)
 	}
-
-	creds.Name = macSigningCertificateName
 
 	data, err := json.Marshal(creds)
 	if err != nil {

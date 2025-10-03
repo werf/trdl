@@ -75,7 +75,6 @@ func pathMacSigningCreateOrUpdate(ctx context.Context, req *logical.Request, fie
 	}
 
 	creds := Credentials{
-		Name:         macSigningCertificateName,
 		Certificate:  fields.Get(fieldNameMacSigningCertificateData).(string),
 		Password:     fields.Get(fieldNameMacSigningPassword).(string),
 		NotaryKeyID:  fields.Get(fieldNameMacSigningNotaryKeyID).(string),

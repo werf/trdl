@@ -81,7 +81,6 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	}
 
 	if opts.MacSigningCredentials != nil {
-		creds := opts.MacSigningCredentials
 		quillImage := GetQuillImage()
 		addLineFunc(fmt.Sprintf("FROM %s AS signer", quillImage))
 		addLineFunc(fmt.Sprintf("COPY --from=builder /%s /%s/", ContainerArtifactsDir, ContainerArtifactsDir))
@@ -103,7 +102,7 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 		quill sign-and-notarize "$f"; \
 	  fi; \
 	done`,
-			creds.Name,
+			mac_signing.MacSigningCertificateName,
 			ContainerArtifactsDir,
 		))
 
