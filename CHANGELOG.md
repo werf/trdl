@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://www.github.com/werf/trdl/compare/v0.11.1...v0.12.0) (2025-10-03)
+
+
+### Features
+
+* **server, mac_signing:** add ability to sign and notarize Mach-O files ([#357](https://www.github.com/werf/trdl/issues/357)) ([bbeb040](https://www.github.com/werf/trdl/commit/bbeb040cd71f68a019f7b5cba41f4bb08e3fc466))
+
 ### [0.11.1](https://www.github.com/werf/trdl/compare/v0.11.0...v0.11.1) (2025-09-16)
 
 
