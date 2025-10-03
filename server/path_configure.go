@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 
 	"github.com/werf/trdl/server/pkg/git"
+	"github.com/werf/trdl/server/pkg/mac_signing"
 	"github.com/werf/trdl/server/pkg/pgp"
 	"github.com/werf/trdl/server/pkg/publisher"
 	"github.com/werf/trdl/server/pkg/secrets"
@@ -43,6 +44,7 @@ func configurePaths(b *Backend) []*framework.Path {
 		git.CredentialsPaths(),
 		pgp.Paths(),
 		secrets.Paths(),
+		mac_signing.Paths(),
 	)
 }
 

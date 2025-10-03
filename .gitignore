@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+.DS_Store
 
 # IDE
 .vscode
@@ -11,9 +12,9 @@
 
 # Test binary, built with `go test -c`
 *.test
-bin/
-build/
-dist/
+/bin/
+/build/
+/dist/
 
 # actions
 actions/node_modules/

@@ -16,6 +16,7 @@ import (
 
 	"github.com/werf/logboek"
 	trdlGit "github.com/werf/trdl/server/pkg/git"
+	"github.com/werf/trdl/server/pkg/mac_signing"
 	"github.com/werf/trdl/server/pkg/secrets"
 )
 
@@ -47,6 +48,15 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 		return fmt.Errorf("unable to get build secrets: %w", err)
 	}
 
+	credentials, err := mac_signing.GetCredentials(ctx, opts.Storage)
+	if err != nil {
+		return fmt.Errorf("unable to get mac signing entity: %w", err)
+	}
+	if credentials == nil {
+		logboek.Context(ctx).Default().LogF("Skipping signing step for mac binaries (mac signing entity not defined)\n")
+		logger.Debug("Skipping signing step for mac binaries (mac signing entity not defined)")
+	}
+
 	go func() {
 		if err := func() error {
 			tw := tar.NewWriter(contextWriter)
@@ -59,8 +69,9 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 			}
 
 			dockerfileOpts := DockerfileOpts{
-				Labels:  serviceLabels,
-				Secrets: secrets,
+				Labels:                serviceLabels,
+				Secrets:               secrets,
+				MacSigningCredentials: credentials,
 			}
 			if err := GenerateAndAddDockerfileToTar(tw, serviceDockerfilePathInContext, opts.FromImage, opts.RunCommands, dockerfileOpts); err != nil {
 				return fmt.Errorf("unable to add service dockerfile to tar: %w", err)
@@ -87,10 +98,11 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	logger.Info("Building docker image with artifacts")
 
 	builder, err := NewBuilder(ctx, &NewBuilderOpts{
-		BuildId:     buildId,
-		ContextPath: serviceDockerfilePathInContext,
-		Secrets:     secrets,
-		Logger:      logger,
+		BuildId:               buildId,
+		ContextPath:           serviceDockerfilePathInContext,
+		Secrets:               secrets,
+		MacSigningCredentials: credentials,
+		Logger:                logger,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create docker builder: %w", err)
