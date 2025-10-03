@@ -49,9 +49,12 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	}
 	credentials, err := mac_signing.GetCredentials(ctx, opts.Storage)
 	if err != nil {
-		fmt.Printf("Warning: unable to get mac signing credentials: %v\n", err)
-		fmt.Println("Continue without mac signing...")
-		return nil
+		return fmt.Errorf("unable to get mac signing entity: %w", err)
+	}
+
+	if credentials == nil {
+		fmt.Println("Warning: mac signing entity is not defined.")
+		fmt.Println("Continuing without mac signing...")
 	}
 
 	go func() {
