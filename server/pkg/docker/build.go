@@ -47,14 +47,14 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	if err != nil {
 		return fmt.Errorf("unable to get build secrets: %w", err)
 	}
+
 	credentials, err := mac_signing.GetCredentials(ctx, opts.Storage)
 	if err != nil {
 		return fmt.Errorf("unable to get mac signing entity: %w", err)
 	}
-
 	if credentials == nil {
-		fmt.Println("Warning: mac signing entity is not defined.")
-		fmt.Println("Continuing without mac signing...")
+		logboek.Context(ctx).Default().LogF("Skipping signing step for mac binaries (mac signing entity not defined)\n")
+		logger.Debug("Skipping signing step for mac binaries (mac signing entity not defined)")
 	}
 
 	go func() {
