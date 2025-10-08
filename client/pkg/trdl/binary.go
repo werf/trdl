@@ -6,16 +6,27 @@ import (
 	"path/filepath"
 )
 
-func GetTrdlBinaryPath() (string, error) {
+var (
+	trdlBinaryPath    string
+	trdlBinaryPathErr error
+)
+
+func init() {
 	exe, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("unable to determine trdl binary path: %w", err)
+		trdlBinaryPathErr = fmt.Errorf("unable to determine trdl binary path: %w", err)
+		return
 	}
 
 	realExe, err := filepath.EvalSymlinks(exe)
 	if err != nil {
-		return "", fmt.Errorf("unable to resolve symlinks for %s: %w", exe, err)
+		trdlBinaryPath = exe
+		return
 	}
 
-	return realExe, nil
+	trdlBinaryPath = realExe
+}
+
+func GetTrdlBinaryPath() (string, error) {
+	return trdlBinaryPath, trdlBinaryPathErr
 }
