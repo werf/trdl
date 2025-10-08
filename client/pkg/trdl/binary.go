@@ -8,13 +8,13 @@ import (
 
 var (
 	trdlBinaryPath    string
-	trdlBinaryPathErr error
+	errTrdlBinaryPath error
 )
 
 func init() {
 	exe, err := os.Executable()
 	if err != nil {
-		trdlBinaryPathErr = fmt.Errorf("unable to determine trdl binary path: %w", err)
+		errTrdlBinaryPath = fmt.Errorf("unable to determine trdl binary path: %w", err)
 		return
 	}
 
@@ -28,5 +28,5 @@ func init() {
 }
 
 func GetTrdlBinaryPath() (string, error) {
-	return trdlBinaryPath, trdlBinaryPathErr
+	return trdlBinaryPath, errTrdlBinaryPath
 }
