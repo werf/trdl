@@ -105,7 +105,7 @@ func configurePath(b *Backend) *framework.Path {
 			},
 			fieldNameS3SecretAccessKey: {
 				Type:        framework.TypeString,
-				Description: "The S3 storage access key id",
+				Description: "The S3 storage secret access key",
 				Required:    true,
 			},
 		},

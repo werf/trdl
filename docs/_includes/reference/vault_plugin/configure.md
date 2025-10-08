@@ -19,7 +19,7 @@ Configure the plugin.
 * `s3_bucket_name` (string, required) — The S3 storage bucket name.
 * `s3_endpoint` (string, required) — The S3 storage endpoint.
 * `s3_region` (string, required) — The S3 storage region.
-* `s3_secret_access_key` (string, required) — The S3 storage access key id.
+* `s3_secret_access_key` (string, required) — The S3 storage secret access key.
 
 ### Responses
 
