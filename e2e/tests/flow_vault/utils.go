@@ -19,23 +19,33 @@ import (
 	"github.com/werf/trdl/server/pkg/testutil"
 )
 
+var trdlRepositoryDirectory string
+
+func init() {
+	var err error
+	trdlRepositoryDirectory, err = filepath.Abs("../../../")
+	if err != nil {
+		panic(err)
+	}
+}
+
 func BuildTrdlServerBin() {
 	testutil.RunSucceedCommand(
-		"",
+		trdlRepositoryDirectory,
 		"task",
-		"build:test:with-coverage",
-		"-d", "../../../server",
+		"--yes",
+		"server:build:test:with-coverage",
 	)
 }
 
 func ComputeTrdlVaultClientPath() string {
 	testutil.RunSucceedCommand(
-		"",
+		trdlRepositoryDirectory,
 		"task",
-		"build:test:with-coverage",
-		"-d", "../../../release",
+		"--yes",
+		"release:build:test:with-coverage",
 	)
-	p, _ := filepath.Abs("../../../bin/trdl-vault/trdl-vault")
+	p, _ := filepath.Abs(filepath.Join(trdlRepositoryDirectory, "bin/trdl-vault/trdl-vault"))
 	return p
 }
 
@@ -102,7 +112,7 @@ func gitTag(testDir, tag, pgpSigningKeyDeveloper string) {
 func quorumSignTag(testDir, pgpSigningKeyTL, pgpSigningKeyPM, tag string) {
 	if runtime.GOOS == "darwin" {
 		err := os.Setenv("GIT_EDITOR", `vim -c ":normal iNew version" -c ":wq"`)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 	}
 	testutil.RunSucceedCommand(
 		testDir,
@@ -120,7 +130,7 @@ func quorumSignTag(testDir, pgpSigningKeyTL, pgpSigningKeyPM, tag string) {
 func quorumSignCommit(testDir, pgpSigningKeyTL, pgpSigningKeyPM, branchName string) {
 	if runtime.GOOS == "darwin" {
 		err := os.Setenv("GIT_EDITOR", `vim -c ":normal iNew version" -c ":wq"`)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 	}
 	testutil.RunSucceedCommand(
 		testDir,
@@ -135,39 +145,50 @@ func quorumSignCommit(testDir, pgpSigningKeyTL, pgpSigningKeyPM, branchName stri
 	)
 }
 
-func dockerComposeUp(testDir string) {
-	err := os.Setenv("TEST_DIR", testDir)
-	Ω(err).ShouldNot(HaveOccurred())
+func setupMinio() {
 	testutil.RunSucceedCommand(
-		testutil.FixturePath("complete_cycle"),
-		"docker", "compose",
-		"up", "-d",
+		trdlRepositoryDirectory,
+		"task",
+		"--yes",
+		"server:setup-minio",
 	)
 }
 
-func setupVaultPlugin(testDir string) {
-	testutil.RunSucceedCommand(
-		testutil.FixturePath("complete_cycle"),
-		"./setup-vault-plugin.sh",
+func getMinioEndpoint() string {
+	ip := testutil.SucceedCommandOutputString(
+		trdlRepositoryDirectory,
+		"task",
+		"--yes",
+		"server:_get-minio-ip",
 	)
+	ip = strings.TrimSpace(ip)
+	return fmt.Sprintf("http://%s:9000", ip)
 }
 
-func dockerComposeDown(testDir string) {
-	err := os.Setenv("TEST_DIR", testDir)
-	Ω(err).ShouldNot(HaveOccurred())
+func setupVault() {
 	testutil.RunSucceedCommand(
-		testutil.FixturePath("complete_cycle"),
-		"docker", "compose",
-		"down", "--remove-orphans",
-		"--volumes",
+		trdlRepositoryDirectory,
+		"task",
+		"--yes",
+		"server:setup-vault",
+		"skip_deps=true",
 	)
 }
 
 func serverInitProject(testDir, projectName string) {
 	testutil.RunSucceedCommand(
 		testDir,
-		"docker", "exec", "trdl-vault-dev",
+		"docker", "exec", "trdl_dev_vault",
 		"vault", "secrets", "enable", fmt.Sprintf("-path=%s", projectName), "vault-plugin-secrets-trdl",
+	)
+}
+
+func cleanupEnvironment() {
+	testutil.RunSucceedCommand(
+		trdlRepositoryDirectory,
+		"task",
+		"--yes",
+		"server:dev:cleanup",
 	)
 }
 
@@ -193,7 +214,7 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 	}()
 	testutil.RunSucceedCommand(
 		testDir,
-		"docker", "exec", "trdl-vault-dev", "vault", "write",
+		"docker", "exec", "trdl_dev_vault", "vault", "write",
 		fmt.Sprintf("%s/configure", opts.ProjectName),
 		fmt.Sprintf("git_repo_url=%s", opts.RepoURL),
 		fmt.Sprintf("git_trdl_channels_branch=%s", opts.TrdlChannelsBranch),
@@ -211,7 +232,7 @@ func serverAddBuildSecrets(testDir, projectName string, secrets map[string]strin
 	for id, data := range secrets {
 		testutil.RunSucceedCommand(
 			testDir,
-			"docker", "exec", "trdl-vault-dev", "vault", "write",
+			"docker", "exec", "trdl_dev_vault", "vault", "write",
 			fmt.Sprintf("%s/configure/build/secrets", projectName),
 			fmt.Sprintf("id=%s", id),
 			fmt.Sprintf("data=%s", data),
@@ -222,7 +243,7 @@ func serverAddBuildSecrets(testDir, projectName string, secrets map[string]strin
 func serverReadProjectConfig(testDir, projectName string) {
 	testutil.RunSucceedCommand(
 		testDir,
-		"docker", "exec", "trdl-vault-dev", "vault", "read",
+		"docker", "exec", "trdl_dev_vault", "vault", "read",
 		fmt.Sprintf("%s/configure", projectName),
 	)
 }
@@ -232,11 +253,11 @@ func serverAddGPGKeys(testDir, projectName string, keys map[string]string) {
 		fileName := fmt.Sprintf("%s_public.pgp", user)
 		filePath := testutil.FixturePath("pgp_keys", fileName)
 		data, err := os.ReadFile(filePath)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		testutil.RunSucceedCommand(
 			testDir,
-			"docker", "exec", "trdl-vault-dev", "vault", "write",
+			"docker", "exec", "trdl_dev_vault", "vault", "write",
 			fmt.Sprintf("%s/configure/trusted_pgp_public_key", projectName),
 			fmt.Sprintf("name=%s", user),
 			fmt.Sprintf("public_key=%s", string(data)),
@@ -266,11 +287,11 @@ func serverPublish(bin, projectName string) {
 
 func clientAdd(testDir, repo string, rootVersion int, trdlBinPath string) {
 	resp, err := http.Get("http://localhost:9000/repo" + fmt.Sprintf("/%d.root.json", rootVersion))
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 	rootRoleSha512 := clientUtil.Sha512Checksum(data)
 
 	testutil.RunSucceedCommand(
@@ -316,10 +337,10 @@ func gitAddTrdlChannelsConfiguration(testDir, pgpSigningKeyDeveloper string, cha
 	}
 
 	data, err := yaml.Marshal(conf)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 
 	err = os.WriteFile(filepath.Join(testDir, "trdl_channels.yaml"), data, 0o755)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 
 	testutil.RunSucceedCommand(
 		testDir,
@@ -367,7 +388,7 @@ script.sh
 	}
 
 	shellCommandPath, err := exec.LookPath(shellCommandName)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 
 	trdlUseCommand := strings.Join(append(
 		[]string{trdlBinPath},
@@ -376,7 +397,7 @@ script.sh
 
 	scriptPath := filepath.Join(tmpDir, "script.ps1")
 	err = ioutil.WriteFile(scriptPath, []byte(fmt.Sprintf(scriptFormat, trdlUseCommand)), 0o755)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 
 	shellCommandArgs := shellCommandArgsFunc(scriptPath)
 	output := testutil.SucceedCommandOutputString(
@@ -384,7 +405,7 @@ script.sh
 		shellCommandPath,
 		shellCommandArgs...,
 	)
-	Ω(output).Should(Equal(expectedOutput))
+	Expect(output).Should(Equal(expectedOutput))
 }
 
 func clientUpdate(trdlBinPath, repo string, channelCfg TrdlChannelsConfiguration) {
@@ -401,5 +422,5 @@ func clientUpdate(trdlBinPath, repo string, channelCfg TrdlChannelsConfiguration
 	)
 
 	pathParts := publisher.SplitFilepath(strings.TrimSpace(output))
-	Ω(pathParts[len(pathParts)-3]).Should(Equal(channelCfg.Version))
+	Expect(pathParts[len(pathParts)-3]).Should(Equal(channelCfg.Version))
 }

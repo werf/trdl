@@ -59,13 +59,13 @@ var _ = Describe("Complete cycle", func() {
 
 		var err error
 		backend, err = server.NewBackend(hclog.L())
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 		storage = &logical.InmemStorage{}
 
 		config := logical.TestBackendConfig()
 		config.StorageView = storage
 		err = backend.Setup(context.Background(), config)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 	}
 
 	gpgImportKeys := func() {
@@ -199,14 +199,14 @@ var _ = Describe("Complete cycle", func() {
 			"s3_bucket_name":                                   "repo",
 		}
 		resp, err := backend.HandleRequest(context.Background(), req)
-		Ω(err).ShouldNot(HaveOccurred())
-		Ω(resp).Should(BeNil())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(resp).Should(BeNil())
 
 		for _, user := range []string{"developer", "tl", "pm"} {
 			fileName := fmt.Sprintf("%s_public.pgp", user)
 			filePath := testutil.FixturePath("pgp_keys", fileName)
 			data, err := ioutil.ReadFile(filePath)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
 			req = &logical.Request{Storage: storage}
 			req.Path = "configure/trusted_pgp_public_key"
@@ -217,8 +217,8 @@ var _ = Describe("Complete cycle", func() {
 			}
 
 			resp, err = backend.HandleRequest(context.Background(), req)
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(resp).Should(BeNil())
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(resp).Should(BeNil())
 		}
 
 		for i := 0; i < 2; i++ {
@@ -230,7 +230,7 @@ var _ = Describe("Complete cycle", func() {
 				"data": "secretData",
 			}
 			_, err = backend.HandleRequest(context.Background(), req)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 		}
 	}
 
@@ -240,11 +240,11 @@ var _ = Describe("Complete cycle", func() {
 		req.Operation = logical.CreateOperation
 		req.Data = map[string]interface{}{"git_tag": tagName}
 		resp, err := backend.HandleRequest(context.Background(), req)
-		Ω(err).ShouldNot(HaveOccurred())
-		Ω(resp).ShouldNot(BeNil())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(resp).ShouldNot(BeNil())
 
 		val, ok := resp.Data["task_uuid"]
-		Ω(ok).Should(BeTrue(), fmt.Sprintf("%+v", resp.Data))
+		Expect(ok).Should(BeTrue(), fmt.Sprintf("%+v", resp.Data))
 		taskUUID := val.(string)
 
 		tasksManagerTestutil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
@@ -254,10 +254,10 @@ var _ = Describe("Complete cycle", func() {
 		cmdArgs := []string{"add", repo, minioRepoAddress}
 		if rootVersion > 0 {
 			resp, err := http.Get(minioRepoAddress + fmt.Sprintf("/%d.root.json", rootVersion))
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 			defer func() { _ = resp.Body.Close() }()
 			data, err := io.ReadAll(resp.Body)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 			rootRoleSha512 := clientUtil.Sha512Checksum(data)
 			cmdArgs = append(cmdArgs, fmt.Sprintf("%d", rootVersion), rootRoleSha512)
 		}
@@ -275,11 +275,11 @@ var _ = Describe("Complete cycle", func() {
 		req.Operation = logical.CreateOperation
 		req.Data = map[string]interface{}{}
 		resp, err := backend.HandleRequest(context.Background(), req)
-		Ω(err).ShouldNot(HaveOccurred())
-		Ω(resp).ShouldNot(BeNil())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(resp).ShouldNot(BeNil())
 
 		val, ok := resp.Data["task_uuid"]
-		Ω(ok).Should(BeTrue(), fmt.Sprintf("%+v", resp.Data))
+		Expect(ok).Should(BeTrue(), fmt.Sprintf("%+v", resp.Data))
 		taskUUID := val.(string)
 
 		tasksManagerTestutil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
@@ -299,7 +299,7 @@ var _ = Describe("Complete cycle", func() {
 		)
 
 		pathParts := publisher.SplitFilepath(strings.TrimSpace(output))
-		Ω(pathParts[len(pathParts)-3]).Should(Equal(expectedVersion))
+		Expect(pathParts[len(pathParts)-3]).Should(Equal(expectedVersion))
 	}
 
 	clientUse := func(group, channel, expectedVersion string) {
@@ -331,7 +331,7 @@ script.sh
 		}
 
 		shellCommandPath, err := exec.LookPath(shellCommandName)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		trdlUseCommand := strings.Join(append(
 			[]string{trdlBinPath},
@@ -340,7 +340,7 @@ script.sh
 
 		scriptPath := filepath.Join(tmpDir, "script.ps1")
 		err = ioutil.WriteFile(scriptPath, []byte(fmt.Sprintf(scriptFormat, trdlUseCommand)), 0o755)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		shellCommandArgs := shellCommandArgsFunc(scriptPath)
 		output := testutil.SucceedCommandOutputString(
@@ -348,7 +348,7 @@ script.sh
 			shellCommandPath,
 			shellCommandArgs...,
 		)
-		Ω(output).Should(Equal(expectedOutput))
+		Expect(output).Should(Equal(expectedOutput))
 	}
 
 	BeforeEach(func() {
@@ -393,10 +393,10 @@ script.sh
 		}
 
 		data, err := yaml.Marshal(conf)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		err = ioutil.WriteFile(filepath.Join(testDir, "trdl_channels.yaml"), data, 0o755)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		testutil.RunSucceedCommand(
 			testDir,

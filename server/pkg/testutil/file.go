@@ -6,5 +6,5 @@ import (
 )
 
 func CopyIn(sourcePath, destinationPath string) {
-	Ω(copy.Copy(sourcePath, destinationPath)).Should(Succeed())
+	Expect(copy.Copy(sourcePath, destinationPath)).Should(Succeed())
 }

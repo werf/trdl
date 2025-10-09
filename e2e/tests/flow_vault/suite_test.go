@@ -43,7 +43,7 @@ var (
 		SuiteData.TmpDir = testutil.GetTempDir()
 
 		SuiteData.TestDir = filepath.Join(SuiteData.TmpDir, "project")
-		Ω(os.Mkdir(SuiteData.TestDir, os.ModePerm))
+		Expect(os.Mkdir(SuiteData.TestDir, os.ModePerm))
 
 		SuiteData.TrdlHomeDir = filepath.Join(SuiteData.TmpDir, ".trdl")
 		SuiteData.TrdlHomeDir = SuiteData.TmpDir
@@ -52,9 +52,9 @@ var (
 	})
 
 	_ = AfterEach(func() {
+		cleanupEnvironment()
 		removeGPGKeys(SuiteData.GPGKeys)
 		err := os.RemoveAll(SuiteData.TmpDir)
-		Ω(err).ShouldNot(HaveOccurred())
-		dockerComposeDown(SuiteData.TestDir)
+		Expect(err).ShouldNot(HaveOccurred())
 	})
 )

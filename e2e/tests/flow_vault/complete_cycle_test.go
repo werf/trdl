@@ -42,20 +42,21 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				}
 				initGitRepo(SuiteData.TestDir, "main")
 			}
-			By("setup minio and vault plugin")
+			By("setup minio and vault")
 			{
-				dockerComposeUp(SuiteData.TestDir)
-				setupVaultPlugin(SuiteData.TestDir)
+				setupMinio()
+				setupVault()
 			}
 			By("configure server")
 			{
+				s3Endpoint := getMinioEndpoint()
 				serverInitProject(SuiteData.TestDir, testOpts.projectName)
 				serverConfigureProject(SuiteData.TestDir, serverConfigureOptions{
 					ProjectName:        testOpts.projectName,
 					RepoURL:            "/test_dir",
 					TrdlChannelsBranch: testOpts.branchName,
 					RequiredNumberOfVerifiedSignaturesOnCommit: 3,
-					S3Endpoint:        "http://minio:9000",
+					S3Endpoint:        s3Endpoint,
 					S3Region:          "ru-central1",
 					S3AccessKeyID:     "minioadmin",
 					S3SecretAccessKey: "minioadmin",

@@ -16,11 +16,11 @@ import (
 
 func GetTempDir() string {
 	dir, err := ioutil.TempDir("", "trdl-e2e-tests-")
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 
 	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
 		dir, err = filepath.EvalSymlinks(dir)
-		Ω(err).ShouldNot(HaveOccurred(), fmt.Sprintf("eval symlinks of path %s failed: %s", dir, err))
+		Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("eval symlinks of path %s failed: %s", dir, err))
 	}
 
 	return dir
@@ -31,7 +31,7 @@ func ComputeTrdlBinPath() string {
 	if binPath == "" {
 		var err error
 		binPath, err = gexec.Build("github.com/werf/trdl/client/cmd/trdl")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 	}
 
 	return binPath
@@ -59,7 +59,7 @@ func isTrdlTestBinaryPath(path string) bool {
 
 func FixturePath(paths ...string) string {
 	absFixturesPath, err := filepath.Abs("_fixtures")
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 	pathsToJoin := append([]string{absFixturesPath}, paths...)
 	return filepath.Join(pathsToJoin...)
 }

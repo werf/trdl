@@ -121,7 +121,7 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 
 	tableItBodyTagFunc := func(entry tableEntry) {
 		repo, err := CloneInMemory(testDir, CloneOptions{})
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		err = VerifyTagSignatures(
 			repo,
@@ -132,19 +132,19 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 		)
 
 		if entry.expectedErrMsg != "" {
-			Ω(err).Should(HaveOccurred())
-			Ω(err.Error()).Should(BeEquivalentTo(entry.expectedErrMsg))
+			Expect(err).Should(HaveOccurred())
+			Expect(err.Error()).Should(BeEquivalentTo(entry.expectedErrMsg))
 		} else {
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 		}
 	}
 
 	tableItBodyCommitFunc := func(entry tableEntry) {
 		repo, err := CloneInMemory(testDir, CloneOptions{})
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		head, err := repo.Head()
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		headCommit := head.Hash()
 		err = VerifyCommitSignatures(
@@ -156,10 +156,10 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 		)
 
 		if entry.expectedErrMsg != "" {
-			Ω(err).Should(HaveOccurred())
-			Ω(err.Error()).Should(BeEquivalentTo(entry.expectedErrMsg))
+			Expect(err).Should(HaveOccurred())
+			Expect(err.Error()).Should(BeEquivalentTo(entry.expectedErrMsg))
 		} else {
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 		}
 	}
 
