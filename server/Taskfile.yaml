@@ -24,7 +24,6 @@ vars:
   minio_console_port: '{{.minio_console_port | default "9001"}}'
   vault_port: '{{.vault_port | default "8200"}}'
   version: '{{.version | default "dev"}}'
-  skip_deps: '{{.skip_deps | default "false"}}'
 
 tasks:
   restart:
@@ -58,14 +57,8 @@ tasks:
       - docker exec {{.minio_container}} mc mb main/{{.project_name}}
       - docker exec {{.minio_container}} mc anonymous set public main/{{.project_name}}
 
-  setup-vault-with-deps:
-    desc: "Setup Vault with dependencies"
-    cmds:
-      - task: build:dev:linux:amd64
-      - task: setup-vault-only
-
-  setup-vault-only:
-    desc: "Setup Vault without building"
+  setup-vault:
+    desc: "Run Vault server in development mode."
     cmds:
       - docker rm -f {{.vault_container}} || true
       - |
@@ -77,16 +70,23 @@ tasks:
         while ! docker exec {{.vault_container}} vault status; do
           sleep 1;
         done
+    deps:
+      - build:dev:linux:amd64
 
-  setup-vault:
-    desc: "Run Vault server in development mode (with optional deps)"
+  setup-test-vault:
+    silent: true
+    desc: Run vault server for tests
     cmds:
+      - docker rm -f {{.vault_container}} || true
       - |
-        if [ "{{.skip_deps}}" = "true" ]; then
-          task --yes setup-vault-only
-        else
-          task --yes setup-vault-with-deps
-        fi
+        docker run --workdir /app --privileged --name {{.vault_container}} -e VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE=1 \
+        -e VAULT_PLUGIN_SECRETS_TRDL_DEBUG=1 --detach --volume /var/run/docker.sock:/var/run/docker.sock \
+        --volume ./:/app --volume {{.test_dir}}:{{.test_dir}} -p {{.vault_port}}:{{.vault_port}} ghcr.io/werf/trdl-dev-vault:latest server -dev \
+        -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
+      - |
+        while ! docker exec {{.vault_container}} vault status; do
+          sleep 1;
+        done
 
   _get-minio-ip:
     cmds:

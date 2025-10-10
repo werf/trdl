@@ -3,7 +3,6 @@ package flow
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -145,12 +144,13 @@ func quorumSignCommit(testDir, pgpSigningKeyTL, pgpSigningKeyPM, branchName stri
 	)
 }
 
-func setupMinio() {
+func setupMinio(bucketName string) {
 	testutil.RunSucceedCommand(
 		trdlRepositoryDirectory,
 		"task",
 		"--yes",
 		"server:setup-minio",
+		fmt.Sprintf("project_name=%s", bucketName),
 	)
 }
 
@@ -165,13 +165,25 @@ func getMinioEndpoint() string {
 	return fmt.Sprintf("http://%s:9000", ip)
 }
 
-func setupVault() {
+func setupVault(testDir string) {
 	testutil.RunSucceedCommand(
 		trdlRepositoryDirectory,
 		"task",
 		"--yes",
-		"server:setup-vault",
-		"skip_deps=true",
+		"server:setup-test-vault",
+		fmt.Sprintf("test_dir=%s", testDir),
+	)
+}
+
+func setupGit() {
+	testutil.RunSucceedCommand(
+		"",
+		"docker",
+		"exec",
+		"trdl_dev_vault",
+		"apk",
+		"add",
+		"git",
 	)
 }
 
@@ -286,7 +298,7 @@ func serverPublish(bin, projectName string) {
 }
 
 func clientAdd(testDir, repo string, rootVersion int, trdlBinPath string) {
-	resp, err := http.Get("http://localhost:9000/repo" + fmt.Sprintf("/%d.root.json", rootVersion))
+	resp, err := http.Get(fmt.Sprintf("http://localhost:9000/%s/%d.root.json", repo, rootVersion))
 	Expect(err).ShouldNot(HaveOccurred())
 	defer resp.Body.Close()
 
@@ -297,7 +309,7 @@ func clientAdd(testDir, repo string, rootVersion int, trdlBinPath string) {
 	testutil.RunSucceedCommand(
 		testDir,
 		trdlBinPath,
-		"add", repo, "http://localhost:9000/repo", fmt.Sprintf("%d", rootVersion), rootRoleSha512,
+		"add", repo, fmt.Sprintf("http://localhost:9000/%s", repo), fmt.Sprintf("%d", rootVersion), rootRoleSha512,
 	)
 }
 
@@ -396,7 +408,7 @@ script.sh
 	), " ")
 
 	scriptPath := filepath.Join(tmpDir, "script.ps1")
-	err = ioutil.WriteFile(scriptPath, []byte(fmt.Sprintf(scriptFormat, trdlUseCommand)), 0o755)
+	err = os.WriteFile(scriptPath, []byte(fmt.Sprintf(scriptFormat, trdlUseCommand)), 0o755)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	shellCommandArgs := shellCommandArgsFunc(scriptPath)

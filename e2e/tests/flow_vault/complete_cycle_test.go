@@ -9,25 +9,17 @@ import (
 )
 
 type testOptions struct {
-	projectName string
-
-	repo       string
-	secondRepo string
-	branchName string
-
-	group   string
-	channel string
-
-	tag1 string
-	tag2 string
-	tag3 string
-
-	version1 string
-	version2 string
-	version3 string
-
-	pgpKeys map[string]string
-
+	projectName  string
+	branchName   string
+	group        string
+	channel      string
+	tag1         string
+	tag2         string
+	tag3         string
+	version1     string
+	version2     string
+	version3     string
+	pgpKeys      map[string]string
 	buildSecrets map[string]string
 }
 
@@ -44,8 +36,9 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 			}
 			By("setup minio and vault")
 			{
-				setupMinio()
-				setupVault()
+				setupMinio(testOpts.projectName)
+				setupVault(SuiteData.TestDir)
+				setupGit()
 			}
 			By("configure server")
 			{
@@ -53,14 +46,14 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				serverInitProject(SuiteData.TestDir, testOpts.projectName)
 				serverConfigureProject(SuiteData.TestDir, serverConfigureOptions{
 					ProjectName:        testOpts.projectName,
-					RepoURL:            "/test_dir",
+					RepoURL:            SuiteData.TestDir,
 					TrdlChannelsBranch: testOpts.branchName,
 					RequiredNumberOfVerifiedSignaturesOnCommit: 3,
 					S3Endpoint:        s3Endpoint,
 					S3Region:          "ru-central1",
 					S3AccessKeyID:     "minioadmin",
 					S3SecretAccessKey: "minioadmin",
-					S3BucketName:      "repo",
+					S3BucketName:      testOpts.projectName,
 				})
 				serverReadProjectConfig(SuiteData.TestDir, testOpts.projectName)
 				serverAddGPGKeys(SuiteData.TestDir, testOpts.projectName, testOpts.pgpKeys)
@@ -79,7 +72,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 			}
 			By("[client] Adding repo ...")
 			{
-				clientAdd(SuiteData.TestDir, testOpts.repo, 1, SuiteData.TrdlBinPath)
+				clientAdd(SuiteData.TestDir, testOpts.projectName, 1, SuiteData.TrdlBinPath)
 			}
 			By("[server] Publishing channels ...")
 			{
@@ -99,7 +92,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				clientUse(
 					SuiteData.TrdlBinPath,
 					SuiteData.TmpDir,
-					testOpts.repo, TrdlChannelsConfiguration{
+					testOpts.projectName, TrdlChannelsConfiguration{
 						Group:   testOpts.group,
 						Channel: testOpts.channel,
 						Version: testOpts.version1,
@@ -137,7 +130,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				clientUse(
 					SuiteData.TrdlBinPath,
 					SuiteData.TmpDir,
-					testOpts.repo, TrdlChannelsConfiguration{
+					testOpts.projectName, TrdlChannelsConfiguration{
 						Group:   testOpts.group,
 						Channel: testOpts.channel,
 						Version: testOpts.version1,
@@ -154,7 +147,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				clientUse(
 					SuiteData.TrdlBinPath,
 					SuiteData.TmpDir,
-					testOpts.repo, TrdlChannelsConfiguration{
+					testOpts.projectName, TrdlChannelsConfiguration{
 						Group:   testOpts.group,
 						Channel: testOpts.channel,
 						Version: testOpts.version2,
@@ -162,7 +155,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 			}
 			By("[client] Getting channel release when no updates available ...")
 			{
-				clientUpdate(SuiteData.TrdlBinPath, testOpts.repo, TrdlChannelsConfiguration{
+				clientUpdate(SuiteData.TrdlBinPath, testOpts.projectName, TrdlChannelsConfiguration{
 					Group:   testOpts.group,
 					Channel: testOpts.channel,
 					Version: testOpts.version2,
@@ -198,7 +191,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 
 			By("[client] Getting channel release when update available ...")
 			{
-				clientUpdate(SuiteData.TrdlBinPath, testOpts.repo, TrdlChannelsConfiguration{
+				clientUpdate(SuiteData.TrdlBinPath, testOpts.projectName, TrdlChannelsConfiguration{
 					Group:   testOpts.group,
 					Channel: testOpts.channel,
 					Version: testOpts.version3,
@@ -208,8 +201,6 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 		},
 		Entry("standart test", testOptions{
 			projectName: "test1",
-			repo:        "test",
-			secondRepo:  "test2",
 			group:       "1",
 			channel:     "alpha",
 			tag1:        "v1.0.1",
