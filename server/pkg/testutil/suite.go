@@ -11,16 +11,15 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 )
 
 func GetTempDir() string {
 	dir, err := ioutil.TempDir("", "trdl-e2e-tests-")
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 
 	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
 		dir, err = filepath.EvalSymlinks(dir)
-		Ω(err).ShouldNot(HaveOccurred(), fmt.Sprintf("eval symlinks of path %s failed: %s", dir, err))
+		Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("eval symlinks of path %s failed: %s", dir, err))
 	}
 
 	return dir
@@ -30,8 +29,14 @@ func ComputeTrdlBinPath() string {
 	binPath := os.Getenv("TRDL_TEST_BINARY_PATH")
 	if binPath == "" {
 		var err error
-		binPath, err = gexec.Build("github.com/werf/trdl/client/cmd/trdl")
-		Ω(err).ShouldNot(HaveOccurred())
+		RunSucceedCommand(
+			"../../../",
+			"task",
+			"--yes",
+			"client:build-with-coverage",
+		)
+		binPath, err = filepath.Abs("../../../bin/coverage/trdl")
+		Expect(err).ShouldNot(HaveOccurred())
 	}
 
 	return binPath
@@ -59,7 +64,7 @@ func isTrdlTestBinaryPath(path string) bool {
 
 func FixturePath(paths ...string) string {
 	absFixturesPath, err := filepath.Abs("_fixtures")
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 	pathsToJoin := append([]string{absFixturesPath}, paths...)
 	return filepath.Join(pathsToJoin...)
 }

@@ -38,10 +38,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 var _ = BeforeEach(func() {
 	tmpDir = testutil.GetTempDir()
 	testDir = filepath.Join(tmpDir, "project")
-	Ω(os.Mkdir(testDir, os.ModePerm))
+	Expect(os.Mkdir(testDir, os.ModePerm))
 })
 
 var _ = AfterEach(func() {
 	err := os.RemoveAll(tmpDir)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 })

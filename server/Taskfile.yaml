@@ -73,6 +73,21 @@ tasks:
     deps:
       - build:dev:linux:amd64
 
+  setup-test-vault:
+    silent: true
+    desc: Run vault server for tests
+    cmds:
+      - docker rm -f {{.vault_container}} || true
+      - |
+        docker run --workdir /app --privileged --name {{.vault_container}} -e VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE=1 \
+        -e VAULT_PLUGIN_SECRETS_TRDL_DEBUG=1 --detach --volume /var/run/docker.sock:/var/run/docker.sock \
+        --volume ./:/app --volume {{.test_dir}}:{{.test_dir}} -p {{.vault_port}}:{{.vault_port}} ghcr.io/werf/trdl-dev-vault:latest server -dev \
+        -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
+      - |
+        while ! docker exec {{.vault_container}} vault status; do
+          sleep 1;
+        done
+
   _get-minio-ip:
     cmds:
       - echo $(docker inspect --format "{{`{{`}} .NetworkSettings.IPAddress {{`}}`}}" {{.minio_container}})
@@ -143,6 +158,8 @@ tasks:
 
   build:dev:linux:amd64:
     desc: "Build server dev binary for linux/amd64."
+    status:
+      - test -f "vault/plugins/vault-plugin-secrets-trdl"
     cmds:
       - task: _build:go
         vars:
@@ -255,6 +272,18 @@ tasks:
           outputDir: ../bin/trdl
           extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
           goTags: test_coverage
+
+  build:test:with-coverage:
+    desc: "Build server binary for E2E tests with coverage on linux/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          outputDir: vault/plugins
+          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./..."
+          goTags: "test_coverage"
+          CLI_ARGS: "-tags={{.goTags}}"
 
   test:unit:
     desc: "Run server unit tests."
