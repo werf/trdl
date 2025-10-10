@@ -31,7 +31,7 @@ func ComputeTrdlBinPath() string {
 		var err error
 		RunSucceedCommand(
 			"../../../",
-			"tesk",
+			"task",
 			"--yes",
 			"client:build-with-coverage",
 		)
