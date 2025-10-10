@@ -11,7 +11,6 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 )
 
 func GetTempDir() string {
@@ -30,7 +29,13 @@ func ComputeTrdlBinPath() string {
 	binPath := os.Getenv("TRDL_TEST_BINARY_PATH")
 	if binPath == "" {
 		var err error
-		binPath, err = gexec.Build("github.com/werf/trdl/client/cmd/trdl")
+		RunSucceedCommand(
+			"../../../",
+			"tesk",
+			"--yes",
+			"client:build-with-coverage",
+		)
+		binPath, err = filepath.Abs("../../../bin/coverage/trdl")
 		Expect(err).ShouldNot(HaveOccurred())
 	}
 

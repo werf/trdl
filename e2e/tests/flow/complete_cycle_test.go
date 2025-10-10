@@ -467,13 +467,13 @@ script.sh
 		time.Sleep(time.Millisecond * 500)
 		clientUse(group, channel, version2)
 
-		By(fmt.Sprintf("[server] Rotating TUF roles expiration ..."))
+		By("[server] Rotating TUF roles expiration ...")
 		rotateTUFRoles()
 
 		By("[client-1] Getting channel release when no updates available ...")
 		clientUpdate(repo, group, channel, version2)
 
-		By(fmt.Sprintf("[server] Rotating TUF roles expiration ..."))
+		By("[server] Rotating TUF roles expiration ...")
 		rotateTUFRoles()
 
 		By("[client-1] Getting channel release when no updates available ...")
@@ -485,7 +485,7 @@ script.sh
 		By("[client-2] Getting channel release when update available ...")
 		clientUpdate(secondRepo, group, channel, version2)
 
-		By(fmt.Sprintf("[server] Rotating TUF roles expiration ..."))
+		By("[server] Rotating TUF roles expiration ...")
 		rotateTUFRoles()
 
 		By(fmt.Sprintf("[server] Releasing tag %q ...", tag3))
