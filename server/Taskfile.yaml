@@ -135,6 +135,7 @@ tasks:
         esac
         if [ ! -f $HOME/bin/vault ]; then
           echo "Installing Vault {{.vault_version}} for $ARCH..."
+          wget "https://releases.hashicorp.com/vault/{{.vault_version}}/vault_{{.vault_version}}_linux_${ARCH}.zip" -O /tmp/vault.zip
           unzip -o /tmp/vault.zip -d /tmp
           mkdir -p $HOME/bin
           mv /tmp/vault $HOME/bin/vault
