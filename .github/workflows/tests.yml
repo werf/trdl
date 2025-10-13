@@ -97,8 +97,13 @@ jobs:
       - name: Install ginkgo
         run: task --yes -p deps:install:ginkgo
 
+      - name: Setup vault
+        run: task --yes server:setup-vault-local
+
       - name: Test
         run: task --yes e2e:test:e2e
+        env:
+          PATH: $PATH:$HOME/bin/
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -125,7 +130,7 @@ jobs:
           token: ${{secrets.QLTY_COVERAGE_TOKEN}}
           files: tests_coverage/**/*.out
           skip-errors: false
-          
+
   notification:
     name: Notification
     if: always()

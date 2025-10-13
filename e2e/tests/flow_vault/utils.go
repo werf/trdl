@@ -20,6 +20,11 @@ import (
 
 var trdlRepositoryDirectory string
 
+const (
+	vaultAddress = "-address=http://localhost:8200"
+	minioAddress = "http://localhost:9000"
+)
+
 func init() {
 	var err error
 	trdlRepositoryDirectory, err = filepath.Abs("../../../")
@@ -154,44 +159,22 @@ func setupMinio(bucketName string) {
 	)
 }
 
-func getMinioEndpoint() string {
-	ip := testutil.SucceedCommandOutputString(
-		trdlRepositoryDirectory,
-		"task",
-		"--yes",
-		"server:_get-minio-ip",
-	)
-	ip = strings.TrimSpace(ip)
-	return fmt.Sprintf("http://%s:9000", ip)
-}
-
 func setupVault(testDir string) {
 	testutil.RunSucceedCommand(
 		trdlRepositoryDirectory,
 		"task",
 		"--yes",
-		"server:setup-test-vault",
+		"server:setup-vault-local",
 		fmt.Sprintf("test_dir=%s", testDir),
-	)
-}
-
-func setupGit() {
-	testutil.RunSucceedCommand(
-		"",
-		"docker",
-		"exec",
-		"trdl_dev_vault",
-		"apk",
-		"add",
-		"git",
 	)
 }
 
 func serverInitProject(testDir, projectName string) {
 	testutil.RunSucceedCommand(
 		testDir,
-		"docker", "exec", "trdl_dev_vault",
-		"vault", "secrets", "enable", fmt.Sprintf("-path=%s", projectName), "vault-plugin-secrets-trdl",
+		"vault", "secrets", "enable",
+		vaultAddress,
+		fmt.Sprintf("-path=%s", projectName), "vault-plugin-secrets-trdl",
 	)
 }
 
@@ -226,7 +209,8 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 	}()
 	testutil.RunSucceedCommand(
 		testDir,
-		"docker", "exec", "trdl_dev_vault", "vault", "write",
+		"vault", "write",
+		vaultAddress,
 		fmt.Sprintf("%s/configure", opts.ProjectName),
 		fmt.Sprintf("git_repo_url=%s", opts.RepoURL),
 		fmt.Sprintf("git_trdl_channels_branch=%s", opts.TrdlChannelsBranch),
@@ -244,7 +228,8 @@ func serverAddBuildSecrets(testDir, projectName string, secrets map[string]strin
 	for id, data := range secrets {
 		testutil.RunSucceedCommand(
 			testDir,
-			"docker", "exec", "trdl_dev_vault", "vault", "write",
+			"vault", "write",
+			vaultAddress,
 			fmt.Sprintf("%s/configure/build/secrets", projectName),
 			fmt.Sprintf("id=%s", id),
 			fmt.Sprintf("data=%s", data),
@@ -255,7 +240,8 @@ func serverAddBuildSecrets(testDir, projectName string, secrets map[string]strin
 func serverReadProjectConfig(testDir, projectName string) {
 	testutil.RunSucceedCommand(
 		testDir,
-		"docker", "exec", "trdl_dev_vault", "vault", "read",
+		"vault", "read",
+		vaultAddress,
 		fmt.Sprintf("%s/configure", projectName),
 	)
 }
@@ -269,7 +255,8 @@ func serverAddGPGKeys(testDir, projectName string, keys map[string]string) {
 
 		testutil.RunSucceedCommand(
 			testDir,
-			"docker", "exec", "trdl_dev_vault", "vault", "write",
+			"vault", "write",
+			vaultAddress,
 			fmt.Sprintf("%s/configure/trusted_pgp_public_key", projectName),
 			fmt.Sprintf("name=%s", user),
 			fmt.Sprintf("public_key=%s", string(data)),
@@ -298,7 +285,7 @@ func serverPublish(bin, projectName string) {
 }
 
 func clientAdd(testDir, repo string, rootVersion int, trdlBinPath string) {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:9000/%s/%d.root.json", repo, rootVersion))
+	resp, err := http.Get(fmt.Sprintf("%s/%s/%d.root.json", minioAddress, repo, rootVersion))
 	Expect(err).ShouldNot(HaveOccurred())
 	defer resp.Body.Close()
 
@@ -309,7 +296,7 @@ func clientAdd(testDir, repo string, rootVersion int, trdlBinPath string) {
 	testutil.RunSucceedCommand(
 		testDir,
 		trdlBinPath,
-		"add", repo, fmt.Sprintf("http://localhost:9000/%s", repo), fmt.Sprintf("%d", rootVersion), rootRoleSha512,
+		"add", repo, fmt.Sprintf("%s/%s", minioAddress, repo), fmt.Sprintf("%d", rootVersion), rootRoleSha512,
 	)
 }
 
