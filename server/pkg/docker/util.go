@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/distribution/reference"
 	"github.com/docker/docker/api/types/filters"
@@ -52,4 +53,36 @@ func RemoveImagesByLabels(ctx context.Context, cli *client.Client, labels map[st
 	}
 
 	return nil
+}
+
+func handleBuildError(err error) error {
+	msg := err.Error()
+
+	switch {
+	case strings.Contains(msg, "unable to decode p12 file"):
+		return fmt.Errorf(
+			"signing failed: unable to decode P12 file — "+
+				"ensure the mac_signing_cert secret is a valid Base64-encoded .p12 file. "+
+				"Use `base64 --decode` and `openssl pkcs12 -info -in file.p12` to verify integrity: %w",
+			err,
+		)
+
+	case strings.Contains(msg, "unable to parse EC private key"):
+		return fmt.Errorf(
+			"notarization failed: invalid EC private key format — "+
+				"ensure the notary_key secret is a valid PEM-encoded PKCS1 or PKCS8 EC private key. "+
+				"It should start with '-----BEGIN PRIVATE KEY-----': %w",
+			err,
+		)
+
+	case strings.Contains(msg, "401 Unauthorized"):
+		return fmt.Errorf(
+			"notarization failed: unauthorized Apple Notary credentials — "+
+				"verify that notary_issuer and notary_key_id correspond to an active API key in App Store Connect: %w",
+			err,
+		)
+
+	default:
+		return fmt.Errorf("can't build artifacts: %w", err)
+	}
 }

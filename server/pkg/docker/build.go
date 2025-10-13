@@ -118,7 +118,7 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	}()
 
 	if err := builder.Build(ctx, contextReader, opts.TarWriter); err != nil {
-		return fmt.Errorf("can't build artifacts: %w", err)
+		return handleBuildError(err)
 	}
 
 	logboek.Context(ctx).Default().LogLn("Build is successful")
