@@ -98,12 +98,12 @@ jobs:
         run: task --yes -p deps:install:ginkgo
 
       - name: Setup vault
-        run: task --yes server:setup-vault-local
+        run: |
+          task --yes server:setup-vault-local
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Test
         run: task --yes e2e:test:e2e
-        env:
-          PATH: $PATH:$HOME/bin/
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
