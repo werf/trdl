@@ -93,6 +93,10 @@ func logWriter(logger Logger) *io.PipeWriter {
 		for scanner.Scan() {
 			line := scanner.Text()
 			logger.Info(line)
+
+			if recommendation := getRecommendation(line); recommendation != "" {
+				logger.Info("Recommendation: " + recommendation)
+			}
 		}
 		if err := scanner.Err(); err != nil {
 			logger.Error("error reading stderr", "err", err)

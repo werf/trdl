@@ -91,6 +91,7 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	--mount=type=secret,id=%[1]s_notary_key_id \
 	--mount=type=secret,id=%[1]s_notary_key \
 	--mount=type=secret,id=%[1]s_notary_issuer \
+	set -e -o pipefail; \
 	export QUILL_SIGN_P12="$(cat /run/secrets/%[1]s_cert)" && \
 	export QUILL_SIGN_PASSWORD="$(cat /run/secrets/%[1]s_password)" && \
 	export QUILL_NOTARY_KEY_ID="$(cat /run/secrets/%[1]s_notary_key_id)" && \
@@ -99,7 +100,7 @@ func generateDockerfile(fromImage string, runCommands []string, opts DockerfileO
 	find /%[2]s -type f | while read f; do \
 	  if file "$f" | grep -q "Mach-O"; then \
 		echo "Signing $f" && \
-		quill sign-and-notarize "$f"; \
+		quill sign-and-notarize "$f" || exit 1; \
 	  fi; \
 	done`,
 			mac_signing.MacSigningCertificateName,
