@@ -68,11 +68,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	{
 		rootJsonURI := repoUrl + "/root.json"
 		resp, err := http.Get(rootJsonURI)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 		defer resp.Body.Close()
 
 		data, err := ioutil.ReadAll(resp.Body)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		rootSHA512 = util.Sha512Checksum(data)
 	}
@@ -86,7 +86,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	}
 
 	serializedResult, err := json.Marshal(result)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 
 	return serializedResult
 }, func(firstFuncResultSerialized []byte) {
@@ -136,11 +136,11 @@ var _ = BeforeEach(func() {
 			"version",
 		)
 		version := strings.TrimSpace(output)
-		Ω(version).Should(Equal(trdlBinVersion))
+		Expect(version).Should(Equal(trdlBinVersion))
 	}
 })
 
 var _ = AfterEach(func() {
 	err := os.RemoveAll(tmpDir)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 })

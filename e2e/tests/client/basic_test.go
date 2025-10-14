@@ -40,7 +40,7 @@ var _ = Describe("Basic", func() {
 				"list",
 			)
 
-			Ω(output).Should(ContainSubstring(fmt.Sprintf("%s  %s  %s", testRepoName, validRepoUrl, trdl.DefaultChannel)))
+			Expect(output).Should(ContainSubstring(fmt.Sprintf("%s  %s  %s", testRepoName, validRepoUrl, trdl.DefaultChannel)))
 		})
 
 		It("set-default-channel", func() {
@@ -73,7 +73,7 @@ var _ = Describe("Basic", func() {
 					"version",
 				)
 				version := strings.TrimSpace(output)
-				Ω(version).Should(Equal(trdlBinVersion))
+				Expect(version).Should(Equal(trdlBinVersion))
 			}
 
 			By("run update command")
@@ -94,7 +94,7 @@ var _ = Describe("Basic", func() {
 					"version",
 				)
 				version := strings.TrimSpace(output)
-				Ω(version).ShouldNot(Equal(trdlBinVersion))
+				Expect(version).ShouldNot(Equal(trdlBinVersion))
 			}
 		})
 
@@ -115,9 +115,9 @@ var _ = Describe("Basic", func() {
 				)
 
 				if runtime.GOOS == "windows" {
-					Ω(output).Should(Equal(filepath.Join(trdlHomeDir, "repositories/test/releases/v0.0.1/windows-any/bin") + "\n"))
+					Expect(output).Should(Equal(filepath.Join(trdlHomeDir, "repositories/test/releases/v0.0.1/windows-any/bin") + "\n"))
 				} else {
-					Ω(output).Should(Equal(filepath.Join(trdlHomeDir, "repositories/test/releases/v0.0.1/any-any/bin") + "\n"))
+					Expect(output).Should(Equal(filepath.Join(trdlHomeDir, "repositories/test/releases/v0.0.1/any-any/bin") + "\n"))
 				}
 			})
 
@@ -129,9 +129,9 @@ var _ = Describe("Basic", func() {
 				)
 
 				if runtime.GOOS == "windows" {
-					Ω(output).Should(Equal(filepath.Join(trdlHomeDir, "repositories/test/releases/v0.0.1/windows-any") + "\n"))
+					Expect(output).Should(Equal(filepath.Join(trdlHomeDir, "repositories/test/releases/v0.0.1/windows-any") + "\n"))
 				} else {
-					Ω(output).Should(Equal(filepath.Join(trdlHomeDir, "repositories/test/releases/v0.0.1/any-any") + "\n"))
+					Expect(output).Should(Equal(filepath.Join(trdlHomeDir, "repositories/test/releases/v0.0.1/any-any") + "\n"))
 				}
 			})
 
@@ -148,9 +148,9 @@ var _ = Describe("Basic", func() {
 				)
 
 				if runtime.GOOS == "windows" {
-					Ω(output).Should(Equal("\"v0.0.1\"\r\n"))
+					Expect(output).Should(Equal("\"v0.0.1\"\r\n"))
 				} else {
-					Ω(output).Should(Equal("v0.0.1\n"))
+					Expect(output).Should(Equal("v0.0.1\n"))
 				}
 			})
 		})
@@ -165,6 +165,6 @@ func AssertRepoFieldsInListOutput(expectedFields []string) {
 	)
 
 	lines := strings.Split(expectedOutput, "\n")
-	Ω(len(lines)).Should(Equal(3))
-	Ω(strings.Fields(lines[1])).Should(Equal(expectedFields))
+	Expect(len(lines)).Should(Equal(3))
+	Expect(strings.Fields(lines[1])).Should(Equal(expectedFields))
 }

@@ -15,6 +15,7 @@ vars:
   git_trdl_path: '{{.git_trdl_path | default "p1/trdl.yaml"}}'
   git_trdl_channels_path: '{{.git_trdl_channels_path | default "p1/trdl_channels.yaml"}}'
   vault_addr: '{{.vault_addr | default "http://localhost:8200"}}'
+  vault_dev_listen_address: '{{.vault_dev_listen_address | default "127.0.0.1:8200"}}'
   minio_data_dir: '{{.minio_data_dir | default ".minio_data"}}'
   minio_container: '{{.minio_container | default "trdl_dev_minio"}}'
   vault_container: '{{.vault_container | default "trdl_dev_vault"}}'
@@ -24,6 +25,8 @@ vars:
   minio_console_port: '{{.minio_console_port | default "9001"}}'
   vault_port: '{{.vault_port | default "8200"}}'
   version: '{{.version | default "dev"}}'
+  vault_version: "1.20.4"
+  plugin_dir: "./vault/plugins/"
 
 tasks:
   restart:
@@ -94,6 +97,55 @@ tasks:
         git_trdl_path={{.git_trdl_path}} \
         git_trdl_channels_path={{.git_trdl_channels_path}}
 
+  setup-vault-local:
+    desc: "Run vault server on localhost (for tests only)."
+    deps:
+      - install-vault-local
+    cmds:
+      - |
+        vault server \
+          -dev \
+          -dev-root-token-id=root \
+          -dev-plugin-dir=./vault/plugins \
+          -log-level trace > vault.log 2>&1 &
+      - sleep 3
+    env:
+      PATH: $PATH:$HOME/bin
+      VAULT_DEV_LISTEN_ADDRESS: "{{.vault_dev_listen_address}}"
+      VAULT_ADDR: "{{.vault_addr}}"
+      VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE: "1"
+      VAULT_PLUGIN_SECRETS_TRDL_DEBUG: "1"
+
+  install-vault-local:
+    desc: "Install vault binary for Linux amd64/arm64 (for tests only)."
+    cmds:
+      - |
+        ARCH=$(uname -m)
+        case $ARCH in
+          "x86_64")
+            ARCH="amd64"
+            ;;
+          "aarch64")
+            ARCH="arm64"
+            ;;
+          *)
+            echo "Unsupported architecture: $ARCH"
+            exit 1
+            ;;
+        esac
+        if [ ! -f $HOME/bin/vault ]; then
+          echo "Installing Vault {{.vault_version}} for $ARCH..."
+          wget "https://releases.hashicorp.com/vault/{{.vault_version}}/vault_{{.vault_version}}_linux_${ARCH}.zip" -O /tmp/vault.zip
+          unzip -o /tmp/vault.zip -d /tmp
+          mkdir -p $HOME/bin
+          mv /tmp/vault $HOME/bin/vault
+          chmod +x $HOME/bin/vault
+          rm -f /tmp/vault.zip
+          echo "Vault is installed"
+        else
+          echo "Vault is already installed"
+        fi
+
   logs:
     desc: "Get Vault logs."
     cmds:
@@ -102,10 +154,15 @@ tasks:
   dev:cleanup:
     desc: "Cleanup build artifacts and stop services."
     cmds:
-      - rm -f ./vault/plugins/vault-plugin-secrets-trdl
+      - rm -f ./vault/plugins/vault-plugin-secrets-trdl || true
       - docker rm -f {{.minio_container}} || true
       - docker rm -f {{.vault_container}} || true
       - docker run --rm --volume ./:/wrk alpine rm -rf /wrk/{{.minio_data_dir}}
+      - |
+        echo "Stopping Vault server..."
+        pkill -f "vault server" 2>/dev/null || true
+        pkill -f "vault-plugin-secrets-trdl" 2>/dev/null || true
+        rm -f vault.log || true
 
   build:
     desc: "Build server dev binary."
@@ -143,6 +200,8 @@ tasks:
 
   build:dev:linux:amd64:
     desc: "Build server dev binary for linux/amd64."
+    status:
+      - test -f "vault/plugins/vault-plugin-secrets-trdl"
     cmds:
       - task: _build:go
         vars:
@@ -255,6 +314,18 @@ tasks:
           outputDir: ../bin/trdl
           extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./... "
           goTags: test_coverage
+
+  build:test:with-coverage:
+    desc: "Build server binary for E2E tests with coverage on linux/amd64."
+    cmds:
+      - task: _build:go
+        vars:
+          targetOS: "linux"
+          targetArch: "amd64"
+          outputDir: vault/plugins
+          extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./..."
+          goTags: "test_coverage"
+          CLI_ARGS: "-tags={{.goTags}}"
 
   test:unit:
     desc: "Run server unit tests."

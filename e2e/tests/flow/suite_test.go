@@ -39,7 +39,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	}
 
 	serializedResult, err := json.Marshal(result)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 
 	return serializedResult
 }, func(firstFuncResultSerialized []byte) {
@@ -54,7 +54,7 @@ var _ = BeforeEach(func() {
 	tmpDir = testutil.GetTempDir()
 
 	testDir = filepath.Join(tmpDir, "project")
-	Ω(os.Mkdir(testDir, os.ModePerm))
+	Expect(os.Mkdir(testDir, os.ModePerm))
 
 	trdlHomeDir = filepath.Join(tmpDir, ".trdl")
 	trdlHomeDir = tmpDir
@@ -64,5 +64,5 @@ var _ = BeforeEach(func() {
 
 var _ = AfterEach(func() {
 	err := os.RemoveAll(tmpDir)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).ShouldNot(HaveOccurred())
 })
