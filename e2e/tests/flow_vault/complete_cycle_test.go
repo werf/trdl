@@ -59,7 +59,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 			}
 			By(fmt.Sprintf("[server] Releasing tag %q ...", testOpts.tag1))
 			{
-				By(fmt.Sprintf("[server] Creating tag tag %q", testOpts.tag1))
+				By(fmt.Sprintf("[server] Creating tag %q", testOpts.tag1))
 				gitTag(SuiteData.TestDir, testOpts.tag1, testOpts.pgpKeys["developer"])
 
 				By(fmt.Sprintf("[server] Signing tag %q", testOpts.tag1))
