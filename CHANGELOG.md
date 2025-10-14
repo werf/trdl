@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.12.1](https://www.github.com/werf/trdl/compare/v0.12.0...v0.12.1) (2025-10-14)
+
+
+### Bug Fixes
+
+* **server, mac_signing:** handle sign and notarize errors ([#369](https://www.github.com/werf/trdl/issues/369)) ([3a63886](https://www.github.com/werf/trdl/commit/3a638860846cda2e353eb7bd132a8838318e59a5))
+
 ## [0.12.0](https://www.github.com/werf/trdl/compare/v0.11.1...v0.12.0) (2025-10-03)
 
 
