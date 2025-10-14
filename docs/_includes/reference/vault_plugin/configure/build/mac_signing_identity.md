@@ -11,7 +11,7 @@ Add or update build signing credentials.
 
 * `data` (string, required) — Certificate data base64 encoded.
 * `notary_issuer` (string, required) — Notary issuer.
-* `notary_key` (string, required) — Notary key.
+* `notary_key` (string, required) — Notary key base64 encoded.
 * `notary_key_id` (string, required) — Notary key ID.
 * `password` (string, required) — Certificate password.
 

@@ -42,7 +42,7 @@ func Paths() []*framework.Path {
 				},
 				fieldNameMacSigningNotaryKey: {
 					Type:        framework.TypeString,
-					Description: "Notary key",
+					Description: "Notary key base64 encoded",
 					Required:    true,
 				},
 				fieldNameMacSigningNotaryIssuer: {

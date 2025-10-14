@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/distribution/reference"
 	"github.com/docker/docker/api/types/filters"
@@ -52,4 +53,20 @@ func RemoveImagesByLabels(ctx context.Context, cli *client.Client, labels map[st
 	}
 
 	return nil
+}
+
+func getRecommendation(line string) string {
+	switch {
+	case strings.Contains(line, "unable to decode p12 file"):
+		return "P12 certificate corrupted - verify with: base64 --decode cert.b64 > cert.p12 && openssl pkcs12 -info -in cert.p12"
+
+	case strings.Contains(line, "unable to parse EC private key"):
+		return "Invalid EC private key format - ensure PEM encoding starts with '-----BEGIN PRIVATE KEY-----'"
+
+	case strings.Contains(line, "401 Unauthorized"):
+		return "Invalid Apple Notary credentials - check API key in App Store Connect"
+
+	default:
+		return ""
+	}
 }
