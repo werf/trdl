@@ -1,4 +1,5 @@
 {{- $host := pluck .Values.global.env .Values.host | first | default .Values.host._default  }}
+{{- $ingressClassName := pluck .Values.global.env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -13,7 +14,7 @@ metadata:
     nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email
 {{- end }}
 spec:
-  ingressClassName: nginx
+  ingressClassName: {{ $ingressClassName }}
   tls:
   - hosts:
       - {{ $host }}
@@ -47,7 +48,7 @@ metadata:
     nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email
 {{- end }}
 spec:
-  ingressClassName: nginx
+  ingressClassName: {{ $ingressClassName }}
   tls:
   - hosts:
       - ru.{{ $host }}
@@ -75,7 +76,7 @@ spec:
 {{- if hasPrefix "review" .Values.global.env }}
     name: letsencrypt-staging
 {{- else }}
-    name: letsencrypt
+    name: letsencrypt-standalone-geo
 {{- end }}
   commonName: {{ $host }}
   dnsNames:
