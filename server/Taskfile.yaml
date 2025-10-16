@@ -185,18 +185,12 @@ tasks:
     cmds:
       - task: build:dev:linux:amd64
       - task: build:dev:linux:arm64
-      - task: build:dev:darwin:amd64
-      - task: build:dev:darwin:arm64
-      - task: build:dev:windows:amd64
 
   build:dist:
     desc: "Build all server release binaries."
     cmds:
       - task: build:dist:linux:amd64
       - task: build:dist:linux:arm64
-      - task: build:dist:darwin:amd64
-      - task: build:dist:darwin:arm64
-      - task: build:dist:windows:amd64
 
   build:dev:linux:amd64:
     desc: "Build server dev binary for linux/amd64."
@@ -218,33 +212,6 @@ tasks:
           targetArch: "arm64"
           outputDir: "{{.outputDir}}"
 
-  build:dev:darwin:amd64:
-    desc: "Build server dev binary for darwin/amd64."
-    cmds:
-      - task: _build:go
-        vars:
-          targetOS: "darwin"
-          targetArch: "amd64"
-          outputDir: "{{.outputDir}}"
-
-  build:dev:darwin:arm64:
-    desc: "Build server dev binary for darwin/arm64."
-    cmds:
-      - task: _build:go
-        vars:
-          targetOS: "darwin"
-          targetArch: "arm64"
-          outputDir: "{{.outputDir}}"
-
-  build:dev:windows:amd64:
-    desc: "Build server dev binary for windows/amd64."
-    cmds:
-      - task: _build:go
-        vars:
-          targetOS: "windows"
-          targetArch: "amd64"
-          outputDir: "{{.outputDir}}"
-
   build:dist:linux:amd64:
     desc: "Build server release binary for linux/amd64."
     cmds:
@@ -264,36 +231,6 @@ tasks:
           targetArch: "arm64"
           extraGoBuildArgs: -ldflags="-s -w"
           outputDir: "dist/{{.version}}/linux-arm64/bin/"
-
-  build:dist:darwin:amd64:
-    desc: "Build server release binary for darwin/amd64."
-    cmds:
-      - task: _build:go
-        vars:
-          targetOS: "darwin"
-          targetArch: "amd64"
-          extraGoBuildArgs: -ldflags="-s -w"
-          outputDir: "dist/{{.version}}/darwin-amd64/bin/"
-
-  build:dist:darwin:arm64:
-    desc: "Build server release binary for darwin/arm64."
-    cmds:
-      - task: _build:go
-        vars:
-          targetOS: "darwin"
-          targetArch: "arm64"
-          extraGoBuildArgs: -ldflags="-s -w"
-          outputDir: "dist/{{.version}}/darwin-arm64/bin/"
-
-  build:dist:windows:amd64:
-    desc: "Build server release binary for windows/amd64."
-    cmds:
-      - task: _build:go
-        vars:
-          targetOS: "windows"
-          targetArch: "amd64"
-          extraGoBuildArgs: -ldflags="-s -w"
-          outputDir: "dist/{{.version}}/windows-amd64/bin/"
 
   _build:go:
     internal: true
