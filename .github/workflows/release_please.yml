@@ -19,9 +19,6 @@ jobs:
             Download `trdl` Vault plugin binaries from here:
             * [Linux amd64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/linux-amd64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/linux-amd64/bin/vault-plugin-secrets-trdl.sig))
             * [Linux arm64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/linux-arm64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/linux-arm64/bin/vault-plugin-secrets-trdl.sig))
-            * [macOS amd64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/darwin-amd64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/darwin-amd64/bin/vault-plugin-secrets-trdl.sig))
-            * [macOS arm64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/darwin-arm64/bin/vault-plugin-secrets-trdl) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/darwin-arm64/bin/vault-plugin-secrets-trdl.sig))
-            * [Windows amd64](https://storage.googleapis.com/trdl-server-tuf/targets/releases/{{> version }}/windows-amd64/bin/vault-plugin-secrets-trdl.exe) ([PGP signature](https://storage.googleapis.com/trdl-server-tuf/targets/signatures/{{> version }}/windows-amd64/bin/vault-plugin-secrets-trdl.exe.sig))
 
             These binaries were signed with PGP and could be verified with [this PGP public key](https://trdl.dev/trdl-server.asc).
 
