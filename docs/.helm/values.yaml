@@ -6,6 +6,10 @@ host:
   production: trdl.dev
   _default: trdl.test.flant.com
 
+ingressClassName:
+  _default: "nginx"
+  production: "standalone-geo"
+
 resources:
   requests:
     memory:
