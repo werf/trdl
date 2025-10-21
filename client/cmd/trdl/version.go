@@ -11,7 +11,6 @@ import (
 func versionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:                   "version",
-		Hidden:                true,
 		DisableFlagsInUseLine: true,
 		Short:                 "Print version",
 		Run: func(_ *cobra.Command, _ []string) {
