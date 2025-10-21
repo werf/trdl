@@ -76,6 +76,11 @@ func rootCmd() *cobra.Command {
 				dirPathCmd(),
 				binPathCmd(),
 				docsCmd(groups),
+			},
+		},
+		{
+			Message: "Other commands",
+			Commands: []*cobra.Command{
 				versionCmd(),
 			},
 		},
