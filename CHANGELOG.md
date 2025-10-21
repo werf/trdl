@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.12.2](https://www.github.com/werf/trdl/compare/v0.12.1...v0.12.2) (2025-10-21)
+
+
+### Bug Fixes
+
+* **client:** cache binary path to avoid issues during self-update ([#364](https://www.github.com/werf/trdl/issues/364)) ([27a1041](https://www.github.com/werf/trdl/commit/27a1041c209fe9abc637243a553cf7325d835722))
+
 ### [0.12.1](https://www.github.com/werf/trdl/compare/v0.12.0...v0.12.1) (2025-10-14)
 
 
