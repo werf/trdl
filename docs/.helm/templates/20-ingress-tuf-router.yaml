@@ -15,7 +15,7 @@ spec:
   - hosts:
       - {{ $host }}
       - ru.{{ $host }}
-    secretName: wildcard-test-flant-dev
+    secretName: tls-{{ $host }}
   rules:
   - host: {{ $host }}
     http:

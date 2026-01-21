@@ -21,7 +21,7 @@ spec:
 {{- if eq .Values.global.env "production" }}
       - www.{{ $host }}
 {{- end }}
-    secretName: wildcard-test-flant-dev
+    secretName: tls-{{ $host }}
   rules:
   - host: {{ $host }}
     http:
@@ -52,7 +52,7 @@ spec:
   tls:
   - hosts:
       - ru.{{ $host }}
-    secretName: wildcard-test-flant-dev
+    secretName: tls-{{ $host }}
   rules:
   - host: ru.{{ $host }}
     http:
@@ -65,6 +65,25 @@ spec:
             port:
               number: 80
 ---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Chart.Name }}
+spec:
+  secretName: tls-{{ $host }}
+  issuerRef:
+    kind: ClusterIssuer
+{{- if hasPrefix "review" .Values.global.env }}
+    name: letsencrypt-staging
+{{- else }}
+    name: letsencrypt
+{{- end }}
+  commonName: {{ $host }}
+  dnsNames:
+  - {{ $host }}
+  - www.{{ $host }}
+  - ru.{{ $host }}
+---
 {{- if ne .Values.global.env "production" }}
 apiVersion: deckhouse.io/v1alpha1
 kind: DexAuthenticator
@@ -73,7 +92,7 @@ metadata:
 spec:
   applicationDomain: {{ $host }}
   sendAuthorizationHeader: false
-  applicationIngressCertificateSecretName: wildcard-test-flant-dev
+  applicationIngressCertificateSecretName: tls-{{ $host }}
   applicationIngressClassName: "nginx"
   keepUsersLoggedInFor: "720h"
 ---
@@ -84,7 +103,7 @@ metadata:
 spec:
   applicationDomain: ru.{{ $host }}
   sendAuthorizationHeader: false
-  applicationIngressCertificateSecretName: wildcard-test-flant-dev
+  applicationIngressCertificateSecretName: tls-{{ $host }}
   applicationIngressClassName: "nginx"
   keepUsersLoggedInFor: "720h"
 {{- end }}
