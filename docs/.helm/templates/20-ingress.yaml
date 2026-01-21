@@ -76,7 +76,7 @@ spec:
 {{- if hasPrefix "review" .Values.global.env }}
     name: letsencrypt-staging
 {{- else }}
-    name: letsencrypt-standalone-geo
+    name: letsencrypt
 {{- end }}
   commonName: {{ $host }}
   dnsNames:
