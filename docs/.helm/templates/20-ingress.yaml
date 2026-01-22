@@ -21,7 +21,11 @@ spec:
 {{- if eq .Values.global.env "production" }}
       - www.{{ $host }}
 {{- end }}
+{{- if eq .Values.global.env "production" }}
     secretName: tls-{{ $host }}
+{{- else }}
+    secretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
+{{- end }}
   rules:
   - host: {{ $host }}
     http:
@@ -51,10 +55,22 @@ spec:
   ingressClassName: {{ $ingressClassName }}
   tls:
   - hosts:
+{{- if eq .Values.global.env "production" }}
       - ru.{{ $host }}
+{{- else }}
+      - ru-{{ $host }}
+{{- end }}
+{{- if eq .Values.global.env "production" }}
     secretName: tls-{{ $host }}
+{{- else }}
+    secretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
+{{- end }}
   rules:
+{{- if eq .Values.global.env "production" }}
   - host: ru.{{ $host }}
+{{- else }}
+  - host: ru-{{ $host }}
+{{- end }}
     http:
       paths:
       - path: /
@@ -64,6 +80,7 @@ spec:
             name: {{ .Chart.Name }}
             port:
               number: 80
+{{- if eq .Values.global.env "production" }}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -83,6 +100,7 @@ spec:
   - {{ $host }}
   - www.{{ $host }}
   - ru.{{ $host }}
+{{- end }}
 ---
 {{- if ne .Values.global.env "production" }}
 apiVersion: deckhouse.io/v1alpha1
@@ -92,7 +110,7 @@ metadata:
 spec:
   applicationDomain: {{ $host }}
   sendAuthorizationHeader: false
-  applicationIngressCertificateSecretName: tls-{{ $host }}
+  applicationIngressCertificateSecretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
   applicationIngressClassName: "nginx"
   keepUsersLoggedInFor: "720h"
 ---
@@ -103,7 +121,7 @@ metadata:
 spec:
   applicationDomain: ru.{{ $host }}
   sendAuthorizationHeader: false
-  applicationIngressCertificateSecretName: tls-{{ $host }}
+  applicationIngressCertificateSecretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
   applicationIngressClassName: "nginx"
   keepUsersLoggedInFor: "720h"
 {{- end }}

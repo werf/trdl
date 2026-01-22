@@ -14,8 +14,16 @@ spec:
   tls:
   - hosts:
       - {{ $host }}
+{{- if eq .Values.global.env "production" }}
       - ru.{{ $host }}
+{{- else }}
+      - ru-{{ $host }}
+{{- end }}
+{{- if eq .Values.global.env "production" }}
     secretName: tls-{{ $host }}
+{{- else }}
+    secretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
+{{- end }}
   rules:
   - host: {{ $host }}
     http:
@@ -34,7 +42,11 @@ spec:
             name: tuf-router
             port:
               name: http
+{{- if eq .Values.global.env "production" }}
   - host: ru.{{ $host }}
+{{- else }}
+  - host: ru-{{ $host }}
+{{- end }}
     http:
       paths:
       - path: /targets

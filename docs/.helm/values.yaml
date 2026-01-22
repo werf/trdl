@@ -4,11 +4,14 @@ priorityClassName:
 
 host:
   production: trdl.dev
-  _default: trdl.test.flant.com
+  _default: trdl.test.flant.dev
 
 ingressClassName:
   _default: "nginx"
   production: "standalone-geo"
+
+ingressSecretName:
+  _default: "wildcard-test-flant-dev"
 
 resources:
   requests:
