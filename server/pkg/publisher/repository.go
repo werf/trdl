@@ -160,3 +160,51 @@ func (repository *S3Repository) GetTargets(ctx context.Context) ([]string, error
 	}
 	return res, nil
 }
+
+type RootMeta struct {
+	Signed Signed `json:"signed"`
+}
+type Signed struct {
+	Keys  map[string]Key            `json:"keys"`
+	Roles map[string]RoleDefinition `json:"roles"`
+}
+
+type Key struct {
+	KeyVal KeyVal `json:"keyval"`
+}
+
+type KeyVal struct {
+	Public string `json:"public"`
+}
+
+type RoleDefinition struct {
+	KeyIDs []string `json:"keyids"`
+}
+
+func (repository *S3Repository) GetRolePublicKeysFromS3Meta(file, role string) ([]string, error) {
+	meta, err := repository.TufRepo.GetMeta()
+	if err != nil {
+		return nil, fmt.Errorf("error getting metadata from TUF repo: %w", err)
+	}
+
+	var rootMeta RootMeta
+	if err := json.Unmarshal(meta[file], &rootMeta); err != nil {
+		return nil, fmt.Errorf("error unmarshalling %s: %w", file, err)
+	}
+
+	rootRole, ok := rootMeta.Signed.Roles[role]
+	if !ok {
+		return nil, nil
+	}
+
+	publicKeys := make([]string, 0, len(rootRole.KeyIDs))
+	for _, keyID := range rootRole.KeyIDs {
+		key, ok := rootMeta.Signed.Keys[keyID]
+		if !ok {
+			return nil, fmt.Errorf("key %q not found in keys section", keyID)
+		}
+		publicKeys = append(publicKeys, key.KeyVal.Public)
+	}
+
+	return publicKeys, nil
+}
