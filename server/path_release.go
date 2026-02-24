@@ -3,6 +3,7 @@ package server
 import (
 	"archive/tar"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -113,14 +114,14 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		return nil, fmt.Errorf("error getting publisher repository: %w", err)
 	}
 
-	taskUUID, err := b.TasksManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
+	taskUUID, err := b.TasksManager.RunTask(ctx, req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		b.Logger().Debug("Started task")
 
 		logboek.Context(ctx).Default().LogF("Cloning git repo\n")
 		b.Logger().Debug("Cloning git repo")
 
-		gitRepo, err := cloneGitRepositoryTag(cfg.GitRepoUrl, gitTag, gitUsername, gitPassword)
+		gitRepo, err := cloneGitRepositoryTag(ctx, cfg.GitRepoUrl, gitTag, gitUsername, gitPassword)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %w", err)
 		}
@@ -214,7 +215,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		return nil
 	})
 	if err != nil {
-		if err == tasks_manager.ErrBusy {
+		if errors.Is(err, tasks_manager.ErrBusy) {
 			return logical.ErrorResponse("busy"), nil
 		}
 
@@ -228,7 +229,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 	}, nil
 }
 
-func cloneGitRepositoryTag(url, gitTag, username, password string) (*git.Repository, error) {
+func cloneGitRepositoryTag(ctx context.Context, url, gitTag, username, password string) (*git.Repository, error) {
 	cloneGitOptions := trdlGit.CloneOptions{
 		TagName:           gitTag,
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
@@ -241,7 +242,7 @@ func cloneGitRepositoryTag(url, gitTag, username, password string) (*git.Reposit
 		}
 	}
 
-	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)
+	gitRepo, err := trdlGit.CloneInMemory(ctx, url, cloneGitOptions)
 	if err != nil {
 		return nil, err
 	}

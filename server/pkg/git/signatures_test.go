@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	_ "embed"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -119,8 +120,10 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 		expectedErrMsg                     string
 	}
 
+	ctx := context.Background()
+
 	tableItBodyTagFunc := func(entry tableEntry) {
-		repo, err := CloneInMemory(testDir, CloneOptions{})
+		repo, err := CloneInMemory(ctx, testDir, CloneOptions{})
 		Expect(err).ShouldNot(HaveOccurred())
 
 		err = VerifyTagSignatures(
@@ -140,7 +143,7 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 	}
 
 	tableItBodyCommitFunc := func(entry tableEntry) {
-		repo, err := CloneInMemory(testDir, CloneOptions{})
+		repo, err := CloneInMemory(ctx, testDir, CloneOptions{})
 		Expect(err).ShouldNot(HaveOccurred())
 
 		head, err := repo.Head()

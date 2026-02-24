@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -106,7 +107,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		return nil, fmt.Errorf("error getting publisher repository: %w", err)
 	}
 
-	taskUUID, err := b.TasksManager.RunTask(context.Background(), req.Storage, func(ctx context.Context, storage logical.Storage) error {
+	taskUUID, err := b.TasksManager.RunTask(ctx, req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		b.Logger().Debug("Started task")
 
@@ -114,7 +115,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		b.Logger().Debug("Cloning git repo")
 
 		gitBranch := cfg.GitTrdlChannelsBranch
-		gitRepo, err := cloneGitRepositoryBranch(cfg.GitRepoUrl, gitBranch, gitUsername, gitPassword)
+		gitRepo, err := cloneGitRepositoryBranch(ctx, cfg.GitRepoUrl, gitBranch, gitUsername, gitPassword)
 		if err != nil {
 			return fmt.Errorf("unable to clone git repository: %w", err)
 		}
@@ -203,7 +204,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		return nil
 	})
 	if err != nil {
-		if err == tasks_manager.ErrBusy {
+		if errors.Is(err, tasks_manager.ErrBusy) {
 			return logical.ErrorResponse("busy"), nil
 		}
 
@@ -306,7 +307,7 @@ func NewErrIncorrectChannelName(chnl string) error {
 	return fmt.Errorf(`got incorrect channel name %q: expected "dev", "alpha", "beta", "ea", "stable" or "rock-solid"`, chnl)
 }
 
-func cloneGitRepositoryBranch(url, gitBranch, username, password string) (*git.Repository, error) {
+func cloneGitRepositoryBranch(ctx context.Context, url, gitBranch, username, password string) (*git.Repository, error) {
 	cloneGitOptions := trdlGit.CloneOptions{
 		BranchName:        gitBranch,
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
@@ -319,7 +320,7 @@ func cloneGitRepositoryBranch(url, gitBranch, username, password string) (*git.R
 		}
 	}
 
-	gitRepo, err := trdlGit.CloneInMemory(url, cloneGitOptions)
+	gitRepo, err := trdlGit.CloneInMemory(ctx, url, cloneGitOptions)
 	if err != nil {
 		return nil, err
 	}
