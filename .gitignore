@@ -33,3 +33,5 @@ actions/badges/
 .task
 tests_coverage/
 .jekyll-cache/
+/.sisyphus
+/.opencode
