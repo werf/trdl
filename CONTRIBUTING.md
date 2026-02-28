@@ -2,9 +2,15 @@
 
 trdl is an Open Source project, and we are thrilled to develop and improve it in collaboration with the community.
 
-## Feedback
+## Before you start
 
-The first thing we recommend is to check the existing [issues](https://github.com/werf/trdl/issues), [discussion threads](https://github.com/werf/trdl/discussions), and [documentation](https://trdl.dev/) - there may already be a discussion or solution on your topic. If not, choose the appropriate way to address the issue on [the new issue form](https://github.com/werf/trdl/issues/new).
+For any significant change, open the issue first (or comment on an existing one) to discuss with the maintainers on what to do and how. When the solution is agreed upon, you can proceed with implementation and open a pull request.
+
+For small changes, such as few lines bugfixes or documentation improvements, feel free to open a pull request directly.
+
+For easy first issues, check the [good first issue](https://github.com/werf/trdl/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22) tag.
+
+You can also check the existing [issues](https://github.com/werf/trdl/issues), [discussion threads](https://github.com/werf/trdl/discussions), and [documentation](https://trdl.dev/) — there may already be a discussion or solution on your topic. If not, choose the appropriate way to address the issue on [the new issue form](https://github.com/werf/trdl/issues/new).
 
 ## Contributing code
 
@@ -17,6 +23,7 @@ The first thing we recommend is to check the existing [issues](https://github.co
 
 3. Prepare an environment. To build and run trdl locally, you'll need to _at least_ have the following installed:
 
+   - [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) 2.18.0+
    - [Go](https://golang.org/doc/install) 1.23
 
       **Important: Go Toolchain Configuration**
@@ -35,29 +42,33 @@ The first thing we recommend is to check the existing [issues](https://github.co
       ```
 
       This configuration ensures Go uses only the locally installed version of the tools instead of automatically selecting and potentially adding a toolchain version to `go.mod`, preventing unintended changes to the file.
-   - [Docker](https://docs.docker.com/get-docker/)
-   - [go-task](https://taskfile.dev/installation/) (build tool to run common workflows)
-   - [ginkgo](https://onsi.github.io/ginkgo/#installing-ginkgo) (testing framework required to run tests)
 
-    Before using Taskfile, set the environment variable:
-    ```shell
-        export TASK_X_REMOTE_TASKFILES=1
-    ```
-    (Add this to your shell configuration file, e.g., `.bashrc` or `.zshrc`, for persistence.)
-    To skip confirmation prompts when running tasks, use the `--yes` flag:
-    ```shell
-        task --yes taskname
-    ```
-   To install dependencies, use the following task:
+   - [Docker](https://docs.docker.com/get-docker/)
+   - [ginkgo](https://onsi.github.io/ginkgo/#installing-ginkgo) (testing framework required to run tests)
+   - [go-task](https://taskfile.dev/installation/) (build tool to run common workflows)
+     - Before using Taskfile, set the environment variable:
+       ```shell
+       export TASK_X_REMOTE_TASKFILES=1
+       ```
+       (Add this to your shell configuration file, e.g., `.bashrc` or `.zshrc`, for persistence.)
+     - To skip confirmation prompts when running tasks, use the `--yes` flag:
+       ```shell
+       task --yes taskname
+       ```
+       Useful for automation or when you're sure the task should run without manual confirmation.
+
+      To install dependencies, use the following task:
 
    - `task deps:install`
 
-4. Make changes.
+4. Make your changes.
 5. Build all trdl binaries:
 
    ```shell
    task build:dev:all
    ```
+
+   You can also check out all available tasks with `task -l`.
 
 6. Format and lint your code:
 
@@ -68,21 +79,23 @@ The first thing we recommend is to check the existing [issues](https://github.co
     Note: The `task format` and `task lint` will run Prettier inside a container.
 
 7. Testing:
-   1. Run tests:
+   1. Setup testing environment:
       ```shell
-
+      task server:setup:dev-environment
+      ```
+   2. Run tests:
+      ```shell
+      task server:test:unit
       task e2e:test:e2e
       ```
+   3. Cleanup testing environment:
+      ```shell
+      task server:dev:cleanup
+      ```
+   4.  Do manual testing (if needed).
 
-   2.  Do manual testing (if needed).
-
-8.  Commit changes:
-
-    - Follow [The Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/).
-    - Sign off every commit you contributed as an acknowledgment of the [DCO](https://developercertificate.org/).
-
-9.  Push commits.
-10. Create a pull request.
+8. Commit your changes. See [Conventions](#conventions) for the commit message format. The commit must be signed off (`--signoff`) as an acknowledgment of the [DCO](https://developercertificate.org/).
+9. Push and open a pull request.
 
 ## Conventions
 
@@ -161,10 +174,9 @@ A concise, hyphen-separated phrase in kebab-case that clearly describes the main
 
 Each pull request title should clearly reflect the changes introduced, adhering to [**the header format** of a commit message](#commit-message), typically mirroring the main commit's text in the PR.
 
-### Coding Conventions
+### Code style
 
-- [Effective Go](https://golang.org/doc/effective_go.html).
-- [Go's commenting conventions](http://blog.golang.org/godoc-documenting-go-code).
+See [CODESTYLE.md](CODESTYLE.md).
 
 ## Improving the documentation
 
