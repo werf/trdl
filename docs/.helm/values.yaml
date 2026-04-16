@@ -2,6 +2,9 @@ priorityClassName:
   _default: develop
   production: production-medium
 
+global:
+  targetCluster: eu
+
 host:
   production: trdl.dev
   _default: trdl.test.flant.dev

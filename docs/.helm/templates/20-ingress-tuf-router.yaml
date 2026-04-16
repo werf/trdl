@@ -1,30 +1,56 @@
-{{- $host := pluck .Values.werf.env .Values.host | first | default .Values.host._default  }}
-{{- if  hasPrefix "review" .Values.werf.env }}
-{{- $host = ( printf "%s.%s" .Values.werf.env (pluck "dev" .Values.host | first | default .Values.host._default ) | lower ) }}
+{{- $env := .Values.werf.env }}
+{{- $host := pluck $env .Values.host | first | default .Values.host._default }}
+{{- if hasPrefix "review" $env }}
+{{- $host = ( printf "%s.%s" $env (pluck "dev" .Values.host | first | default .Values.host._default ) | lower ) }}
 {{- end }}
 {{- $ingressClassName := pluck .Values.global.env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
-
+{{- $targetCluster := include "targetCluster" . | trim }}
+{{- $isProduction := eq .Values.global.env "production" }}
+{{- $ruHost := include "ruHost" $host | trim }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: tuf-router
-  annotations:
 spec:
   ingressClassName: {{ $ingressClassName }}
   tls:
   - hosts:
-      - {{ $host }}
-{{- if eq .Values.global.env "production" }}
-      - ru.{{ $host }}
+{{- if $isProduction }}
+{{- if eq $targetCluster "ru" }}
+      - {{ $ruHost }}
 {{- else }}
-      - ru-{{ $host }}
+      - {{ $host }}
 {{- end }}
-{{- if eq .Values.global.env "production" }}
     secretName: tls-{{ $host }}
 {{- else }}
+      - {{ $host }}
+      - ru-{{ $host }}
     secretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
 {{- end }}
   rules:
+{{- if $isProduction }}
+{{- if eq $targetCluster "ru" }}
+  - host: {{ $ruHost }}
+{{- else }}
+  - host: {{ $host }}
+{{- end }}
+    http:
+      paths:
+      - path: /targets
+        pathType: Prefix
+        backend:
+          service:
+            name: tuf-router
+            port:
+              name: http
+      - path: /download
+        pathType: Prefix
+        backend:
+          service:
+            name: tuf-router
+            port:
+              name: http
+{{- else }}
   - host: {{ $host }}
     http:
       paths:
@@ -42,11 +68,7 @@ spec:
             name: tuf-router
             port:
               name: http
-{{- if eq .Values.global.env "production" }}
-  - host: ru.{{ $host }}
-{{- else }}
   - host: ru-{{ $host }}
-{{- end }}
     http:
       paths:
       - path: /targets
@@ -63,3 +85,4 @@ spec:
             name: tuf-router
             port:
               name: http
+{{- end }}

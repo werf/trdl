@@ -1,16 +1,23 @@
-{{- $host := pluck .Values.global.env .Values.host | first | default .Values.host._default  }}
-{{- $ingressClassName := pluck .Values.global.env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
+{{- $env := .Values.global.env }}
+{{- $host := pluck $env .Values.host | first | default .Values.host._default }}
+{{- $ingressClassName := pluck $env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
+{{- $targetCluster := include "targetCluster" . | trim }}
+{{- $isProduction := eq $env "production" }}
+{{- $renderEU := or (not $isProduction) (eq $targetCluster "eu") }}
+{{- $renderRU := or (not $isProduction) (eq $targetCluster "ru") }}
+{{- $ruHost := include "ruHost" $host | trim }}
+{{- if $renderEU }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Chart.Name }}
+{{- if $isProduction }}
   annotations:
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-{{- if eq .Values.global.env "production" }}
     nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
 {{- else }}
+  annotations:
     nginx.ingress.kubernetes.io/auth-signin: https://$host/dex-authenticator/sign_in
-    nginx.ingress.kubernetes.io/auth-url: https://{{ .Chart.Name }}-dex-authenticator.{{ .Chart.Name }}-{{ .Values.global.env }}.svc.cluster.local/dex-authenticator/auth
+    nginx.ingress.kubernetes.io/auth-url: https://{{ .Chart.Name }}-dex-authenticator.{{ .Chart.Name }}-{{ $env }}.svc.cluster.local/dex-authenticator/auth
     nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email
 {{- end }}
 spec:
@@ -18,13 +25,11 @@ spec:
   tls:
   - hosts:
       - {{ $host }}
-{{- if eq .Values.global.env "production" }}
+{{- if $isProduction }}
       - www.{{ $host }}
-{{- end }}
-{{- if eq .Values.global.env "production" }}
     secretName: tls-{{ $host }}
 {{- else }}
-    secretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
+    secretName: {{ pluck $env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
 {{- end }}
   rules:
   - host: {{ $host }}
@@ -37,37 +42,35 @@ spec:
             name: {{ .Chart.Name }}
             port:
               number: 80
+{{- end }}
+{{- if and $renderEU $renderRU }}
 ---
+{{- end }}
+{{- if $renderRU }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Chart.Name }}-ru
+{{- if not $isProduction }}
   annotations:
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-{{- if eq .Values.global.env "production" }}
-    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
-{{- else }}
     nginx.ingress.kubernetes.io/auth-signin: https://$host/dex-authenticator/sign_in
-    nginx.ingress.kubernetes.io/auth-url: https://{{ .Chart.Name }}-ru-dex-authenticator.{{ .Chart.Name }}-{{ .Values.global.env }}.svc.cluster.local/dex-authenticator/auth
+    nginx.ingress.kubernetes.io/auth-url: https://{{ .Chart.Name }}-ru-dex-authenticator.{{ .Chart.Name }}-{{ $env }}.svc.cluster.local/dex-authenticator/auth
     nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email
 {{- end }}
 spec:
   ingressClassName: {{ $ingressClassName }}
   tls:
   - hosts:
-{{- if eq .Values.global.env "production" }}
-      - ru.{{ $host }}
-{{- else }}
-      - ru-{{ $host }}
-{{- end }}
-{{- if eq .Values.global.env "production" }}
+{{- if $isProduction }}
+      - {{ $ruHost }}
     secretName: tls-{{ $host }}
 {{- else }}
-    secretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
+      - ru-{{ $host }}
+    secretName: {{ pluck $env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
 {{- end }}
   rules:
-{{- if eq .Values.global.env "production" }}
-  - host: ru.{{ $host }}
+{{- if $isProduction }}
+  - host: {{ $ruHost }}
 {{- else }}
   - host: ru-{{ $host }}
 {{- end }}
@@ -80,7 +83,8 @@ spec:
             name: {{ .Chart.Name }}
             port:
               number: 80
-{{- if eq .Values.global.env "production" }}
+{{- end }}
+{{- if $isProduction }}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -90,19 +94,24 @@ spec:
   secretName: tls-{{ $host }}
   issuerRef:
     kind: ClusterIssuer
-{{- if hasPrefix "review" .Values.global.env }}
+{{- if hasPrefix "review" $env }}
     name: letsencrypt-staging
 {{- else }}
     name: letsencrypt-standalone-geo
 {{- end }}
+{{- if eq $targetCluster "ru" }}
+  commonName: {{ $ruHost }}
+  dnsNames:
+  - {{ $ruHost }}
+{{- else }}
   commonName: {{ $host }}
   dnsNames:
   - {{ $host }}
   - www.{{ $host }}
-  - ru.{{ $host }}
 {{- end }}
+{{- end }}
+{{- if ne $env "production" }}
 ---
-{{- if ne .Values.global.env "production" }}
 apiVersion: deckhouse.io/v1alpha1
 kind: DexAuthenticator
 metadata:
@@ -110,7 +119,7 @@ metadata:
 spec:
   applicationDomain: {{ $host }}
   sendAuthorizationHeader: false
-  applicationIngressCertificateSecretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
+  applicationIngressCertificateSecretName: {{ pluck $env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
   applicationIngressClassName: "nginx"
   keepUsersLoggedInFor: "720h"
 ---
@@ -121,7 +130,7 @@ metadata:
 spec:
   applicationDomain: ru-{{ $host }}
   sendAuthorizationHeader: false
-  applicationIngressCertificateSecretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
+  applicationIngressCertificateSecretName: {{ pluck $env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
   applicationIngressClassName: "nginx"
   keepUsersLoggedInFor: "720h"
 {{- end }}
