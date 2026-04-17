@@ -1,7 +1,7 @@
 name: Converge website RU
 on:
   push:
-    branches: [fix/ci/split-website-production-deploy]
+    branches: [main]
     paths:
       - ".github/workflows/_website_converge.yml"
       - ".github/workflows/website_converge_ru.yml"

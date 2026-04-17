@@ -115,7 +115,7 @@ jobs:
 
   notification:
     name: Notification
-    if: false
+    if: always()
     needs: converge
     uses: werf/common-ci/.github/workflows/notification.yml@main
     secrets:
