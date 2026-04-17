@@ -1,0 +1,23 @@
+name: Converge website EU
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/_website_converge.yml"
+      - ".github/workflows/website_converge_eu.yml"
+      - "docs/**"
+  workflow_dispatch:
+
+jobs:
+  converge:
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    uses: ./.github/workflows/_website_converge.yml
+    secrets: inherit
+    with:
+      jobName: Converge site to Production EU
+      targetCluster: eu
+      runner: prod-github-runner-0
+      kubeConfigSecretPath: projects/data/b454e6aa-39f0-45f4-aa7c-a9465ab154cb/KUBE_CONFIG

@@ -8,6 +8,7 @@ includes:
     flatten: true
     vars:
       paths: "cmd/** pkg/**"
+      golangciLintBinDir: "../bin"
 tasks:
   build:
     desc: "Build client dev binary."

@@ -1,0 +1,124 @@
+name: Converge website production
+on:
+  workflow_call:
+    inputs:
+      jobName:
+        required: true
+        type: string
+      targetCluster:
+        required: true
+        type: string
+      kubeConfigSecretPath:
+        required: true
+        type: string
+      runner:
+        required: false
+        default: prod-github-runner-0
+        type: string
+    outputs:
+      KUBECONFIG_BASE64_PRODUCTION:
+        value: ${{ jobs.converge.outputs.kubeconfig_base64 }}
+
+env:
+  WERF_REPO: "ghcr.io/${{ github.repository_owner }}/trdl"
+
+jobs:
+  converge:
+    name: ${{ inputs.jobName }}
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    outputs:
+      kubeconfig_base64: ${{ steps.kubeconfig.outputs.kubeconfig_base64 }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install werf
+        uses: werf/actions/install@v2
+
+      - name: Authenticate in Seguro
+        id: vault
+        run: |
+          set -euo pipefail
+
+          audience="github-access-aud"
+          id_token_response="$(curl -fsSL -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}")"
+          id_token="$(printf '%s' "$id_token_response" | jq -r '.value')"
+
+          if [[ -z "$id_token" || "$id_token" == "null" ]]; then
+            echo "GitHub OIDC token is empty" >&2
+            exit 1
+          fi
+
+          vault_response="$(curl -fsSL -X POST "https://seguro.flant.com/v1/auth/github/login" -H "Content-Type: application/json" -d "$(jq -nc --arg role "werf-web" --arg jwt "$id_token" '{role: $role, jwt: $jwt}')")"
+          vault_token="$(printf '%s' "$vault_response" | jq -r '.auth.client_token')"
+
+          if [[ -z "$vault_token" || "$vault_token" == "null" ]]; then
+            echo "Seguro token is empty" >&2
+            exit 1
+          fi
+
+          echo "::add-mask::$vault_token"
+          echo "vault_token=$vault_token" >> "$GITHUB_OUTPUT"
+
+      - name: Read and normalize kubeconfig from Bob
+        id: kubeconfig
+        run: |
+          set -euo pipefail
+
+          response="$(curl -fsSL -H "X-Vault-Token: ${{ steps.vault.outputs.vault_token }}" "https://seguro.flant.com/v1/${{ inputs.kubeConfigSecretPath }}")"
+          secret_value="$(printf '%s' "$response" | jq -r '.data.data["kube.config"]')"
+
+          if [[ -z "$secret_value" || "$secret_value" == "null" ]]; then
+            echo "Bob kubeconfig secret is empty" >&2
+            exit 1
+          fi
+
+          if printf '%s' "$secret_value" | base64 -d >/tmp/kubeconfig-decoded 2>/dev/null && grep -q '^apiVersion:' /tmp/kubeconfig-decoded; then
+            kubeconfig_base64="$secret_value"
+          else
+            kubeconfig_base64="$(printf '%s' "$secret_value" | base64 | tr -d '\n')"
+          fi
+
+          echo "::add-mask::$kubeconfig_base64"
+          echo "kubeconfig_base64=$kubeconfig_base64" >> "$GITHUB_OUTPUT"
+
+      - name: Converge
+        run: |
+          werf_env_file="$(werf ci-env github --as-file)"
+          . "$werf_env_file"
+          werf converge --set global.targetCluster=${{ inputs.targetCluster }}
+        env:
+          WERF_DIR: "docs"
+          WERF_ENV: "production"
+          WERF_KUBE_CONFIG_BASE64: ${{ steps.kubeconfig.outputs.kubeconfig_base64 }}
+          KUBECONFIG_BASE64_PRODUCTION: ${{ steps.kubeconfig.outputs.kubeconfig_base64 }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ## ${{ inputs.jobName }}
+
+          - Event: ${{ github.event_name }}
+          - Target cluster mode: ${{ inputs.targetCluster }}
+          - Seguro role: werf-web
+          - Secret path: ${{ inputs.kubeConfigSecretPath }}
+          - Secret field used: kube.config
+          - Helm switch: global.targetCluster=${{ inputs.targetCluster }}
+          EOF
+
+  notification:
+    name: Notification
+    if: always()
+    needs: converge
+    uses: werf/common-ci/.github/workflows/notification.yml@main
+    secrets:
+      loopNotificationGroup: ${{ secrets.LOOP_NOTIFICATION_GROUP }}
+      webhook: ${{ secrets.LOOP_NOTIFICATION_WEBHOOK }}
+      notificationChannel: ${{ secrets.LOOP_NOTIFICATION_CHANNEL }}

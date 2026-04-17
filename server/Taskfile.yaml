@@ -8,6 +8,7 @@ includes:
     flatten: true
     vars:
       paths: ". cmd/** pkg/**"
+      golangciLintBinDir: "../bin"
 vars:
   project_name: '{{.project_name | default "trdl-test-project1"}}'
   signatures_count: '{{.signatures_count | default "0"}}'

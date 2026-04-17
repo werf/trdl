@@ -8,6 +8,7 @@ includes:
     flatten: true
     vars:
       paths: "tests/**"
+      golangciLintBinDir: "../bin"
 
 tasks:
   test:e2e:
