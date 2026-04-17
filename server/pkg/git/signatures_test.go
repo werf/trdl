@@ -188,7 +188,6 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 	}
 
 	for _, kind := range []string{kindNameLightweightTag, kindNameAnnotatedTag, kindNameCommit} {
-		kind := kind
 
 		BeforeEach(func() {
 			testutil.RunSucceedCommand(

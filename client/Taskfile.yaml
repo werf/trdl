@@ -4,10 +4,11 @@ silent: true
 
 includes:
   client:
-    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/main/Taskfile.format_lint.yml
+    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/chore/update-golangci-lint-task/Taskfile.format_lint.yml
     flatten: true
     vars:
       paths: "cmd/** pkg/**"
+      golangciLintBinDir: "../bin"
 
 vars:
   version: '{{.version | default "dev"}}'

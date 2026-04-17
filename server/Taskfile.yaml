@@ -4,10 +4,11 @@ silent: true
 
 includes:
   server:
-    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/main/Taskfile.format_lint.yml
+    taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/chore/update-golangci-lint-task/Taskfile.format_lint.yml
     flatten: true
     vars:
       paths: ". cmd/** pkg/**"
+      golangciLintBinDir: "../bin"
 vars:
   project_name: '{{.project_name | default "trdl-test-project1"}}'
   signatures_count: '{{.signatures_count | default "0"}}'
