@@ -141,7 +141,6 @@ func (c Client) prepareSourceScriptBasename(group, channel, shell string, opts U
 
 func (c Client) syncSourceScriptFile(group, channel, name string, data []byte) (string, error) {
 	scriptPath := filepath.Join(c.channelScriptsDir(group, channel), name)
-	scriptTmpPath := filepath.Join(c.channelScriptsTmpDir(group, channel), name)
 
 	exist, err := util.IsRegularFileExist(scriptPath)
 	if err != nil {
@@ -159,26 +158,8 @@ func (c Client) syncSourceScriptFile(group, channel, name string, data []byte) (
 		}
 	}
 
-	// create tmp file
-	{
-		if err := os.MkdirAll(filepath.Dir(scriptTmpPath), 0o755); err != nil {
-			return "", err
-		}
-
-		if err := ioutil.WriteFile(scriptTmpPath, data, os.ModePerm); err != nil {
-			return "", err
-		}
-	}
-
-	// rename file
-	{
-		if err := os.MkdirAll(filepath.Dir(scriptPath), 0o755); err != nil {
-			return "", err
-		}
-
-		if err := os.Rename(scriptTmpPath, scriptPath); err != nil {
-			return "", err
-		}
+	if err := util.AtomicWriteFile(scriptPath, data, os.ModePerm, c.channelScriptsTmpDir(group, channel)); err != nil {
+		return "", fmt.Errorf("write source script %q: %w", scriptPath, err)
 	}
 
 	return scriptPath, nil
