@@ -37,5 +37,5 @@ inputs:
       'The one from allowed channels. Also can be used with preset. For both "trdl update" and "trdl bin-path"'
     required: false
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.mjs'
