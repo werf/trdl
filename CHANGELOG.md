@@ -5,7 +5,6 @@
 
 ### Bug Fixes
 
-* **ci:** split website production deploy by target cluster ([#382](https://www.github.com/werf/trdl/issues/382)) ([64cdde2](https://www.github.com/werf/trdl/commit/64cdde26fe41ee8bb098120d6954e5632205c674))
 * **client:** use atomic write file for source ([#385](https://www.github.com/werf/trdl/issues/385)) ([fe55279](https://www.github.com/werf/trdl/commit/fe552791b910dafd61b63fd971592e7842112871))
 
 ### [0.12.2](https://www.github.com/werf/trdl/compare/v0.12.1...v0.12.2) (2025-10-21)
