@@ -4,9 +4,7 @@
 {{- $host = ( printf "%s.%s" $env (pluck "dev" .Values.host | first | default .Values.host._default ) | lower ) }}
 {{- end }}
 {{- $ingressClassName := pluck .Values.global.env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
-{{- $targetCluster := include "targetCluster" . | trim }}
 {{- $isProduction := eq .Values.global.env "production" }}
-{{- $renderRU := or (not $isProduction) (eq $targetCluster "ru") }}
 {{- $ruHost := include "ruHost" $host | trim }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -16,13 +14,12 @@ spec:
   ingressClassName: {{ $ingressClassName }}
   tls:
   - hosts:
-      - {{ $host }}
-{{- if $renderRU }}
 {{- if $isProduction }}
+      - {{ $host }}
       - {{ $ruHost }}
 {{- else }}
+      - {{ $host }}
       - ru-{{ $host }}
-{{- end }}
 {{- end }}
 {{- if $isProduction }}
     secretName: tls-trdl-dev
@@ -47,7 +44,6 @@ spec:
             name: tuf-router
             port:
               name: http
-{{- if $renderRU }}
 {{- if $isProduction }}
   - host: {{ $ruHost }}
 {{- else }}
@@ -69,4 +65,3 @@ spec:
             name: tuf-router
             port:
               name: http
-{{- end }}
