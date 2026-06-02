@@ -4,7 +4,6 @@
 {{- $host = ( printf "%s.%s" $env (pluck "dev" .Values.host | first | default .Values.host._default ) | lower ) }}
 {{- end }}
 {{- $ingressClassName := pluck .Values.global.env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
-{{- $targetCluster := include "targetCluster" . | trim }}
 {{- $isProduction := eq .Values.global.env "production" }}
 {{- $ruHost := include "ruHost" $host | trim }}
 apiVersion: networking.k8s.io/v1
@@ -16,59 +15,40 @@ spec:
   tls:
   - hosts:
 {{- if $isProduction }}
-{{- if eq $targetCluster "ru" }}
+      - {{ $host }}
       - {{ $ruHost }}
 {{- else }}
       - {{ $host }}
-{{- end }}
-    secretName: tls-{{ $host }}
-{{- else }}
-      - {{ $host }}
       - ru-{{ $host }}
+{{- end }}
+{{- if $isProduction }}
+    secretName: tls-trdl-dev
+{{- else }}
     secretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
 {{- end }}
   rules:
+  - host: {{ $host }}
+    http:
+      paths:
+      - path: /targets
+        pathType: Prefix
+        backend:
+          service:
+            name: tuf-router
+            port:
+              name: http
+      - path: /download
+        pathType: Prefix
+        backend:
+          service:
+            name: tuf-router
+            port:
+              name: http
 {{- if $isProduction }}
-{{- if eq $targetCluster "ru" }}
   - host: {{ $ruHost }}
 {{- else }}
-  - host: {{ $host }}
-{{- end }}
-    http:
-      paths:
-      - path: /targets
-        pathType: Prefix
-        backend:
-          service:
-            name: tuf-router
-            port:
-              name: http
-      - path: /download
-        pathType: Prefix
-        backend:
-          service:
-            name: tuf-router
-            port:
-              name: http
-{{- else }}
-  - host: {{ $host }}
-    http:
-      paths:
-      - path: /targets
-        pathType: Prefix
-        backend:
-          service:
-            name: tuf-router
-            port:
-              name: http
-      - path: /download
-        pathType: Prefix
-        backend:
-          service:
-            name: tuf-router
-            port:
-              name: http
   - host: ru-{{ $host }}
+{{- end }}
     http:
       paths:
       - path: /targets
@@ -85,4 +65,3 @@ spec:
             name: tuf-router
             port:
               name: http
-{{- end }}

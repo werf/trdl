@@ -1,12 +1,8 @@
 {{- $env := .Values.global.env }}
 {{- $host := pluck $env .Values.host | first | default .Values.host._default }}
 {{- $ingressClassName := pluck $env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
-{{- $targetCluster := include "targetCluster" . | trim }}
 {{- $isProduction := eq $env "production" }}
-{{- $renderEU := or (not $isProduction) (eq $targetCluster "eu") }}
-{{- $renderRU := or (not $isProduction) (eq $targetCluster "ru") }}
 {{- $ruHost := include "ruHost" $host | trim }}
-{{- if $renderEU }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -27,7 +23,7 @@ spec:
       - {{ $host }}
 {{- if $isProduction }}
       - www.{{ $host }}
-    secretName: tls-{{ $host }}
+    secretName: tls-trdl-dev
 {{- else }}
     secretName: {{ pluck $env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
 {{- end }}
@@ -42,11 +38,7 @@ spec:
             name: {{ .Chart.Name }}
             port:
               number: 80
-{{- end }}
-{{- if and $renderEU $renderRU }}
 ---
-{{- end }}
-{{- if $renderRU }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -63,7 +55,7 @@ spec:
   - hosts:
 {{- if $isProduction }}
       - {{ $ruHost }}
-    secretName: tls-{{ $host }}
+    secretName: tls-trdl-dev
 {{- else }}
       - ru-{{ $host }}
     secretName: {{ pluck $env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
@@ -83,33 +75,6 @@ spec:
             name: {{ .Chart.Name }}
             port:
               number: 80
-{{- end }}
-{{- if $isProduction }}
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: {{ .Chart.Name }}
-spec:
-  secretName: tls-{{ $host }}
-  issuerRef:
-    kind: ClusterIssuer
-{{- if hasPrefix "review" $env }}
-    name: letsencrypt-staging
-{{- else }}
-    name: letsencrypt-standalone-geo
-{{- end }}
-{{- if eq $targetCluster "ru" }}
-  commonName: {{ $ruHost }}
-  dnsNames:
-  - {{ $ruHost }}
-{{- else }}
-  commonName: {{ $host }}
-  dnsNames:
-  - {{ $host }}
-  - www.{{ $host }}
-{{- end }}
-{{- end }}
 {{- if ne $env "production" }}
 ---
 apiVersion: deckhouse.io/v1alpha1
