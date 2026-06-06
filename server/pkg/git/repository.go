@@ -2,6 +2,7 @@ package git
 
 import (
 	"archive/tar"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -24,7 +25,7 @@ type CloneOptions struct {
 	Auth              transport.AuthMethod
 }
 
-func CloneInMemory(url string, opts CloneOptions) (*git.Repository, error) {
+func CloneInMemory(ctx context.Context, url string, opts CloneOptions) (*git.Repository, error) {
 	storage := memory.NewStorage()
 	fs := memfs.New()
 
@@ -50,7 +51,7 @@ func CloneInMemory(url string, opts CloneOptions) (*git.Repository, error) {
 		}
 	}
 
-	return git.Clone(storage, fs, cloneOptions)
+	return git.CloneContext(ctx, storage, fs, cloneOptions)
 }
 
 func AddWorktreeFilesToTar(tw *tar.Writer, gitRepo *git.Repository) error {
