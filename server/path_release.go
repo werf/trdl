@@ -190,7 +190,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", name)
 					b.Logger().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", name))
 
-					if err := b.Publisher.StageReleaseTarget(ctx, publisherRepository, releaseName, name, twArtifacts); err != nil {
+					if err := b.Publisher.StageReleaseTarget(ctx, req.Storage, publisherRepository, releaseName, name, twArtifacts); err != nil {
 						return fmt.Errorf("unable to publish release target %q: %w", name, err)
 					}
 				}

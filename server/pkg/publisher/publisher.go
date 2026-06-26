@@ -3,6 +3,7 @@ package publisher
 import (
 	"bytes"
 	"context"
+	goelf "debug/elf"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 
 	"github.com/werf/trdl/server/pkg/config"
+	"github.com/werf/trdl/server/pkg/elf_signing"
 	"github.com/werf/trdl/server/pkg/pgp"
 	"github.com/werf/trdl/server/pkg/util"
 )
@@ -227,7 +229,111 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 	return repository, nil
 }
 
-func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader) error {
+func (publisher *Publisher) prepareReleaseSource(ctx context.Context, storage logical.Storage, releaseFilePath string, data io.Reader) (io.Reader, func(), error) {
+	cleanup := func() {}
+
+	elfSettings, err := elf_signing.GetSettings(ctx, storage)
+	if err != nil {
+		return nil, cleanup, fmt.Errorf("unable to get elf signing settings: %w", err)
+	}
+
+	if elfSettings == nil {
+		return data, cleanup, nil
+	}
+
+	tmp, err := os.CreateTemp("", "trdl-release-source-*")
+	if err != nil {
+		return nil, cleanup, fmt.Errorf("unable to create temporary file: %w", err)
+	}
+
+	cleanup = func() {
+		_ = tmp.Close()
+		_ = os.Remove(tmp.Name())
+	}
+
+	if _, err := io.Copy(tmp, data); err != nil {
+		return nil, cleanup, fmt.Errorf("buffer artifact %q to disk: %w", releaseFilePath, err)
+	}
+
+	if err := tmp.Sync(); err != nil {
+		return nil, cleanup, fmt.Errorf("sync temp file: %w", err)
+	}
+
+	hclog.L().Debug(fmt.Sprintf("Buffer artifact %q to disk for ELF signing", tmp.Name()))
+
+	isELF, err := isELFSource(tmp)
+	if err != nil {
+		return nil, cleanup, fmt.Errorf("unable to identify ELF source %q: %w", releaseFilePath, err)
+	}
+
+	if !isELF {
+		hclog.L().Debug(fmt.Sprintf("Skipping ELF sign for %q: not an ELF file", releaseFilePath))
+
+		if _, err := tmp.Seek(0, io.SeekStart); err != nil {
+			return nil, cleanup, fmt.Errorf("unable to seek to the beginning of the file: %w", err)
+		}
+
+		return tmp, cleanup, nil
+	}
+
+	machine, err := elfMachine(tmp.Name())
+	if err != nil {
+		return nil, cleanup, fmt.Errorf("unable to detect ELF machine for %q: %w", releaseFilePath, err)
+	}
+
+	if machine != goelf.EM_X86_64 && machine != goelf.EM_AARCH64 {
+		return nil, cleanup, fmt.Errorf("unsupported ELF machine %v for %q", machine, releaseFilePath)
+	}
+
+	if err := elf_signing.Sign(ctx, tmp.Name(), *elfSettings); err != nil {
+		return nil, cleanup, fmt.Errorf("unable to sign of %q: %w", releaseFilePath, err)
+	}
+
+	hclog.L().Debug(fmt.Sprintf("Embedded ELF signature into %q", releaseFilePath))
+
+	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
+		return nil, cleanup, fmt.Errorf("unable to seek to the beginning of the file: %w", err)
+	}
+
+	return tmp, cleanup, nil
+}
+
+func isELFSource(data io.ReadSeeker) (bool, error) {
+	if _, err := data.Seek(0, io.SeekStart); err != nil {
+		return false, fmt.Errorf("seek to start: %w", err)
+	}
+
+	var header [4]byte
+	if _, err := io.ReadFull(data, header[:]); err != nil {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			if _, seekErr := data.Seek(0, io.SeekStart); seekErr != nil {
+				return false, fmt.Errorf("seek to start after header read: %w", seekErr)
+			}
+
+			return false, nil
+		}
+
+		return false, fmt.Errorf("read ELF header: %w", err)
+	}
+
+	if _, err := data.Seek(0, io.SeekStart); err != nil {
+		return false, fmt.Errorf("seek to start after header read: %w", err)
+	}
+
+	return bytes.Equal(header[:], []byte{0x7f, 'E', 'L', 'F'}), nil
+}
+
+func elfMachine(path string) (goelf.Machine, error) {
+	f, err := goelf.Open(path)
+	if err != nil {
+		return goelf.EM_NONE, fmt.Errorf("open ELF file: %w", err)
+	}
+	defer f.Close()
+
+	return f.FileHeader.Machine, nil
+}
+
+func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logical.Storage, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader) error {
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 
@@ -250,12 +356,19 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
+	source, cleanup, err := publisher.prepareReleaseSource(ctx, storage, releaseFilePath, data)
+	if err != nil {
+		cleanup()
+		return fmt.Errorf("unable to prepare release source %q: %w", releaseFilePath, err)
+	}
+	defer cleanup()
+
 	gpgSignErrCh := make(chan error)
 	gpgSignDoneCh := make(chan struct{})
 	gpgSignBuf := bytes.NewBuffer(nil)
 
 	r := util.BufferedPipedWriterProcess(func(w io.WriteCloser) {
-		signDataReader := io.TeeReader(data, w)
+		signDataReader := io.TeeReader(source, w)
 
 		if err := pgp.SignDataStream(gpgSignBuf, signDataReader, publisher.PGPSigningKey); err != nil {
 			gpgSignErrCh <- fmt.Errorf("unable to sign %q: %w", releaseFilePath, err)

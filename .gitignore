@@ -35,3 +35,5 @@ tests_coverage/
 .jekyll-cache/
 /.sisyphus
 /.opencode
+/.pi
+/.pp
