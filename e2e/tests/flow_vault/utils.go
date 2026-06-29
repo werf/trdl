@@ -373,7 +373,7 @@ $TRDL_USE_SCRIPT_PATH = %[1]s
 . $TRDL_USE_SCRIPT_PATH.Trim()
 script.bat
 `
-		expectedOutput = fmt.Sprintf("v" + channelCfg.Version + "\r\n")
+		expectedOutput = "v" + channelCfg.Version + "\r\n"
 	} else {
 		shellCommandName = "sh"
 		shellCommandArgsFunc = func(testScriptPath string) []string {
@@ -383,7 +383,7 @@ script.bat
 . $(%[1]s)
 script.sh
 `
-		expectedOutput = fmt.Sprintf("v" + channelCfg.Version + "\n")
+		expectedOutput = "v" + channelCfg.Version + "\n"
 	}
 
 	shellCommandPath, err := exec.LookPath(shellCommandName)
