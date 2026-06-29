@@ -14,6 +14,8 @@ includes:
 tasks:
   test:e2e:
     desc: "Run client e2e test."
+    # coverpkg pulls in server packages, so this test binary compiles the CGO
+    # delivery-kit-sdk ELF signer and needs the C libs from server:deps:install:c.
     cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./...
     vars:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
