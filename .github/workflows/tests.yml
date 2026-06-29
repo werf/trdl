@@ -40,6 +40,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gpg
+          task --yes server:deps:install:c
 
       - name: Set up git config
         run: task --yes ci:setup:git-config
