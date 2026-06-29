@@ -276,10 +276,12 @@ tasks:
 
   _build:go:
     internal: true
+    vars:
+      buildTags: '{{if eq (.cgoEnabled | default "0") "1"}}{{.cgoTags}}{{if .goTags}} {{.goTags}}{{end}}{{else}}{{.goTags | default ""}}{{end}}'
     cmds:
       - |
         go build -o {{.outputDir | default (printf "vault/plugins/%s/%s-%s/bin" .version .targetOS .targetArch)}}/vault-plugin-secrets-trdl{{if (eq .targetOS "windows")}}.exe{{end}} \
-        {{if eq (.cgoEnabled | default "0") "1"}}-tags="{{.cgoTags}}" -ldflags="{{.cgoLDFlags}}{{if eq (.stripDebug | default "false") "true"}} -s -w{{end}}"{{else if eq (.stripDebug | default "false") "true"}}-ldflags="-s -w"{{end}} \
+        {{if .buildTags}}-tags="{{.buildTags}}" {{end}}{{if eq (.cgoEnabled | default "0") "1"}}-ldflags="{{.cgoLDFlags}}{{if eq (.stripDebug | default "false") "true"}} -s -w{{end}}"{{else if eq (.stripDebug | default "false") "true"}}-ldflags="-s -w"{{end}} \
         {{.extraGoBuildArgs}} {{.CLI_ARGS}} github.com/werf/trdl/server/cmd/vault-plugin-secrets-trdl
     env:
       GOOS: "{{.targetOS}}"
@@ -304,9 +306,9 @@ tasks:
           targetOS: "linux"
           targetArch: "amd64"
           outputDir: vault/plugins
+          cgoEnabled: "1"
           extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./..."
           goTags: "test_coverage"
-          CLI_ARGS: "-tags={{.goTags}}"
 
   test:unit:
     desc: "Run server unit tests."

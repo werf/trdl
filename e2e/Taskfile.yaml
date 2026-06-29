@@ -9,6 +9,7 @@ includes:
     vars:
       paths: "tests/**"
       golangciLintBinDir: "../bin"
+      golangciLintVersion: "v1.64.2"
 
 tasks:
   test:e2e:
