@@ -27,7 +27,7 @@ func Paths() []*framework.Path {
 		{
 			Pattern:         "configure/delivery_kit_elf_signing",
 			HelpSynopsis:    "Configure ELF binary signing via Delivery Kit",
-			HelpDescription: "Configure ELF binary signing via Delivery Kit",
+			HelpDescription: "Configure ELF binary signing via Delivery Kit. Note: this feature requires `binutils-multiarch` installed.",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameELFSigningKey: {
 					Type:        framework.TypeString,
@@ -71,11 +71,11 @@ func Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{
-					Description: "Add or update ELF signing settings",
+					Description: "Configure ELF binary signing via Delivery Kit",
 					Callback:    pathELFSigningCreateOrUpdate,
 				},
 				logical.UpdateOperation: &framework.PathOperation{
-					Description: "Add or update ELF signing settings",
+					Description: "Configure ELF binary signing via Delivery Kit",
 					Callback:    pathELFSigningCreateOrUpdate,
 				},
 				logical.DeleteOperation: &framework.PathOperation{
