@@ -18,3 +18,6 @@ Advanced commands:
  - [trdl exec]({{ "/reference/cli/trdl_exec.html" | true_relative_url }}) — {% include /reference/cli/trdl_exec.short.md %}.
  - [trdl dir-path]({{ "/reference/cli/trdl_dir_path.html" | true_relative_url }}) — {% include /reference/cli/trdl_dir_path.short.md %}.
  - [trdl bin-path]({{ "/reference/cli/trdl_bin_path.html" | true_relative_url }}) — {% include /reference/cli/trdl_bin_path.short.md %}.
+
+Other commands:
+ - [trdl version]({{ "/reference/cli/trdl_version.html" | true_relative_url }}) — {% include /reference/cli/trdl_version.short.md %}.

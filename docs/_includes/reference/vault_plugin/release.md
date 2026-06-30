@@ -1,4 +1,4 @@
-Perform a release.
+Perform a release for the specified git tag.
 
 ## Perform a release
 

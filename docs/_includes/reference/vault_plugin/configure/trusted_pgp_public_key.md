@@ -1,4 +1,4 @@
-Configure trusted PGP public keys.
+Configure trusted PGP public keys to check git repository commit signatures.
 
 ## Add a trusted PGP public key
 

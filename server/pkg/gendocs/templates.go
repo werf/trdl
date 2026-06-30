@@ -4,11 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
 
 	"github.com/hashicorp/vault/sdk/framework"
+)
+
+var (
+	helpWhitespaceRe = regexp.MustCompile(`\s+`)
+	openAPIParamRe   = regexp.MustCompile(`\{[^/]+}`)
 )
 
 type MethodExampleTemplateData struct {
@@ -178,16 +184,23 @@ func NewBackendTemplateData(backendDoc *framework.OASDocument, frameworkBackendR
 		pathName := FormatPathName(rawPathName)
 		pathDesc := backendDoc.Paths[rawPathName]
 
-		// FIXME: pathDesc.Description is actually a HelpSynopsis, where is HelpDescription?
+		// Vault only exposes the route HelpSynopsis in the OpenAPI document (pathDesc.Description).
+		// Use the full HelpDescription for the route page heading when available and keep the
+		// synopsis for the short description shown in the overview.
+		synopsis := pathDesc.Description
+		descriptionSource := synopsis
+		if fullDesc := routeHelpDescription(frameworkBackendRef, rawPathName); fullDesc != "" {
+			descriptionSource = fullDesc
+		}
 
-		descParts := strings.SplitN(pathDesc.Description, " ", 2)
+		descParts := strings.SplitN(descriptionSource, " ", 2)
 		descParts[0] = strings.Title(descParts[0])
 		description := strings.Join(descParts, " ")
 		description = strings.TrimSuffix(description, ".") + "."
 
 		path := &PathTemplateData{
 			Name:        pathName,
-			Synopsis:    strings.ToLower(pathDesc.Description),
+			Synopsis:    strings.ToLower(synopsis),
 			Description: description,
 		}
 
@@ -222,6 +235,23 @@ func NewBackendTemplateData(backendDoc *framework.OASDocument, frameworkBackendR
 	}
 
 	return backendTemplateData, nil
+}
+
+func normalizeHelpString(s string) string {
+	return strings.TrimSpace(helpWhitespaceRe.ReplaceAllString(s, " "))
+}
+
+func routeHelpDescription(b *framework.Backend, rawPathName string) string {
+	if b == nil {
+		return ""
+	}
+
+	pathName := strings.TrimPrefix(openAPIParamRe.ReplaceAllString(rawPathName, "x"), "/")
+	if p := b.Route(pathName); p != nil {
+		return normalizeHelpString(p.HelpDescription)
+	}
+
+	return ""
 }
 
 func FormatPathPatternAsFilesystemMarkdownPath(pattern string) (string, error) {
