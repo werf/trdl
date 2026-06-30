@@ -26,17 +26,17 @@ func Paths() []*framework.Path {
 	return []*framework.Path{
 		{
 			Pattern:         "configure/delivery_kit_elf_signing",
-			HelpSynopsis:    "Add or update Delivery Kit elf signing settings",
-			HelpDescription: "Add or update Delivery Kit elf signing settings",
+			HelpSynopsis:    "Configure ELF binary signing via Delivery Kit",
+			HelpDescription: "Configure ELF binary signing via Delivery Kit",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameELFSigningKey: {
 					Type:        framework.TypeString,
-					Description: "Private key data base64 encoded or Vault url",
+					Description: "Private key data base64 encoded or a Vault key reference in the form hashivault://<key>. When a hashivault:// reference is used, configure the vault_* parameters",
 					Required:    true,
 				},
 				fieldNameELFSigningKeyPass: {
 					Type:        framework.TypeString,
-					Description: "Private key password",
+					Description: "Private key password. Ignored when key is a hashivault:// reference",
 				},
 				fieldNameELFSigningCertificate: {
 					Type:        framework.TypeString,
@@ -45,27 +45,28 @@ func Paths() []*framework.Path {
 				},
 				fieldNameELFSigningIntermediates: {
 					Type:        framework.TypeString,
-					Description: "Intermediates certificates data base64 encoded",
+					Description: "Certificate chain (intermediates and root) base64 encoded, as a single PEM bundle",
 				},
 				fieldNameELFSigningVaultAddr: {
 					Type:        framework.TypeString,
-					Description: "Vault server address",
+					Description: "Vault server address. Applies only when key is a hashivault:// reference",
 				},
 				fieldNameELFSigningVaultTransitPath: {
 					Type:        framework.TypeString,
-					Description: "Vault transit path",
+					Description: "Mount path of Vault transit engine. Applies only when key is a hashivault:// reference",
 				},
 				fieldNameELFSigningVaultAuthPath: {
 					Type:        framework.TypeString,
-					Description: "Vault auth path",
+					Description: "Mount path of Vault auth method. Applies only when key is a hashivault:// reference",
+					Default:     "ar",
 				},
 				fieldNameELFSigningVaultAuthRoleID: {
 					Type:        framework.TypeString,
-					Description: "Vault auth role id",
+					Description: "AppRole RoleID used to authenticate to Vault. Applies only when key is a hashivault:// reference",
 				},
 				fieldNameELFSigningVaultAuthSecretID: {
 					Type:        framework.TypeString,
-					Description: "Vault auth secret id",
+					Description: "AppRole SecretID used to authenticate to Vault. Applies only when key is a hashivault:// reference",
 				},
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{

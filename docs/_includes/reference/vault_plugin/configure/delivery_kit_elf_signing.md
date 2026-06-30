@@ -1,4 +1,4 @@
-Add or update Delivery Kit elf signing settings.
+Configure ELF binary signing via Delivery Kit.
 
 ## Add or update ELF signing settings
 
@@ -10,14 +10,14 @@ Add or update Delivery Kit elf signing settings.
 ### Parameters
 
 * `certificate` (string, required) — Certificate data base64 encoded.
-* `intermediates` (string, optional) — Intermediates certificates data base64 encoded.
-* `key` (string, required) — Private key data base64 encoded or Vault url.
-* `password` (string, optional) — Private key password.
-* `vault_addr` (string, optional) — Vault server address.
-* `vault_auth_path` (string, optional) — Vault auth path.
-* `vault_auth_role_id` (string, optional) — Vault auth role id.
-* `vault_auth_secret_id` (string, optional) — Vault auth secret id.
-* `vault_transit_path` (string, optional) — Vault transit path.
+* `intermediates` (string, optional) — Certificate chain (intermediates and root) base64 encoded, as a single PEM bundle.
+* `key` (string, required) — Private key data base64 encoded or a Vault key reference in the form hashivault://<key>. When a hashivault:// reference is used, configure the vault_* parameters.
+* `password` (string, optional) — Private key password. Ignored when key is a hashivault:// reference.
+* `vault_addr` (string, optional) — Vault server address. Applies only when key is a hashivault:// reference.
+* `vault_auth_path` (string, optional, default: `ar`) — Mount path of Vault auth method. Applies only when key is a hashivault:// reference.
+* `vault_auth_role_id` (string, optional) — AppRole RoleID used to authenticate to Vault. Applies only when key is a hashivault:// reference.
+* `vault_auth_secret_id` (string, optional) — AppRole SecretID used to authenticate to Vault. Applies only when key is a hashivault:// reference.
+* `vault_transit_path` (string, optional) — Mount path of Vault transit engine. Applies only when key is a hashivault:// reference.
 
 ### Responses
 

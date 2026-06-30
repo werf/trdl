@@ -10,7 +10,6 @@ import (
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signature/elf/inhouse"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver/hashivault"
-	"github.com/samber/lo"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
@@ -25,7 +24,7 @@ func setVaultEnvVars(opts VaultSignerOpts) func() {
 	envs := map[string]string{
 		"VAULT_ADDR":                 opts.Address,
 		"TRANSIT_SECRET_ENGINE_PATH": opts.TransitPath,
-		"WERF_VAULT_AUTH_PATH":       lo.CoalesceOrEmpty(opts.AuthPath, "ar"),
+		"WERF_VAULT_AUTH_PATH":       opts.AuthPath,
 		"VAULT_ROLE_ID":              opts.AuthRoleID,
 		"VAULT_SECRET_ID":            opts.AuthSecretID,
 	}

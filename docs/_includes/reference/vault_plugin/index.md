@@ -10,7 +10,7 @@ The trdl plugin builds and releases software versions, publishes the release cha
 
 * [`/configure/build/secrets/:id`]({{ "/reference/vault_plugin/configure/build/secrets/id.html" | true_relative_url }}) — delete a build secret.
 
-* [`/configure/delivery_kit_elf_signing`]({{ "/reference/vault_plugin/configure/delivery_kit_elf_signing.html" | true_relative_url }}) — add or update delivery kit elf signing settings.
+* [`/configure/delivery_kit_elf_signing`]({{ "/reference/vault_plugin/configure/delivery_kit_elf_signing.html" | true_relative_url }}) — configure elf binary signing via delivery kit.
 
 * [`/configure/git_credential`]({{ "/reference/vault_plugin/configure/git_credential.html" | true_relative_url }}) — configure git credentials.
 
