@@ -3,6 +3,7 @@ module github.com/werf/trdl/e2e
 go 1.24.10
 
 require (
+	github.com/deckhouse/delivery-kit-sdk v1.2.1
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/vault/sdk v0.8.1
 	github.com/onsi/ginkgo/v2 v2.22.0
@@ -28,7 +29,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
-	github.com/deckhouse/delivery-kit-sdk v1.2.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/djherbis/buffer v1.2.0 // indirect
 	github.com/djherbis/nio/v3 v3.0.1 // indirect
