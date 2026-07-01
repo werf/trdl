@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/deckhouse/delivery-kit-sdk/pkg/signature/elf/inhouse"
 	"github.com/deckhouse/delivery-kit-sdk/test/pkg/cert_utils"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -324,8 +325,7 @@ var _ = Describe("Complete cycle", func() {
 		_, err = io.Copy(out, resp.Body)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(out.Close()).ShouldNot(HaveOccurred())
-
-		Expect(verifyELFSignature(context.Background(), elfSigningRootCARef, elfPath)).ShouldNot(HaveOccurred())
+		Expect(inhouse.Verify(context.Background(), []string{elfSigningRootCARef}, elfPath)).ShouldNot(HaveOccurred())
 	}
 
 	clientUpdate := func(repo, group, channel, expectedVersion string) {
