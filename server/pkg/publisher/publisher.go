@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 
+	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/config"
 	"github.com/werf/trdl/server/pkg/elf_signing"
 	"github.com/werf/trdl/server/pkg/pgp"
@@ -259,7 +260,7 @@ func (publisher *Publisher) prepareReleaseSource(ctx context.Context, storage lo
 		return nil, cleanup, fmt.Errorf("sync temp file: %w", err)
 	}
 
-	hclog.L().Debug(fmt.Sprintf("Buffer artifact %q to disk for ELF signing", tmp.Name()))
+	publisher.logger.Debug(fmt.Sprintf("Buffer artifact %q to disk for ELF signing", tmp.Name()))
 
 	isELF, err := isELFSource(tmp)
 	if err != nil {
@@ -267,7 +268,7 @@ func (publisher *Publisher) prepareReleaseSource(ctx context.Context, storage lo
 	}
 
 	if !isELF {
-		hclog.L().Debug(fmt.Sprintf("Skipping ELF sign for %q: not an ELF file", releaseFilePath))
+		logboek.Context(ctx).Default().LogF("Skipping ELF sign for %q: not an ELF file\n", releaseFilePath)
 
 		if _, err := tmp.Seek(0, io.SeekStart); err != nil {
 			return nil, cleanup, fmt.Errorf("unable to seek to the beginning of the file: %w", err)
@@ -289,7 +290,7 @@ func (publisher *Publisher) prepareReleaseSource(ctx context.Context, storage lo
 		return nil, cleanup, fmt.Errorf("unable to sign of %q: %w", releaseFilePath, err)
 	}
 
-	hclog.L().Debug(fmt.Sprintf("Embedded ELF signature into %q", releaseFilePath))
+	logboek.Context(ctx).Default().LogF("Embedded ELF signature into %q\n", releaseFilePath)
 
 	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
 		return nil, cleanup, fmt.Errorf("unable to seek to the beginning of the file: %w", err)

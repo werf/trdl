@@ -16,9 +16,9 @@ RUN tuf gen-key --expires 9999 root \
         && tuf sign root.json
 
 COPY staged /workspace/staged
-RUN find staged/targets -type f -print0 | xargs -0 -n1 | sed -e "s|^staged/targets/||" | tuf add \
-        && tuf snapshot \
-        && tuf timestamp \
+RUN find staged/targets -type f -print0 | xargs -0 -n1 | sed -e "s|^staged/targets/||" | tuf add --expires 9999 \
+        && tuf snapshot --expires 9999 \
+        && tuf timestamp --expires 9999  \
         && tuf commit
 
 FROM halverneus/static-file-server:v1.8.8
