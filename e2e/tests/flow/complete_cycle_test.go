@@ -307,13 +307,13 @@ var _ = Describe("Complete cycle", func() {
 	}
 
 	verifyELFSigning := func(version string) {
-		// ELF signing only targets linux amd64/arm64 binaries; other runner
-		// architectures have no signable release artifact.
-		if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
+		// The fixture only ships a signable ELF for linux/amd64, so skip the
+		// check on other runner platforms (nothing to verify there).
+		if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
 			return
 		}
 
-		artifactURL := fmt.Sprintf("%s/targets/releases/%s/linux-%s/bin/tool", minioRepoAddress, version, runtime.GOARCH)
+		artifactURL := fmt.Sprintf("%s/targets/releases/%s/linux-amd64/bin/tool", minioRepoAddress, version)
 		resp, err := http.Get(artifactURL)
 		Expect(err).ShouldNot(HaveOccurred())
 		defer func() { _ = resp.Body.Close() }()

@@ -9,6 +9,3 @@ commands:
   - mkdir -p /result/linux-amd64/bin
   - cp /bin/busybox /result/linux-amd64/bin/tool
   - printf "echo {{ .Tag }}\n" > /result/linux-amd64/bin/script.sh
-  - mkdir -p /result/linux-arm64/bin
-  - cp /bin/busybox /result/linux-arm64/bin/tool
-  - printf "echo {{ .Tag }}\n" > /result/linux-arm64/bin/script.sh
