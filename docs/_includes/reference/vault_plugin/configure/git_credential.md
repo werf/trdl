@@ -1,4 +1,4 @@
-Configure Git credentials.
+Configure Git credentials to perform clone operation.
 
 ## Configure Git credentials
 

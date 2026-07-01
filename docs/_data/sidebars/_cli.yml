@@ -41,3 +41,9 @@ cli: &cli
 
     - title: trdl bin-path
       url: /reference/cli/trdl_bin_path.html
+
+  - title: Other commands
+    f:
+
+    - title: trdl version
+      url: /reference/cli/trdl_version.html

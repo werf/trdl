@@ -1,4 +1,4 @@
-Add or update build signing credentials.
+Add or update build signing credentials for macOS builds.
 
 ## Add or update mac signing credentials
 
