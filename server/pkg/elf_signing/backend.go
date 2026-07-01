@@ -27,7 +27,7 @@ func Paths() []*framework.Path {
 		{
 			Pattern:         "configure/delivery_kit_elf_signing",
 			HelpSynopsis:    "Configure ELF binary signing via Delivery Kit",
-			HelpDescription: "Configure ELF binary signing via Delivery Kit. Note: this feature requires `binutils-multiarch` installed.",
+			HelpDescription: "Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-architecture support on the Vault server host (`binutils-multiarch` on Debian/Ubuntu)",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameELFSigningKey: {
 					Type:        framework.TypeString,
