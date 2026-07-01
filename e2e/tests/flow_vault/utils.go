@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/deckhouse/delivery-kit-sdk/pkg/signature/elf/inhouse"
+	"github.com/deckhouse/delivery-kit-sdk/test/pkg/cert_utils"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
@@ -222,6 +225,45 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 		fmt.Sprintf("s3_bucket_name=%s", opts.S3BucketName),
 		lastPubCommit,
 	)
+}
+
+// serverConfigureELFSigning configures ELF signing for the project through the
+// real Vault plugin and returns the root CA reference used to verify signatures.
+func serverConfigureELFSigning(testDir, projectName string) string {
+	certs := cert_utils.GenerateCertificatesWithOptions(cert_utils.GenerateCertificatesOptions{
+		UseBase64Encoding: true,
+	})
+
+	testutil.RunSucceedCommand(
+		testDir,
+		"vault", "write",
+		vaultAddress,
+		fmt.Sprintf("%s/configure/delivery_kit_elf_signing", projectName),
+		fmt.Sprintf("key=%s", certs.PrivRef),
+		fmt.Sprintf("certificate=%s", certs.LeafRef),
+		fmt.Sprintf("intermediates=%s", certs.IntermediatesRef),
+	)
+
+	return certs.RootRef
+}
+
+// verifyELFSigning downloads the published linux/amd64 ELF artifact from MinIO
+// and validates its embedded signature against the generated root CA.
+func verifyELFSigning(tmpDir, projectName, rootCARef, version string) {
+	artifactURL := fmt.Sprintf("%s/%s/targets/releases/%s/linux-amd64/bin/tool", minioAddress, projectName, version)
+	resp, err := http.Get(artifactURL)
+	Expect(err).ShouldNot(HaveOccurred())
+	defer func() { _ = resp.Body.Close() }()
+	Expect(resp.StatusCode).Should(Equal(http.StatusOK))
+
+	elfPath := filepath.Join(tmpDir, fmt.Sprintf("signed-tool-%s", version))
+	out, err := os.Create(elfPath)
+	Expect(err).ShouldNot(HaveOccurred())
+	_, err = io.Copy(out, resp.Body)
+	Expect(err).ShouldNot(HaveOccurred())
+	Expect(out.Close()).ShouldNot(HaveOccurred())
+
+	Expect(inhouse.Verify(context.Background(), []string{rootCARef}, elfPath)).ShouldNot(HaveOccurred())
 }
 
 func serverAddBuildSecrets(testDir, projectName string, secrets map[string]string) {

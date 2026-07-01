@@ -6,3 +6,6 @@ commands:
   - printf "echo {{ .Tag }}\n" > /result/any-any/bin/script.sh
   - mkdir -p /result/windows-any/bin
   - printf "@echo off\necho {{ .Tag }}\n" > /result/windows-any/bin/script.bat
+  - mkdir -p /result/linux-amd64/bin
+  - cp /bin/busybox /result/linux-amd64/bin/tool
+  - printf "echo {{ .Tag }}\n" > /result/linux-amd64/bin/script.sh

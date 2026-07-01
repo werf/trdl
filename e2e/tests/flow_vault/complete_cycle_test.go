@@ -26,6 +26,7 @@ type testOptions struct {
 var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 	DescribeTable("should perform all steps",
 		func(testOpts testOptions) {
+			var elfSigningRootCARef string
 			By("initializing git repo")
 			{
 				importGPGKeys(testOpts.pgpKeys)
@@ -56,6 +57,7 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 				serverReadProjectConfig(SuiteData.TestDir, testOpts.projectName)
 				serverAddGPGKeys(SuiteData.TestDir, testOpts.projectName, testOpts.pgpKeys)
 				serverAddBuildSecrets(SuiteData.TestDir, testOpts.projectName, testOpts.buildSecrets)
+				elfSigningRootCARef = serverConfigureELFSigning(SuiteData.TestDir, testOpts.projectName)
 			}
 			By(fmt.Sprintf("[server] Releasing tag %q ...", testOpts.tag1))
 			{
@@ -84,6 +86,10 @@ var _ = Describe("trdl flow test", Label("e2e", "trdl", "flow"), func() {
 					})
 				quorumSignCommit(SuiteData.TestDir, testOpts.pgpKeys["tl"], testOpts.pgpKeys["pm"], testOpts.branchName)
 				serverPublish(SuiteData.TrdlVaultClientBinPath, testOpts.projectName)
+			}
+			By("[server] Verifying published ELF binary signature ...")
+			{
+				verifyELFSigning(SuiteData.TmpDir, testOpts.projectName, elfSigningRootCARef, testOpts.version1)
 			}
 			By("[client] Using channel release ...")
 			{
