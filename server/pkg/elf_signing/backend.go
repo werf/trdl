@@ -71,15 +71,15 @@ func Paths() []*framework.Path {
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{
-					Description: "Configure ELF binary signing via Delivery Kit",
+					Description: "Configure ELF signing",
 					Callback:    pathELFSigningCreateOrUpdate,
 				},
 				logical.UpdateOperation: &framework.PathOperation{
-					Description: "Configure ELF binary signing via Delivery Kit",
+					Description: "Configure ELF signing",
 					Callback:    pathELFSigningCreateOrUpdate,
 				},
 				logical.DeleteOperation: &framework.PathOperation{
-					Description: "Delete ELF signing settings",
+					Description: "Reset ELF signing",
 					Callback:    pathELFSigningDelete,
 				},
 			},

@@ -1,6 +1,6 @@
-Configure ELF binary signing via Delivery Kit.
+Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-architecture support on the Vault server host (`binutils-multiarch` on Debian/Ubuntu).
 
-## Add or update ELF signing settings
+## Configure ELF signing
 
 
 | Method | Path |
@@ -24,7 +24,7 @@ Configure ELF binary signing via Delivery Kit.
 * 200 — OK. 
 
 
-## Delete ELF signing settings
+## Reset ELF signing
 
 
 | Method | Path |
