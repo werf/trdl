@@ -238,7 +238,7 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 	return repository, nil
 }
 
-func (publisher *Publisher) prepareReleaseSource(ctx context.Context, storage logical.Storage, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
+func (publisher *Publisher) trySignELF(ctx context.Context, storage logical.Storage, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
 	elfSettings, err := elf_signing.GetSettings(ctx, storage)
 	if err != nil {
 		return nil, fmt.Errorf("get elf signing settings: %w", err)
@@ -343,9 +343,9 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logi
 		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
-	source, err := publisher.prepareReleaseSource(ctx, storage, releaseFilePath, data)
+	source, err := publisher.trySignELF(ctx, storage, releaseFilePath, data)
 	if err != nil {
-		return fmt.Errorf("unable to prepare release source %q: %w", releaseFilePath, err)
+		return fmt.Errorf("try signing artifact %q as ELF: %w", releaseFilePath, err)
 	}
 	defer func() {
 		_ = source.Close()
