@@ -1,6 +1,7 @@
 package publisher
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	goelf "debug/elf"
@@ -55,6 +56,13 @@ type InMemoryFile struct {
 func NewErrIncorrectTargetPath(path string) error {
 	return fmt.Errorf(`got incorrect target path %q: expected path in format <os>-<arch>/... where os can be either "any", "linux", "darwin" or "windows", and arch can be either "any", "amd64" or "arm64"`, path)
 }
+
+type tempFileCloser struct {
+	*os.File
+	cleanup func() error
+}
+
+func (t *tempFileCloser) Close() error { return t.cleanup() }
 
 type Publisher struct {
 	mu     sync.Mutex
@@ -230,107 +238,85 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 	return repository, nil
 }
 
-func (publisher *Publisher) prepareReleaseSource(ctx context.Context, storage logical.Storage, releaseFilePath string, data io.Reader) (io.Reader, func(), error) {
-	cleanup := func() {}
-
+func (publisher *Publisher) prepareReleaseSource(ctx context.Context, storage logical.Storage, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
 	elfSettings, err := elf_signing.GetSettings(ctx, storage)
 	if err != nil {
-		return nil, cleanup, fmt.Errorf("unable to get elf signing settings: %w", err)
+		return nil, fmt.Errorf("get elf signing settings: %w", err)
 	}
 
 	if elfSettings == nil {
-		return data, cleanup, nil
+		return io.NopCloser(data), nil
+	}
+
+	// Peek first 4 bytes to skip disk buffering for non-ELF artifacts.
+	br := bufio.NewReader(data)
+	magic, err := br.Peek(4)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("peek header of %q: %w", releaseFilePath, err)
+	}
+	if !bytes.HasPrefix(magic, []byte(goelf.ELFMAG)) {
+		logboek.Context(ctx).Default().LogF("Skipping ELF sign for %q: not an ELF file\n", releaseFilePath)
+		return io.NopCloser(br), nil
 	}
 
 	tmp, err := os.CreateTemp("", "trdl-release-source-*")
 	if err != nil {
-		return nil, cleanup, fmt.Errorf("unable to create temporary file: %w", err)
+		return nil, fmt.Errorf("create temp file: %w", err)
 	}
 
-	cleanup = func() {
+	var deferErr error
+	cleanup := func() error {
 		_ = tmp.Close()
-		_ = os.Remove(tmp.Name())
+		return os.Remove(tmp.Name())
 	}
 
-	if _, err := io.Copy(tmp, data); err != nil {
-		return nil, cleanup, fmt.Errorf("buffer artifact %q to disk: %w", releaseFilePath, err)
+	defer func() {
+		if deferErr != nil {
+			_ = cleanup()
+		}
+	}()
+
+	if _, deferErr = io.Copy(tmp, br); deferErr != nil {
+		return nil, fmt.Errorf("buffer artifact %q to disk: %w", releaseFilePath, deferErr)
 	}
 
-	if err := tmp.Sync(); err != nil {
-		return nil, cleanup, fmt.Errorf("sync temp file: %w", err)
+	if deferErr = tmp.Sync(); deferErr != nil {
+		return nil, fmt.Errorf("sync temp file: %w", deferErr)
 	}
 
 	publisher.logger.Debug(fmt.Sprintf("Buffer artifact %q to disk for ELF signing", tmp.Name()))
 
-	isELF, err := isELFSource(tmp)
-	if err != nil {
-		return nil, cleanup, fmt.Errorf("unable to identify ELF source %q: %w", releaseFilePath, err)
-	}
-
-	if !isELF {
-		logboek.Context(ctx).Default().LogF("Skipping ELF sign for %q: not an ELF file\n", releaseFilePath)
-
-		if _, err := tmp.Seek(0, io.SeekStart); err != nil {
-			return nil, cleanup, fmt.Errorf("unable to seek to the beginning of the file: %w", err)
-		}
-
-		return tmp, cleanup, nil
-	}
-
-	machine, err := elfMachine(tmp.Name())
-	if err != nil {
-		return nil, cleanup, fmt.Errorf("unable to detect ELF machine for %q: %w", releaseFilePath, err)
+	machine, deferErr := readELFMachine(tmp)
+	if deferErr != nil {
+		return nil, fmt.Errorf("read ELF header of %q: %w", releaseFilePath, deferErr)
 	}
 
 	if machine != goelf.EM_X86_64 && machine != goelf.EM_AARCH64 {
-		return nil, cleanup, fmt.Errorf("unsupported ELF machine %v for %q", machine, releaseFilePath)
+		deferErr = fmt.Errorf("unsupported ELF machine %v for %q", machine, releaseFilePath)
+		return nil, deferErr
 	}
 
-	if err := elf_signing.Sign(ctx, tmp.Name(), *elfSettings); err != nil {
-		return nil, cleanup, fmt.Errorf("unable to sign of %q: %w", releaseFilePath, err)
+	if deferErr = elf_signing.Sign(ctx, tmp.Name(), *elfSettings); deferErr != nil {
+		return nil, fmt.Errorf("sign %q: %w", releaseFilePath, deferErr)
 	}
 
 	logboek.Context(ctx).Default().LogF("Embedded ELF signature into %q\n", releaseFilePath)
 
-	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
-		return nil, cleanup, fmt.Errorf("unable to seek to the beginning of the file: %w", err)
+	if _, deferErr = tmp.Seek(0, io.SeekStart); deferErr != nil {
+		return nil, fmt.Errorf("seek temp file: %w", deferErr)
 	}
 
-	return tmp, cleanup, nil
+	return &tempFileCloser{File: tmp, cleanup: cleanup}, nil
 }
 
-func isELFSource(data io.ReadSeeker) (bool, error) {
-	if _, err := data.Seek(0, io.SeekStart); err != nil {
-		return false, fmt.Errorf("seek to start: %w", err)
-	}
-
-	var header [4]byte
-	if _, err := io.ReadFull(data, header[:]); err != nil {
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-			if _, seekErr := data.Seek(0, io.SeekStart); seekErr != nil {
-				return false, fmt.Errorf("seek to start after header read: %w", seekErr)
-			}
-
-			return false, nil
-		}
-
-		return false, fmt.Errorf("read ELF header: %w", err)
-	}
-
-	if _, err := data.Seek(0, io.SeekStart); err != nil {
-		return false, fmt.Errorf("seek to start after header read: %w", err)
-	}
-
-	return bytes.Equal(header[:], []byte{0x7f, 'E', 'L', 'F'}), nil
-}
-
-func elfMachine(path string) (goelf.Machine, error) {
-	f, err := goelf.Open(path)
+func readELFMachine(r io.ReaderAt) (goelf.Machine, error) {
+	f, err := goelf.NewFile(r)
 	if err != nil {
-		return goelf.EM_NONE, fmt.Errorf("open ELF file: %w", err)
+		return goelf.EM_NONE, fmt.Errorf("parse ELF: %w", err)
 	}
-	defer f.Close()
-
+	defer func() {
+		_ = f.Close()
+	}()
 	return f.FileHeader.Machine, nil
 }
 
@@ -357,12 +343,13 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logi
 		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
-	source, cleanup, err := publisher.prepareReleaseSource(ctx, storage, releaseFilePath, data)
+	source, err := publisher.prepareReleaseSource(ctx, storage, releaseFilePath, data)
 	if err != nil {
-		cleanup()
 		return fmt.Errorf("unable to prepare release source %q: %w", releaseFilePath, err)
 	}
-	defer cleanup()
+	defer func() {
+		_ = source.Close()
+	}()
 
 	gpgSignErrCh := make(chan error)
 	gpgSignDoneCh := make(chan struct{})
