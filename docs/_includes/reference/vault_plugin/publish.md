@@ -1,4 +1,4 @@
-Publish release channels.
+Publish release channels based on trdl_channels.yaml configuration in the git repository.
 
 ## Publish release channels
 

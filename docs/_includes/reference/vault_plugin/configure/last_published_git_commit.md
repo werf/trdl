@@ -1,4 +1,4 @@
-Read or delete the last published Git commit.
+This endpoint allows reading or deleting the last published Git commit recorded by the plugin.
 
 ## Get the last published Git commit
 
