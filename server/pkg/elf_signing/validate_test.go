@@ -56,6 +56,15 @@ func encodeRawKey(t *testing.T, certs cert_utils.GenerateCertificatesResult) str
 	return base64.StdEncoding.EncodeToString(block)
 }
 
+// encodePEMCertWithBogusBytes returns a base64-encoded PEM block with type
+// CERTIFICATE but bytes that are not valid DER, so x509.ParseCertificate fails.
+func encodePEMCertWithBogusBytes(t *testing.T) string {
+	t.Helper()
+
+	block := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("not a real der")})
+	return base64.StdEncoding.EncodeToString(block)
+}
+
 func validVaultOpts() VaultSignerOpts {
 	return VaultSignerOpts{
 		Address:      "https://vault.example.com",
@@ -96,6 +105,15 @@ func TestValidateELFSettings(t *testing.T) {
 		require.NoError(t, validateSettings(settings))
 	})
 
+	t.Run("empty key ref", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:  "",
+			CertRef: certs.LeafRef,
+		}
+		require.ErrorContains(t, validateSettings(settings), `"key" is required`)
+	})
+
 	t.Run("invalid base64 key", func(t *testing.T) {
 		certs := generateCerts(t, "")
 		settings := SignerSettings{
@@ -111,7 +129,7 @@ func TestValidateELFSettings(t *testing.T) {
 			KeyRef:  base64.StdEncoding.EncodeToString([]byte("just some text")),
 			CertRef: certs.LeafRef,
 		}
-		require.ErrorContains(t, validateSettings(settings), "invalid pem block")
+		require.ErrorContains(t, validateSettings(settings), "invalid key pem block")
 	})
 
 	t.Run("unsupported pem type", func(t *testing.T) {
@@ -159,6 +177,53 @@ func TestValidateELFSettings(t *testing.T) {
 			IntermediatesRef: "not!base64",
 		}
 		require.ErrorContains(t, validateSettings(settings), "decode base64 intermediates certificate")
+	})
+
+	t.Run("empty certificate ref", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:  certs.PrivRef,
+			CertRef: "",
+		}
+		require.ErrorContains(t, validateSettings(settings), `"certificate" is required`)
+	})
+
+	t.Run("certificate is valid base64 but not pem", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:  certs.PrivRef,
+			CertRef: base64.StdEncoding.EncodeToString([]byte("not a pem block")),
+		}
+		require.ErrorContains(t, validateSettings(settings), "invalid certificate pem block")
+	})
+
+	t.Run("certificate is valid pem but not x509", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:  certs.PrivRef,
+			CertRef: encodePEMCertWithBogusBytes(t),
+		}
+		require.ErrorContains(t, validateSettings(settings), "parse certificate")
+	})
+
+	t.Run("intermediates is valid base64 but not pem", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:           certs.PrivRef,
+			CertRef:          certs.LeafRef,
+			IntermediatesRef: base64.StdEncoding.EncodeToString([]byte("not a pem bundle")),
+		}
+		require.ErrorContains(t, validateSettings(settings), "invalid intermediates pem block")
+	})
+
+	t.Run("intermediates has invalid x509", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:           certs.PrivRef,
+			CertRef:          certs.LeafRef,
+			IntermediatesRef: encodePEMCertWithBogusBytes(t),
+		}
+		require.ErrorContains(t, validateSettings(settings), "parse intermediates certificate")
 	})
 
 	t.Run("valid vault key reference", func(t *testing.T) {

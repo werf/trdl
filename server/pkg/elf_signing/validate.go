@@ -14,6 +14,10 @@ import (
 )
 
 func validateSettings(settings SignerSettings) error {
+	if settings.KeyRef == "" {
+		return fmt.Errorf("%q is required", fieldNameELFSigningKey)
+	}
+
 	if strings.Contains(settings.KeyRef, "://") {
 		if !strings.HasPrefix(settings.KeyRef, hashivault.ReferenceScheme) {
 			return fmt.Errorf("invalid key reference: %q", settings.KeyRef)
@@ -40,7 +44,7 @@ func validateSettings(settings SignerSettings) error {
 
 		p, _ := pem.Decode(decoded)
 		if p == nil {
-			return errors.New("invalid pem block")
+			return errors.New("invalid key pem block")
 		}
 
 		if p.Type != signver.PrivateKeyPemType && p.Type != signver.DeliveryKitPrivateKeyPemType {
@@ -62,13 +66,48 @@ func validateSettings(settings SignerSettings) error {
 		}
 	}
 
-	if _, err := base64.StdEncoding.DecodeString(settings.CertRef); err != nil {
+	if settings.CertRef == "" {
+		return fmt.Errorf("%q is required", fieldNameELFSigningCertificate)
+	}
+
+	certBytes, err := base64.StdEncoding.DecodeString(settings.CertRef)
+	if err != nil {
 		return fmt.Errorf("decode base64 certificate: %w", err)
 	}
 
+	certBlock, _ := pem.Decode(certBytes)
+	if certBlock == nil {
+		return errors.New("invalid certificate pem block")
+	}
+
+	if _, err := x509.ParseCertificate(certBlock.Bytes); err != nil {
+		return fmt.Errorf("parse certificate: %w", err)
+	}
+
 	if settings.IntermediatesRef != "" {
-		if _, err := base64.StdEncoding.DecodeString(settings.IntermediatesRef); err != nil {
+		intBytes, err := base64.StdEncoding.DecodeString(settings.IntermediatesRef)
+		if err != nil {
 			return fmt.Errorf("decode base64 intermediates certificate: %w", err)
+		}
+
+		rest := intBytes
+		parsed := 0
+		for {
+			var block *pem.Block
+			block, rest = pem.Decode(rest)
+			if block == nil {
+				break
+			}
+
+			if _, err := x509.ParseCertificate(block.Bytes); err != nil {
+				return fmt.Errorf("parse intermediates certificate: %w", err)
+			}
+
+			parsed++
+		}
+
+		if parsed == 0 {
+			return errors.New("invalid intermediates pem block")
 		}
 	}
 
