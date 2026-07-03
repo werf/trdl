@@ -14,11 +14,28 @@ import (
 )
 
 func (c Client) UseChannelReleaseBinDir(group, channel, shell string, opts UseSourceOptions) (string, error) {
-	name, data, err := c.prepareSourceScriptFileNameAndData(group, channel, shell, opts)
+	commonArgs := []string{c.repoName, group, channel}
+	basename := c.prepareSourceScriptBasename(fmt.Sprintf("%s_%s", group, channel), shell, opts)
+	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, group, channel, opts)
 	if err != nil {
 		return "", err
 	}
-	sourceScriptPath, err := c.syncSourceScriptFile(group, channel, name, data)
+	sourceScriptPath, err := c.syncSourceScriptFile(c.channelScriptsDir(group, channel), c.channelScriptsTmpDir(group, channel), name, data)
+	if err != nil {
+		return "", err
+	}
+
+	return sourceScriptPath, nil
+}
+
+func (c Client) UseReleaseBinDir(version, shell string, opts UseSourceOptions) (string, error) {
+	commonArgs := []string{c.repoName, fmt.Sprintf("--version=%s", version)}
+	basename := c.prepareSourceScriptBasename(fmt.Sprintf("version_%s", version), shell, opts)
+	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, version, "", opts)
+	if err != nil {
+		return "", err
+	}
+	sourceScriptPath, err := c.syncSourceScriptFile(c.versionScriptsDir(version), c.versionScriptsTmpDir(version), name, data)
 	if err != nil {
 		return "", err
 	}
@@ -30,12 +47,10 @@ type UseSourceOptions struct {
 	NoSelfUpdate bool
 }
 
-func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string, opts UseSourceOptions) (string, []byte, error) {
-	basename := c.prepareSourceScriptBasename(group, channel, shell, opts)
+func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename, shell, envValuePrimary, envValueSecondary string, opts UseSourceOptions) (string, []byte, error) {
 	logPathBackgroundUpdateStdout := filepath.Join(c.logsDir, basename+"_background_update_stdout.log")
 	logPathBackgroundUpdateStderr := filepath.Join(c.logsDir, basename+"_background_update_stderr.log")
 
-	commonArgs := []string{c.repoName, group, channel}
 	foregroundUpdateArgs := commonArgs[0:]
 	backgroundUpdateArgs := append(
 		append([]string{}, commonArgs[0:]...),
@@ -58,7 +73,12 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string,
 		return "", nil, err
 	}
 	trdlUseRepoGroupChannelEnvName := FormatRepoChannelGroupEnvName(c.repoName)
-	trdlUseRepoGroupChannelEnvValue := fmt.Sprintf("%s %s", group, channel)
+	var trdlUseRepoGroupChannelEnvValue string
+	if envValueSecondary != "" {
+		trdlUseRepoGroupChannelEnvValue = fmt.Sprintf("%s %s", envValuePrimary, envValueSecondary)
+	} else {
+		trdlUseRepoGroupChannelEnvValue = envValuePrimary
+	}
 
 	var tmpl string
 	var ext string
@@ -129,8 +149,8 @@ export PATH="$trdl_repo_bin_path${PATH:+:${PATH}}"
 	return name, data, nil
 }
 
-func (c Client) prepareSourceScriptBasename(group, channel, shell string, opts UseSourceOptions) string {
-	basename := fmt.Sprintf("use_%s_%s_%s", group, channel, shell)
+func (c Client) prepareSourceScriptBasename(selector, shell string, opts UseSourceOptions) string {
+	basename := fmt.Sprintf("use_%s_%s", selector, shell)
 
 	if opts.NoSelfUpdate {
 		basename += "_" + util.MurmurHash(fmt.Sprintf("%+v", opts))
@@ -139,8 +159,8 @@ func (c Client) prepareSourceScriptBasename(group, channel, shell string, opts U
 	return basename
 }
 
-func (c Client) syncSourceScriptFile(group, channel, name string, data []byte) (string, error) {
-	scriptPath := filepath.Join(c.channelScriptsDir(group, channel), name)
+func (c Client) syncSourceScriptFile(scriptsDir, scriptsTmpDir, name string, data []byte) (string, error) {
+	scriptPath := filepath.Join(scriptsDir, name)
 
 	exist, err := util.IsRegularFileExist(scriptPath)
 	if err != nil {
@@ -158,7 +178,7 @@ func (c Client) syncSourceScriptFile(group, channel, name string, data []byte) (
 		}
 	}
 
-	if err := util.AtomicWriteFile(scriptPath, data, os.ModePerm, c.channelScriptsTmpDir(group, channel)); err != nil {
+	if err := util.AtomicWriteFile(scriptPath, data, os.ModePerm, scriptsTmpDir); err != nil {
 		return "", fmt.Errorf("write source script %q: %w", scriptPath, err)
 	}
 

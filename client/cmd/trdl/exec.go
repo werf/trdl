@@ -11,6 +11,7 @@ import (
 
 type execCmdData struct {
 	repoName           string
+	version            string
 	group              string
 	optionalChannel    string
 	optionalBinaryName string
@@ -19,7 +20,7 @@ type execCmdData struct {
 
 func execCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "exec REPO GROUP [CHANNEL] [BINARY_NAME] [--] [ARGS]",
+		Use:                   "exec REPO GROUP [CHANNEL] [BINARY_NAME] [--] [ARGS] | REPO VERSION [BINARY_NAME] [--] [ARGS]",
 		Short:                 "Exec a software binary",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -37,6 +38,17 @@ func execCmd() *cobra.Command {
 			c, err := trdlClient.NewClient(homeDir)
 			if err != nil {
 				return fmt.Errorf("unable to initialize trdl client: %w", err)
+			}
+
+			if cmdData.version != "" {
+				if err := c.ExecRepoReleaseBin(
+					cmdData.repoName, cmdData.version,
+					cmdData.optionalBinaryName, cmdData.optionalBinaryArgs,
+				); err != nil {
+					return err
+				}
+
+				return nil
 			}
 
 			if err := c.ExecRepoChannelReleaseBin(
@@ -57,7 +69,6 @@ func processExecArgs(cmd *cobra.Command, args []string) (*execCmdData, error) {
 	data := &execCmdData{}
 
 	data.repoName = args[0]
-	data.group = args[1]
 
 	if data.repoName == trdl.SelfUpdateDefaultRepo {
 		return nil, fmt.Errorf("reserved repository name %q cannot be used", trdl.SelfUpdateDefaultRepo)
@@ -65,6 +76,28 @@ func processExecArgs(cmd *cobra.Command, args []string) (*execCmdData, error) {
 
 	doubleDashInd := cmd.ArgsLenAtDash()
 	doubleDashExist := cmd.ArgsLenAtDash() != -1
+
+	if isVersionArg(args[1]) {
+		data.version = parseVersionArg(args[1])
+
+		restArgs := args[2:]
+		if doubleDashExist {
+			data.optionalBinaryArgs = args[doubleDashInd:]
+			restArgs = args[2:doubleDashInd]
+		}
+
+		switch len(restArgs) {
+		case 0:
+			return data, nil
+		case 1:
+			data.optionalBinaryName = restArgs[0]
+			return data, nil
+		default:
+			return nil, fmt.Errorf("VERSION is mutually exclusive with GROUP and CHANNEL arguments")
+		}
+	}
+
+	data.group = args[1]
 
 	restArgs := args[2:]
 	if doubleDashExist {

@@ -21,29 +21,34 @@ func updateCmd() *cobra.Command {
 	var backgroundStderrFile string
 
 	cmd := &cobra.Command{
-		Use:                   "update REPO GROUP [CHANNEL]",
+		Use:                   "update REPO GROUP [CHANNEL] | REPO VERSION",
 		Short:                 "Update the software",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
+			if err := validateVersionArgs(cmd, args); err != nil {
 				PrintHelp(cmd)
 				return err
 			}
 
 			repoName := args[0]
-			group := args[1]
 
 			if repoName == trdl.SelfUpdateDefaultRepo {
 				PrintHelp(cmd)
 				return fmt.Errorf("reserved repository name %q cannot be used", trdl.SelfUpdateDefaultRepo)
 			}
 
+			isVersion := isVersionArg(args[1])
+
+			var group string
 			var optionalChannel string
-			if len(args) == 3 {
-				optionalChannel = args[2]
-				if err := ValidateChannel(optionalChannel); err != nil {
-					PrintHelp(cmd)
-					return err
+			if !isVersion {
+				group = args[1]
+				if len(args) == 3 {
+					optionalChannel = args[2]
+					if err := ValidateChannel(optionalChannel); err != nil {
+						PrintHelp(cmd)
+						return err
+					}
 				}
 			}
 
@@ -78,6 +83,14 @@ func updateCmd() *cobra.Command {
 				if err := c.DoSelfUpdate(autoclean); err != nil {
 					_, _ = fmt.Fprintf(os.Stderr, "WARNING: Self-update failed: %s\n", err)
 				}
+			}
+
+			if isVersion {
+				if err := c.UpdateRepoToVersion(repoName, parseVersionArg(args[1]), autoclean); err != nil {
+					return err
+				}
+
+				return nil
 			}
 
 			if err := c.UpdateRepoChannel(repoName, group, optionalChannel, autoclean); err != nil {

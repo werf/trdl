@@ -13,3 +13,12 @@ func (c Client) GetChannelReleaseDir(group, channel string) (dir string, err err
 
 	return
 }
+
+func (c Client) GetReleaseDir(version string) (dir string, err error) {
+	err = lockgate.WithAcquire(c.locker, c.updateReleaseLockName(version), lockgate.AcquireOptions{Shared: true, Timeout: trdl.DefaultLockerTimeout}, func(_ bool) error {
+		dir, err = c.findReleaseDir(version)
+		return err
+	})
+
+	return
+}

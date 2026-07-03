@@ -98,6 +98,14 @@ func (c Client) UpdateChannel(group, channel string) error {
 	})
 }
 
+func (c Client) UpdateToVersion(version string) error {
+	if err := c.tufClient.Update(); err != nil {
+		return err
+	}
+
+	return c.syncChannelReleaseWithLock(version)
+}
+
 func (c Client) syncChannelReleaseWithLock(release string) error {
 	return lockgate.WithAcquire(c.locker, c.updateReleaseLockName(release), lockgate.AcquireOptions{Shared: false, Timeout: time.Minute * 5}, func(_ bool) error {
 		return c.syncChannelRelease(release)
@@ -199,7 +207,7 @@ func (c Client) selectAppropriateReleaseTargets(release string) (targets data.Ta
 
 	if len(targets) == 0 {
 		return nil, "", fmt.Errorf(
-			"channel release %q not found in the repository (os: %q, arch: %q)",
+			"version %q not found in the repository (os: %q, arch: %q)",
 			release, runtime.GOOS, runtime.GOARCH,
 		)
 	}

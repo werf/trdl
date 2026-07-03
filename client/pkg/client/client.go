@@ -282,6 +282,84 @@ func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string, autoc
 	return nil
 }
 
+func (c Client) UpdateRepoToVersion(repoName, version string, autocleanReleases bool) error {
+	repoClient, err := c.GetRepoClient(repoName)
+	if err != nil {
+		return err
+	}
+
+	if err := repoClient.UpdateToVersion(version); err != nil {
+		return err
+	}
+
+	if autocleanReleases {
+		// Should we ignore specific version?
+		if err := repoClient.CleanReleases(); err != nil {
+			return fmt.Errorf("unable to clean old releases: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (c Client) UseRepoReleaseBinDir(repoName, version, shell string, opts repo.UseSourceOptions) (string, error) {
+	repoClient, err := c.GetRepoClient(repoName)
+	if err != nil {
+		return "", err
+	}
+
+	scriptPath, err := repoClient.UseReleaseBinDir(version, shell, opts)
+	if err != nil {
+		return "", err
+	}
+
+	return scriptPath, nil
+}
+
+func (c Client) ExecRepoReleaseBin(repoName, version, optionalBinName string, args []string) error {
+	repoClient, err := c.GetRepoClient(repoName)
+	if err != nil {
+		return err
+	}
+
+	// Pass version env to the binary be executed.
+	err = os.Setenv(repo.FormatRepoChannelGroupEnvName(repoName), version)
+	if err != nil {
+		return err
+	}
+
+	if err := repoClient.ExecReleaseBin(version, optionalBinName, args); err != nil {
+		switch e := err.(type) {
+		case repo.ReleaseNotFoundLocallyError:
+			return prepareReleaseNotFoundLocallyErr(e)
+		case repo.ReleaseBinSeveralFilesFoundError:
+			return prepareReleaseBinSeveralFilesFoundErr(e)
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+func (c Client) GetRepoReleaseBinDir(repoName, version string) (string, error) {
+	repoClient, err := c.GetRepoClient(repoName)
+	if err != nil {
+		return "", err
+	}
+
+	dir, err := repoClient.GetReleaseBinDir(version)
+	if err != nil {
+		if e, ok := err.(repo.ReleaseNotFoundLocallyError); ok {
+			return "", prepareReleaseNotFoundLocallyErr(e)
+		}
+
+		return "", err
+	}
+
+	return dir, nil
+}
+
 func (c Client) UseRepoChannelReleaseBinDir(repoName, group, optionalChannel, shell string, opts repo.UseSourceOptions) (string, error) {
 	channel, err := c.processRepoOptionalChannel(repoName, optionalChannel)
 	if err != nil {
@@ -403,6 +481,23 @@ func prepareChannelReleaseNotFoundLocallyErr(e repo.ChannelReleaseNotFoundLocall
 		e.RepoName,
 		e.Group,
 		e.Channel,
+	)
+}
+
+func prepareReleaseNotFoundLocallyErr(e repo.ReleaseNotFoundLocallyError) error {
+	return fmt.Errorf(
+		"%w, update version with \"trdl update %s --version=%s\" command",
+		e,
+		e.RepoName,
+		e.Version,
+	)
+}
+
+func prepareReleaseBinSeveralFilesFoundErr(e repo.ReleaseBinSeveralFilesFoundError) error {
+	return fmt.Errorf(
+		"%w: it is necessary to specify the certain name:\n - %s",
+		e,
+		strings.Join(e.Names, "\n - "),
 	)
 }
 

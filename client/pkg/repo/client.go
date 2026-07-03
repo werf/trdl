@@ -107,6 +107,10 @@ func (c Client) channelScriptsDir(group, channel string) string {
 	return filepath.Join(c.dir, scriptsDir, strings.Join([]string{group, channel}, "-"))
 }
 
+func (c Client) versionScriptsDir(version string) string {
+	return filepath.Join(c.dir, scriptsDir, strings.Join([]string{"version", version}, "-"))
+}
+
 func (c Client) channelTmpPath(group, channel string) string {
 	return filepath.Join(c.tmpDir, channelsDir, group, channel)
 }
@@ -119,12 +123,70 @@ func (c Client) channelScriptsTmpDir(group, channel string) string {
 	return filepath.Join(c.tmpDir, scriptsDir, strings.Join([]string{group, channel}, "-"))
 }
 
+func (c Client) versionScriptsTmpDir(version string) string {
+	return filepath.Join(c.tmpDir, scriptsDir, strings.Join([]string{"version", version}, "-"))
+}
+
 func (c Client) findChannelReleaseBinPath(group, channel, optionalBinName string) (string, error) {
-	dir, releaseName, err := c.findChannelReleaseBinDir(group, channel)
+	release, err := c.GetChannelRelease(group, channel)
 	if err != nil {
 		return "", err
 	}
 
+	dir, err := c.findReleaseBinDir(release)
+	if err != nil {
+		if _, ok := err.(ReleaseNotFoundLocallyError); ok {
+			return "", NewChannelReleaseNotFoundLocallyError(c.repoName, group, channel, release)
+		}
+		return "", err
+	}
+
+	path, err := c.findBinPathInDir(dir, optionalBinName)
+	if err != nil {
+		if e, ok := err.(ReleaseBinSeveralFilesFoundError); ok {
+			return "", NewChannelReleaseSeveralFilesFoundError(c.repoName, group, channel, release, e.Names)
+		}
+		return "", err
+	}
+
+	return path, nil
+}
+
+func (c Client) findChannelReleaseBinDir(group, channel string) (dir, release string, err error) {
+	release, err = c.GetChannelRelease(group, channel)
+	if err != nil {
+		return "", "", err
+	}
+
+	binDir, err := c.findReleaseBinDir(release)
+	if err != nil {
+		if _, ok := err.(ReleaseNotFoundLocallyError); ok {
+			return "", "", NewChannelReleaseNotFoundLocallyError(c.repoName, group, channel, release)
+		}
+		return "", "", err
+	}
+
+	return binDir, release, nil
+}
+
+func (c Client) findChannelReleaseDir(group, channel string) (dir, release string, err error) {
+	release, err = c.GetChannelRelease(group, channel)
+	if err != nil {
+		return "", "", err
+	}
+
+	dir, err = c.findReleaseDir(release)
+	if err != nil {
+		if _, ok := err.(ReleaseNotFoundLocallyError); ok {
+			return "", "", NewChannelReleaseNotFoundLocallyError(c.repoName, group, channel, release)
+		}
+		return "", "", err
+	}
+
+	return dir, release, nil
+}
+
+func (c Client) findBinPathInDir(dir, optionalBinName string) (string, error) {
 	var glob string
 	if optionalBinName == "" {
 		glob = filepath.Join(dir, "*")
@@ -143,7 +205,7 @@ func (c Client) findChannelReleaseBinPath(group, channel, optionalBinName string
 			names = append(names, strings.TrimPrefix(m, dir+string(os.PathSeparator)))
 		}
 
-		return "", NewChannelReleaseSeveralFilesFoundError(c.repoName, group, channel, releaseName, names)
+		return "", ReleaseBinSeveralFilesFoundError{Names: names}
 	} else if len(matches) == 0 {
 		if optionalBinName == "" {
 			return "", fmt.Errorf("binary file not found in release")
@@ -155,45 +217,44 @@ func (c Client) findChannelReleaseBinPath(group, channel, optionalBinName string
 	return matches[0], nil
 }
 
-func (c Client) findChannelReleaseBinDir(group, channel string) (dir, release string, err error) {
-	releaseDir, releaseName, err := c.findChannelReleaseDir(group, channel)
+func (c Client) findReleaseBinDir(release string) (dir string, err error) {
+	releaseDir, err := c.findReleaseDir(release)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	binDir := filepath.Join(releaseDir, "bin")
 	exist, err := util.IsDirExist(binDir)
 	if err != nil {
-		return "", "", fmt.Errorf("unable to check existence of directory %q: %w", binDir, err)
+		return "", fmt.Errorf("unable to check existence of directory %q: %w", binDir, err)
 	}
 
 	if !exist {
-		return "", "", fmt.Errorf("bin directory not found in the release %q directory (group: %q, channel: %q)", releaseName, group, channel)
+		return "", fmt.Errorf("bin directory not found in the version %q directory", release)
 	}
 
-	return binDir, releaseName, nil
+	return binDir, nil
 }
 
-func (c Client) findChannelReleaseDir(group, channel string) (dir, release string, err error) {
-	release, err = c.GetChannelRelease(group, channel)
-	if err != nil {
-		return "", "", err
+func (c Client) findReleaseDir(release string) (dir string, err error) {
+	if err := c.releaseMetafile(release).Reset(c.locker); err != nil {
+		return "", fmt.Errorf("unable to reset release metafile: %w", err)
 	}
 
 	dirGlob := filepath.Join(c.dir, releasesDir, release, "*")
 
 	matches, err := filepath.Glob(dirGlob)
 	if err != nil {
-		return "", "", fmt.Errorf("unable to glob files: %w", err)
+		return "", fmt.Errorf("unable to glob files: %w", err)
 	}
 
 	if len(matches) > 1 {
-		return "", "", fmt.Errorf("unexpected files in release directory:\n - %s", strings.Join(matches, "\n - "))
+		return "", fmt.Errorf("unexpected files in release directory:\n - %s", strings.Join(matches, "\n - "))
 	} else if len(matches) == 0 {
-		return "", "", NewChannelReleaseNotFoundLocallyError(c.repoName, group, channel, release)
+		return "", NewReleaseNotFoundLocallyError(c.repoName, release)
 	}
 
-	return matches[0], release, nil
+	return matches[0], nil
 }
 
 func (c Client) GetChannelRelease(group, channel string) (string, error) {
