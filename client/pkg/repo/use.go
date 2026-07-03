@@ -16,7 +16,10 @@ import (
 func (c Client) UseChannelReleaseBinDir(group, channel, shell string, opts UseSourceOptions) (string, error) {
 	commonArgs := []string{c.repoName, group, channel}
 	basename := c.prepareSourceScriptBasename(fmt.Sprintf("%s_%s", group, channel), shell, opts)
-	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, group, channel, opts)
+	envName := FormatRepoChannelGroupEnvName(c.repoName)
+	envValue := fmt.Sprintf("%s %s", group, channel)
+
+	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envName, envValue, opts)
 	if err != nil {
 		return "", err
 	}
@@ -29,9 +32,11 @@ func (c Client) UseChannelReleaseBinDir(group, channel, shell string, opts UseSo
 }
 
 func (c Client) UseReleaseBinDir(version, shell string, opts UseSourceOptions) (string, error) {
-	commonArgs := []string{c.repoName, fmt.Sprintf("--version=%s", version)}
-	basename := c.prepareSourceScriptBasename(fmt.Sprintf("version_%s", version), shell, opts)
-	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, version, "", opts)
+	commonArgs := []string{c.repoName, fmt.Sprintf("v%s", version)}
+	basename := c.prepareSourceScriptBasename(fmt.Sprintf("v%s", version), shell, opts)
+	envName := FormatRepoVersionEnvName(c.repoName)
+
+	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envName, version, opts)
 	if err != nil {
 		return "", err
 	}
@@ -47,7 +52,7 @@ type UseSourceOptions struct {
 	NoSelfUpdate bool
 }
 
-func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename, shell, envValuePrimary, envValueSecondary string, opts UseSourceOptions) (string, []byte, error) {
+func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename, shell, trdlUseRepoEnvName, trdlUseRepoEnvValue string, opts UseSourceOptions) (string, []byte, error) {
 	logPathBackgroundUpdateStdout := filepath.Join(c.logsDir, basename+"_background_update_stdout.log")
 	logPathBackgroundUpdateStderr := filepath.Join(c.logsDir, basename+"_background_update_stderr.log")
 
@@ -71,13 +76,6 @@ func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename
 	trdlBinaryPath, err := trdl.GetTrdlBinaryPath()
 	if err != nil {
 		return "", nil, err
-	}
-	trdlUseRepoGroupChannelEnvName := FormatRepoChannelGroupEnvName(c.repoName)
-	var trdlUseRepoGroupChannelEnvValue string
-	if envValueSecondary != "" {
-		trdlUseRepoGroupChannelEnvValue = fmt.Sprintf("%s %s", envValuePrimary, envValueSecondary)
-	} else {
-		trdlUseRepoGroupChannelEnvValue = envValuePrimary
 	}
 
 	var tmpl string
@@ -130,13 +128,13 @@ export PATH="$trdl_repo_bin_path${PATH:+:${PATH}}"
 	}
 
 	script := fmt.Sprintf(tmpl,
-		commonArgsString,                // %[1]s: REPO GROUP CHANNEL            (common args string)
-		foregroundUpdateArgsString,      // %[2]s: REPO GROUP CHANNEL [flag ...] (foreground update args string)
-		backgroundUpdateArgsString,      // %[3]s: REPO GROUP CHANNEL [flag ...] (background update args string)
-		logPathBackgroundUpdateStderr,   // %[4]s: <path>                        (background update error file path)
-		trdlBinaryPath,                  // %[5]s: <path>                        (trdl binary path)
-		trdlUseRepoGroupChannelEnvName,  // %[6]s: <env name>                    (TRDL_USE_<REPO>_GROUP_CHANNEL)
-		trdlUseRepoGroupChannelEnvValue, // %[7]s: <env value>                   (TRDL_USE_<REPO>_GROUP_CHANNEL value)
+		commonArgsString,              // %[1]s: REPO GROUP CHANNEL            (common args string)
+		foregroundUpdateArgsString,    // %[2]s: REPO GROUP CHANNEL [flag ...] (foreground update args string)
+		backgroundUpdateArgsString,    // %[3]s: REPO GROUP CHANNEL [flag ...] (background update args string)
+		logPathBackgroundUpdateStderr, // %[4]s: <path>                        (background update error file path)
+		trdlBinaryPath,                // %[5]s: <path>                        (trdl binary path)
+		trdlUseRepoEnvName,            // %[6]s: <env name>                    (TRDL_USE_<REPO>_GROUP_CHANNEL)
+		trdlUseRepoEnvValue,           // %[7]s: <env value>                   (TRDL_USE_<REPO>_GROUP_CHANNEL value)
 	)
 
 	name := "source_script"
@@ -188,6 +186,11 @@ func (c Client) syncSourceScriptFile(scriptsDir, scriptsTmpDir, name string, dat
 // FormatRepoChannelGroupEnvName returns a formatted repo channel group env name
 func FormatRepoChannelGroupEnvName(repoName string) string {
 	return fmt.Sprintf("TRDL_USE_%s_GROUP_CHANNEL", formatRepoName(repoName))
+}
+
+// FormatRepoVersionEnvName returns a formatted repo version env name
+func FormatRepoVersionEnvName(repoName string) string {
+	return fmt.Sprintf("TRDL_USE_%s_VERSION", formatRepoName(repoName))
 }
 
 // formatRepoName returns a formatted repository name.

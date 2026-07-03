@@ -108,7 +108,7 @@ func (c Client) channelScriptsDir(group, channel string) string {
 }
 
 func (c Client) versionScriptsDir(version string) string {
-	return filepath.Join(c.dir, scriptsDir, strings.Join([]string{"version", version}, "-"))
+	return filepath.Join(c.dir, scriptsDir, "v"+version)
 }
 
 func (c Client) channelTmpPath(group, channel string) string {
@@ -124,7 +124,7 @@ func (c Client) channelScriptsTmpDir(group, channel string) string {
 }
 
 func (c Client) versionScriptsTmpDir(version string) string {
-	return filepath.Join(c.tmpDir, scriptsDir, strings.Join([]string{"version", version}, "-"))
+	return filepath.Join(c.tmpDir, scriptsDir, "v"+version)
 }
 
 func (c Client) findChannelReleaseBinPath(group, channel, optionalBinName string) (string, error) {
