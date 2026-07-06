@@ -11,7 +11,7 @@ import (
 
 var releaseMetafileExpirationPeriod = time.Hour * 24
 
-func (c Client) CleanReleases() error {
+func (c Client) CleanReleases(ignoreVersion string) error {
 	actualLocalReleases, err := c.getActualLocalReleases()
 	if err != nil {
 		return fmt.Errorf("unable to get actual local releases: %w", err)
@@ -39,7 +39,7 @@ func (c Client) CleanReleases() error {
 				return err
 			}
 
-			if isRecentlyUsed {
+			if isRecentlyUsed || releaseName == ignoreVersion {
 				continue
 			}
 

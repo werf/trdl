@@ -35,7 +35,7 @@ type RepoInterface interface {
 	GetReleaseDir(version string) (string, error)
 	GetReleaseBinDir(version string) (string, error)
 	GetReleaseBinPath(version, optionalBinName string) (string, error)
-	CleanReleases() error
+	CleanReleases(ignoreVersion string) error
 }
 
 type configurationInterface interface {

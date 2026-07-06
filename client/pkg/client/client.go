@@ -250,7 +250,7 @@ func (c Client) doSelfUpdate(autocleanReleases bool) error {
 	}
 
 	if autocleanReleases {
-		if err := repoClient.CleanReleases(); err != nil {
+		if err := repoClient.CleanReleases(""); err != nil {
 			return fmt.Errorf("unable to clean old releases: %w", err)
 		}
 	}
@@ -274,7 +274,7 @@ func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string, autoc
 	}
 
 	if autocleanReleases {
-		if err := repoClient.CleanReleases(); err != nil {
+		if err := repoClient.CleanReleases(""); err != nil {
 			return fmt.Errorf("unable to clean old releases: %w", err)
 		}
 	}
@@ -293,8 +293,7 @@ func (c Client) UpdateRepoToVersion(repoName, version string, autocleanReleases 
 	}
 
 	if autocleanReleases {
-		// Should we ignore specific version?
-		if err := repoClient.CleanReleases(); err != nil {
+		if err := repoClient.CleanReleases(version); err != nil {
 			return fmt.Errorf("unable to clean old releases: %w", err)
 		}
 	}
@@ -486,7 +485,7 @@ func prepareChannelReleaseNotFoundLocallyErr(e repo.ChannelReleaseNotFoundLocall
 
 func prepareReleaseNotFoundLocallyErr(e repo.ReleaseNotFoundLocallyError) error {
 	return fmt.Errorf(
-		"%w, update version with \"trdl update %s --version=%s\" command",
+		"%w, update version with \"trdl update %s v%s\" command",
 		e,
 		e.RepoName,
 		e.Version,
