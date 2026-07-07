@@ -24,7 +24,11 @@ func useCmd() *cobra.Command {
   $ . $(trdl use repo_name 1.2 ea)
 
   # Pin an explicit version instead of a group/channel
+  # (an exact version must be prefixed with "v", otherwise it is treated as a group)
   $ . $(trdl use repo_name v1.2.3)
+
+  # Pin a semver constraint (resolves to the greatest matching release)
+  $ . $(trdl use repo_name '>=1.2.0')
 
   # Force script generation for a Unix shell on Windows
   $ trdl use repo_name 1.2 ea --shell unix
