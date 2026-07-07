@@ -1,4 +1,5 @@
-//go:build ai_tests
+//go:build test_coverage
+// +build test_coverage
 
 package main
 
@@ -12,7 +13,7 @@ func newTestCmd() *cobra.Command {
 	return &cobra.Command{Use: "test", RunE: func(*cobra.Command, []string) error { return nil }}
 }
 
-func TestAI_validateVersionArgs(t *testing.T) {
+func TestValidateVersionArgs(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    []string
@@ -36,7 +37,7 @@ func TestAI_validateVersionArgs(t *testing.T) {
 	}
 }
 
-func TestAI_processExecArgs_versionFlow(t *testing.T) {
+func TestProcessExecArgs_versionFlow(t *testing.T) {
 	cmd := newTestCmd()
 
 	data, err := processExecArgs(cmd, []string{"repo", "v1.2.3"})
@@ -63,7 +64,7 @@ func TestAI_processExecArgs_versionFlow(t *testing.T) {
 	}
 }
 
-func TestAI_processExecArgs_channelFlow(t *testing.T) {
+func TestProcessExecArgs_channelFlow(t *testing.T) {
 	cmd := newTestCmd()
 
 	data, err := processExecArgs(cmd, []string{"repo", "1.2"})
