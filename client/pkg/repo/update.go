@@ -271,6 +271,7 @@ func (c Client) findRelease(version string) (string, error) {
 	}
 
 	var latestValid *semver.Version
+	var latestValidName string
 	for name := range targets {
 		if !strings.HasPrefix(name, releasesDir+"/") {
 			continue
@@ -286,6 +287,7 @@ func (c Client) findRelease(version string) (string, error) {
 		if constraint.Check(releaseVersion) {
 			if latestValid == nil || releaseVersion.GreaterThan(latestValid) {
 				latestValid = releaseVersion
+				latestValidName = versionPart
 			}
 		}
 	}
@@ -294,7 +296,7 @@ func (c Client) findRelease(version string) (string, error) {
 		return "", fmt.Errorf("unable to find release for version %q", version)
 	}
 
-	return latestValid.String(), nil
+	return latestValidName, nil
 }
 
 func isLocalFileUpToDate(path string, targetMeta data.TargetFileMeta) (bool, error) {

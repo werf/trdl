@@ -530,7 +530,7 @@ func prepareChannelReleaseNotFoundLocallyErr(e repo.ChannelReleaseNotFoundLocall
 
 func prepareReleaseNotFoundLocallyErr(e repo.ReleaseNotFoundLocallyError) error {
 	return fmt.Errorf(
-		"%w, update version with \"trdl update %s v%s\" command",
+		"%w, update version with \"trdl update %s %s\" command",
 		e,
 		e.RepoName,
 		e.Version,

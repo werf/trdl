@@ -328,6 +328,7 @@ func (c Client) FindLocalReleaseByVersion(version string) (string, error) {
 	}
 
 	var lastValid *semver.Version
+	var lastValidName string
 	for _, file := range matches {
 		releaseName := strings.TrimPrefix(file, filepath.Join(c.metafileDir, "versions")+string(os.PathSeparator))
 		releaseVersion, err := semver.NewVersion(releaseName)
@@ -338,6 +339,7 @@ func (c Client) FindLocalReleaseByVersion(version string) (string, error) {
 		if constraint.Check(releaseVersion) {
 			if lastValid == nil || releaseVersion.GreaterThan(lastValid) {
 				lastValid = releaseVersion
+				lastValidName = releaseName
 			}
 		}
 	}
@@ -346,5 +348,5 @@ func (c Client) FindLocalReleaseByVersion(version string) (string, error) {
 		return "", NewReleaseNotFoundLocallyError(c.repoName, version)
 	}
 
-	return lastValid.String(), nil
+	return lastValidName, nil
 }
