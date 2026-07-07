@@ -15,18 +15,35 @@ func dirPathCmd() *cobra.Command {
 		Short:                 "Get the directory with software artifacts",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.RangeArgs(2, 3)(cmd, args); err != nil {
+			if err := validateVersionArgs(cmd, args); err != nil {
 				PrintHelp(cmd)
 				return err
 			}
 
 			repoName := args[0]
-			group := args[1]
 
 			if repoName == trdl.SelfUpdateDefaultRepo {
 				PrintHelp(cmd)
 				return fmt.Errorf("reserved repository name %q cannot be used", trdl.SelfUpdateDefaultRepo)
 			}
+
+			c, err := trdlClient.NewClient(homeDir)
+			if err != nil {
+				return fmt.Errorf("unable to initialize trdl client: %w", err)
+			}
+
+			if isVersionArg(args[1]) {
+				dir, err := c.GetRepoReleaseDir(repoName, args[1])
+				if err != nil {
+					return err
+				}
+
+				fmt.Println(dir)
+
+				return nil
+			}
+
+			group := args[1]
 
 			var optionalChannel string
 			if len(args) == 3 {
@@ -35,11 +52,6 @@ func dirPathCmd() *cobra.Command {
 					PrintHelp(cmd)
 					return err
 				}
-			}
-
-			c, err := trdlClient.NewClient(homeDir)
-			if err != nil {
-				return fmt.Errorf("unable to initialize trdl client: %w", err)
 			}
 
 			dir, err := c.GetRepoChannelReleaseDir(repoName, group, optionalChannel)

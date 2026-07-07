@@ -16,6 +16,7 @@ type Interface interface {
 	UseRepoReleaseBinDir(repoName, version, shell string, opts repo.UseSourceOptions) (string, error)
 	ExecRepoReleaseBin(repoName, version, optionalBinName string, args []string) error
 	GetRepoReleaseBinDir(repoName, version string) (string, error)
+	GetRepoReleaseDir(repoName, version string) (string, error)
 	GetRepoList() []*RepoConfiguration
 	GetRepoClient(repoName string) (RepoInterface, error)
 }
@@ -35,7 +36,8 @@ type RepoInterface interface {
 	GetReleaseDir(version string) (string, error)
 	GetReleaseBinDir(version string) (string, error)
 	GetReleaseBinPath(version, optionalBinName string) (string, error)
-	CleanReleases(ignoreVersion string) error
+	CleanReleases() error
+	FindLocalReleaseByVersion(version string) (string, error)
 }
 
 type configurationInterface interface {

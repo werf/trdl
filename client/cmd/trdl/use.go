@@ -58,7 +58,7 @@ func useCmd() *cobra.Command {
 			if isVersionArg(args[1]) {
 				scriptPath, err := c.UseRepoReleaseBinDir(
 					repoName,
-					parseVersionArg(args[1]),
+					args[1],
 					shell,
 					repo.UseSourceOptions{NoSelfUpdate: noSelfUpdate},
 				)

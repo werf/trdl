@@ -11,7 +11,7 @@ import (
 
 var releaseMetafileExpirationPeriod = time.Hour * 24
 
-func (c Client) CleanReleases(ignoreVersion string) error {
+func (c Client) CleanReleases() error {
 	actualLocalReleases, err := c.getActualLocalReleases()
 	if err != nil {
 		return fmt.Errorf("unable to get actual local releases: %w", err)
@@ -39,7 +39,12 @@ func (c Client) CleanReleases(ignoreVersion string) error {
 				return err
 			}
 
-			if isRecentlyUsed || releaseName == ignoreVersion {
+			pinnedVersion, err := c.versionMetafile(releaseName).Exists(c.locker)
+			if err != nil {
+				return fmt.Errorf("ensure version metafile: %w", err)
+			}
+
+			if isRecentlyUsed || pinnedVersion {
 				continue
 			}
 

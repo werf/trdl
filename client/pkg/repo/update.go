@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/theupdateframework/go-tuf/data"
 	util2 "github.com/theupdateframework/go-tuf/util"
 
@@ -103,7 +104,20 @@ func (c Client) UpdateToVersion(version string) error {
 		return err
 	}
 
-	return c.syncChannelReleaseWithLock(version)
+	release, err := c.findRelease(version)
+	if err != nil {
+		return fmt.Errorf("find release: %w", err)
+	}
+
+	if err := c.syncChannelReleaseWithLock(release); err != nil {
+		return fmt.Errorf("sync channel release: %w", err)
+	}
+
+	if err := c.versionMetafile(release).Reset(c.locker); err != nil {
+		return fmt.Errorf("reset version metafile: %w", err)
+	}
+
+	return nil
 }
 
 func (c Client) syncChannelReleaseWithLock(release string) error {
@@ -243,6 +257,44 @@ func (c Client) filterTargets(prefix string) (data.TargetFiles, error) {
 	}
 
 	return result, nil
+}
+
+func (c Client) findRelease(version string) (string, error) {
+	targets, err := c.tufClient.GetTargets()
+	if err != nil {
+		return "", fmt.Errorf("get targets: %w", err)
+	}
+
+	constraint, err := semver.NewConstraint(version)
+	if err != nil {
+		return "", fmt.Errorf("parse semver constraint %q: %w", version, err)
+	}
+
+	var latestValid *semver.Version
+	for name, _ := range targets {
+		if !strings.HasPrefix(name, releasesDir+"/") {
+			continue
+		}
+
+		versionPart := strings.Split(name, "/")[1]
+
+		releaseVersion, err := semver.NewVersion(versionPart)
+		if err != nil {
+			return "", fmt.Errorf("parse semver version %q: %w", name, err)
+		}
+
+		if constraint.Check(releaseVersion) {
+			if latestValid == nil || releaseVersion.GreaterThan(latestValid) {
+				latestValid = releaseVersion
+			}
+		}
+	}
+
+	if latestValid == nil {
+		return "", fmt.Errorf("unable to find release for version %q", version)
+	}
+
+	return latestValid.String(), nil
 }
 
 func isLocalFileUpToDate(path string, targetMeta data.TargetFileMeta) (bool, error) {

@@ -86,7 +86,7 @@ func updateCmd() *cobra.Command {
 			}
 
 			if isVersion {
-				if err := c.UpdateRepoToVersion(repoName, parseVersionArg(args[1]), autoclean); err != nil {
+				if err := c.UpdateRepoToVersion(repoName, args[1], autoclean); err != nil {
 					return err
 				}
 

@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	bou.ke/monkey v1.0.2
+	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/gookit/color v1.5.4
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
 	"github.com/werf/trdl/client/pkg/tuf"
@@ -108,7 +109,7 @@ func (c Client) channelScriptsDir(group, channel string) string {
 }
 
 func (c Client) versionScriptsDir(version string) string {
-	return filepath.Join(c.dir, scriptsDir, "v"+version)
+	return filepath.Join(c.dir, scriptsDir, slugifyConstraint(version))
 }
 
 func (c Client) channelTmpPath(group, channel string) string {
@@ -124,7 +125,7 @@ func (c Client) channelScriptsTmpDir(group, channel string) string {
 }
 
 func (c Client) versionScriptsTmpDir(version string) string {
-	return filepath.Join(c.tmpDir, scriptsDir, "v"+version)
+	return filepath.Join(c.tmpDir, scriptsDir, slugifyConstraint(version))
 }
 
 func (c Client) findChannelReleaseBinPath(group, channel, optionalBinName string) (string, error) {
@@ -309,4 +310,44 @@ func (c Client) updateReleaseLockName(release string) string {
 func (c Client) releaseMetafile(release string) util.Metafile {
 	filePath := filepath.Join(c.metafileDir, "releases", release)
 	return util.NewMetafile(filePath)
+}
+
+func (c Client) versionMetafile(version string) util.Metafile {
+	filePath := filepath.Join(c.metafileDir, "versions", version)
+	return util.NewMetafile(filePath)
+}
+
+func (c Client) FindLocalReleaseByVersion(version string) (string, error) {
+	dirGlob := filepath.Join(c.metafileDir, "versions", "*")
+
+	matches, err := filepath.Glob(dirGlob)
+	if err != nil {
+		return "", fmt.Errorf("glob files: %w", err)
+	}
+
+	constraint, err := semver.NewConstraint(version)
+	if err != nil {
+		return "", fmt.Errorf("parse semver constraint %q: %w", version, err)
+	}
+
+	var lastValid *semver.Version
+	for _, file := range matches {
+		releaseName := strings.TrimPrefix(file, filepath.Join(c.metafileDir, "versions")+string(os.PathSeparator))
+		releaseVersion, err := semver.NewVersion(releaseName)
+		if err != nil {
+			return "", fmt.Errorf("parse semver version %q: %w", releaseName, err)
+		}
+
+		if constraint.Check(releaseVersion) {
+			if lastValid == nil || releaseVersion.GreaterThan(lastValid) {
+				lastValid = releaseVersion
+			}
+		}
+	}
+
+	if lastValid == nil {
+		return "", NewReleaseNotFoundLocallyError(c.repoName, version)
+	}
+
+	return lastValid.String(), nil
 }

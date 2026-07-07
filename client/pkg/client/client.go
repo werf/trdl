@@ -250,7 +250,7 @@ func (c Client) doSelfUpdate(autocleanReleases bool) error {
 	}
 
 	if autocleanReleases {
-		if err := repoClient.CleanReleases(""); err != nil {
+		if err := repoClient.CleanReleases(); err != nil {
 			return fmt.Errorf("unable to clean old releases: %w", err)
 		}
 	}
@@ -274,7 +274,7 @@ func (c Client) UpdateRepoChannel(repoName, group, optionalChannel string, autoc
 	}
 
 	if autocleanReleases {
-		if err := repoClient.CleanReleases(""); err != nil {
+		if err := repoClient.CleanReleases(); err != nil {
 			return fmt.Errorf("unable to clean old releases: %w", err)
 		}
 	}
@@ -293,7 +293,7 @@ func (c Client) UpdateRepoToVersion(repoName, version string, autocleanReleases 
 	}
 
 	if autocleanReleases {
-		if err := repoClient.CleanReleases(version); err != nil {
+		if err := repoClient.CleanReleases(); err != nil {
 			return fmt.Errorf("unable to clean old releases: %w", err)
 		}
 	}
@@ -321,13 +321,20 @@ func (c Client) ExecRepoReleaseBin(repoName, version, optionalBinName string, ar
 		return err
 	}
 
+	release, err := repoClient.FindLocalReleaseByVersion(version)
+	if err != nil {
+		if e, ok := err.(repo.ReleaseNotFoundLocallyError); ok {
+			return prepareReleaseNotFoundLocallyErr(e)
+		}
+	}
+
 	// Pass version env to the binary be executed.
-	err = os.Setenv(repo.FormatRepoChannelGroupEnvName(repoName), version)
+	err = os.Setenv(repo.FormatRepoChannelGroupEnvName(repoName), release)
 	if err != nil {
 		return err
 	}
 
-	if err := repoClient.ExecReleaseBin(version, optionalBinName, args); err != nil {
+	if err := repoClient.ExecReleaseBin(release, optionalBinName, args); err != nil {
 		switch e := err.(type) {
 		case repo.ReleaseNotFoundLocallyError:
 			return prepareReleaseNotFoundLocallyErr(e)
@@ -347,7 +354,14 @@ func (c Client) GetRepoReleaseBinDir(repoName, version string) (string, error) {
 		return "", err
 	}
 
-	dir, err := repoClient.GetReleaseBinDir(version)
+	release, err := repoClient.FindLocalReleaseByVersion(version)
+	if err != nil {
+		if e, ok := err.(repo.ReleaseNotFoundLocallyError); ok {
+			return "", prepareReleaseNotFoundLocallyErr(e)
+		}
+	}
+
+	dir, err := repoClient.GetReleaseBinDir(release)
 	if err != nil {
 		if e, ok := err.(repo.ReleaseNotFoundLocallyError); ok {
 			return "", prepareReleaseNotFoundLocallyErr(e)
@@ -432,6 +446,30 @@ func (c Client) GetRepoChannelReleaseDir(repoName, group, optionalChannel string
 		}
 
 		return "", err
+	}
+
+	return dir, nil
+}
+
+func (c Client) GetRepoReleaseDir(repoName, version string) (string, error) {
+	repoClient, err := c.GetRepoClient(repoName)
+	if err != nil {
+		return "", err
+	}
+
+	release, err := repoClient.FindLocalReleaseByVersion(version)
+	if err != nil {
+		if e, ok := err.(repo.ReleaseNotFoundLocallyError); ok {
+			return "", prepareReleaseNotFoundLocallyErr(e)
+		}
+	}
+
+	dir, err := repoClient.GetReleaseDir(release)
+	if err != nil {
+		switch e := err.(type) {
+		case repo.ReleaseNotFoundLocallyError:
+			return "", prepareReleaseNotFoundLocallyErr(e)
+		}
 	}
 
 	return dir, nil

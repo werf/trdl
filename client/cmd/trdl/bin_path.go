@@ -33,7 +33,7 @@ func binPathCmd() *cobra.Command {
 			}
 
 			if isVersionArg(args[1]) {
-				dir, err := c.GetRepoReleaseBinDir(repoName, parseVersionArg(args[1]))
+				dir, err := c.GetRepoReleaseBinDir(repoName, args[1])
 				if err != nil {
 					return err
 				}

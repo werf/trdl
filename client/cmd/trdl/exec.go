@@ -78,7 +78,7 @@ func processExecArgs(cmd *cobra.Command, args []string) (*execCmdData, error) {
 	doubleDashExist := cmd.ArgsLenAtDash() != -1
 
 	if isVersionArg(args[1]) {
-		data.version = parseVersionArg(args[1])
+		data.version = args[1]
 
 		restArgs := args[2:]
 		if doubleDashExist {

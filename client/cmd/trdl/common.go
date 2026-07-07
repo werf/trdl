@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/asaskevich/govalidator"
 	"github.com/spf13/cobra"
 
@@ -25,16 +27,11 @@ func ValidateChannel(channel string) error {
 // release version. Versions are distinguished from a GROUP (a plain version
 // number, e.g. "2") by the leading "v" prefix (e.g. "v2.72.0").
 func isVersionArg(arg string) bool {
-	if len(arg) < 2 || arg[0] != 'v' {
+	if len(arg) < 2 || !regexp.MustCompile(`^[<>=~^v]`).MatchString(arg) {
 		return false
 	}
-	return arg[1] >= '0' && arg[1] <= '9'
-}
 
-// parseVersionArg strips the leading "v" prefix from an explicit version
-// argument, returning the bare version passed to the downstream code.
-func parseVersionArg(arg string) string {
-	return arg[1:]
+	return true
 }
 
 // validateVersionArgs enforces that an explicit VERSION argument is mutually
@@ -46,6 +43,11 @@ func validateVersionArgs(cmd *cobra.Command, args []string) error {
 		if len(args) > 2 {
 			return fmt.Errorf("VERSION is mutually exclusive with GROUP and CHANNEL arguments")
 		}
+
+		if _, err := semver.NewConstraint(args[1]); err != nil {
+			return fmt.Errorf("validate version: %w", err)
+		}
+
 		return nil
 	}
 

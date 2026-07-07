@@ -32,11 +32,16 @@ func (c Client) UseChannelReleaseBinDir(group, channel, shell string, opts UseSo
 }
 
 func (c Client) UseReleaseBinDir(version, shell string, opts UseSourceOptions) (string, error) {
-	commonArgs := []string{c.repoName, fmt.Sprintf("v%s", version)}
-	basename := c.prepareSourceScriptBasename(fmt.Sprintf("v%s", version), shell, opts)
+	commonArgs := []string{c.repoName, fmt.Sprintf("'%s'", version)}
+	basename := c.prepareSourceScriptBasename(slugifyConstraint(version), shell, opts)
 	envName := FormatRepoVersionEnvName(c.repoName)
 
-	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envName, version, opts)
+	envValue, err := c.prepareVersionExtractor(shell, version)
+	if err != nil {
+		return "", fmt.Errorf("prepare version extractor: %w", err)
+	}
+
+	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envName, envValue, opts)
 	if err != nil {
 		return "", err
 	}
@@ -99,7 +104,7 @@ if ((Invoke-Expression -Command "%[5]s bin-path %[1]s" 2> $null | Out-String -Ou
    $trdlRepoBinPath = %[5]s bin-path %[1]s
 }
 
-[System.Environment]::SetEnvironmentVariable('%[6]s','%[7]s',[System.EnvironmentVariableTarget]::Process);
+[System.Environment]::SetEnvironmentVariable('%[6]s',"%[7]s",[System.EnvironmentVariableTarget]::Process);
 
 $trdlRepoBinPath = $trdlRepoBinPath.Trim()
 $oldPath = [System.Environment]::GetEnvironmentVariable('PATH',[System.EnvironmentVariableTarget]::Process)
@@ -183,6 +188,20 @@ func (c Client) syncSourceScriptFile(scriptsDir, scriptsTmpDir, name string, dat
 	return scriptPath, nil
 }
 
+func (c Client) prepareVersionExtractor(shell, version string) (string, error) {
+	trdlBinaryPath, err := trdl.GetTrdlBinaryPath()
+	if err != nil {
+		return "", err
+	}
+
+	switch shell {
+	case "pwsh":
+		return fmt.Sprintf("$(((%s dir-path %s '%s') -split '[\\\\/]')[-2])", trdlBinaryPath, c.repoName, version), nil
+	default:
+		return fmt.Sprintf("$(%q dir-path %s '%s' | awk -F'/' '{print $(NF-1)}')", trdlBinaryPath, c.repoName, version), nil
+	}
+}
+
 // FormatRepoChannelGroupEnvName returns a formatted repo channel group env name
 func FormatRepoChannelGroupEnvName(repoName string) string {
 	return fmt.Sprintf("TRDL_USE_%s_GROUP_CHANNEL", formatRepoName(repoName))
@@ -199,4 +218,20 @@ func formatRepoName(repoName string) string {
 	re := regexp.MustCompile("[^a-zA-Z0-9_]+")
 	formattedName := re.ReplaceAllString(repoName, "_")
 	return strings.ToUpper(formattedName)
+}
+
+// slugifyConstraint replaces semver constraint symbols by strings for file paths
+func slugifyConstraint(constraint string) string {
+	replacer := strings.NewReplacer(
+		">=", "gte_",
+		"<=", "lte_",
+		">", "gt_",
+		"<", "lt_",
+		"^", "caret_",
+		"~", "tilde_",
+		"=", "eq_",
+		" ", "",
+	)
+
+	return replacer.Replace(constraint)
 }
