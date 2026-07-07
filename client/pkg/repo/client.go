@@ -239,10 +239,6 @@ func (c Client) findReleaseBinDir(release string) (dir string, err error) {
 }
 
 func (c Client) findReleaseDir(release string) (dir string, err error) {
-	if err := c.releaseMetafile(release).Reset(c.locker); err != nil {
-		return "", fmt.Errorf("unable to reset release metafile: %w", err)
-	}
-
 	dirGlob := filepath.Join(c.dir, releasesDir, release, "*")
 
 	matches, err := filepath.Glob(dirGlob)

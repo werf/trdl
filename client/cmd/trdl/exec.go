@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/cobra"
 
 	trdlClient "github.com/werf/trdl/client/pkg/client"
@@ -24,7 +25,7 @@ func execCmd() *cobra.Command {
 		Short:                 "Exec a software binary",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateVersionArgs(cmd, args); err != nil {
+			if err := cobra.MinimumNArgs(2)(cmd, args); err != nil {
 				PrintHelp(cmd)
 				return err
 			}
@@ -78,6 +79,10 @@ func processExecArgs(cmd *cobra.Command, args []string) (*execCmdData, error) {
 	doubleDashExist := cmd.ArgsLenAtDash() != -1
 
 	if isVersionArg(args[1]) {
+		if _, err := semver.NewConstraint(args[1]); err != nil {
+			return nil, fmt.Errorf("validate version: %w", err)
+		}
+
 		data.version = args[1]
 
 		restArgs := args[2:]

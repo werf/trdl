@@ -11,7 +11,7 @@ import (
 
 func dirPathCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "dir-path REPO GROUP [CHANNEL]",
+		Use:                   "dir-path REPO GROUP [CHANNEL] | REPO VERSION",
 		Short:                 "Get the directory with software artifacts",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
