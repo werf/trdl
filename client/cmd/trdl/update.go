@@ -22,6 +22,7 @@ func updateCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:                   "update REPO GROUP [CHANNEL] | REPO VERSION",
+		Aliases:               []string{"download"},
 		Short:                 "Update the software",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
