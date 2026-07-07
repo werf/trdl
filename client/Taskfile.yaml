@@ -164,11 +164,7 @@ tasks:
 
   test:unit:
     desc: "Run client unit tests."
-    cmds:
-      - mkdir -p {{.outputDir}}
-      - go test -tags test_coverage -gcflags=all=-l -cover -coverpkg=./... -coverprofile={{.outputDir}}/client-unit.out ./...
-    vars:
-      outputDir: '{{.outputDir | default "../tests_coverage/unit-client"}}'
+    cmd: go test ./...
 
   verify:dist:binaries:
     desc: "Verify that the distributable binaries are built and have correct platform/arch."

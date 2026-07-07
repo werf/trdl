@@ -80,12 +80,6 @@ jobs:
       - name: Test
         run: task --yes client:test:unit
 
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: unit_client_coverage
-          path: tests_coverage
-
   e2e_tests:
     name: End-to-end tests
     runs-on: ubuntu-22.04
@@ -141,7 +135,6 @@ jobs:
     name: Upload coverage
     needs:
       - unit_server
-      - unit_client
       - e2e_tests
     runs-on: ubuntu-22.04
     steps:
