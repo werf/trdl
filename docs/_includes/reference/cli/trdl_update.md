@@ -6,6 +6,12 @@ Update the software
 trdl update REPO GROUP [CHANNEL] | REPO VERSION [options]
 ```
 
+## Aliases
+
+```shell
+update, download
+```
+
 ## Options
 
 ```shell
