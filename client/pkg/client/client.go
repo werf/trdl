@@ -336,6 +336,11 @@ func (c Client) ExecRepoReleaseBin(repoName, version, optionalBinName string, ar
 		return err
 	}
 
+	err = os.Setenv(repo.FormatRepoVersionConstraintEnvName(repoName), version)
+	if err != nil {
+		return err
+	}
+
 	if err := repoClient.ExecReleaseBin(release, optionalBinName, args); err != nil {
 		switch e := err.(type) {
 		case repo.ReleaseNotFoundLocallyError:

@@ -3,7 +3,7 @@ Exec a software binary
 ## Syntax
 
 ```shell
-trdl exec REPO GROUP [CHANNEL] [BINARY_NAME] [--] [ARGS]
+trdl exec REPO GROUP [CHANNEL] [BINARY_NAME] [--] [ARGS] | REPO VERSION [BINARY_NAME] [--] [ARGS]
 ```
 
 ## Options inherited from parent commands

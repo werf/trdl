@@ -3,7 +3,7 @@ Generate a script to update the software binaries in the background and use loca
 ## Syntax
 
 ```shell
-trdl use REPO GROUP [CHANNEL] [options]
+trdl use REPO GROUP [CHANNEL] | REPO VERSION [options]
 ```
 
 ## Examples
@@ -11,6 +11,9 @@ trdl use REPO GROUP [CHANNEL] [options]
 ```shell
   # Source script in a shell
   $ . $(trdl use repo_name 1.2 ea)
+
+  # Pin an explicit version instead of a group/channel
+  $ . $(trdl use repo_name v1.2.3)
 
   # Force script generation for a Unix shell on Windows
   $ trdl use repo_name 1.2 ea --shell unix

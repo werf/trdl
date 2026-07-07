@@ -3,7 +3,7 @@ Get the directory with software binaries
 ## Syntax
 
 ```shell
-trdl bin-path REPO GROUP [CHANNEL]
+trdl bin-path REPO GROUP [CHANNEL] | REPO VERSION
 ```
 
 ## Options inherited from parent commands

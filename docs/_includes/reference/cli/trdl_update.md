@@ -3,7 +3,7 @@ Update the software
 ## Syntax
 
 ```shell
-trdl update REPO GROUP [CHANNEL] [options]
+trdl update REPO GROUP [CHANNEL] | REPO VERSION [options]
 ```
 
 ## Options

@@ -3,7 +3,7 @@ Get the directory with software artifacts
 ## Syntax
 
 ```shell
-trdl dir-path REPO GROUP [CHANNEL]
+trdl dir-path REPO GROUP [CHANNEL] | REPO VERSION
 ```
 
 ## Options inherited from parent commands

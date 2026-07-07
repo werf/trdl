@@ -16,10 +16,11 @@ import (
 func (c Client) UseChannelReleaseBinDir(group, channel, shell string, opts UseSourceOptions) (string, error) {
 	commonArgs := []string{c.repoName, group, channel}
 	basename := c.prepareSourceScriptBasename(fmt.Sprintf("%s_%s", group, channel), shell, opts)
-	envName := FormatRepoChannelGroupEnvName(c.repoName)
-	envValue := fmt.Sprintf("%s %s", group, channel)
+	envs := []sourceScriptEnv{
+		{Name: FormatRepoChannelGroupEnvName(c.repoName), Value: fmt.Sprintf("%s %s", group, channel)},
+	}
 
-	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envName, envValue, opts)
+	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envs, opts)
 	if err != nil {
 		return "", err
 	}
@@ -34,14 +35,18 @@ func (c Client) UseChannelReleaseBinDir(group, channel, shell string, opts UseSo
 func (c Client) UseReleaseBinDir(version, shell string, opts UseSourceOptions) (string, error) {
 	commonArgs := []string{c.repoName, fmt.Sprintf("'%s'", version)}
 	basename := c.prepareSourceScriptBasename(slugifyConstraint(version), shell, opts)
-	envName := FormatRepoVersionEnvName(c.repoName)
 
-	envValue, err := c.prepareVersionExtractor(shell, version)
+	resolvedVersion, err := c.prepareVersionExtractor(shell, version)
 	if err != nil {
 		return "", fmt.Errorf("prepare version extractor: %w", err)
 	}
 
-	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envName, envValue, opts)
+	envs := []sourceScriptEnv{
+		{Name: FormatRepoVersionEnvName(c.repoName), Value: resolvedVersion},
+		{Name: FormatRepoVersionConstraintEnvName(c.repoName), Value: version},
+	}
+
+	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envs, opts)
 	if err != nil {
 		return "", err
 	}
@@ -57,7 +62,12 @@ type UseSourceOptions struct {
 	NoSelfUpdate bool
 }
 
-func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename, shell, trdlUseRepoEnvName, trdlUseRepoEnvValue string, opts UseSourceOptions) (string, []byte, error) {
+type sourceScriptEnv struct {
+	Name  string
+	Value string
+}
+
+func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename, shell string, envs []sourceScriptEnv, opts UseSourceOptions) (string, []byte, error) {
 	logPathBackgroundUpdateStdout := filepath.Join(c.logsDir, basename+"_background_update_stdout.log")
 	logPathBackgroundUpdateStderr := filepath.Join(c.logsDir, basename+"_background_update_stderr.log")
 
@@ -104,8 +114,7 @@ if ((Invoke-Expression -Command "%[5]s bin-path %[1]s" 2> $null | Out-String -Ou
    $trdlRepoBinPath = %[5]s bin-path %[1]s
 }
 
-[System.Environment]::SetEnvironmentVariable('%[6]s',"%[7]s",[System.EnvironmentVariableTarget]::Process);
-
+%[6]s
 $trdlRepoBinPath = $trdlRepoBinPath.Trim()
 $oldPath = [System.Environment]::GetEnvironmentVariable('PATH',[System.EnvironmentVariableTarget]::Process)
 $newPath = "$trdlRepoBinPath;$oldPath"
@@ -126,20 +135,18 @@ else
    trdl_repo_bin_path="$(%[5]q bin-path %[1]s)"
 fi
 
-export %[6]s="%[7]s"
-
+%[6]s
 export PATH="$trdl_repo_bin_path${PATH:+:${PATH}}"
 `
 	}
 
 	script := fmt.Sprintf(tmpl,
-		commonArgsString,              // %[1]s: REPO GROUP CHANNEL            (common args string)
-		foregroundUpdateArgsString,    // %[2]s: REPO GROUP CHANNEL [flag ...] (foreground update args string)
-		backgroundUpdateArgsString,    // %[3]s: REPO GROUP CHANNEL [flag ...] (background update args string)
-		logPathBackgroundUpdateStderr, // %[4]s: <path>                        (background update error file path)
-		trdlBinaryPath,                // %[5]s: <path>                        (trdl binary path)
-		trdlUseRepoEnvName,            // %[6]s: <env name>                    (TRDL_USE_<REPO>_GROUP_CHANNEL)
-		trdlUseRepoEnvValue,           // %[7]s: <env value>                   (TRDL_USE_<REPO>_GROUP_CHANNEL value)
+		commonArgsString,                          // %[1]s: REPO GROUP CHANNEL            (common args string)
+		foregroundUpdateArgsString,                // %[2]s: REPO GROUP CHANNEL [flag ...] (foreground update args string)
+		backgroundUpdateArgsString,                // %[3]s: REPO GROUP CHANNEL [flag ...] (background update args string)
+		logPathBackgroundUpdateStderr,             // %[4]s: <path>                        (background update error file path)
+		trdlBinaryPath,                            // %[5]s: <path>                        (trdl binary path)
+		formatSourceScriptEnvExports(shell, envs), // %[6]s: <env exports block>
 	)
 
 	name := "source_script"
@@ -150,6 +157,20 @@ export PATH="$trdl_repo_bin_path${PATH:+:${PATH}}"
 	data := []byte(fmt.Sprintln(strings.TrimSpace(script)))
 
 	return name, data, nil
+}
+
+func formatSourceScriptEnvExports(shell string, envs []sourceScriptEnv) string {
+	lines := make([]string, 0, len(envs))
+	for _, env := range envs {
+		switch shell {
+		case "pwsh":
+			lines = append(lines, fmt.Sprintf("[System.Environment]::SetEnvironmentVariable('%s',\"%s\",[System.EnvironmentVariableTarget]::Process);", env.Name, env.Value))
+		default:
+			lines = append(lines, fmt.Sprintf("export %s=\"%s\"", env.Name, env.Value))
+		}
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func (c Client) prepareSourceScriptBasename(selector, shell string, opts UseSourceOptions) string {
@@ -208,8 +229,15 @@ func FormatRepoChannelGroupEnvName(repoName string) string {
 }
 
 // FormatRepoVersionEnvName returns a formatted repo version env name
+// It carries the resolved release name (e.g. "v0.0.2").
 func FormatRepoVersionEnvName(repoName string) string {
 	return fmt.Sprintf("TRDL_USE_%s_VERSION", formatRepoName(repoName))
+}
+
+// FormatRepoVersionConstraintEnvName returns a formatted repo version constraint env name.
+// It carries the original version selector requested by the user (e.g. ">=0.0.1").
+func FormatRepoVersionConstraintEnvName(repoName string) string {
+	return fmt.Sprintf("TRDL_USE_%s_VERSION_CONSTRAINT", formatRepoName(repoName))
 }
 
 // formatRepoName returns a formatted repository name.
