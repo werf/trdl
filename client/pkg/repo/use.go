@@ -77,7 +77,7 @@ func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename
 	commonArgsString := strings.Join(commonArgs, " ")
 	foregroundUpdateArgsString := strings.Join(foregroundUpdateArgs, " ")
 	backgroundUpdateArgsString := strings.Join(backgroundUpdateArgs, " ")
-	_ = logPathBackgroundUpdateStderr
+
 	trdlBinaryPath, err := trdl.GetTrdlBinaryPath()
 	if err != nil {
 		return "", nil, err

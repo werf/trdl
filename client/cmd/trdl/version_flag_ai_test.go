@@ -43,7 +43,7 @@ func TestAI_processExecArgs_versionFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if data.version != "1.2.3" || data.group != "" || data.optionalChannel != "" {
+	if data.version != "v1.2.3" || data.group != "" || data.optionalChannel != "" {
 		t.Fatalf("unexpected data: %+v", data)
 	}
 	if data.optionalBinaryName != "" {
@@ -54,7 +54,7 @@ func TestAI_processExecArgs_versionFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if data.version != "1.2.3" || data.optionalBinaryName != "mybin" {
+	if data.version != "v1.2.3" || data.optionalBinaryName != "mybin" {
 		t.Fatalf("unexpected data: %+v", data)
 	}
 

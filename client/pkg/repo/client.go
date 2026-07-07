@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
+
 	"github.com/werf/lockgate"
 	"github.com/werf/lockgate/pkg/file_locker"
 	"github.com/werf/trdl/client/pkg/tuf"

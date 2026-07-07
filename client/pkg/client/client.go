@@ -326,10 +326,12 @@ func (c Client) ExecRepoReleaseBin(repoName, version, optionalBinName string, ar
 		if e, ok := err.(repo.ReleaseNotFoundLocallyError); ok {
 			return prepareReleaseNotFoundLocallyErr(e)
 		}
+
+		return err
 	}
 
 	// Pass version env to the binary be executed.
-	err = os.Setenv(repo.FormatRepoChannelGroupEnvName(repoName), release)
+	err = os.Setenv(repo.FormatRepoVersionEnvName(repoName), release)
 	if err != nil {
 		return err
 	}
@@ -359,6 +361,8 @@ func (c Client) GetRepoReleaseBinDir(repoName, version string) (string, error) {
 		if e, ok := err.(repo.ReleaseNotFoundLocallyError); ok {
 			return "", prepareReleaseNotFoundLocallyErr(e)
 		}
+
+		return "", err
 	}
 
 	dir, err := repoClient.GetReleaseBinDir(release)
@@ -462,14 +466,17 @@ func (c Client) GetRepoReleaseDir(repoName, version string) (string, error) {
 		if e, ok := err.(repo.ReleaseNotFoundLocallyError); ok {
 			return "", prepareReleaseNotFoundLocallyErr(e)
 		}
+
+		return "", err
 	}
 
 	dir, err := repoClient.GetReleaseDir(release)
 	if err != nil {
-		switch e := err.(type) {
-		case repo.ReleaseNotFoundLocallyError:
+		if e, ok := err.(repo.ReleaseNotFoundLocallyError); ok {
 			return "", prepareReleaseNotFoundLocallyErr(e)
 		}
+
+		return "", err
 	}
 
 	return dir, nil

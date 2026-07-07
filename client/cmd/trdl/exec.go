@@ -24,7 +24,7 @@ func execCmd() *cobra.Command {
 		Short:                 "Exec a software binary",
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := cobra.MinimumNArgs(2)(cmd, args); err != nil {
+			if err := validateVersionArgs(cmd, args); err != nil {
 				PrintHelp(cmd)
 				return err
 			}

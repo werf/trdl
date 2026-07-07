@@ -271,7 +271,7 @@ func (c Client) findRelease(version string) (string, error) {
 	}
 
 	var latestValid *semver.Version
-	for name, _ := range targets {
+	for name := range targets {
 		if !strings.HasPrefix(name, releasesDir+"/") {
 			continue
 		}
