@@ -57,15 +57,109 @@ func (c Client) prepareSourceScriptFileNameAndData(group, channel, shell string,
 	if err != nil {
 		return "", nil, err
 	}
-	trdlUseRepoGroupChannelEnvName := FormatRepoChannelGroupEnvName(c.repoName)
-	trdlUseRepoGroupChannelEnvValue := fmt.Sprintf("%s %s", group, channel)
 
-	var tmpl string
-	var ext string
+	name, data := renderSourceScript(shell, sourceScriptParams{
+		commonArgs:           commonArgsString,
+		foregroundUpdateArgs: foregroundUpdateArgsString,
+		backgroundUpdateArgs: backgroundUpdateArgsString,
+		stderrLogPath:        logPathBackgroundUpdateStderr,
+		trdlBinaryPath:       trdlBinaryPath,
+		envName:              FormatRepoChannelGroupEnvName(c.repoName),
+		envValue:             fmt.Sprintf("%s %s", group, channel),
+	})
+
+	return name, data, nil
+}
+
+type sourceScriptParams struct {
+	commonArgs           string
+	foregroundUpdateArgs string
+	backgroundUpdateArgs string
+	stderrLogPath        string
+	trdlBinaryPath       string
+	envName              string
+	envValue             string
+}
+
+func renderSourceScript(shell string, p sourceScriptParams) (string, []byte) {
+	var script string
+	var name string
 	switch shell {
 	case "pwsh":
-		ext = "ps1"
-		tmpl = `
+		script = renderPwshSourceScript(p)
+		name = "source_script.ps1"
+	default:
+		script = renderUnixSourceScript(p)
+		name = "source_script"
+	}
+
+	return name, []byte(fmt.Sprintln(strings.TrimSpace(script)))
+}
+
+func renderUnixSourceScript(p sourceScriptParams) string {
+	return fmt.Sprintf(`
+__trdl_retry() {
+   local attempt=0
+   while [ "$attempt" -lt 5 ]; do
+      if %[5]q "$@" ; then
+         return 0
+      fi
+      if [ -x %[5]q ]; then
+         return 1
+      fi
+      attempt=$((attempt + 1))
+      sleep 1
+   done
+   %[5]q "$@"
+}
+
+if [ -s %[4]q ]; then
+   echo Previous run of "trdl update" in background generated following errors:
+   cat %[4]q
+fi
+
+if trdl_repo_bin_path="$(__trdl_retry bin-path %[1]s 2>/dev/null)"; then
+   __trdl_retry update %[3]s
+else
+   __trdl_retry update %[2]s
+   trdl_repo_bin_path="$(__trdl_retry bin-path %[1]s)"
+fi
+
+export %[6]s="%[7]s"
+
+export PATH="$trdl_repo_bin_path${PATH:+:${PATH}}"
+`,
+		p.commonArgs,           // %[1]s
+		p.foregroundUpdateArgs, // %[2]s
+		p.backgroundUpdateArgs, // %[3]s
+		p.stderrLogPath,        // %[4]s
+		p.trdlBinaryPath,       // %[5]s
+		p.envName,              // %[6]s
+		p.envValue,             // %[7]s
+	)
+}
+
+func renderPwshSourceScript(p sourceScriptParams) string {
+	return fmt.Sprintf(`
+function __trdl_retry {
+  $trdlArgs = $args
+  for ($attempt = 0; $attempt -lt 5; $attempt++) {
+    $output = & %[5]s @trdlArgs 2>&1
+    if ($LASTEXITCODE -eq 0) {
+      return $output
+    }
+    if (Test-Path %[5]q -PathType Leaf) {
+      throw "trdl failed with exit code $LASTEXITCODE"
+    }
+    Start-Sleep -Seconds 1
+  }
+  $output = & %[5]s @trdlArgs
+  if ($LASTEXITCODE -ne 0) {
+    throw "trdl failed with exit code $LASTEXITCODE"
+  }
+  return $output
+}
+
 if (Test-Path %[4]q -PathType Leaf) {
   $trdlStderrLog = Get-Content %[4]q
   if (!([String]::IsNullOrWhiteSpace($trdlStderrLog))) {
@@ -74,11 +168,11 @@ if (Test-Path %[4]q -PathType Leaf) {
   }
 }
 
-if ((Invoke-Expression -Command "%[5]s bin-path %[1]s" 2> $null | Out-String -OutVariable trdlRepoBinPath) -and ($LastExitCode -eq 0)) {
-   %[5]s update %[3]s
+if (($trdlRepoBinPath = (__trdl_retry bin-path %[1]s) 2> $null) -and ($LastExitCode -eq 0)) {
+   __trdl_retry update %[3]s
 } else {
-   %[5]s update %[2]s
-   $trdlRepoBinPath = %[5]s bin-path %[1]s
+   __trdl_retry update %[2]s
+   $trdlRepoBinPath = __trdl_retry bin-path %[1]s
 }
 
 [System.Environment]::SetEnvironmentVariable('%[6]s','%[7]s',[System.EnvironmentVariableTarget]::Process);
@@ -87,46 +181,15 @@ $trdlRepoBinPath = $trdlRepoBinPath.Trim()
 $oldPath = [System.Environment]::GetEnvironmentVariable('PATH',[System.EnvironmentVariableTarget]::Process)
 $newPath = "$trdlRepoBinPath;$oldPath"
 [System.Environment]::SetEnvironmentVariable('Path',$newPath,[System.EnvironmentVariableTarget]::Process);
-`
-	default: // unix shell
-		ext = ""
-		tmpl = `
-if [ -s %[4]q ]; then
-   echo Previous run of "trdl update" in background generated following errors:
-   cat %[4]q
-fi
-
-if trdl_repo_bin_path="$(%[5]q bin-path %[1]s 2>/dev/null)"; then
-   %[5]q update %[3]s
-else
-   %[5]q update %[2]s
-   trdl_repo_bin_path="$(%[5]q bin-path %[1]s)"
-fi
-
-export %[6]s="%[7]s"
-
-export PATH="$trdl_repo_bin_path${PATH:+:${PATH}}"
-`
-	}
-
-	script := fmt.Sprintf(tmpl,
-		commonArgsString,                // %[1]s: REPO GROUP CHANNEL            (common args string)
-		foregroundUpdateArgsString,      // %[2]s: REPO GROUP CHANNEL [flag ...] (foreground update args string)
-		backgroundUpdateArgsString,      // %[3]s: REPO GROUP CHANNEL [flag ...] (background update args string)
-		logPathBackgroundUpdateStderr,   // %[4]s: <path>                        (background update error file path)
-		trdlBinaryPath,                  // %[5]s: <path>                        (trdl binary path)
-		trdlUseRepoGroupChannelEnvName,  // %[6]s: <env name>                    (TRDL_USE_<REPO>_GROUP_CHANNEL)
-		trdlUseRepoGroupChannelEnvValue, // %[7]s: <env value>                   (TRDL_USE_<REPO>_GROUP_CHANNEL value)
+`,
+		p.commonArgs,           // %[1]s
+		p.foregroundUpdateArgs, // %[2]s
+		p.backgroundUpdateArgs, // %[3]s
+		p.stderrLogPath,        // %[4]s
+		p.trdlBinaryPath,       // %[5]s
+		p.envName,              // %[6]s
+		p.envValue,             // %[7]s
 	)
-
-	name := "source_script"
-	if ext != "" {
-		name = strings.Join([]string{name, ext}, ".")
-	}
-
-	data := []byte(fmt.Sprintln(strings.TrimSpace(script)))
-
-	return name, data, nil
 }
 
 func (c Client) prepareSourceScriptBasename(group, channel, shell string, opts UseSourceOptions) string {
