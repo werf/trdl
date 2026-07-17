@@ -36,6 +36,10 @@ func validateSettings(settings SignerSettings) error {
 				return fmt.Errorf("%q is required for vault key reference", field.name)
 			}
 		}
+
+		if settings.KeyPassword != "" {
+			return fmt.Errorf("%q must not be set for vault key reference", fieldNameELFSigningKeyPass)
+		}
 	} else {
 		decoded, err := base64.StdEncoding.DecodeString(settings.KeyRef)
 		if err != nil {
