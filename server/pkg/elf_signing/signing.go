@@ -2,6 +2,7 @@ package elf_signing
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -19,8 +20,25 @@ import (
 // plugin mounts would otherwise race and leak settings into each other.
 var signMu sync.Mutex
 
-func setVaultEnvVars(opts VaultSignerOpts) func() {
-	origEnvs := map[string]string{}
+type origEnvVar struct {
+	value   string
+	present bool
+}
+
+func restoreEnvVar(envKey string, orig origEnvVar) error {
+	if orig.present {
+		if err := os.Setenv(envKey, orig.value); err != nil {
+			return fmt.Errorf("failed to restore env var %q: %w", envKey, err)
+		}
+		return nil
+	}
+	if err := os.Unsetenv(envKey); err != nil {
+		return fmt.Errorf("failed to unset env var %q: %w", envKey, err)
+	}
+	return nil
+}
+
+func setVaultEnvVars(opts VaultSignerOpts) (func() error, error) {
 	envs := map[string]string{
 		"VAULT_ADDR":                 opts.Address,
 		"TRANSIT_SECRET_ENGINE_PATH": opts.TransitPath,
@@ -29,22 +47,30 @@ func setVaultEnvVars(opts VaultSignerOpts) func() {
 		"VAULT_SECRET_ID":            opts.AuthSecretID,
 	}
 
+	applied := map[string]origEnvVar{}
 	for envKey, val := range envs {
-		origVal, _ := os.LookupEnv(envKey)
-		origEnvs[envKey] = origVal
-
+		origVal, present := os.LookupEnv(envKey)
 		if err := os.Setenv(envKey, val); err != nil {
-			panic(fmt.Errorf("failed to set env var %q: %w", envKey, err))
+			rollback := fmt.Errorf("failed to set env var %q: %w", envKey, err)
+			for appliedKey, orig := range applied {
+				if rerr := restoreEnvVar(appliedKey, orig); rerr != nil {
+					rollback = errors.Join(rollback, rerr)
+				}
+			}
+			return nil, rollback
 		}
+		applied[envKey] = origEnvVar{value: origVal, present: present}
 	}
 
-	return func() {
-		for envKey, origVal := range origEnvs {
-			if err := os.Setenv(envKey, origVal); err != nil {
-				panic(fmt.Errorf("failed to restore env var %q: %w", envKey, err))
+	return func() error {
+		var restoreErr error
+		for envKey, orig := range applied {
+			if err := restoreEnvVar(envKey, orig); err != nil {
+				restoreErr = errors.Join(restoreErr, err)
 			}
 		}
-	}
+		return restoreErr
+	}, nil
 }
 
 func Sign(ctx context.Context, path string, opts SignerSettings) error {
@@ -52,10 +78,22 @@ func Sign(ctx context.Context, path string, opts SignerSettings) error {
 	defer signMu.Unlock()
 
 	if strings.HasPrefix(opts.KeyRef, hashivault.ReferenceScheme) {
-		restoreEnv := setVaultEnvVars(opts.VaultOpts)
-		defer restoreEnv()
+		restoreEnv, err := setVaultEnvVars(opts.VaultOpts)
+		if err != nil {
+			return fmt.Errorf("failed to set vault env vars: %w", err)
+		}
+
+		signErr := signWithSignerVerifier(ctx, path, opts)
+		if rerr := restoreEnv(); rerr != nil {
+			return errors.Join(signErr, fmt.Errorf("failed to restore vault env vars: %w", rerr))
+		}
+		return signErr
 	}
 
+	return signWithSignerVerifier(ctx, path, opts)
+}
+
+func signWithSignerVerifier(ctx context.Context, path string, opts SignerSettings) error {
 	passFunc := cryptoutils.SkipPassword
 	if opts.KeyPassword != "" {
 		passFunc = cryptoutils.StaticPasswordFunc([]byte(opts.KeyPassword))
