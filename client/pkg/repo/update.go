@@ -281,7 +281,7 @@ func (c Client) findRelease(version string) (string, error) {
 
 		releaseVersion, err := semver.NewVersion(versionPart)
 		if err != nil {
-			return "", fmt.Errorf("parse semver version %q: %w", name, err)
+			continue
 		}
 
 		if constraint.Check(releaseVersion) {

@@ -333,7 +333,7 @@ func (c Client) FindLocalReleaseByVersion(version string) (string, error) {
 		releaseName := strings.TrimPrefix(file, filepath.Join(c.metafileDir, "versions")+string(os.PathSeparator))
 		releaseVersion, err := semver.NewVersion(releaseName)
 		if err != nil {
-			return "", fmt.Errorf("parse semver version %q: %w", releaseName, err)
+			continue
 		}
 
 		if constraint.Check(releaseVersion) {
