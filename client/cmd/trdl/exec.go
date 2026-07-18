@@ -98,7 +98,7 @@ func processExecArgs(cmd *cobra.Command, args []string) (*execCmdData, error) {
 			data.optionalBinaryName = restArgs[0]
 			return data, nil
 		default:
-			return nil, fmt.Errorf("VERSION is mutually exclusive with GROUP and CHANNEL arguments")
+			return nil, fmt.Errorf("exec REPO VERSION accepts at most one BINARY_NAME")
 		}
 	}
 

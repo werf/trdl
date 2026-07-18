@@ -23,25 +23,36 @@ func ValidateChannel(channel string) error {
 	return nil
 }
 
+var explicitVersionPrefixRegexp = regexp.MustCompile(`^v\d`)
+
 // isVersionArg reports whether the given positional argument is an explicit
-// release version. Versions are distinguished from a GROUP (a plain version
-// number, e.g. "2") by the leading "v" prefix (e.g. "v2.72.0").
+// release version rather than a GROUP. An argument is a VERSION when it has a
+// leading "v" prefix followed by a digit (e.g. "v2.72.0") or is a semver
+// constraint (e.g. ">=1.2.0", "1.2.*"). A plain semver number without the "v"
+// prefix (e.g. "1.2") is a GROUP, as is any other name (e.g. "vendor").
 func isVersionArg(arg string) bool {
-	if len(arg) < 2 || !regexp.MustCompile(`^[<>=~^v]`).MatchString(arg) {
+	if explicitVersionPrefixRegexp.MatchString(arg) {
+		return true
+	}
+
+	if _, err := semver.NewVersion(arg); err == nil {
 		return false
 	}
 
-	return true
+	if _, err := semver.NewConstraint(arg); err == nil {
+		return true
+	}
+
+	return false
 }
 
-// validateVersionArgs enforces that an explicit VERSION argument is mutually
-// exclusive with the positional GROUP/CHANNEL arguments. When VERSION is given
-// (args[1] has a "v" prefix), only REPO and VERSION are allowed; otherwise the
-// default RangeArgs(2,3) behavior applies.
+// validateVersionArgs enforces that when an explicit VERSION argument is given
+// only REPO and VERSION are allowed; otherwise the default RangeArgs(2,3)
+// behavior applies.
 func validateVersionArgs(cmd *cobra.Command, args []string) error {
 	if len(args) >= 2 && isVersionArg(args[1]) {
 		if len(args) > 2 {
-			return fmt.Errorf("VERSION is mutually exclusive with GROUP and CHANNEL arguments")
+			return fmt.Errorf("in VERSION mode only REPO and VERSION arguments are allowed")
 		}
 
 		if _, err := semver.NewConstraint(args[1]); err != nil {
