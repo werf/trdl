@@ -27,7 +27,7 @@ func Paths() []*framework.Path {
 		{
 			Pattern:         "configure/delivery_kit_elf_signing",
 			HelpSynopsis:    "Configure ELF binary signing via Delivery Kit",
-			HelpDescription: "Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-architecture support on the Vault server host (`binutils-multiarch` on Debian/Ubuntu)",
+			HelpDescription: "Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-architecture support on the Vault server host (`binutils-multiarch` on Debian/Ubuntu). Each ELF artifact is buffered to the Vault server temp directory at roughly its own size while it is signed, so the host or container temp space must accommodate the largest release artifact",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameELFSigningKey: {
 					Type:        framework.TypeString,
@@ -36,7 +36,7 @@ func Paths() []*framework.Path {
 				},
 				fieldNameELFSigningKeyPass: {
 					Type:        framework.TypeString,
-					Description: "Private key password. Ignored when key is a hashivault:// reference",
+					Description: "Private key password. Must not be set when key is a hashivault:// reference",
 				},
 				fieldNameELFSigningCertificate: {
 					Type:        framework.TypeString,

@@ -236,6 +236,36 @@ func TestValidateELFSettings(t *testing.T) {
 		require.NoError(t, validateSettings(settings))
 	})
 
+	t.Run("password with vault key reference", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:      hashivault.ReferenceScheme + "my-key",
+			KeyPassword: "s3cret",
+			CertRef:     certs.LeafRef,
+			VaultOpts:   validVaultOpts(),
+		}
+		require.ErrorContains(t, validateSettings(settings), `"password" must not be set for vault key reference`)
+	})
+
+	t.Run("certificate does not match local key", func(t *testing.T) {
+		keyCerts := generateCerts(t, "")
+		otherCerts := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:  keyCerts.PrivRef,
+			CertRef: otherCerts.LeafRef,
+		}
+		require.ErrorContains(t, validateSettings(settings), "certificate does not match private key")
+	})
+
+	t.Run("certificate matches local key", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:  certs.PrivRef,
+			CertRef: certs.LeafRef,
+		}
+		require.NoError(t, validateSettings(settings))
+	})
+
 	t.Run("unknown key reference scheme", func(t *testing.T) {
 		certs := generateCerts(t, "")
 		settings := SignerSettings{

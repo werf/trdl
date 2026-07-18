@@ -1,4 +1,4 @@
-Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-architecture support on the Vault server host (`binutils-multiarch` on Debian/Ubuntu).
+Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-architecture support on the Vault server host (`binutils-multiarch` on Debian/Ubuntu). Each ELF artifact is buffered to the Vault server temp directory at roughly its own size while it is signed, so the host or container temp space must accommodate the largest release artifact.
 
 ## Configure ELF signing
 
@@ -12,7 +12,7 @@ Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-arc
 * `certificate` (string, required) — Certificate data base64 encoded.
 * `intermediates` (string, optional) — Certificate chain (intermediates and root) base64 encoded, as a single PEM bundle.
 * `key` (string, required) — Private key data base64 encoded or a Vault key reference in the form hashivault://<key>. When a hashivault:// reference is used, configure the vault_* parameters.
-* `password` (string, optional) — Private key password. Ignored when key is a hashivault:// reference.
+* `password` (string, optional) — Private key password. Must not be set when key is a hashivault:// reference.
 * `vault_addr` (string, optional) — Vault server address. Applies only when key is a hashivault:// reference.
 * `vault_auth_path` (string, optional, default: `ar`) — Mount path of Vault auth method. Applies only when key is a hashivault:// reference.
 * `vault_auth_role_id` (string, optional) — AppRole RoleID used to authenticate to Vault. Applies only when key is a hashivault:// reference.

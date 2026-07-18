@@ -1,6 +1,7 @@
 package elf_signing
 
 import (
+	"crypto"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -11,12 +12,15 @@ import (
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver/hashivault"
 	"github.com/secure-systems-lab/go-securesystemslib/encrypted"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
 func validateSettings(settings SignerSettings) error {
 	if settings.KeyRef == "" {
 		return fmt.Errorf("%q is required", fieldNameELFSigningKey)
 	}
+
+	var localKey crypto.PrivateKey
 
 	if strings.Contains(settings.KeyRef, "://") {
 		if !strings.HasPrefix(settings.KeyRef, hashivault.ReferenceScheme) {
@@ -65,7 +69,8 @@ func validateSettings(settings SignerSettings) error {
 			return fmt.Errorf("decrypt private key (check password): %w", err)
 		}
 
-		if _, err := x509.ParsePKCS8PrivateKey(derBytes); err != nil {
+		localKey, err = x509.ParsePKCS8PrivateKey(derBytes)
+		if err != nil {
 			return fmt.Errorf("parse private key: %w", err)
 		}
 	}
@@ -84,8 +89,20 @@ func validateSettings(settings SignerSettings) error {
 		return errors.New("invalid certificate pem block")
 	}
 
-	if _, err := x509.ParseCertificate(certBlock.Bytes); err != nil {
+	cert, err := x509.ParseCertificate(certBlock.Bytes)
+	if err != nil {
 		return fmt.Errorf("parse certificate: %w", err)
+	}
+
+	if localKey != nil {
+		signer, ok := localKey.(crypto.Signer)
+		if !ok {
+			return errors.New("private key does not implement crypto.Signer")
+		}
+
+		if err := cryptoutils.EqualKeys(signer.Public(), cert.PublicKey); err != nil {
+			return fmt.Errorf("certificate does not match private key: %w", err)
+		}
 	}
 
 	if settings.IntermediatesRef != "" {
