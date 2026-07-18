@@ -2,6 +2,8 @@ package repo
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -42,7 +44,7 @@ func (c Client) UseReleaseBinDir(version, shell string, opts UseSourceOptions) (
 	}
 
 	envs := []sourceScriptEnv{
-		{Name: FormatRepoVersionEnvName(c.repoName), Value: resolvedVersion},
+		{Name: FormatRepoVersionEnvName(c.repoName), Value: resolvedVersion, Expression: true},
 		{Name: FormatRepoVersionConstraintEnvName(c.repoName), Value: version},
 	}
 
@@ -65,6 +67,8 @@ type UseSourceOptions struct {
 type sourceScriptEnv struct {
 	Name  string
 	Value string
+	// Expression marks Value as a shell expression (e.g. a command substitution)
+	Expression bool
 }
 
 func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename, shell string, envs []sourceScriptEnv, opts UseSourceOptions) (string, []byte, error) {
@@ -164,9 +168,21 @@ func formatSourceScriptEnvExports(shell string, envs []sourceScriptEnv) string {
 	for _, env := range envs {
 		switch shell {
 		case "pwsh":
-			lines = append(lines, fmt.Sprintf("[System.Environment]::SetEnvironmentVariable('%s',\"%s\",[System.EnvironmentVariableTarget]::Process);", env.Name, env.Value))
+			var value string
+			if env.Expression {
+				value = fmt.Sprintf(`"%s"`, env.Value)
+			} else {
+				value = fmt.Sprintf(`'%s'`, strings.ReplaceAll(env.Value, "'", "''"))
+			}
+			lines = append(lines, fmt.Sprintf("[System.Environment]::SetEnvironmentVariable('%s',%s,[System.EnvironmentVariableTarget]::Process);", env.Name, value))
 		default:
-			lines = append(lines, fmt.Sprintf("export %s=\"%s\"", env.Name, env.Value))
+			var value string
+			if env.Expression {
+				value = fmt.Sprintf(`"%s"`, env.Value)
+			} else {
+				value = fmt.Sprintf(`'%s'`, strings.ReplaceAll(env.Value, "'", `'\''`))
+			}
+			lines = append(lines, fmt.Sprintf("export %s=%s", env.Name, value))
 		}
 	}
 
@@ -248,18 +264,8 @@ func formatRepoName(repoName string) string {
 	return strings.ToUpper(formattedName)
 }
 
-// slugifyConstraint replaces semver constraint symbols by strings for file paths
+// slugifyConstraint returns a filesystem-safe key for the version constraint.
 func slugifyConstraint(constraint string) string {
-	replacer := strings.NewReplacer(
-		">=", "gte_",
-		"<=", "lte_",
-		">", "gt_",
-		"<", "lt_",
-		"^", "caret_",
-		"~", "tilde_",
-		"=", "eq_",
-		" ", "",
-	)
-
-	return replacer.Replace(constraint)
+	sum := sha256.Sum256([]byte(constraint))
+	return hex.EncodeToString(sum[:])[:16]
 }
