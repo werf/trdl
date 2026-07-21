@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
@@ -14,6 +15,12 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/encrypted"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
+
+// hashivaultReferenceRegex mirrors referenceRegex from
+// delivery-kit-sdk@v1.2.1/pkg/signver/hashivault/reference.go so an invalid
+// Vault key reference is rejected at configure time instead of failing later
+// during signing.
+var hashivaultReferenceRegex = regexp.MustCompile(`^hashivault://(?P<path>\w(([\w-.]+)?\w)?)$`)
 
 func validateSettings(settings SignerSettings) error {
 	if settings.KeyRef == "" {
@@ -24,6 +31,10 @@ func validateSettings(settings SignerSettings) error {
 
 	if strings.Contains(settings.KeyRef, "://") {
 		if !strings.HasPrefix(settings.KeyRef, hashivault.ReferenceScheme) {
+			return fmt.Errorf("invalid key reference: %q", settings.KeyRef)
+		}
+
+		if !hashivaultReferenceRegex.MatchString(settings.KeyRef) {
 			return fmt.Errorf("invalid key reference: %q", settings.KeyRef)
 		}
 
@@ -89,6 +100,10 @@ func validateSettings(settings SignerSettings) error {
 		return errors.New("invalid certificate pem block")
 	}
 
+	if certBlock.Type != "CERTIFICATE" {
+		return fmt.Errorf("unsupported certificate pem type: %s", certBlock.Type)
+	}
+
 	cert, err := x509.ParseCertificate(certBlock.Bytes)
 	if err != nil {
 		return fmt.Errorf("parse certificate: %w", err)
@@ -111,23 +126,12 @@ func validateSettings(settings SignerSettings) error {
 			return fmt.Errorf("decode base64 intermediates certificate: %w", err)
 		}
 
-		rest := intBytes
-		parsed := 0
-		for {
-			var block *pem.Block
-			block, rest = pem.Decode(rest)
-			if block == nil {
-				break
-			}
-
-			if _, err := x509.ParseCertificate(block.Bytes); err != nil {
-				return fmt.Errorf("parse intermediates certificate: %w", err)
-			}
-
-			parsed++
+		certs, err := cryptoutils.UnmarshalCertificatesFromPEM(intBytes)
+		if err != nil {
+			return fmt.Errorf("parse intermediates certificate: %w", err)
 		}
 
-		if parsed == 0 {
+		if len(certs) == 0 {
 			return errors.New("invalid intermediates pem block")
 		}
 	}

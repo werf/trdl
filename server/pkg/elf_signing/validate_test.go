@@ -56,6 +56,21 @@ func encodeRawKey(t *testing.T, certs cert_utils.GenerateCertificatesResult) str
 	return base64.StdEncoding.EncodeToString(block)
 }
 
+// reencodeCertPemType rebuilds a base64-encoded PEM certificate from an existing
+// base64-encoded PEM certificate, replacing its PEM type.
+func reencodeCertPemType(t *testing.T, encodedCert, pemType string) string {
+	t.Helper()
+
+	decoded, err := base64.StdEncoding.DecodeString(encodedCert)
+	require.NoError(t, err)
+
+	block, _ := pem.Decode(decoded)
+	require.NotNil(t, block)
+
+	reencoded := pem.EncodeToMemory(&pem.Block{Type: pemType, Bytes: block.Bytes})
+	return base64.StdEncoding.EncodeToString(reencoded)
+}
+
 // encodePEMCertWithBogusBytes returns a base64-encoded PEM block with type
 // CERTIFICATE but bytes that are not valid DER, so x509.ParseCertificate fails.
 func encodePEMCertWithBogusBytes(t *testing.T) string {
@@ -206,6 +221,27 @@ func TestValidateELFSettings(t *testing.T) {
 		require.ErrorContains(t, validateSettings(settings), "parse certificate")
 	})
 
+	t.Run("certificate has unsupported pem type", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:  certs.PrivRef,
+			CertRef: reencodeCertPemType(t, certs.LeafRef, "PUBLIC KEY"),
+		}
+		require.ErrorContains(t, validateSettings(settings), "unsupported certificate pem type")
+	})
+
+	t.Run("certificate allows trailing data after first block", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		leafDecoded, err := base64.StdEncoding.DecodeString(certs.LeafRef)
+		require.NoError(t, err)
+		withTrailer := append(append([]byte{}, leafDecoded...), []byte("trailing garbage")...)
+		settings := SignerSettings{
+			KeyRef:  certs.PrivRef,
+			CertRef: base64.StdEncoding.EncodeToString(withTrailer),
+		}
+		require.NoError(t, validateSettings(settings))
+	})
+
 	t.Run("intermediates is valid base64 but not pem", func(t *testing.T) {
 		certs := generateCerts(t, "")
 		settings := SignerSettings{
@@ -213,7 +249,30 @@ func TestValidateELFSettings(t *testing.T) {
 			CertRef:          certs.LeafRef,
 			IntermediatesRef: base64.StdEncoding.EncodeToString([]byte("not a pem bundle")),
 		}
+		require.ErrorContains(t, validateSettings(settings), "parse intermediates certificate")
+	})
+
+	t.Run("intermediates is empty pem", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		settings := SignerSettings{
+			KeyRef:           certs.PrivRef,
+			CertRef:          certs.LeafRef,
+			IntermediatesRef: base64.StdEncoding.EncodeToString([]byte("   \n")),
+		}
 		require.ErrorContains(t, validateSettings(settings), "invalid intermediates pem block")
+	})
+
+	t.Run("intermediates has trailing garbage after certificate", func(t *testing.T) {
+		certs := generateCerts(t, "")
+		intDecoded, err := base64.StdEncoding.DecodeString(certs.IntermediatesRef)
+		require.NoError(t, err)
+		withGarbage := append(append([]byte{}, intDecoded...), []byte("trailing garbage")...)
+		settings := SignerSettings{
+			KeyRef:           certs.PrivRef,
+			CertRef:          certs.LeafRef,
+			IntermediatesRef: base64.StdEncoding.EncodeToString(withGarbage),
+		}
+		require.ErrorContains(t, validateSettings(settings), "parse intermediates certificate")
 	})
 
 	t.Run("intermediates has invalid x509", func(t *testing.T) {
@@ -275,6 +334,44 @@ func TestValidateELFSettings(t *testing.T) {
 		}
 		require.ErrorContains(t, validateSettings(settings), "invalid key reference")
 	})
+
+	validVaultRefCases := []string{
+		hashivault.ReferenceScheme + "key",
+		hashivault.ReferenceScheme + "my-key.v2",
+		hashivault.ReferenceScheme + "k",
+	}
+
+	for _, ref := range validVaultRefCases {
+		t.Run("valid vault key reference "+ref, func(t *testing.T) {
+			certs := generateCerts(t, "")
+			settings := SignerSettings{
+				KeyRef:    ref,
+				CertRef:   certs.LeafRef,
+				VaultOpts: validVaultOpts(),
+			}
+			require.NoError(t, validateSettings(settings))
+		})
+	}
+
+	invalidVaultRefCases := []string{
+		hashivault.ReferenceScheme,
+		hashivault.ReferenceScheme + "-key",
+		hashivault.ReferenceScheme + "key-",
+		hashivault.ReferenceScheme + "a/b",
+		hashivault.ReferenceScheme + "a b",
+	}
+
+	for _, ref := range invalidVaultRefCases {
+		t.Run("invalid vault key reference "+ref, func(t *testing.T) {
+			certs := generateCerts(t, "")
+			settings := SignerSettings{
+				KeyRef:    ref,
+				CertRef:   certs.LeafRef,
+				VaultOpts: validVaultOpts(),
+			}
+			require.ErrorContains(t, validateSettings(settings), "invalid key reference")
+		})
+	}
 
 	vaultFieldCases := []struct {
 		name    string
