@@ -235,6 +235,10 @@ func ValidatePublishConfig(ctx context.Context, publisher publisher.Interface, p
 	processedGroups := map[string]bool{}
 
 	for _, group := range config.Groups {
+		if strings.HasPrefix(group.Name, "v") {
+			return fmt.Errorf("bad group name %q, expected semver without \"v\" prefix", group.Name)
+		}
+
 		if _, err := semver.NewVersion(group.Name); err != nil {
 			return fmt.Errorf("expected semver group got %q: %w", group.Name, err)
 		}
