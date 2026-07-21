@@ -34,6 +34,13 @@ func TestFormatSourceScriptEnvExports_pwshExpression(t *testing.T) {
 	}
 }
 
+func TestFormatSourceScriptEnvExports_pwshUnset(t *testing.T) {
+	out := formatSourceScriptEnvExports("pwsh", []sourceScriptEnv{{Name: "NAME", Unset: true}})
+	if !strings.Contains(out, `[System.Environment]::SetEnvironmentVariable('NAME',$null,[System.EnvironmentVariableTarget]::Process);`) {
+		t.Fatalf("pwsh unset: got %q, want SetEnvironmentVariable with $null", out)
+	}
+}
+
 func TestFormatSourceScriptEnvExports_unixLiteralEscaping(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -52,6 +59,13 @@ func TestFormatSourceScriptEnvExports_unixLiteralEscaping(t *testing.T) {
 				t.Fatalf("unix literal %q: got %q, want substring %q", tt.value, out, tt.want)
 			}
 		})
+	}
+}
+
+func TestFormatSourceScriptEnvExports_unixUnset(t *testing.T) {
+	out := formatSourceScriptEnvExports("unix", []sourceScriptEnv{{Name: "NAME", Unset: true}})
+	if !strings.Contains(out, "unset NAME") {
+		t.Fatalf("unix unset: got %q, want \"unset NAME\"", out)
 	}
 }
 

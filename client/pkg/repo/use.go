@@ -20,6 +20,8 @@ func (c Client) UseChannelReleaseBinDir(group, channel, shell string, opts UseSo
 	basename := c.prepareSourceScriptBasename(fmt.Sprintf("%s_%s", group, channel), shell, opts)
 	envs := []sourceScriptEnv{
 		{Name: FormatRepoChannelGroupEnvName(c.repoName), Value: fmt.Sprintf("%s %s", group, channel)},
+		{Name: FormatRepoVersionEnvName(c.repoName), Unset: true},
+		{Name: FormatRepoVersionConstraintEnvName(c.repoName), Unset: true},
 	}
 
 	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envs, opts)
@@ -46,6 +48,7 @@ func (c Client) UseReleaseBinDir(version, shell string, opts UseSourceOptions) (
 	envs := []sourceScriptEnv{
 		{Name: FormatRepoVersionEnvName(c.repoName), Value: resolvedVersion, Expression: true},
 		{Name: FormatRepoVersionConstraintEnvName(c.repoName), Value: version},
+		{Name: FormatRepoChannelGroupEnvName(c.repoName), Unset: true},
 	}
 
 	name, data, err := c.prepareSourceScriptFileNameAndData(commonArgs, basename, shell, envs, opts)
@@ -69,6 +72,9 @@ type sourceScriptEnv struct {
 	Value string
 	// Expression marks Value as a shell expression (e.g. a command substitution)
 	Expression bool
+	// Unset removes the variable instead of setting it, clearing stale values
+	// left by a previous use of the opposite selection mode.
+	Unset bool
 }
 
 func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename, shell string, envs []sourceScriptEnv, opts UseSourceOptions) (string, []byte, error) {
@@ -168,6 +174,10 @@ func formatSourceScriptEnvExports(shell string, envs []sourceScriptEnv) string {
 	for _, env := range envs {
 		switch shell {
 		case "pwsh":
+			if env.Unset {
+				lines = append(lines, fmt.Sprintf("[System.Environment]::SetEnvironmentVariable('%s',$null,[System.EnvironmentVariableTarget]::Process);", env.Name))
+				continue
+			}
 			var value string
 			if env.Expression {
 				value = fmt.Sprintf(`"%s"`, env.Value)
@@ -176,6 +186,10 @@ func formatSourceScriptEnvExports(shell string, envs []sourceScriptEnv) string {
 			}
 			lines = append(lines, fmt.Sprintf("[System.Environment]::SetEnvironmentVariable('%s',%s,[System.EnvironmentVariableTarget]::Process);", env.Name, value))
 		default:
+			if env.Unset {
+				lines = append(lines, fmt.Sprintf("unset %s", env.Name))
+				continue
+			}
 			var value string
 			if env.Expression {
 				value = fmt.Sprintf(`"%s"`, env.Value)
