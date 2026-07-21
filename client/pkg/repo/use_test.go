@@ -1,5 +1,3 @@
-//go:build ai_tests
-
 package repo
 
 import (
@@ -8,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestAI_formatSourceScriptEnvExports_pwshLiteralEscaping(t *testing.T) {
+func TestFormatSourceScriptEnvExports_pwshLiteralEscaping(t *testing.T) {
 	tests := []struct {
 		name  string
 		value string
@@ -29,14 +27,14 @@ func TestAI_formatSourceScriptEnvExports_pwshLiteralEscaping(t *testing.T) {
 	}
 }
 
-func TestAI_formatSourceScriptEnvExports_pwshExpression(t *testing.T) {
+func TestFormatSourceScriptEnvExports_pwshExpression(t *testing.T) {
 	out := formatSourceScriptEnvExports("pwsh", []sourceScriptEnv{{Name: "NAME", Value: "$(cmd)", Expression: true}})
 	if !strings.Contains(out, `"$(cmd)"`) {
 		t.Fatalf("pwsh expression: got %q, want double-quoted expression", out)
 	}
 }
 
-func TestAI_formatSourceScriptEnvExports_unixLiteralEscaping(t *testing.T) {
+func TestFormatSourceScriptEnvExports_unixLiteralEscaping(t *testing.T) {
 	tests := []struct {
 		name  string
 		value string
@@ -57,7 +55,7 @@ func TestAI_formatSourceScriptEnvExports_unixLiteralEscaping(t *testing.T) {
 	}
 }
 
-func TestAI_formatSourceScriptEnvExports_unixExpression(t *testing.T) {
+func TestFormatSourceScriptEnvExports_unixExpression(t *testing.T) {
 	out := formatSourceScriptEnvExports("unix", []sourceScriptEnv{{Name: "NAME", Value: "$(cmd)", Expression: true}})
 	if !strings.Contains(out, `export NAME="$(cmd)"`) {
 		t.Fatalf("unix expression: got %q, want double-quoted expression", out)
@@ -66,7 +64,7 @@ func TestAI_formatSourceScriptEnvExports_unixExpression(t *testing.T) {
 
 var slugKeyRegexp = regexp.MustCompile(`^[0-9a-f]{16}$`)
 
-func TestAI_slugifyConstraint(t *testing.T) {
+func TestSlugifyConstraint(t *testing.T) {
 	inputs := []string{">=1.0 || <2.0", "1.2.*", "!=1.2.3", "1.2 - 1.4"}
 
 	seen := make(map[string]string, len(inputs))

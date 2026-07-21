@@ -1,10 +1,8 @@
-//go:build ai_tests
-
 package main
 
 import "testing"
 
-func TestAI_isVersionArg(t *testing.T) {
+func TestIsVersionArg(t *testing.T) {
 	tests := []struct {
 		name        string
 		arg         string
