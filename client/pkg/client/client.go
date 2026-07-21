@@ -330,7 +330,8 @@ func (c Client) ExecRepoReleaseBin(repoName, version, optionalBinName string, ar
 		return err
 	}
 
-	// Pass version env to the binary be executed.
+	// Pass version env to the binary to be executed, clearing any group/channel
+	// env inherited from a previous selection so telemetry sees a single mode.
 	err = os.Setenv(repo.FormatRepoVersionEnvName(repoName), release)
 	if err != nil {
 		return err
@@ -338,6 +339,10 @@ func (c Client) ExecRepoReleaseBin(repoName, version, optionalBinName string, ar
 
 	err = os.Setenv(repo.FormatRepoVersionConstraintEnvName(repoName), version)
 	if err != nil {
+		return err
+	}
+
+	if err := os.Unsetenv(repo.FormatRepoChannelGroupEnvName(repoName)); err != nil {
 		return err
 	}
 
@@ -412,9 +417,18 @@ func (c Client) ExecRepoChannelReleaseBin(repoName, group, optionalChannel, opti
 		return err
 	}
 
-	// Pass group channel env to the binary be executed.
+	// Pass group/channel env to the binary to be executed, clearing any version
+	// env inherited from a previous selection so telemetry sees a single mode.
 	err = os.Setenv(repo.FormatRepoChannelGroupEnvName(repoName), fmt.Sprintf("%s %s", group, channel))
 	if err != nil {
+		return err
+	}
+
+	if err := os.Unsetenv(repo.FormatRepoVersionEnvName(repoName)); err != nil {
+		return err
+	}
+
+	if err := os.Unsetenv(repo.FormatRepoVersionConstraintEnvName(repoName)); err != nil {
 		return err
 	}
 
