@@ -29,11 +29,7 @@ func validateSettings(settings SignerSettings) error {
 
 	var localKey crypto.PrivateKey
 
-	if strings.Contains(settings.KeyRef, "://") {
-		if !strings.HasPrefix(settings.KeyRef, hashivault.ReferenceScheme) {
-			return fmt.Errorf("invalid key reference: %q", settings.KeyRef)
-		}
-
+	if strings.HasPrefix(settings.KeyRef, hashivault.ReferenceScheme) {
 		if !hashivaultReferenceRegex.MatchString(settings.KeyRef) {
 			return fmt.Errorf("invalid key reference: %q", settings.KeyRef)
 		}
@@ -55,6 +51,8 @@ func validateSettings(settings SignerSettings) error {
 		if settings.KeyPassword != "" {
 			return fmt.Errorf("%q must not be set for vault key reference", fieldNameELFSigningKeyPass)
 		}
+	} else if strings.Contains(settings.KeyRef, "://") {
+		return fmt.Errorf("invalid key reference: %q", settings.KeyRef)
 	} else {
 		decoded, err := base64.StdEncoding.DecodeString(settings.KeyRef)
 		if err != nil {

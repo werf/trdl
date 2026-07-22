@@ -12,6 +12,8 @@ import (
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver/hashivault"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
+
+	"github.com/werf/logboek"
 )
 
 // signMu serializes ELF signing across the whole process. The delivery-kit-sdk
@@ -43,8 +45,8 @@ func setVaultEnvVars(opts VaultSignerOpts) (func() error, error) {
 		"VAULT_ADDR":                 opts.Address,
 		"TRANSIT_SECRET_ENGINE_PATH": opts.TransitPath,
 		"WERF_VAULT_AUTH_PATH":       opts.AuthPath,
-		"VAULT_ROLE_ID":              opts.AuthRoleID,
-		"VAULT_SECRET_ID":            opts.AuthSecretID,
+		"WERF_VAULT_AUTH_ROLE_ID":    opts.AuthRoleID,
+		"WERF_VAULT_AUTH_SECRET_ID":  opts.AuthSecretID,
 	}
 
 	applied := map[string]origEnvVar{}
@@ -80,14 +82,16 @@ func Sign(ctx context.Context, path string, opts SignerSettings) error {
 	if strings.HasPrefix(opts.KeyRef, hashivault.ReferenceScheme) {
 		restoreEnv, err := setVaultEnvVars(opts.VaultOpts)
 		if err != nil {
-			return fmt.Errorf("failed to set vault env vars: %w", err)
+			return fmt.Errorf("set vault env vars: %w", err)
 		}
 
-		signErr := signWithSignerVerifier(ctx, path, opts)
-		if rerr := restoreEnv(); rerr != nil {
-			return errors.Join(signErr, fmt.Errorf("failed to restore vault env vars: %w", rerr))
-		}
-		return signErr
+		defer func() {
+			if err := restoreEnv(); err != nil {
+				logboek.Context(ctx).Warn().LogF("failed to restore vault env vars: %w\n", err)
+			}
+		}()
+
+		return signWithSignerVerifier(ctx, path, opts)
 	}
 
 	return signWithSignerVerifier(ctx, path, opts)
