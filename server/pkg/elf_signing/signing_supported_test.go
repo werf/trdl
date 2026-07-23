@@ -17,12 +17,11 @@ import (
 func TestTrySignELFEmbedsVerifiableSignature(t *testing.T) {
 	certs := generateCerts(t, "")
 
-	signer, err := NewELFSigner(context.Background(), hclog.NewNullLogger(), &SignerSettings{
+	signer := NewELFSigner(hclog.NewNullLogger(), &SignerSettings{
 		KeyRef:           certs.PrivRef,
 		CertRef:          certs.LeafRef,
 		IntermediatesRef: certs.IntermediatesRef,
 	})
-	require.NoError(t, err)
 
 	original, err := os.ReadFile("testdata/hello.elf")
 	require.NoError(t, err)

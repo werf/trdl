@@ -2,7 +2,6 @@ package elf_signing
 
 import (
 	"bytes"
-	"context"
 	goelf "debug/elf"
 	"encoding/binary"
 	"testing"
@@ -16,11 +15,10 @@ func newTestSigner(t *testing.T) *ELFSigner {
 
 	certs := generateCerts(t, "")
 
-	signer, err := NewELFSigner(context.Background(), hclog.NewNullLogger(), &SignerSettings{
+	signer := NewELFSigner(hclog.NewNullLogger(), &SignerSettings{
 		KeyRef:  certs.PrivRef,
 		CertRef: certs.LeafRef,
 	})
-	require.NoError(t, err)
 
 	return signer
 }

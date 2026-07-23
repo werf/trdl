@@ -27,35 +27,47 @@ type tempFileCloser struct {
 func (t *tempFileCloser) Close() error { return t.cleanup() }
 
 type ELFSigner struct {
+	settings *SignerSettings
+
 	logger         hclog.Logger
 	signerVerifier *signver.SignerVerifier
 }
 
-func NewELFSigner(ctx context.Context, logger hclog.Logger, opts *SignerSettings) (*ELFSigner, error) {
+func NewELFSigner(logger hclog.Logger, opts *SignerSettings) *ELFSigner {
+	return &ELFSigner{logger: logger, settings: opts}
+}
+
+func (s *ELFSigner) getSignerVerifier(ctx context.Context) (*signver.SignerVerifier, error) {
+	if s.signerVerifier != nil {
+		return s.signerVerifier, nil
+	}
+
+	settings := s.settings
+
 	passFunc := cryptoutils.SkipPassword
-	if opts.KeyPassword != "" {
-		passFunc = cryptoutils.StaticPasswordFunc([]byte(opts.KeyPassword))
+	if settings.KeyPassword != "" {
+		passFunc = cryptoutils.StaticPasswordFunc([]byte(settings.KeyPassword))
 	}
 
 	var signerOpts signver.SignerVerifierOpts
-	if strings.HasPrefix(opts.KeyRef, hashivault.ReferenceScheme) {
+	if strings.HasPrefix(settings.KeyRef, hashivault.ReferenceScheme) {
 		signerOpts = signver.SignerVerifierOpts{
 			VaultOpts: hashivault.VaultOpts{
-				Address:                 opts.VaultOpts.Address,
-				TransitSecretEnginePath: opts.VaultOpts.TransitPath,
+				Address:                 settings.VaultOpts.Address,
+				TransitSecretEnginePath: settings.VaultOpts.TransitPath,
 				Auth: &hashivault.VaultAuth{
 					AppRole: &hashivault.AppRoleAuth{
-						RoleID:   opts.VaultOpts.AuthRoleID,
-						SecretID: opts.VaultOpts.AuthSecretID,
-						Path:     opts.VaultOpts.AuthPath,
+						RoleID:   settings.VaultOpts.AuthRoleID,
+						SecretID: settings.VaultOpts.AuthSecretID,
+						Path:     settings.VaultOpts.AuthPath,
 					},
 				},
 			},
 		}
 	}
 
-	sv, err := signver.NewSignerVerifier(ctx, opts.CertRef, opts.IntermediatesRef, signver.KeyOpts{
-		KeyRef:             opts.KeyRef,
+	sv, err := signver.NewSignerVerifier(ctx, settings.CertRef, settings.IntermediatesRef, signver.KeyOpts{
+		KeyRef:             settings.KeyRef,
 		PassFunc:           passFunc,
 		SignerVerifierOpts: signerOpts,
 	})
@@ -63,7 +75,9 @@ func NewELFSigner(ctx context.Context, logger hclog.Logger, opts *SignerSettings
 		return nil, fmt.Errorf("failed to create signer verifier: %w", err)
 	}
 
-	return &ELFSigner{logger: logger, signerVerifier: sv}, nil
+	s.signerVerifier = sv
+
+	return sv, nil
 }
 
 func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
@@ -119,7 +133,12 @@ func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data
 		return &tempFileCloser{File: tmp, cleanup: cleanup}, nil
 	}
 
-	if deferErr = signELF(ctx, s.signerVerifier, tmp.Name()); deferErr != nil {
+	sv, deferErr := s.getSignerVerifier(ctx)
+	if deferErr != nil {
+		return nil, fmt.Errorf("get signer verifier: %w", deferErr)
+	}
+
+	if deferErr = signELF(ctx, sv, tmp.Name()); deferErr != nil {
 		return nil, fmt.Errorf("sign %q: %w", releaseFilePath, deferErr)
 	}
 

@@ -52,19 +52,18 @@ func TestStageReleaseTargetPropagatesELFSigningErrorWithoutPanic(t *testing.T) {
 		UseBase64Encoding: true,
 	})
 
-	elfSigner, err := elf_signing.NewELFSigner(context.Background(), hclog.NewNullLogger(), &elf_signing.SignerSettings{
+	elfSigner := elf_signing.NewELFSigner(hclog.NewNullLogger(), &elf_signing.SignerSettings{
 		KeyRef:           certs.PrivRef,
 		CertRef:          certs.LeafRef,
 		IntermediatesRef: certs.IntermediatesRef,
 	})
-	require.NoError(t, err)
 
 	publisher := &Publisher{}
 	repository := &stageTargetFailRepository{t: t}
 
 	elfBinary := minimalELFHeader(t, goelf.EM_X86_64)
 
-	err = publisher.StageReleaseTarget(
+	err := publisher.StageReleaseTarget(
 		context.Background(),
 		repository,
 		"v1.0.0",

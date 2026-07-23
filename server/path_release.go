@@ -150,6 +150,13 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Starting release artifacts tar archive build\n")
 		b.Logger().Debug("Starting release artifacts tar archive build")
 
+		var elfSigner *elf_signing.ELFSigner
+		if elfSettings, err := elf_signing.GetSettings(ctx, req.Storage); err != nil {
+			return fmt.Errorf("get elf signing settings: %w", err)
+		} else if elfSettings != nil {
+			elfSigner = elf_signing.NewELFSigner(b.Logger(), elfSettings)
+		}
+
 		tarBuf := buffer.New(64 * 1024 * 1024)
 		tarReader, tarWriter := nio.Pipe(tarBuf)
 
@@ -170,16 +177,6 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			}
 			errCh <- nil
 		}()
-
-		var elfSigner *elf_signing.ELFSigner
-		if elfSettings, err := elf_signing.GetSettings(ctx, req.Storage); err != nil {
-			return fmt.Errorf("get elf signing settings: %w", err)
-		} else if elfSettings != nil {
-			elfSigner, err = elf_signing.NewELFSigner(ctx, b.Logger(), elfSettings)
-			if err != nil {
-				return fmt.Errorf("create ELF signer: %w", err)
-			}
-		}
 
 		{
 			logboek.Context(ctx).Default().LogF("Starting to read tar artifacts...\n")
