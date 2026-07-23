@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver/hashivault"
@@ -29,8 +30,10 @@ func (t *tempFileCloser) Close() error { return t.cleanup() }
 type ELFSigner struct {
 	settings *SignerSettings
 
-	logger         hclog.Logger
-	signerVerifier *signver.SignerVerifier
+	logger hclog.Logger
+	sv     *signver.SignerVerifier
+	svOnce sync.Once
+	svErr  error
 }
 
 func NewELFSigner(logger hclog.Logger, opts *SignerSettings) *ELFSigner {
@@ -38,46 +41,11 @@ func NewELFSigner(logger hclog.Logger, opts *SignerSettings) *ELFSigner {
 }
 
 func (s *ELFSigner) getSignerVerifier(ctx context.Context) (*signver.SignerVerifier, error) {
-	if s.signerVerifier != nil {
-		return s.signerVerifier, nil
-	}
-
-	settings := s.settings
-
-	passFunc := cryptoutils.SkipPassword
-	if settings.KeyPassword != "" {
-		passFunc = cryptoutils.StaticPasswordFunc([]byte(settings.KeyPassword))
-	}
-
-	var signerOpts signver.SignerVerifierOpts
-	if strings.HasPrefix(settings.KeyRef, hashivault.ReferenceScheme) {
-		signerOpts = signver.SignerVerifierOpts{
-			VaultOpts: hashivault.VaultOpts{
-				Address:                 settings.VaultOpts.Address,
-				TransitSecretEnginePath: settings.VaultOpts.TransitPath,
-				Auth: &hashivault.VaultAuth{
-					AppRole: &hashivault.AppRoleAuth{
-						RoleID:   settings.VaultOpts.AuthRoleID,
-						SecretID: settings.VaultOpts.AuthSecretID,
-						Path:     settings.VaultOpts.AuthPath,
-					},
-				},
-			},
-		}
-	}
-
-	sv, err := signver.NewSignerVerifier(ctx, settings.CertRef, settings.IntermediatesRef, signver.KeyOpts{
-		KeyRef:             settings.KeyRef,
-		PassFunc:           passFunc,
-		SignerVerifierOpts: signerOpts,
+	s.svOnce.Do(func() {
+		s.sv, s.svErr = buildSignerVerifier(ctx, s.settings)
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create signer verifier: %w", err)
-	}
 
-	s.signerVerifier = sv
-
-	return sv, nil
+	return s.sv, s.svErr
 }
 
 func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
@@ -144,7 +112,20 @@ func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data
 
 	logboek.Context(ctx).Default().LogF("Embedded ELF signature into %q\n", releaseFilePath)
 
-	return &tempFileCloser{File: tmp, cleanup: cleanup}, nil
+	// signELF rewrites the file via an external process; reopen by path so the
+	// returned reader is not tied to how the SDK finalizes the on-disk write.
+	signed, deferErr := os.Open(tmp.Name())
+	if deferErr != nil {
+		return nil, fmt.Errorf("reopen signed file %q: %w", releaseFilePath, deferErr)
+	}
+	_ = tmp.Close()
+
+	cleanup = func() error {
+		_ = signed.Close()
+		return os.Remove(signed.Name())
+	}
+
+	return &tempFileCloser{File: signed, cleanup: cleanup}, nil
 }
 
 func readELFMachine(r io.ReaderAt) (goelf.Machine, error) {
@@ -156,4 +137,39 @@ func readELFMachine(r io.ReaderAt) (goelf.Machine, error) {
 		_ = f.Close()
 	}()
 	return f.FileHeader.Machine, nil
+}
+
+func buildSignerVerifier(ctx context.Context, settings *SignerSettings) (*signver.SignerVerifier, error) {
+	passFunc := cryptoutils.SkipPassword
+	if settings.KeyPassword != "" {
+		passFunc = cryptoutils.StaticPasswordFunc([]byte(settings.KeyPassword))
+	}
+
+	var signerOpts signver.SignerVerifierOpts
+	if strings.HasPrefix(settings.KeyRef, hashivault.ReferenceScheme) {
+		signerOpts = signver.SignerVerifierOpts{
+			VaultOpts: hashivault.VaultOpts{
+				Address:                 settings.VaultOpts.Address,
+				TransitSecretEnginePath: settings.VaultOpts.TransitPath,
+				Auth: &hashivault.VaultAuth{
+					AppRole: &hashivault.AppRoleAuth{
+						RoleID:   settings.VaultOpts.AuthRoleID,
+						SecretID: settings.VaultOpts.AuthSecretID,
+						Path:     settings.VaultOpts.AuthPath,
+					},
+				},
+			},
+		}
+	}
+
+	sv, err := signver.NewSignerVerifier(ctx, settings.CertRef, settings.IntermediatesRef, signver.KeyOpts{
+		KeyRef:             settings.KeyRef,
+		PassFunc:           passFunc,
+		SignerVerifierOpts: signerOpts,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create signer verifier: %w", err)
+	}
+
+	return sv, nil
 }
