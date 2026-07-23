@@ -228,7 +228,7 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 	return repository, nil
 }
 
-func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logical.Storage, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader) error {
+func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logical.Storage, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader, elfSigner *elf_signing.ELFSigner) error {
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 
@@ -251,23 +251,13 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logi
 		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
-	elfSettings, err := elf_signing.GetSettings(ctx, storage)
-	if err != nil {
-		return fmt.Errorf("get elf signing settings: %w", err)
-	}
-
 	source := io.NopCloser(data)
 	defer func() {
 		_ = source.Close()
 	}()
 
-	var elfSigner *elf_signing.ELFSigner
-	if elfSettings != nil {
-		elfSigner, err = elf_signing.NewELFSigner(ctx, publisher.logger, elfSettings)
-		if err != nil {
-			return fmt.Errorf("failed to create ELF signer: %w", err)
-		}
-
+	if elfSigner != nil {
+		var err error
 		source, err = elfSigner.TrySignELF(ctx, releaseFilePath, data)
 		if err != nil {
 			return fmt.Errorf("try signing artifact %q as ELF: %w", releaseFilePath, err)

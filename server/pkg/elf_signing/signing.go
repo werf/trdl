@@ -27,9 +27,8 @@ type tempFileCloser struct {
 func (t *tempFileCloser) Close() error { return t.cleanup() }
 
 type ELFSigner struct {
-	SignerSettings
-	logger hclog.Logger
-	sv     *signver.SignerVerifier
+	logger         hclog.Logger
+	signerVerifier *signver.SignerVerifier
 }
 
 func NewELFSigner(ctx context.Context, logger hclog.Logger, opts *SignerSettings) (*ELFSigner, error) {
@@ -64,7 +63,7 @@ func NewELFSigner(ctx context.Context, logger hclog.Logger, opts *SignerSettings
 		return nil, fmt.Errorf("failed to create signer verifier: %w", err)
 	}
 
-	return &ELFSigner{logger: logger, sv: sv}, nil
+	return &ELFSigner{logger: logger, signerVerifier: sv}, nil
 }
 
 func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
@@ -111,20 +110,20 @@ func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data
 		return nil, fmt.Errorf("read ELF header of %q: %w", releaseFilePath, deferErr)
 	}
 
+	if _, deferErr = tmp.Seek(0, io.SeekStart); deferErr != nil {
+		return nil, fmt.Errorf("seek temp file: %w", deferErr)
+	}
+
 	if machine != goelf.EM_X86_64 && machine != goelf.EM_AARCH64 {
 		logboek.Context(ctx).Warn().LogF("Unsupported ELF machine %v for %q\n", machine, releaseFilePath)
 		return &tempFileCloser{File: tmp, cleanup: cleanup}, nil
 	}
 
-	if deferErr = signELF(ctx, s.sv, tmp.Name()); deferErr != nil {
+	if deferErr = signELF(ctx, s.signerVerifier, tmp.Name()); deferErr != nil {
 		return nil, fmt.Errorf("sign %q: %w", releaseFilePath, deferErr)
 	}
 
 	logboek.Context(ctx).Default().LogF("Embedded ELF signature into %q\n", releaseFilePath)
-
-	if _, deferErr = tmp.Seek(0, io.SeekStart); deferErr != nil {
-		return nil, fmt.Errorf("seek temp file: %w", deferErr)
-	}
 
 	return &tempFileCloser{File: tmp, cleanup: cleanup}, nil
 }

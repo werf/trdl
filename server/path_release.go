@@ -18,6 +18,7 @@ import (
 	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/config"
 	"github.com/werf/trdl/server/pkg/docker"
+	"github.com/werf/trdl/server/pkg/elf_signing"
 	trdlGit "github.com/werf/trdl/server/pkg/git"
 	"github.com/werf/trdl/server/pkg/pgp"
 	"github.com/werf/trdl/server/pkg/tasks_manager"
@@ -170,6 +171,16 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 			errCh <- nil
 		}()
 
+		var elfSigner *elf_signing.ELFSigner
+		if elfSettings, err := elf_signing.GetSettings(ctx, req.Storage); err != nil {
+			return fmt.Errorf("get elf signing settings: %w", err)
+		} else if elfSettings != nil {
+			elfSigner, err = elf_signing.NewELFSigner(ctx, b.Logger(), elfSettings)
+			if err != nil {
+				return fmt.Errorf("create ELF signer: %w", err)
+			}
+		}
+
 		{
 			logboek.Context(ctx).Default().LogF("Starting to read tar artifacts...\n")
 			b.Logger().Debug("Starting to read tar artifacts...")
@@ -190,7 +201,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					logboek.Context(ctx).Default().LogF("Publishing %q into the tuf repo ...\n", name)
 					b.Logger().Debug(fmt.Sprintf("Publishing %q into the tuf repo ...", name))
 
-					if err := b.Publisher.StageReleaseTarget(ctx, req.Storage, publisherRepository, releaseName, name, twArtifacts); err != nil {
+					if err := b.Publisher.StageReleaseTarget(ctx, req.Storage, publisherRepository, releaseName, name, twArtifacts, elfSigner); err != nil {
 						return fmt.Errorf("unable to publish release target %q: %w", name, err)
 					}
 				}
