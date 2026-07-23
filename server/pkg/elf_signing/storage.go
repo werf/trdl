@@ -36,6 +36,10 @@ func PutSettings(ctx context.Context, req *logical.Request, settings SignerSetti
 }
 
 func GetSettings(ctx context.Context, storage logical.Storage) (*SignerSettings, error) {
+	if !Supported {
+		return nil, nil
+	}
+
 	entry, err := storage.Get(ctx, storageKey())
 	if err != nil {
 		return nil, fmt.Errorf("get ELF settings: %w", err)

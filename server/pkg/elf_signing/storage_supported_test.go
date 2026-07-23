@@ -28,3 +28,26 @@ func TestPutSettingsStoresValidSettings(t *testing.T) {
 	require.Equal(t, settings.KeyRef, got.KeyRef)
 	require.Equal(t, settings.CertRef, got.CertRef)
 }
+
+func TestPutGetDeleteSettingsRoundTrip(t *testing.T) {
+	certs := generateCerts(t, "")
+
+	settings := SignerSettings{
+		KeyRef:  certs.PrivRef,
+		CertRef: certs.LeafRef,
+	}
+
+	req := &logical.Request{Storage: &logical.InmemStorage{}}
+
+	require.NoError(t, PutSettings(context.Background(), req, settings))
+
+	got, err := GetSettings(context.Background(), req.Storage)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+
+	require.NoError(t, DeleteSettings(context.Background(), req))
+
+	got, err = GetSettings(context.Background(), req.Storage)
+	require.NoError(t, err)
+	require.Nil(t, got)
+}
