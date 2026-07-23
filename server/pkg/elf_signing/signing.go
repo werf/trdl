@@ -11,7 +11,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/deckhouse/delivery-kit-sdk/pkg/signature/elf/inhouse"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver/hashivault"
 	"github.com/hashicorp/go-hclog"
@@ -117,7 +116,7 @@ func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data
 		return &tempFileCloser{File: tmp, cleanup: cleanup}, nil
 	}
 
-	if deferErr = inhouse.Sign(ctx, s.sv, tmp.Name()); deferErr != nil {
+	if deferErr = signELF(ctx, s.sv, tmp.Name()); deferErr != nil {
 		return nil, fmt.Errorf("sign %q: %w", releaseFilePath, deferErr)
 	}
 
