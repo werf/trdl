@@ -15,7 +15,6 @@ import (
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver/hashivault"
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 
 	"github.com/werf/logboek"
@@ -29,14 +28,12 @@ type tempFileCloser struct {
 func (t *tempFileCloser) Close() error { return t.cleanup() }
 
 type ELFSigner struct {
+	SignerSettings
 	logger hclog.Logger
+	sv     *signver.SignerVerifier
 }
 
-func NewELFSigner(logger hclog.Logger) *ELFSigner {
-	return &ELFSigner{logger: logger}
-}
-
-func sign(ctx context.Context, path string, opts SignerSettings) error {
+func NewELFSigner(ctx context.Context, logger hclog.Logger, opts *SignerSettings) (*ELFSigner, error) {
 	passFunc := cryptoutils.SkipPassword
 	if opts.KeyPassword != "" {
 		passFunc = cryptoutils.StaticPasswordFunc([]byte(opts.KeyPassword))
@@ -65,26 +62,13 @@ func sign(ctx context.Context, path string, opts SignerSettings) error {
 		SignerVerifierOpts: signerOpts,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create signer verifier: %w", err)
+		return nil, fmt.Errorf("failed to create signer verifier: %w", err)
 	}
 
-	if err = inhouse.Sign(ctx, sv, path); err != nil {
-		return fmt.Errorf("failed to sign data: %w", err)
-	}
-
-	return nil
+	return &ELFSigner{logger: logger, sv: sv}, nil
 }
 
-func (signer *ELFSigner) TrySignELF(ctx context.Context, storage logical.Storage, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
-	elfSettings, err := GetSettings(ctx, storage)
-	if err != nil {
-		return nil, fmt.Errorf("get elf signing settings: %w", err)
-	}
-
-	if elfSettings == nil {
-		return io.NopCloser(data), nil
-	}
-
+func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
 	// Peek first 4 bytes to skip disk buffering for non-ELF artifacts.
 	br := bufio.NewReader(data)
 	magic, err := br.Peek(4)
@@ -121,7 +105,7 @@ func (signer *ELFSigner) TrySignELF(ctx context.Context, storage logical.Storage
 		return nil, fmt.Errorf("sync temp file: %w", deferErr)
 	}
 
-	signer.logger.Debug(fmt.Sprintf("Buffer artifact %q to disk for ELF signing", tmp.Name()))
+	s.logger.Debug("Buffered ELF artifact to disk for signing", "path", tmp.Name())
 
 	machine, deferErr := readELFMachine(tmp)
 	if deferErr != nil {
@@ -133,7 +117,7 @@ func (signer *ELFSigner) TrySignELF(ctx context.Context, storage logical.Storage
 		return &tempFileCloser{File: tmp, cleanup: cleanup}, nil
 	}
 
-	if deferErr = sign(ctx, tmp.Name(), *elfSettings); deferErr != nil {
+	if deferErr = inhouse.Sign(ctx, s.sv, tmp.Name()); deferErr != nil {
 		return nil, fmt.Errorf("sign %q: %w", releaseFilePath, deferErr)
 	}
 

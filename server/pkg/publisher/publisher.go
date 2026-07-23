@@ -251,14 +251,28 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logi
 		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
-	elfSigner := elf_signing.NewELFSigner(publisher.logger)
-	source, err := elfSigner.TrySignELF(ctx, storage, releaseFilePath, data)
+	elfSettings, err := elf_signing.GetSettings(ctx, storage)
 	if err != nil {
-		return fmt.Errorf("try signing artifact %q as ELF: %w", releaseFilePath, err)
+		return fmt.Errorf("get elf signing settings: %w", err)
 	}
+
+	source := io.NopCloser(data)
 	defer func() {
 		_ = source.Close()
 	}()
+
+	var elfSigner *elf_signing.ELFSigner
+	if elfSettings != nil {
+		elfSigner, err = elf_signing.NewELFSigner(ctx, publisher.logger, elfSettings)
+		if err != nil {
+			return fmt.Errorf("failed to create ELF signer: %w", err)
+		}
+
+		source, err = elfSigner.TrySignELF(ctx, releaseFilePath, data)
+		if err != nil {
+			return fmt.Errorf("try signing artifact %q as ELF: %w", releaseFilePath, err)
+		}
+	}
 
 	gpgSignErrCh := make(chan error)
 	gpgSignDoneCh := make(chan struct{})
