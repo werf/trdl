@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1
 	github.com/Masterminds/semver v1.5.0
 	github.com/aws/aws-sdk-go v1.46.4
-	github.com/deckhouse/delivery-kit-sdk v1.2.2-0.20260722202717-2aa49a87a836
+	github.com/deckhouse/delivery-kit-sdk v1.2.2-0.20260723120426-ad0c19b06a26
 	github.com/distribution/reference v0.6.0
 	github.com/djherbis/buffer v1.2.0
 	github.com/djherbis/nio/v3 v3.0.1

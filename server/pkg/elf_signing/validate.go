@@ -7,7 +7,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
@@ -15,12 +14,6 @@ import (
 	"github.com/secure-systems-lab/go-securesystemslib/encrypted"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
-
-// hashivaultReferenceRegex mirrors referenceRegex from
-// delivery-kit-sdk@v1.2.1/pkg/signver/hashivault/reference.go so an invalid
-// Vault key reference is rejected at configure time instead of failing later
-// during signing.
-var hashivaultReferenceRegex = regexp.MustCompile(`^hashivault://(?P<path>\w(([\w-.]+)?\w)?)$`)
 
 func validateSettings(settings SignerSettings) error {
 	if settings.KeyRef == "" {
@@ -30,8 +23,8 @@ func validateSettings(settings SignerSettings) error {
 	var localKey crypto.PrivateKey
 
 	if strings.HasPrefix(settings.KeyRef, hashivault.ReferenceScheme) {
-		if !hashivaultReferenceRegex.MatchString(settings.KeyRef) {
-			return fmt.Errorf("invalid key reference: %q", settings.KeyRef)
+		if err := hashivault.ValidReference(settings.KeyRef); err != nil {
+			return fmt.Errorf("invalid key reference %q: %w", settings.KeyRef, err)
 		}
 
 		vaultFields := []struct{ name, val string }{

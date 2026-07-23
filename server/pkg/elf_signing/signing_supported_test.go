@@ -18,8 +18,9 @@ func TestTrySignELFEmbedsVerifiableSignature(t *testing.T) {
 	certs := generateCerts(t, "")
 
 	signer, err := NewELFSigner(context.Background(), hclog.NewNullLogger(), &SignerSettings{
-		KeyRef:  certs.PrivRef,
-		CertRef: certs.LeafRef,
+		KeyRef:           certs.PrivRef,
+		CertRef:          certs.LeafRef,
+		IntermediatesRef: certs.IntermediatesRef,
 	})
 	require.NoError(t, err)
 
