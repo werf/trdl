@@ -1,4 +1,4 @@
-Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-architecture support on the Vault server host (`binutils-multiarch` on Debian/Ubuntu). Each ELF artifact is buffered to the Vault server temp directory at roughly its own size while it is signed, so the host or container temp space must accommodate the largest release artifact.
+Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-architecture support on the Vault server host (`binutils-multiarch` on Debian/Ubuntu). Signing buffers each artifact to temporary disk space, so ensure the host or container has enough free space for the largest release artifact.
 
 ## Configure ELF signing
 
