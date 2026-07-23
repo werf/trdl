@@ -1,10 +1,8 @@
 package publisher
 
 import (
-	"bufio"
 	"bytes"
 	"context"
-	goelf "debug/elf"
 	"errors"
 	"fmt"
 	"io"
@@ -20,7 +18,6 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 
-	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/config"
 	"github.com/werf/trdl/server/pkg/elf_signing"
 	"github.com/werf/trdl/server/pkg/pgp"
@@ -56,13 +53,6 @@ type InMemoryFile struct {
 func NewErrIncorrectTargetPath(path string) error {
 	return fmt.Errorf(`got incorrect target path %q: expected path in format <os>-<arch>/... where os can be either "any", "linux", "darwin" or "windows", and arch can be either "any", "amd64" or "arm64"`, path)
 }
-
-type tempFileCloser struct {
-	*os.File
-	cleanup func() error
-}
-
-func (t *tempFileCloser) Close() error { return t.cleanup() }
 
 type Publisher struct {
 	mu     sync.Mutex
@@ -238,88 +228,6 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 	return repository, nil
 }
 
-func (publisher *Publisher) trySignELF(ctx context.Context, storage logical.Storage, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
-	elfSettings, err := elf_signing.GetSettings(ctx, storage)
-	if err != nil {
-		return nil, fmt.Errorf("get elf signing settings: %w", err)
-	}
-
-	if elfSettings == nil {
-		return io.NopCloser(data), nil
-	}
-
-	// Peek first 4 bytes to skip disk buffering for non-ELF artifacts.
-	br := bufio.NewReader(data)
-	magic, err := br.Peek(4)
-	if err != nil && !errors.Is(err, io.EOF) {
-		return nil, fmt.Errorf("peek header of %q: %w", releaseFilePath, err)
-	}
-	if !bytes.HasPrefix(magic, []byte(goelf.ELFMAG)) {
-		logboek.Context(ctx).Default().LogF("Skipping ELF sign for %q: not an ELF file\n", releaseFilePath)
-		return io.NopCloser(br), nil
-	}
-
-	tmp, err := os.CreateTemp("", "trdl-release-source-*")
-	if err != nil {
-		return nil, fmt.Errorf("create temp file: %w", err)
-	}
-
-	var deferErr error
-	cleanup := func() error {
-		_ = tmp.Close()
-		return os.Remove(tmp.Name())
-	}
-
-	defer func() {
-		if deferErr != nil {
-			_ = cleanup()
-		}
-	}()
-
-	if _, deferErr = io.Copy(tmp, br); deferErr != nil {
-		return nil, fmt.Errorf("buffer artifact %q to disk: %w", releaseFilePath, deferErr)
-	}
-
-	if deferErr = tmp.Sync(); deferErr != nil {
-		return nil, fmt.Errorf("sync temp file: %w", deferErr)
-	}
-
-	publisher.logger.Debug(fmt.Sprintf("Buffer artifact %q to disk for ELF signing", tmp.Name()))
-
-	machine, deferErr := readELFMachine(tmp)
-	if deferErr != nil {
-		return nil, fmt.Errorf("read ELF header of %q: %w", releaseFilePath, deferErr)
-	}
-
-	if machine != goelf.EM_X86_64 && machine != goelf.EM_AARCH64 {
-		deferErr = fmt.Errorf("unsupported ELF machine %v for %q", machine, releaseFilePath)
-		return nil, deferErr
-	}
-
-	if deferErr = elf_signing.Sign(ctx, tmp.Name(), *elfSettings); deferErr != nil {
-		return nil, fmt.Errorf("sign %q: %w", releaseFilePath, deferErr)
-	}
-
-	logboek.Context(ctx).Default().LogF("Embedded ELF signature into %q\n", releaseFilePath)
-
-	if _, deferErr = tmp.Seek(0, io.SeekStart); deferErr != nil {
-		return nil, fmt.Errorf("seek temp file: %w", deferErr)
-	}
-
-	return &tempFileCloser{File: tmp, cleanup: cleanup}, nil
-}
-
-func readELFMachine(r io.ReaderAt) (goelf.Machine, error) {
-	f, err := goelf.NewFile(r)
-	if err != nil {
-		return goelf.EM_NONE, fmt.Errorf("parse ELF: %w", err)
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-	return f.FileHeader.Machine, nil
-}
-
 func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logical.Storage, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader) error {
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
@@ -343,7 +251,8 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logi
 		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
-	source, err := publisher.trySignELF(ctx, storage, releaseFilePath, data)
+	elfSigner := elf_signing.NewELFSigner(publisher.logger)
+	source, err := elfSigner.TrySignELF(ctx, storage, releaseFilePath, data)
 	if err != nil {
 		return fmt.Errorf("try signing artifact %q as ELF: %w", releaseFilePath, err)
 	}
