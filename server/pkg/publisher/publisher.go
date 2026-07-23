@@ -257,8 +257,11 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logi
 	}()
 
 	if elfSigner != nil {
-		var err error
-		source, err = elfSigner.TrySignELF(ctx, releaseFilePath, data)
+		newSource, err := elfSigner.TrySignELF(ctx, releaseFilePath, data)
+		if newSource != nil {
+			source = newSource
+		}
+
 		if err != nil {
 			return fmt.Errorf("try signing artifact %q as ELF: %w", releaseFilePath, err)
 		}
