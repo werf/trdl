@@ -9,23 +9,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
 )
-
-func newTestSigner(t *testing.T) *ELFSigner {
-	t.Helper()
-
-	certs := generateCerts(t, "")
-
-	signer, err := NewELFSigner(context.Background(), hclog.NewNullLogger(), &SignerSettings{
-		KeyRef:  certs.PrivRef,
-		CertRef: certs.LeafRef,
-	})
-	require.NoError(t, err)
-
-	return signer
-}
 
 func TestTrySignELFOnUnsupportedPlatformReturnsError(t *testing.T) {
 	signer := newTestSigner(t)
