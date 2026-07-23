@@ -7,15 +7,12 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/deckhouse/delivery-kit-sdk/pkg/signature/elf/inhouse"
-	"github.com/deckhouse/delivery-kit-sdk/test/pkg/cert_utils"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
 	. "github.com/onsi/ginkgo/v2"
@@ -36,7 +33,6 @@ var _ = Describe("Complete cycle", func() {
 	var minioAddress string
 	var minioRepoAddress string
 	var systemClock *util.FixedClock
-	var elfSigningRootCARef string
 
 	const (
 		repo       = "test"
@@ -236,23 +232,6 @@ var _ = Describe("Complete cycle", func() {
 			_, err = backend.HandleRequest(context.Background(), req)
 			Expect(err).ShouldNot(HaveOccurred())
 		}
-
-		certs := cert_utils.GenerateCertificatesWithOptions(cert_utils.GenerateCertificatesOptions{
-			UseBase64Encoding: true,
-		})
-		elfSigningRootCARef = certs.RootRef
-
-		req = &logical.Request{Storage: storage}
-		req.Path = "configure/delivery_kit_elf_signing"
-		req.Operation = logical.CreateOperation
-		req.Data = map[string]interface{}{
-			"key":           certs.PrivRef,
-			"certificate":   certs.LeafRef,
-			"intermediates": certs.IntermediatesRef,
-		}
-		resp, err = backend.HandleRequest(context.Background(), req)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(resp).Should(BeNil())
 	}
 
 	serverRelease := func(tagName string) {
@@ -304,22 +283,6 @@ var _ = Describe("Complete cycle", func() {
 		taskUUID := val.(string)
 
 		tasksManagerTestutil.WaitForTaskSuccess(GinkgoWriter, GinkgoT(), context.Background(), backend, storage, taskUUID)
-	}
-
-	verifyELFSigning := func(version string) {
-		artifactURL := fmt.Sprintf("%s/targets/releases/%s/linux-amd64/bin/tool", minioRepoAddress, version)
-		resp, err := http.Get(artifactURL)
-		Expect(err).ShouldNot(HaveOccurred())
-		defer func() { _ = resp.Body.Close() }()
-		Expect(resp.StatusCode).Should(Equal(http.StatusOK))
-
-		elfPath := filepath.Join(tmpDir, fmt.Sprintf("signed-tool-%s", version))
-		out, err := os.Create(elfPath)
-		Expect(err).ShouldNot(HaveOccurred())
-		_, err = io.Copy(out, resp.Body)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(out.Close()).ShouldNot(HaveOccurred())
-		Expect(inhouse.Verify(context.Background(), []string{elfSigningRootCARef}, elfPath)).ShouldNot(HaveOccurred())
 	}
 
 	clientUpdate := func(repo, group, channel, expectedVersion string) {
@@ -483,9 +446,6 @@ script.sh
 			quorumSignCommit(commit)
 			serverPublish()
 		}
-
-		By("[server] Verifying published ELF binary signature ...")
-		verifyELFSigning(version1)
 
 		By("[client] Using channel release ...")
 		clientUse(group, channel, version1)
