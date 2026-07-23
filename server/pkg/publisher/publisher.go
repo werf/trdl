@@ -228,7 +228,7 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 	return repository, nil
 }
 
-func (publisher *Publisher) StageReleaseTarget(ctx context.Context, storage logical.Storage, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader, elfSigner *elf_signing.ELFSigner) error {
+func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader, elfSigner *elf_signing.ELFSigner) error {
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 

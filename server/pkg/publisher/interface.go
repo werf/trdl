@@ -15,7 +15,7 @@ type Interface interface {
 	GetRepository(ctx context.Context, storage logical.Storage, options RepositoryOptions) (RepositoryInterface, error)
 	RotateRepositoryKeys(ctx context.Context, storage logical.Storage, repository RepositoryInterface, systemClock util.Clock) error
 	UpdateTimestamps(ctx context.Context, storage logical.Storage, repository RepositoryInterface, systemClock util.Clock) error
-	StageReleaseTarget(ctx context.Context, storage logical.Storage, repository RepositoryInterface, releaseName, path string, data io.Reader, elfSigner *elf_signing.ELFSigner) error
+	StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, path string, data io.Reader, elfSigner *elf_signing.ELFSigner) error
 	StageChannelsConfig(ctx context.Context, repository RepositoryInterface, trdlChannelsConfig *config.TrdlChannels) error
 	StageInMemoryFiles(ctx context.Context, repository RepositoryInterface, files []*InMemoryFile) error
 	GetExistingReleases(ctx context.Context, repository RepositoryInterface) ([]string, error)
