@@ -267,7 +267,7 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 		}
 	}
 
-	gpgSignErrCh := make(chan error)
+	gpgSignErrCh := make(chan error, 1)
 	gpgSignDoneCh := make(chan struct{})
 	gpgSignBuf := bytes.NewBuffer(nil)
 
@@ -286,6 +286,7 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 
 		close(gpgSignDoneCh)
 	})
+	defer func() { _ = r.Close() }()
 
 	pathToReleaseTarget := path.Join("releases", releaseName, releaseFilePath)
 	hclog.L().Debug(fmt.Sprintf("Stage release target %q ...\n", pathToReleaseTarget))
