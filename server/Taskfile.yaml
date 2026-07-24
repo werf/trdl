@@ -24,6 +24,7 @@ vars:
   vault_dev_image: '{{.vault_dev_image | default "ghcr.io/werf/trdl-dev-vault:latest"}}'
   s3_access_key: '{{.s3_access_key | default "minioadmin"}}'
   s3_secret_key: '{{.s3_secret_key | default "minioadmin"}}'
+  minio_addr: '{{.minio_addr | default "$(TASK_X_REMOTE_TASKFILE=1 task --yes _get-minio-ip)"}}'
   minio_port: '{{.minio_port | default "9000"}}'
   minio_console_port: '{{.minio_console_port | default "9001"}}'
   vault_port: '{{.vault_port | default "8200"}}'
@@ -96,7 +97,7 @@ tasks:
         s3_access_key_id={{.s3_access_key}} \
         s3_bucket_name={{.project_name}} \
         s3_region=ru-central1 \
-        s3_endpoint=http://$(TASK_X_REMOTE_TASKFILE=1 task --yes _get-minio-ip):{{.minio_port}} \
+        s3_endpoint=http://{{.minio_addr}}:{{.minio_port}} \
         required_number_of_verified_signatures_on_commit={{.signatures_count}} \
         git_repo_url={{.git_repo_url}} \
         git_trdl_path={{.git_trdl_path}} \
@@ -250,7 +251,7 @@ tasks:
         vars:
           targetOS: "linux"
           targetArch: "arm64"
-          outputDir: "{{.outputDir}}"
+          outputDir: vault/plugins
 
   build:dist:linux:amd64:
     desc: "Build server release binary for linux/amd64."
