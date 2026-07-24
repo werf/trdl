@@ -1,5 +1,3 @@
-//go:build ai_tests
-
 package elf_signing
 
 import (
@@ -9,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAI_TempFileCloserCloseIsIdempotent(t *testing.T) {
+func TestTempFileCloserCloseIsIdempotent(t *testing.T) {
 	f, err := os.CreateTemp("", "trdl-close-idempotent-*")
 	require.NoError(t, err)
 	name := f.Name()
