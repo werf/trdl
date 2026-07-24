@@ -230,7 +230,6 @@ tasks:
     desc: "Build all server release binaries."
     cmds:
       - task: build:dist:linux:amd64
-      - task: build:dist:linux:arm64
 
   build:dev:linux:amd64:
     desc: "Build server dev binary for linux/amd64."
@@ -263,16 +262,6 @@ tasks:
           cgoEnabled: "1"
           stripDebug: "true"
           outputDir: "dist/{{.version}}/linux-amd64/bin/"
-
-  build:dist:linux:arm64:
-    desc: "Build server release binary for linux/arm64."
-    cmds:
-      - task: _build:go
-        vars:
-          targetOS: "linux"
-          targetArch: "arm64"
-          stripDebug: "true"
-          outputDir: "dist/{{.version}}/linux-arm64/bin/"
 
   _build:go:
     internal: true
