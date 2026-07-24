@@ -22,10 +22,17 @@ import (
 
 type tempFileCloser struct {
 	*os.File
-	cleanup func() error
+	cleanup   func() error
+	closeOnce sync.Once
+	closeErr  error
 }
 
-func (t *tempFileCloser) Close() error { return t.cleanup() }
+func (t *tempFileCloser) Close() error {
+	t.closeOnce.Do(func() {
+		t.closeErr = t.cleanup()
+	})
+	return t.closeErr
+}
 
 type ELFSigner struct {
 	settings *SignerSettings
@@ -97,8 +104,8 @@ func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data
 	}
 
 	if machine != goelf.EM_X86_64 && machine != goelf.EM_AARCH64 {
-		logboek.Context(ctx).Warn().LogF("Unsupported ELF machine %v for %q\n", machine, releaseFilePath)
-		return &tempFileCloser{File: tmp, cleanup: cleanup}, nil
+		deferErr = fmt.Errorf("unsupported ELF machine %v for %q", machine, releaseFilePath)
+		return nil, deferErr
 	}
 
 	sv, deferErr := s.getSignerVerifier(ctx)
