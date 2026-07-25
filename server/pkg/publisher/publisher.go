@@ -252,9 +252,6 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 	}
 
 	source := io.NopCloser(data)
-	defer func() {
-		_ = source.Close()
-	}()
 
 	if elfSigner != nil {
 		signedSource, err := elfSigner.TrySignELF(ctx, releaseFilePath, data)
@@ -272,6 +269,9 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 	gpgSignBuf := bytes.NewBuffer(nil)
 
 	r := util.BufferedPipedWriterProcess(func(w io.WriteCloser) {
+		defer func() {
+			_ = source.Close()
+		}()
 		signDataReader := io.TeeReader(source, w)
 
 		if err := pgp.SignDataStream(gpgSignBuf, signDataReader, publisher.PGPSigningKey); err != nil {
