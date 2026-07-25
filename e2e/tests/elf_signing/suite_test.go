@@ -42,7 +42,7 @@ var (
 		SuiteData.TmpDir = testutil.GetTempDir()
 
 		SuiteData.TestDir = filepath.Join(SuiteData.TmpDir, "project")
-		Expect(os.Mkdir(SuiteData.TestDir, os.ModePerm))
+		Expect(os.Mkdir(SuiteData.TestDir, os.ModePerm)).Should(Succeed())
 	})
 
 	_ = AfterEach(func() {

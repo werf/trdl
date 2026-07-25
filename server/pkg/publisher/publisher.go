@@ -259,9 +259,7 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 			return fmt.Errorf("try signing artifact %q as ELF: %w", releaseFilePath, err)
 		}
 
-		if signedSource != nil {
-			source = signedSource
-		}
+		source = signedSource
 	}
 
 	gpgSignErrCh := make(chan error, 1)
