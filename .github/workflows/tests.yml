@@ -40,6 +40,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gpg
+          task --yes server:deps:install:c
 
       - name: Set up git config
         run: task --yes ci:setup:git-config
@@ -110,6 +111,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gpg
+          task --yes server:deps:install:c
 
       - name: Install 3p-git-signatures
         run: task --yes ci:install:3p-git-signatures

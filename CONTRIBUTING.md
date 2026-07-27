@@ -81,8 +81,14 @@ You can also check the existing [issues](https://github.com/werf/trdl/issues), [
 7. Testing:
    1. Setup testing environment:
       ```shell
+      task server:deps:install:c
       task server:setup:dev-environment
       ```
+
+      `server:deps:install:c` installs the C libraries required by
+      delivery-kit-sdk ELF signing. They must be present before building the
+      CGO server plugin or compiling the e2e tests (which instrument server
+      packages via `--coverpkg`).
    2. Run tests:
       ```shell
       task server:test:unit

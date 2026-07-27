@@ -9,6 +9,7 @@ includes:
     vars:
       paths: ". cmd/** pkg/**"
       golangciLintBinDir: "../bin"
+      golangciLintVersion: "v1.64.2"
 vars:
   project_name: '{{.project_name | default "trdl-test-project1"}}'
   signatures_count: '{{.signatures_count | default "0"}}'
@@ -20,14 +21,18 @@ vars:
   minio_data_dir: '{{.minio_data_dir | default ".minio_data"}}'
   minio_container: '{{.minio_container | default "trdl_dev_minio"}}'
   vault_container: '{{.vault_container | default "trdl_dev_vault"}}'
+  vault_dev_image: '{{.vault_dev_image | default "ghcr.io/werf/trdl-dev-vault:latest"}}'
   s3_access_key: '{{.s3_access_key | default "minioadmin"}}'
   s3_secret_key: '{{.s3_secret_key | default "minioadmin"}}'
+  minio_addr: '{{.minio_addr | default "$(TASK_X_REMOTE_TASKFILE=1 task --yes _get-minio-ip)"}}'
   minio_port: '{{.minio_port | default "9000"}}'
   minio_console_port: '{{.minio_console_port | default "9001"}}'
   vault_port: '{{.vault_port | default "8200"}}'
   version: '{{.version | default "dev"}}'
   vault_version: "1.20.4"
   plugin_dir: "./vault/plugins/"
+  cgoTags: "osusergo netgo static_build"
+  cgoLDFlags: "-extldflags=-static"
 
 tasks:
   restart:
@@ -68,7 +73,7 @@ tasks:
       - |
         docker run --workdir /app --privileged --name {{.vault_container}} -e VAULT_PLUGIN_SECRETS_TRDL_PPROF_ENABLE=1 \
         -e VAULT_PLUGIN_SECRETS_TRDL_DEBUG=1 --detach --volume /var/run/docker.sock:/var/run/docker.sock \
-        --volume ./:/app -p {{.vault_port}}:{{.vault_port}} ghcr.io/werf/trdl-dev-vault:latest server -dev \
+        --volume ./:/app -p {{.vault_port}}:{{.vault_port}} {{.vault_dev_image}} server -dev \
         -dev-root-token-id=root -dev-plugin-dir=/app/vault/plugins -log-level trace
       - |
         while ! docker exec {{.vault_container}} vault status; do
@@ -92,7 +97,7 @@ tasks:
         s3_access_key_id={{.s3_access_key}} \
         s3_bucket_name={{.project_name}} \
         s3_region=ru-central1 \
-        s3_endpoint=http://$(TASK_X_REMOTE_TASKFILE=1 task --yes _get-minio-ip):{{.minio_port}} \
+        s3_endpoint=http://{{.minio_addr}}:{{.minio_port}} \
         required_number_of_verified_signatures_on_commit={{.signatures_count}} \
         git_repo_url={{.git_repo_url}} \
         git_trdl_path={{.git_trdl_path}} \
@@ -175,6 +180,41 @@ tasks:
           raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
           outputDir: vault/plugins
 
+  deps:install:c:
+    desc: "Install C dependencies required by delivery-kit-sdk ELF signing."
+    cmds:
+      - |
+        set -eux
+
+        ARCH=$(uname -m)
+        case $ARCH in
+          "x86_64")
+            ARCH="amd64"
+            ;;
+          *)
+            echo "Unsupported architecture: $ARCH"
+            exit 1
+            ;;
+        esac
+
+        SUDO=""
+          if [ "$(id -u)" -ne 0 ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              SUDO="sudo -E -n"
+            fi
+        fi
+
+        if command -v apt-get >/dev/null 2>&1; then
+          export DEBIAN_FRONTEND=noninteractive
+          $SUDO apt-get -y update
+          $SUDO apt-get install -y libuv1-dev libzstd-dev zlib1g-dev libssl-dev libelf-dev
+
+          $SUDO ln -fs "$(dpkg -L libuv1-dev | grep -F '/libuv_a.a')" /usr/lib/x86_64-linux-gnu/libuv.a
+        else
+          echo "Can't install C dependencies automatically, do it manually."
+          exit 1
+        fi
+
   build:all:
     desc: "Build all server binaries."
     deps:
@@ -191,7 +231,6 @@ tasks:
     desc: "Build all server release binaries."
     cmds:
       - task: build:dist:linux:amd64
-      - task: build:dist:linux:arm64
 
   build:dev:linux:amd64:
     desc: "Build server dev binary for linux/amd64."
@@ -202,6 +241,7 @@ tasks:
         vars:
           targetOS: "linux"
           targetArch: "amd64"
+          cgoEnabled: "1"
           outputDir: vault/plugins
 
   build:dev:linux:arm64:
@@ -211,7 +251,7 @@ tasks:
         vars:
           targetOS: "linux"
           targetArch: "arm64"
-          outputDir: "{{.outputDir}}"
+          outputDir: vault/plugins
 
   build:dist:linux:amd64:
     desc: "Build server release binary for linux/amd64."
@@ -220,29 +260,24 @@ tasks:
         vars:
           targetOS: "linux"
           targetArch: "amd64"
-          extraGoBuildArgs: -ldflags="-s -w"
+          cgoEnabled: "1"
+          stripDebug: "true"
           outputDir: "dist/{{.version}}/linux-amd64/bin/"
-
-  build:dist:linux:arm64:
-    desc: "Build server release binary for linux/arm64."
-    cmds:
-      - task: _build:go
-        vars:
-          targetOS: "linux"
-          targetArch: "arm64"
-          extraGoBuildArgs: -ldflags="-s -w"
-          outputDir: "dist/{{.version}}/linux-arm64/bin/"
 
   _build:go:
     internal: true
+    vars:
+      buildTags: '{{if eq (.cgoEnabled | default "0") "1"}}{{.cgoTags}}{{if .goTags}} {{.goTags}}{{end}}{{else}}{{.goTags | default ""}}{{end}}'
     cmds:
       - |
         go build -o {{.outputDir | default (printf "vault/plugins/%s/%s-%s/bin" .version .targetOS .targetArch)}}/vault-plugin-secrets-trdl{{if (eq .targetOS "windows")}}.exe{{end}} \
+        {{if .buildTags}}-tags="{{.buildTags}}" {{end}}{{if eq (.cgoEnabled | default "0") "1"}}-ldflags="{{.cgoLDFlags}}{{if eq (.stripDebug | default "false") "true"}} -s -w{{end}}"{{else if eq (.stripDebug | default "false") "true"}}-ldflags="-s -w"{{end}} \
         {{.extraGoBuildArgs}} {{.CLI_ARGS}} github.com/werf/trdl/server/cmd/vault-plugin-secrets-trdl
     env:
       GOOS: "{{.targetOS}}"
       GOARCH: "{{.targetArch}}"
-      CGO_ENABLED: 0
+      CGO_ENABLED: '{{.cgoEnabled | default "0"}}'
+      CC: '{{.cc | default "gcc"}}'
 
   build-with-coverage:
     desc: "Build server binary to run E2E tests with coverage."
@@ -261,9 +296,9 @@ tasks:
           targetOS: "linux"
           targetArch: "amd64"
           outputDir: vault/plugins
+          cgoEnabled: "1"
           extraGoBuildArgs: "-cover -covermode=atomic -coverpkg=./..."
           goTags: "test_coverage"
-          CLI_ARGS: "-tags={{.goTags}}"
 
   test:unit:
     desc: "Run server unit tests."

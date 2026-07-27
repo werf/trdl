@@ -1,17 +1,22 @@
-FROM alpine:latest AS builder
+FROM debian:bookworm
 
-ARG BUILDX_VERSION="v0.10.5"
-
-RUN apk add --no-cache wget && \
-    if [ "$(arch)" = "x86_64" ]; then ARCH="amd64"; \
-    elif [ "$(arch)" = "aarch64" ]; then ARCH="arm64"; \
-    else echo "Unsupported architecture: $(arch)" && exit 1; fi && \
-    wget -O /docker-buildx \
-    "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-${ARCH}" && \
-    chmod +x /docker-buildx
-
-FROM ghcr.io/werf/trdl-dev-vault:latest
-RUN addgroup vault ping
+ENV DEBIAN_FRONTEND=noninteractive
 ENV VAULT_ADDR=http://localhost:8200
 ENV VAULT_TOKEN=root
-COPY --from=builder /docker-buildx /usr/lib/docker/cli-plugins/docker-buildx
+ENV VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+
+RUN apt-get update && \
+    apt-get install -y ca-certificates curl gnupg binutils-multiarch && \
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://apt.releases.hashicorp.com/gpg \
+      | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com bookworm main" \
+      > /etc/apt/sources.list.d/hashicorp.list && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" \
+      > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    apt-get install -y vault docker-ce-cli docker-buildx-plugin && \
+    rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT ["vault"]

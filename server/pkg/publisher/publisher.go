@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 
 	"github.com/werf/trdl/server/pkg/config"
+	"github.com/werf/trdl/server/pkg/elf_signing"
 	"github.com/werf/trdl/server/pkg/pgp"
 	"github.com/werf/trdl/server/pkg/util"
 )
@@ -227,7 +228,7 @@ func (publisher *Publisher) GetRepository(ctx context.Context, storage logical.S
 	return repository, nil
 }
 
-func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader) error {
+func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository RepositoryInterface, releaseName, releaseFilePath string, data io.Reader, elfSigner *elf_signing.ELFSigner) error {
 	publisher.mu.Lock()
 	defer publisher.mu.Unlock()
 
@@ -250,12 +251,26 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 		return NewErrIncorrectTargetPath(releaseFilePath)
 	}
 
-	gpgSignErrCh := make(chan error)
+	source := io.NopCloser(data)
+
+	if elfSigner != nil {
+		signedSource, err := elfSigner.TrySignELF(ctx, releaseFilePath, data)
+		if err != nil {
+			return fmt.Errorf("try signing artifact %q as ELF: %w", releaseFilePath, err)
+		}
+
+		source = signedSource
+	}
+
+	gpgSignErrCh := make(chan error, 1)
 	gpgSignDoneCh := make(chan struct{})
 	gpgSignBuf := bytes.NewBuffer(nil)
 
 	r := util.BufferedPipedWriterProcess(func(w io.WriteCloser) {
-		signDataReader := io.TeeReader(data, w)
+		defer func() {
+			_ = source.Close()
+		}()
+		signDataReader := io.TeeReader(source, w)
 
 		if err := pgp.SignDataStream(gpgSignBuf, signDataReader, publisher.PGPSigningKey); err != nil {
 			gpgSignErrCh <- fmt.Errorf("unable to sign %q: %w", releaseFilePath, err)
@@ -269,6 +284,7 @@ func (publisher *Publisher) StageReleaseTarget(ctx context.Context, repository R
 
 		close(gpgSignDoneCh)
 	})
+	defer func() { _ = r.Close() }()
 
 	pathToReleaseTarget := path.Join("releases", releaseName, releaseFilePath)
 	hclog.L().Debug(fmt.Sprintf("Stage release target %q ...\n", pathToReleaseTarget))

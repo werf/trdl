@@ -9,6 +9,7 @@ includes:
     vars:
       paths: "cmd/** pkg/**"
       golangciLintBinDir: "../bin"
+      golangciLintVersion: "v1.64.2"
 
 vars:
   version: '{{.version | default "dev"}}'

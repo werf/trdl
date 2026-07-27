@@ -8,7 +8,6 @@ version="${1:?Version should be set}"
 
 declare -A regexps
 regexps["$project_dir/dist/$version/linux-amd64/bin/vault-plugin-secrets-trdl"]="x86-64.*statically linked"
-regexps["$project_dir/dist/$version/linux-arm64/bin/vault-plugin-secrets-trdl"]="ARM aarch64.*statically linked"
 
 for filename in "${!regexps[@]}"; do
   if ! [[ -f "$filename" ]]; then

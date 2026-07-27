@@ -9,10 +9,20 @@ includes:
     vars:
       paths: "tests/**"
       golangciLintBinDir: "../bin"
+      golangciLintVersion: "v1.64.2"
 
 tasks:
   test:e2e:
     desc: "Run client e2e test."
+    # On linux/amd64 the elf_signing suite links the delivery-kit-sdk CGO ELF
+    # signer via the server import, so it needs the C libs from
+    # server:deps:install:c. On other platforms that suite is skipped.
     cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./...
+    vars:
+      outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
+
+  test:e2e:elf-signing:
+    desc: "Run ELF signing e2e test (linux/amd64 with CGO; requires server:deps:install:c)."
+    cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./tests/elf_signing
     vars:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
