@@ -21,7 +21,7 @@ vars:
   minio_data_dir: '{{.minio_data_dir | default ".minio_data"}}'
   minio_container: '{{.minio_container | default "trdl_dev_minio"}}'
   vault_container: '{{.vault_container | default "trdl_dev_vault"}}'
-  vault_dev_image: '{{.vault_dev_image | default "ghcr.io/werf/trdl-dev-vault:latest"}}'
+  vault_dev_image: '{{.vault_dev_image | default "ghcr.io/werf/trdl-dev-vault@sha256:3c0ac5915f1c3fd10bab0002734b2fd8575a738dff01ef5c6d0136768870890f"}}'
   s3_access_key: '{{.s3_access_key | default "minioadmin"}}'
   s3_secret_key: '{{.s3_secret_key | default "minioadmin"}}'
   minio_addr: '{{.minio_addr | default "$(TASK_X_REMOTE_TASKFILE=1 task --yes _get-minio-ip)"}}'
@@ -80,7 +80,7 @@ tasks:
           sleep 1;
         done
     deps:
-      - build:dev:linux:amd64
+      - build
 
   _get-minio-ip:
     cmds:
@@ -174,7 +174,7 @@ tasks:
     desc: "Build server dev binary."
     run: once
     cmds:
-      - task: build:dev:{{OS}}:{{ARCH}}
+      - task: build:dev:linux:{{ARCH}}
         vars:
           extraGoBuildArgs: "{{.extraGoBuildArgs}}"
           raceDetectorEnabled: '{{.raceDetectorEnabled | default "false"}}'
