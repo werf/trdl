@@ -220,6 +220,26 @@ func TestManager_WrapTaskFunc(t *testing.T) {
 	<-doneCh
 }
 
+// TestManager_RunTaskDetachesRequestCtx verifies that canceling the caller's
+// context after RunTask returns does not propagate cancellation to the queued
+// task's context. Vault cancels the request ctx as soon as the plugin handler
+// returns, but the task must keep running in the background worker.
+func TestManager_RunTaskDetachesRequestCtx(t *testing.T) {
+	m := initManagerWithoutWorker()
+	storage := &logical.InmemStorage{}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	uuid, err := m.RunTask(ctx, storage, noneTask)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, uuid)
+
+	cancel()
+
+	task := <-m.taskChan
+	assert.Equal(t, uuid, task.UUID)
+	assert.NoError(t, task.Context.Err(), "queued task ctx must survive request ctx cancellation")
+}
+
 func initManagerWithoutWorker() *Manager {
 	taskChan := make(chan *worker.Task, taskChanSize)
 	m := &Manager{taskChan: taskChan, logger: hclog.L()}
