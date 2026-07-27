@@ -157,7 +157,7 @@ func (m *Manager) queueTask(ctx context.Context, workerTaskFunc func(context.Con
 		return "", err
 	}
 
-	m.taskChan <- &worker.Task{Context: ctx, UUID: queuedTaskUUID, Action: workerTaskFunc}
+	m.taskChan <- &worker.Task{Context: context.WithoutCancel(ctx), UUID: queuedTaskUUID, Action: workerTaskFunc}
 
 	return queuedTaskUUID, nil
 }
