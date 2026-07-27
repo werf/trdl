@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1
 	github.com/Masterminds/semver v1.5.0
 	github.com/aws/aws-sdk-go v1.46.4
-	github.com/deckhouse/delivery-kit-sdk v1.2.2-0.20260723120426-ad0c19b06a26
+	github.com/deckhouse/delivery-kit-sdk v1.3.0
 	github.com/distribution/reference v0.6.0
 	github.com/djherbis/buffer v1.2.0
 	github.com/djherbis/nio/v3 v3.0.1
@@ -22,6 +22,7 @@ require (
 	github.com/otiai10/copy v1.9.0
 	github.com/samber/lo v1.51.0
 	github.com/satori/go.uuid v1.2.0
+	github.com/secure-systems-lab/go-securesystemslib v0.9.0
 	github.com/sigstore/sigstore v1.8.8
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.11.1
@@ -104,7 +105,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
-	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/skeema/knownhosts v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect

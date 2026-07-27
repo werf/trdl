@@ -3,7 +3,7 @@ module github.com/werf/trdl/e2e
 go 1.24.10
 
 require (
-	github.com/deckhouse/delivery-kit-sdk v1.2.2-0.20260723120426-ad0c19b06a26
+	github.com/deckhouse/delivery-kit-sdk v1.3.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/vault/sdk v0.8.1
 	github.com/onsi/ginkgo/v2 v2.22.0
