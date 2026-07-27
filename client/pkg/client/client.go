@@ -245,9 +245,25 @@ func (c Client) doSelfUpdate(autocleanReleases bool) error {
 	}
 	defer func() { _ = f.Close() }()
 
-	if err := update.Apply(f, update.Options{}); err != nil {
+	targetPath, err := util.ResolveTrdlOnDiskBinaryPath()
+	if err != nil {
 		return err
 	}
+
+	// Ask go-update to rename our current binary to a known, explicit path
+	// instead of its default ".<name>.old". Combined with the suffix strip in
+	// util.ResolveTrdlOnDiskBinaryPath, this lets concurrent trdl processes
+	// that observe the renamed inode via /proc/self/exe recover a stable
+	// path without depending on go-update's internal naming.
+	oldPath := targetPath + util.SelfUpdateBackupSuffix
+	if err := update.Apply(f, update.Options{TargetPath: targetPath, OldSavePath: oldPath}); err != nil {
+		return err
+	}
+	// With a non-empty OldSavePath go-update does not clean the backup itself
+	// (see apply.go: removeOld = opts.OldSavePath == ""). Best-effort remove:
+	// on Windows the running executable can't be unlinked, and leaving the
+	// backup around isn't harmful — it will be replaced next self-update.
+	_ = os.Remove(oldPath)
 
 	if autocleanReleases {
 		if err := repoClient.CleanReleases(); err != nil {

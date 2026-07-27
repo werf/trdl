@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/werf/trdl/client/pkg/trdl"
 	"github.com/werf/trdl/client/pkg/util"
 )
 
@@ -98,7 +97,7 @@ func (c Client) prepareSourceScriptFileNameAndData(commonArgs []string, basename
 	foregroundUpdateArgsString := strings.Join(foregroundUpdateArgs, " ")
 	backgroundUpdateArgsString := strings.Join(backgroundUpdateArgs, " ")
 
-	trdlBinaryPath, err := trdl.GetTrdlBinaryPath()
+	trdlBinaryPath, err := util.ResolveTrdlOnDiskBinaryPath()
 	if err != nil {
 		return "", nil, err
 	}
@@ -240,7 +239,7 @@ func (c Client) syncSourceScriptFile(scriptsDir, scriptsTmpDir, name string, dat
 }
 
 func (c Client) prepareVersionExtractor(shell, version string) (string, error) {
-	trdlBinaryPath, err := trdl.GetTrdlBinaryPath()
+	trdlBinaryPath, err := util.ResolveTrdlOnDiskBinaryPath()
 	if err != nil {
 		return "", err
 	}
