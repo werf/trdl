@@ -88,3 +88,13 @@ func (f Metafile) delete() error {
 
 	return nil
 }
+
+func (f Metafile) Exists(locker lockgate.Locker) (exists bool, err error) {
+	err = lockgate.WithAcquire(locker, f.filePath, lockgate.AcquireOptions{Shared: true, Timeout: metafileLockTimeout}, func(_ bool) error {
+		exists, err = IsRegularFileExist(f.filePath)
+
+		return err
+	})
+
+	return
+}

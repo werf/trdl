@@ -39,7 +39,12 @@ func (c Client) CleanReleases() error {
 				return err
 			}
 
-			if isRecentlyUsed {
+			pinnedVersion, err := c.versionMetafile(releaseName).Exists(c.locker)
+			if err != nil {
+				return fmt.Errorf("ensure version metafile: %w", err)
+			}
+
+			if isRecentlyUsed || pinnedVersion {
 				continue
 			}
 

@@ -61,3 +61,37 @@ func NewChannelReleaseSeveralFilesFoundError(repoName, group, channel, release s
 func (e ChannelReleaseBinSeveralFilesFoundError) Error() string {
 	return fmt.Sprintf("several binary files found in release %q (group: %q, channel: %q)", e.Release, e.Group, e.Channel)
 }
+
+type ReleaseNotFoundLocallyError struct {
+	RepoName string
+	Version  string
+}
+
+func NewReleaseNotFoundLocallyError(repoName, version string) error {
+	return ReleaseNotFoundLocallyError{
+		RepoName: repoName,
+		Version:  version,
+	}
+}
+
+func (e ReleaseNotFoundLocallyError) Error() string {
+	return fmt.Sprintf("version %q not found locally", e.Version)
+}
+
+type ReleaseBinSeveralFilesFoundError struct {
+	RepoName string
+	Version  string
+	Names    []string
+}
+
+func NewReleaseBinSeveralFilesFoundError(repoName, version string, names []string) error {
+	return ReleaseBinSeveralFilesFoundError{
+		RepoName: repoName,
+		Version:  version,
+		Names:    names,
+	}
+}
+
+func (e ReleaseBinSeveralFilesFoundError) Error() string {
+	return fmt.Sprintf("several binary files found in version %q", e.Version)
+}

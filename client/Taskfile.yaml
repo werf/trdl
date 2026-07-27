@@ -162,6 +162,10 @@ tasks:
       outputBin: ../bin/coverage/trdl
       extraGoBuildArgs: '-ldflags="-s -w" -tags "test_coverage" -cover -covermode=atomic -coverpkg=./... -c cmd/trdl/*.go'
 
+  test:unit:
+    desc: "Run client unit tests."
+    cmd: go test ./...
+
   verify:dist:binaries:
     desc: "Verify that the distributable binaries are built and have correct platform/arch."
     cmds:
