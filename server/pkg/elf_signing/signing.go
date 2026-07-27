@@ -83,7 +83,6 @@ func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data
 			_ = cleanup()
 		}
 	}()
-
 	if _, deferErr = io.Copy(tmp, br); deferErr != nil {
 		return nil, fmt.Errorf("buffer artifact %q to disk: %w", releaseFilePath, deferErr)
 	}

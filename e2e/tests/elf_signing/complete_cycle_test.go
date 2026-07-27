@@ -68,7 +68,7 @@ var _ = Describe("trdl ELF signing test", Label("e2e", "trdl", "elf_signing"), f
 				verifyELFSigning(SuiteData.TmpDir, testOpts.projectName, elfSigningRootCARef, testOpts.version1)
 			}
 		},
-		Entry("standart test", testOptions{
+		Entry("standard test", testOptions{
 			projectName: "test1",
 			branchName:  "main",
 			tag1:        "v1.0.1",

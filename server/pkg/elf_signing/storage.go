@@ -16,7 +16,7 @@ func storageKey() string {
 }
 
 func PutSettings(ctx context.Context, req *logical.Request, settings SignerSettings) error {
-	if !Supported {
+	if !supported {
 		return errors.New("ELF signing requires a linux/amd64 build with CGO enabled")
 	}
 
@@ -36,7 +36,7 @@ func PutSettings(ctx context.Context, req *logical.Request, settings SignerSetti
 }
 
 func GetSettings(ctx context.Context, storage logical.Storage) (*SignerSettings, error) {
-	if !Supported {
+	if !supported {
 		return nil, nil
 	}
 

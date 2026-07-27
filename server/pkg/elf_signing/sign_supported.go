@@ -9,7 +9,7 @@ import (
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
 )
 
-const Supported = true
+const supported = true
 
 func signELF(ctx context.Context, sv *signver.SignerVerifier, path string) error {
 	return inhouse.Sign(ctx, sv, path)
