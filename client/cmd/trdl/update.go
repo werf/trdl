@@ -8,9 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/werf/common-go/pkg/util"
+	commongoutil "github.com/werf/common-go/pkg/util"
 	trdlClient "github.com/werf/trdl/client/pkg/client"
 	"github.com/werf/trdl/client/pkg/trdl"
+	"github.com/werf/trdl/client/pkg/util"
 )
 
 func updateCmd() *cobra.Command {
@@ -59,7 +60,7 @@ func updateCmd() *cobra.Command {
 			}
 
 			if inBackground {
-				trdlBinPath, err := trdl.GetTrdlBinaryPath()
+				trdlBinPath, err := util.ResolveTrdlOnDiskBinaryPath()
 				if err != nil {
 					return err
 				}
@@ -151,7 +152,7 @@ func setupAutoclean(cmd *cobra.Command, autoclean *bool) {
 
 	cmd.Flags().BoolVar(autoclean,
 		"autoclean",
-		util.GetBoolEnvironmentDefaultTrue(envKey),
+		commongoutil.GetBoolEnvironmentDefaultTrue(envKey),
 		fmt.Sprintf("Erase old downloaded releases (default $%s or true)", envKey))
 }
 
@@ -160,7 +161,7 @@ func setupInBackground(cmd *cobra.Command, inBackground *bool) {
 
 	cmd.Flags().BoolVar(inBackground,
 		"in-background",
-		util.GetBoolEnvironmentDefaultFalse(envKey),
+		commongoutil.GetBoolEnvironmentDefaultFalse(envKey),
 		fmt.Sprintf("Perform update in background (default $%s or false)", envKey))
 }
 
