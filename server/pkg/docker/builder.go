@@ -6,7 +6,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/djherbis/nio/v3"
 
@@ -14,6 +16,27 @@ import (
 	"github.com/werf/trdl/server/pkg/mac_signing"
 	"github.com/werf/trdl/server/pkg/secrets"
 )
+
+const (
+	// buildxDriverEnv overrides the buildx driver used to create the ephemeral
+	// per-build builder. Unset preserves the historical docker-container builder.
+	buildxDriverEnv = "TRDL_BUILDX_DRIVER"
+	// buildxDriverOptsEnv passes buildx `--driver-opt` values, one per line, e.g.
+	// "namespace=trdl-build\nrootless=true" for the kubernetes driver.
+	buildxDriverOptsEnv = "TRDL_BUILDX_DRIVER_OPTS"
+
+	defaultBuildxDriver = "docker-container"
+)
+
+// supportedBuildxDrivers are the drivers trdl will create a builder for. The
+// build streams a tarball to stdout (`-o - -`), which the default "docker"
+// driver cannot export; only full-BuildKit drivers are accepted, so an
+// unsupported driver fails closed here with a clear error rather than later with
+// an opaque build failure.
+var supportedBuildxDrivers = map[string]bool{
+	"docker-container": true,
+	"kubernetes":       true,
+}
 
 type Logger interface {
 	Info(msg string, args ...interface{})
@@ -36,11 +59,10 @@ type NewBuilderOpts struct {
 
 func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 	builderName := fmt.Sprintf("trdl-builder-%s", opts.BuildId)
-	builderArgs := []string{
-		"buildx",
-		"create",
-		"--name", builderName,
-		"--driver=docker-container",
+
+	builderArgs, err := buildxCreateArgs(builderName)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := runDockerCmd(ctx, builderArgs); err != nil {
@@ -57,6 +79,45 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 		buildArgs:   args,
 		logger:      opts.Logger,
 	}, nil
+}
+
+// buildxCreateArgs builds the `docker buildx create` arguments for builderName,
+// honouring TRDL_BUILDX_DRIVER / TRDL_BUILDX_DRIVER_OPTS. With neither set it is
+// identical to the historical `--driver=docker-container` invocation.
+func buildxCreateArgs(builderName string) ([]string, error) {
+	driver := os.Getenv(buildxDriverEnv)
+	if driver == "" {
+		driver = defaultBuildxDriver
+	}
+	if !supportedBuildxDrivers[driver] {
+		return nil, fmt.Errorf("unsupported buildx driver %q from %s (supported: docker-container, kubernetes)", driver, buildxDriverEnv)
+	}
+
+	args := []string{
+		"buildx",
+		"create",
+		"--name", builderName,
+		"--driver=" + driver,
+	}
+	for _, opt := range parseDriverOpts(os.Getenv(buildxDriverOptsEnv)) {
+		args = append(args, "--driver-opt="+opt)
+	}
+
+	return args, nil
+}
+
+// parseDriverOpts splits raw into individual buildx `--driver-opt` values, one
+// per non-blank line. Newline separation keeps commas intact for CSV-valued
+// opts such as nodeselector/tolerations.
+func parseDriverOpts(raw string) []string {
+	var opts []string
+	for _, line := range strings.Split(raw, "\n") {
+		if v := strings.TrimSpace(line); v != "" {
+			opts = append(opts, v)
+		}
+	}
+
+	return opts
 }
 
 func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter) error {
