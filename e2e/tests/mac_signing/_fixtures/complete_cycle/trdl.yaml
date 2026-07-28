@@ -1,0 +1,4 @@
+dockerImage: alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a
+commands:
+  - mkdir -p /result/any-any/bin
+  - printf '\317\372\355\376\007\000\000\001' > /result/any-any/bin/macho-stub
