@@ -28,22 +28,23 @@ usermod -a -G docker vault
 В Kubernetes-инсталляциях сборку можно делегировать BuildKit-подам внутри кластера, используя buildx-драйвер `kubernetes`. Драйвер настраивается переменными окружения процесса Vault:
 
 * `TRDL_BUILDX_DRIVER` — используемый buildx-драйвер: `docker-container` (по умолчанию) или `kubernetes`;
-* `TRDL_BUILDX_DRIVER_OPTS_<ЛЮБОЙ_СУФФИКС>` — дополнительные значения `--driver-opt` для `docker buildx create`. Таких переменных может быть любое количество; каждая содержит одно или несколько значений, разделённых разделителем. Значения применяются в лексикографическом порядке имён переменных;
-* `TRDL_BUILDX_DRIVER_OPTS_SEPARATOR` — разделитель значений (по умолчанию `,`). Пользовательский разделитель нужен, когда само значение опции содержит запятые, например `nodeselector=disktype=ssd,zone=a`.
+* `TRDL_BUILDX_DRIVER_OPTS_<ЛЮБОЙ_СУФФИКС>` — дополнительные значения `--driver-opt` для `docker buildx create`. Таких переменных может быть любое количество, каждая содержит одну опцию; они применяются в лексикографическом порядке имён переменных. Значение передаётся без изменений, поэтому опции с запятыми, например `nodeselector=disktype=ssd,zone=a`, не требуют экранирования;
+* `TRDL_BUILDX_DRIVER_OPTS_SEPARATOR` — если задан, значение каждой переменной разделяется на несколько опций по этому разделителю. По умолчанию не задан, то есть одна переменная содержит ровно одну опцию.
 
 Пример конфигурации для драйвера `kubernetes`:
 
 ```shell
 TRDL_BUILDX_DRIVER=kubernetes
-TRDL_BUILDX_DRIVER_OPTS_KUBE=namespace=trdl-build,rootless=true
+TRDL_BUILDX_DRIVER_OPTS_NAMESPACE=namespace=trdl-build
+TRDL_BUILDX_DRIVER_OPTS_ROOTLESS=rootless=true
 ```
 
-или эквивалентная форма «одна опция — одна переменная»:
+или та же конфигурация в одной переменной с явным разделителем:
 
 ```shell
 TRDL_BUILDX_DRIVER=kubernetes
-TRDL_BUILDX_DRIVER_OPTS_NAMESPACE=namespace=trdl-build
-TRDL_BUILDX_DRIVER_OPTS_ROOTLESS=rootless=true
+TRDL_BUILDX_DRIVER_OPTS_SEPARATOR=;
+TRDL_BUILDX_DRIVER_OPTS_KUBE='namespace=trdl-build;rootless=true'
 ```
 
 Особенности драйвера `kubernetes`:
