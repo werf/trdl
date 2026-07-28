@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -23,13 +22,13 @@ import (
 )
 
 // The suite proves trdl's mac-signing plumbing end to end without Apple
-// credentials: TRDL_QUILL_IMAGE must point at a stub image (built from
-// _fixtures/quill_stub) whose quill validates the five QUILL_* env vars and
-// appends a marker with the received cert and notary key id to the artifact.
-// Asserting the marker in the published artifact proves the Vault-stored
-// credential values travelled through the buildkit secret mounts into the
-// signer stage, the Mach-O detection loop ran, and the "signed" artifact was
-// re-exported through the final scratch stage.
+// credentials. It builds _fixtures/quill_stub and serves it from a throwaway
+// registry; that quill validates the five QUILL_* env vars and appends a marker
+// with the received cert and notary key id to the artifact. Asserting the marker
+// in the published artifact proves the Vault-stored credential values travelled
+// through the buildkit secret mounts into the signer stage, the Mach-O detection
+// loop ran, and the "signed" artifact was re-exported through the final scratch
+// stage.
 var _ = Describe("Mac signing", func() {
 	var storage logical.Storage
 	var backend *server.Backend
@@ -64,10 +63,6 @@ var _ = Describe("Mac signing", func() {
 	}
 
 	BeforeEach(func() {
-		if os.Getenv("TRDL_QUILL_IMAGE") == "" {
-			Skip("TRDL_QUILL_IMAGE is not set; build and push _fixtures/quill_stub to a registry reachable by the buildkit builder and point TRDL_QUILL_IMAGE at it")
-		}
-
 		testutil.RunSucceedCommand(
 			testutil.FixturePath("pgp_keys"),
 			"gpg",
@@ -95,8 +90,18 @@ var _ = Describe("Mac signing", func() {
 		testutil.RunSucceedCommand(testDir, "docker", "compose", "run", "mc", "mb", "main/repo")
 		testutil.RunSucceedCommand(testDir, "docker", "compose", "run", "mc", "policy", "set", "download", "main/repo")
 
-		output := testutil.SucceedCommandOutputString(testDir, "docker", "compose", "port", "minio", "9000")
-		minioAddress = "http://" + strings.TrimSpace(output)
+		minioAddress = "http://127.0.0.1:" + composePort("minio", "9000")
+
+		// The builder runs buildkit in its own container and cannot see images from
+		// the local docker daemon, so the stub is served over a registry. Only a
+		// loopback address is treated as insecure by default, and only network=host
+		// lets the builder reach it.
+		quillImage := "127.0.0.1:" + composePort("registry", "5000") + "/quill-stub:latest"
+		testutil.RunSucceedCommand(testutil.FixturePath("quill_stub"), "docker", "build", "--tag", quillImage, ".")
+		testutil.RunSucceedCommand(testutil.FixturePath("quill_stub"), "docker", "push", quillImage)
+
+		setEnv("TRDL_QUILL_IMAGE", quillImage)
+		setEnv("TRDL_BUILDX_DRIVER_OPTS_NETWORK", "network=host")
 	})
 
 	AfterEach(func() {

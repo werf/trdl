@@ -18,3 +18,12 @@ services:
       MC_HOST_main: http://minioadmin:minioadmin@minio:9000
     networks:
       - minio-net
+
+  # Serves the quill stub to the buildkit builder, which cannot see images from
+  # the local docker daemon. The host port is fixed rather than random because
+  # Docker Desktop does not forward the ephemeral range into its VM, so the
+  # daemon there could not push to it.
+  registry:
+    image: registry@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+    ports:
+      - "127.0.0.1:5555:5000"
