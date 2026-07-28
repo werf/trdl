@@ -53,6 +53,16 @@ func TestBuildxCreateArgs_DefaultDriverWithOpts(t *testing.T) {
 	}, args)
 }
 
+func TestBuildxCreateArgs_DriverValueTrimmed(t *testing.T) {
+	t.Setenv(buildxDriverEnv, "  kubernetes  ")
+	t.Setenv(buildxDriverOptsEnv, "")
+
+	args, err := buildxCreateArgs("trdl-builder-42")
+
+	require.NoError(t, err)
+	assert.Contains(t, args, "--driver=kubernetes")
+}
+
 func TestBuildxCreateArgs_UnsupportedDriverRejected(t *testing.T) {
 	t.Setenv(buildxDriverEnv, "docker")
 	t.Setenv(buildxDriverOptsEnv, "")
