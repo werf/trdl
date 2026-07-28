@@ -21,20 +21,19 @@ import (
 
 const (
 	buildxDriverEnv = "TRDL_BUILDX_DRIVER"
-	// Every TRDL_BUILDX_DRIVER_OPTS_<SUFFIX> variable carries `--driver-opt`
-	// values split by the separator, e.g. TRDL_BUILDX_DRIVER_OPTS_KUBE="namespace=trdl-build,rootless=true".
+	// Every TRDL_BUILDX_DRIVER_OPTS_<SUFFIX> variable carries one `--driver-opt`,
+	// e.g. TRDL_BUILDX_DRIVER_OPTS_NAMESPACE="namespace=trdl-build", or several
+	// when TRDL_BUILDX_DRIVER_OPTS_SEPARATOR is set.
 	buildxDriverOptsEnvPrefix    = "TRDL_BUILDX_DRIVER_OPTS_"
 	buildxDriverOptsSeparatorEnv = "TRDL_BUILDX_DRIVER_OPTS_SEPARATOR"
 
-	defaultBuildxDriver              = "docker-container"
-	defaultBuildxDriverOptsSeparator = ","
+	defaultBuildxDriver = "docker-container"
 )
 
-// supportedBuildxDrivers are the drivers trdl will create a builder for. The
-// build streams a tarball to stdout (`-o - -`), which the default "docker"
-// driver cannot export; only full-BuildKit drivers are accepted, so an
-// unsupported driver fails closed here with a clear error rather than later with
-// an opaque build failure.
+// supportedBuildxDrivers are the drivers trdl has verified. The build streams a
+// tarball to stdout (`-o - -`), which the default "docker" driver cannot export,
+// so an unsupported driver fails closed here with a clear error rather than
+// later with an opaque build failure.
 var supportedBuildxDrivers = []string{"docker-container", "kubernetes"}
 
 type Logger interface {
@@ -103,30 +102,35 @@ func buildxCreateArgs(builderName string) ([]string, error) {
 }
 
 func driverOptsFromEnv() []string {
-	separator := os.Getenv(buildxDriverOptsSeparatorEnv)
-	if separator == "" {
-		separator = defaultBuildxDriverOptsSeparator
+	var names []string
+	for _, keyValue := range os.Environ() {
+		name, _, _ := strings.Cut(keyValue, "=")
+		if strings.HasPrefix(name, buildxDriverOptsEnvPrefix) && name != buildxDriverOptsSeparatorEnv {
+			names = append(names, name)
+		}
 	}
+	sort.Strings(names)
+
+	separator := os.Getenv(buildxDriverOptsSeparatorEnv)
 
 	var opts []string
-	env := os.Environ()
-	sort.Strings(env)
-	for _, keyValue := range env {
-		name, value, _ := strings.Cut(keyValue, "=")
-		if !strings.HasPrefix(name, buildxDriverOptsEnvPrefix) || name == buildxDriverOptsSeparatorEnv {
-			continue
-		}
-		opts = append(opts, parseDriverOpts(value, separator)...)
+	for _, name := range names {
+		opts = append(opts, parseDriverOpts(os.Getenv(name), separator)...)
 	}
 
 	return opts
 }
 
-// CSV-valued opts such as nodeselector/tolerations need a custom separator or
-// the one-opt-per-variable form to survive the comma-separated default.
+// An empty separator passes the value through untouched, so comma-valued opts
+// such as nodeselector/tolerations survive without escaping.
 func parseDriverOpts(raw, separator string) []string {
+	parts := []string{raw}
+	if separator != "" {
+		parts = strings.Split(raw, separator)
+	}
+
 	var opts []string
-	for _, part := range strings.Split(raw, separator) {
+	for _, part := range parts {
 		if v := strings.TrimSpace(part); v != "" {
 			opts = append(opts, v)
 		}
