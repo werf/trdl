@@ -6,14 +6,36 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"sort"
+	"strings"
 
 	"github.com/djherbis/nio/v3"
+	"github.com/samber/lo"
 
 	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/mac_signing"
 	"github.com/werf/trdl/server/pkg/secrets"
 )
+
+const (
+	buildxDriverEnv = "TRDL_BUILDX_DRIVER"
+	// Every TRDL_BUILDX_DRIVER_OPTS_<SUFFIX> variable carries `--driver-opt`
+	// values split by the separator, e.g. TRDL_BUILDX_DRIVER_OPTS_KUBE="namespace=trdl-build,rootless=true".
+	buildxDriverOptsEnvPrefix    = "TRDL_BUILDX_DRIVER_OPTS_"
+	buildxDriverOptsSeparatorEnv = "TRDL_BUILDX_DRIVER_OPTS_SEPARATOR"
+
+	defaultBuildxDriver              = "docker-container"
+	defaultBuildxDriverOptsSeparator = ","
+)
+
+// supportedBuildxDrivers are the drivers trdl will create a builder for. The
+// build streams a tarball to stdout (`-o - -`), which the default "docker"
+// driver cannot export; only full-BuildKit drivers are accepted, so an
+// unsupported driver fails closed here with a clear error rather than later with
+// an opaque build failure.
+var supportedBuildxDrivers = []string{"docker-container", "kubernetes"}
 
 type Logger interface {
 	Info(msg string, args ...interface{})
@@ -36,11 +58,10 @@ type NewBuilderOpts struct {
 
 func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 	builderName := fmt.Sprintf("trdl-builder-%s", opts.BuildId)
-	builderArgs := []string{
-		"buildx",
-		"create",
-		"--name", builderName,
-		"--driver=docker-container",
+
+	builderArgs, err := buildxCreateArgs(builderName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to construct buildx create args: %w", err)
 	}
 
 	if err := runDockerCmd(ctx, builderArgs); err != nil {
@@ -57,6 +78,61 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 		buildArgs:   args,
 		logger:      opts.Logger,
 	}, nil
+}
+
+func buildxCreateArgs(builderName string) ([]string, error) {
+	driver := strings.TrimSpace(os.Getenv(buildxDriverEnv))
+	if driver == "" {
+		driver = defaultBuildxDriver
+	}
+	if !lo.Contains(supportedBuildxDrivers, driver) {
+		return nil, fmt.Errorf("unsupported buildx driver %q from %s (supported: %s)", driver, buildxDriverEnv, strings.Join(supportedBuildxDrivers, ", "))
+	}
+
+	args := []string{
+		"buildx",
+		"create",
+		"--name", builderName,
+		"--driver=" + driver,
+	}
+	for _, opt := range driverOptsFromEnv() {
+		args = append(args, "--driver-opt="+opt)
+	}
+
+	return args, nil
+}
+
+func driverOptsFromEnv() []string {
+	separator := os.Getenv(buildxDriverOptsSeparatorEnv)
+	if separator == "" {
+		separator = defaultBuildxDriverOptsSeparator
+	}
+
+	var opts []string
+	env := os.Environ()
+	sort.Strings(env)
+	for _, keyValue := range env {
+		name, value, _ := strings.Cut(keyValue, "=")
+		if !strings.HasPrefix(name, buildxDriverOptsEnvPrefix) || name == buildxDriverOptsSeparatorEnv {
+			continue
+		}
+		opts = append(opts, parseDriverOpts(value, separator)...)
+	}
+
+	return opts
+}
+
+// CSV-valued opts such as nodeselector/tolerations need a custom separator or
+// the one-opt-per-variable form to survive the comma-separated default.
+func parseDriverOpts(raw, separator string) []string {
+	var opts []string
+	for _, part := range strings.Split(raw, separator) {
+		if v := strings.TrimSpace(part); v != "" {
+			opts = append(opts, v)
+		}
+	}
+
+	return opts
 }
 
 func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter) error {

@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+if [ "$1" != "sign-and-notarize" ]; then
+	echo "quill stub: unexpected args: $*" >&2
+	exit 1
+fi
+for v in QUILL_SIGN_P12 QUILL_SIGN_PASSWORD QUILL_NOTARY_KEY_ID QUILL_NOTARY_KEY QUILL_NOTARY_ISSUER; do
+	eval "val=\${$v}"
+	if [ -z "$val" ]; then
+		echo "quill stub: $v is empty" >&2
+		exit 1
+	fi
+done
+printf 'TRDL-E2E-STUB-SIGNED:%s:%s' "$QUILL_SIGN_P12" "$QUILL_NOTARY_KEY_ID" >>"$2"

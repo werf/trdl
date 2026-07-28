@@ -22,6 +22,38 @@ Install Docker. Add a Vault user to the Docker group:
 usermod -a -G docker vault
 ```
 
+### Build backend
+
+During a release, the plugin builds release artifacts with `docker buildx` in an ephemeral per-build builder. By default the `docker-container` driver is used, which requires access to the Docker daemon (see above).
+
+On Kubernetes-native installations the build can instead be delegated to in-cluster BuildKit Pods using the buildx `kubernetes` driver. The driver is configured with environment variables of the Vault process:
+
+* `TRDL_BUILDX_DRIVER` — the buildx driver to use: `docker-container` (default) or `kubernetes`;
+* `TRDL_BUILDX_DRIVER_OPTS_<ANY_SUFFIX>` — additional `--driver-opt` values for `docker buildx create`. Any number of such variables can be set; each carries one or more values split by the separator. Values are applied in the lexicographic order of the variable names;
+* `TRDL_BUILDX_DRIVER_OPTS_SEPARATOR` — the separator for the values (`,` by default). A custom separator is needed when an option value itself contains commas, e.g. `nodeselector=disktype=ssd,zone=a`.
+
+An example configuration for the `kubernetes` driver:
+
+```shell
+TRDL_BUILDX_DRIVER=kubernetes
+TRDL_BUILDX_DRIVER_OPTS_KUBE=namespace=trdl-build,rootless=true
+```
+
+or the equivalent one-option-per-variable form:
+
+```shell
+TRDL_BUILDX_DRIVER=kubernetes
+TRDL_BUILDX_DRIVER_OPTS_NAMESPACE=namespace=trdl-build
+TRDL_BUILDX_DRIVER_OPTS_ROOTLESS=rootless=true
+```
+
+Notes on the `kubernetes` driver:
+
+* the target namespace must exist, and the Vault process needs permissions to manage Deployments and Pods in it: the builder runs as a BuildKit Deployment and is removed after the build;
+* the cluster is targeted via the standard kubeconfig or in-cluster ServiceAccount resolution;
+* rootless BuildKit (`rootless=true`) requires the PodSecurity level `baseline`; it does not run under `restricted`;
+* see the [buildx kubernetes driver documentation](https://docs.docker.com/build/builders/drivers/kubernetes/) for the available driver options.
+
 ### Setting up the project
 
 #### Git repository
