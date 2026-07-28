@@ -28,13 +28,22 @@ usermod -a -G docker vault
 В Kubernetes-инсталляциях сборку можно делегировать BuildKit-подам внутри кластера, используя buildx-драйвер `kubernetes`. Драйвер настраивается переменными окружения процесса Vault:
 
 * `TRDL_BUILDX_DRIVER` — используемый buildx-драйвер: `docker-container` (по умолчанию) или `kubernetes`;
-* `TRDL_BUILDX_DRIVER_OPTS` — дополнительные значения `--driver-opt` для `docker buildx create`, по одному на строку. Разделение переводами строк позволяет передавать значения с запятыми, например `nodeselector=disktype=ssd,zone=a`.
+* `TRDL_BUILDX_DRIVER_OPTS_<ЛЮБОЙ_СУФФИКС>` — дополнительные значения `--driver-opt` для `docker buildx create`. Таких переменных может быть любое количество; каждая содержит одно или несколько значений, разделённых разделителем. Значения применяются в лексикографическом порядке имён переменных;
+* `TRDL_BUILDX_DRIVER_OPTS_SEPARATOR` — разделитель значений (по умолчанию `,`). Пользовательский разделитель нужен, когда само значение опции содержит запятые, например `nodeselector=disktype=ssd,zone=a`.
 
 Пример конфигурации для драйвера `kubernetes`:
 
 ```shell
 TRDL_BUILDX_DRIVER=kubernetes
-TRDL_BUILDX_DRIVER_OPTS=$'namespace=trdl-build\nrootless=true'
+TRDL_BUILDX_DRIVER_OPTS_KUBE=namespace=trdl-build,rootless=true
+```
+
+или эквивалентная форма «одна опция — одна переменная»:
+
+```shell
+TRDL_BUILDX_DRIVER=kubernetes
+TRDL_BUILDX_DRIVER_OPTS_NAMESPACE=namespace=trdl-build
+TRDL_BUILDX_DRIVER_OPTS_ROOTLESS=rootless=true
 ```
 
 Особенности драйвера `kubernetes`:

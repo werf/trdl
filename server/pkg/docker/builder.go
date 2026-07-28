@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/djherbis/nio/v3"
@@ -20,10 +21,13 @@ import (
 
 const (
 	buildxDriverEnv = "TRDL_BUILDX_DRIVER"
-	// One `--driver-opt` per line, e.g. "namespace=trdl-build\nrootless=true".
-	buildxDriverOptsEnv = "TRDL_BUILDX_DRIVER_OPTS"
+	// Every TRDL_BUILDX_DRIVER_OPTS_<SUFFIX> variable carries `--driver-opt`
+	// values split by the separator, e.g. TRDL_BUILDX_DRIVER_OPTS_KUBE="namespace=trdl-build,rootless=true".
+	buildxDriverOptsEnvPrefix    = "TRDL_BUILDX_DRIVER_OPTS_"
+	buildxDriverOptsSeparatorEnv = "TRDL_BUILDX_DRIVER_OPTS_SEPARATOR"
 
-	defaultBuildxDriver = "docker-container"
+	defaultBuildxDriver              = "docker-container"
+	defaultBuildxDriverOptsSeparator = ","
 )
 
 // supportedBuildxDrivers are the drivers trdl will create a builder for. The
@@ -91,19 +95,39 @@ func buildxCreateArgs(builderName string) ([]string, error) {
 		"--name", builderName,
 		"--driver=" + driver,
 	}
-	for _, opt := range parseDriverOpts(os.Getenv(buildxDriverOptsEnv)) {
+	for _, opt := range driverOptsFromEnv() {
 		args = append(args, "--driver-opt="+opt)
 	}
 
 	return args, nil
 }
 
-// Newline separation keeps commas intact for CSV-valued opts such as
-// nodeselector/tolerations.
-func parseDriverOpts(raw string) []string {
+func driverOptsFromEnv() []string {
+	separator := os.Getenv(buildxDriverOptsSeparatorEnv)
+	if separator == "" {
+		separator = defaultBuildxDriverOptsSeparator
+	}
+
 	var opts []string
-	for _, line := range strings.Split(raw, "\n") {
-		if v := strings.TrimSpace(line); v != "" {
+	env := os.Environ()
+	sort.Strings(env)
+	for _, keyValue := range env {
+		name, value, _ := strings.Cut(keyValue, "=")
+		if !strings.HasPrefix(name, buildxDriverOptsEnvPrefix) || name == buildxDriverOptsSeparatorEnv {
+			continue
+		}
+		opts = append(opts, parseDriverOpts(value, separator)...)
+	}
+
+	return opts
+}
+
+// CSV-valued opts such as nodeselector/tolerations need a custom separator or
+// the one-opt-per-variable form to survive the comma-separated default.
+func parseDriverOpts(raw, separator string) []string {
+	var opts []string
+	for _, part := range strings.Split(raw, separator) {
+		if v := strings.TrimSpace(part); v != "" {
 			opts = append(opts, v)
 		}
 	}

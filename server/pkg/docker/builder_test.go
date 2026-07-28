@@ -9,7 +9,6 @@ import (
 
 func TestBuildxCreateArgs_DefaultDriverUnchanged(t *testing.T) {
 	t.Setenv(buildxDriverEnv, "")
-	t.Setenv(buildxDriverOptsEnv, "")
 
 	args, err := buildxCreateArgs("trdl-builder-42")
 
@@ -23,7 +22,7 @@ func TestBuildxCreateArgs_DefaultDriverUnchanged(t *testing.T) {
 
 func TestBuildxCreateArgs_KubernetesDriverWithOpts(t *testing.T) {
 	t.Setenv(buildxDriverEnv, "kubernetes")
-	t.Setenv(buildxDriverOptsEnv, "namespace=trdl-build\nrootless=true")
+	t.Setenv(buildxDriverOptsEnvPrefix+"KUBE", "namespace=trdl-build,rootless=true")
 
 	args, err := buildxCreateArgs("trdl-builder-42")
 
@@ -39,7 +38,7 @@ func TestBuildxCreateArgs_KubernetesDriverWithOpts(t *testing.T) {
 
 func TestBuildxCreateArgs_DefaultDriverWithOpts(t *testing.T) {
 	t.Setenv(buildxDriverEnv, "")
-	t.Setenv(buildxDriverOptsEnv, "image=moby/buildkit:v0.12.0\nnetwork=host")
+	t.Setenv(buildxDriverOptsEnvPrefix+"CONTAINER", "image=moby/buildkit:v0.12.0,network=host")
 
 	args, err := buildxCreateArgs("trdl-builder-42")
 
@@ -55,7 +54,6 @@ func TestBuildxCreateArgs_DefaultDriverWithOpts(t *testing.T) {
 
 func TestBuildxCreateArgs_DriverValueTrimmed(t *testing.T) {
 	t.Setenv(buildxDriverEnv, "  kubernetes  ")
-	t.Setenv(buildxDriverOptsEnv, "")
 
 	args, err := buildxCreateArgs("trdl-builder-42")
 
@@ -65,7 +63,6 @@ func TestBuildxCreateArgs_DriverValueTrimmed(t *testing.T) {
 
 func TestBuildxCreateArgs_UnsupportedDriverRejected(t *testing.T) {
 	t.Setenv(buildxDriverEnv, "docker")
-	t.Setenv(buildxDriverOptsEnv, "")
 
 	args, err := buildxCreateArgs("trdl-builder-42")
 
@@ -75,11 +72,52 @@ func TestBuildxCreateArgs_UnsupportedDriverRejected(t *testing.T) {
 	assert.Contains(t, err.Error(), buildxDriverEnv)
 }
 
+func TestBuildxCreateArgs_CustomOptsSeparator(t *testing.T) {
+	// CSV-valued opts require a non-comma separator.
+	t.Setenv(buildxDriverEnv, "kubernetes")
+	t.Setenv(buildxDriverOptsSeparatorEnv, ";")
+	t.Setenv(buildxDriverOptsEnvPrefix+"KUBE", "namespace=trdl-build;nodeselector=disktype=ssd,zone=a")
+
+	args, err := buildxCreateArgs("trdl-builder-42")
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{
+		"buildx", "create",
+		"--name", "trdl-builder-42",
+		"--driver=kubernetes",
+		"--driver-opt=namespace=trdl-build",
+		"--driver-opt=nodeselector=disktype=ssd,zone=a",
+	}, args)
+}
+
+func TestBuildxCreateArgs_MultipleOptVars(t *testing.T) {
+	t.Setenv(buildxDriverEnv, "kubernetes")
+	t.Setenv(buildxDriverOptsSeparatorEnv, "")
+	t.Setenv(buildxDriverOptsEnvPrefix+"ROOTLESS", "rootless=true")
+	t.Setenv(buildxDriverOptsEnvPrefix+"NAMESPACE", " namespace=trdl-build ")
+	t.Setenv(buildxDriverOptsEnvPrefix+"EMPTY", "  ")
+
+	args, err := buildxCreateArgs("trdl-builder-42")
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{
+		"buildx", "create",
+		"--name", "trdl-builder-42",
+		"--driver=kubernetes",
+		"--driver-opt=namespace=trdl-build",
+		"--driver-opt=rootless=true",
+	}, args)
+}
+
 func TestParseDriverOpts(t *testing.T) {
-	assert.Nil(t, parseDriverOpts(""))
-	assert.Nil(t, parseDriverOpts("\n  \n"))
+	assert.Nil(t, parseDriverOpts("", ","))
+	assert.Nil(t, parseDriverOpts(",  ,", ","))
+	assert.Equal(t,
+		[]string{"namespace=trdl-build", "rootless=true"},
+		parseDriverOpts("  namespace=trdl-build ,, rootless=true ,", ","),
+	)
 	assert.Equal(t,
 		[]string{"namespace=trdl-build", "nodeselector=disktype=ssd,zone=a"},
-		parseDriverOpts("  namespace=trdl-build \n\n nodeselector=disktype=ssd,zone=a \n"),
+		parseDriverOpts("namespace=trdl-build\nnodeselector=disktype=ssd,zone=a", "\n"),
 	)
 }
