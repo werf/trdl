@@ -21,6 +21,29 @@ toc_headers: h2
 usermod -a -G docker vault
 ```
 
+### Сборочный бекенд
+
+Во время релиза плагин собирает релизные артефакты с помощью `docker buildx` во временном сборщике, создаваемом на каждую сборку. По умолчанию используется драйвер `docker-container`, которому нужен доступ к Docker-демону (см. выше).
+
+В Kubernetes-инсталляциях сборку можно делегировать BuildKit-подам внутри кластера, используя buildx-драйвер `kubernetes`. Драйвер настраивается переменными окружения процесса Vault:
+
+* `TRDL_BUILDX_DRIVER` — используемый buildx-драйвер: `docker-container` (по умолчанию) или `kubernetes`;
+* `TRDL_BUILDX_DRIVER_OPTS` — дополнительные значения `--driver-opt` для `docker buildx create`, по одному на строку. Разделение переводами строк позволяет передавать значения с запятыми, например `nodeselector=disktype=ssd,zone=a`.
+
+Пример конфигурации для драйвера `kubernetes`:
+
+```shell
+TRDL_BUILDX_DRIVER=kubernetes
+TRDL_BUILDX_DRIVER_OPTS=$'namespace=trdl-build\nrootless=true'
+```
+
+Особенности драйвера `kubernetes`:
+
+* целевой namespace должен существовать, а процессу Vault нужны права на управление Deployment и Pod в нём: сборщик работает как BuildKit Deployment и удаляется после сборки;
+* кластер определяется стандартным способом — через kubeconfig или in-cluster ServiceAccount;
+* rootless BuildKit (`rootless=true`) требует уровень PodSecurity `baseline`; под `restricted` он не работает;
+* доступные опции драйвера — в [документации buildx kubernetes driver](https://docs.docker.com/build/builders/drivers/kubernetes/).
+
 ### Подготовка проекта
 
 #### Git-репозиторий
