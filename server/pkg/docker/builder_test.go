@@ -4,16 +4,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildxCreateArgs_DefaultDriverUnchanged(t *testing.T) {
-	// With no env set the invocation must stay byte-for-byte the historical one.
 	t.Setenv(buildxDriverEnv, "")
 	t.Setenv(buildxDriverOptsEnv, "")
 
 	args, err := buildxCreateArgs("trdl-builder-42")
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{
 		"buildx", "create",
 		"--name", "trdl-builder-42",
@@ -27,7 +27,7 @@ func TestBuildxCreateArgs_KubernetesDriverWithOpts(t *testing.T) {
 
 	args, err := buildxCreateArgs("trdl-builder-42")
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{
 		"buildx", "create",
 		"--name", "trdl-builder-42",
@@ -37,15 +37,32 @@ func TestBuildxCreateArgs_KubernetesDriverWithOpts(t *testing.T) {
 	}, args)
 }
 
+func TestBuildxCreateArgs_DefaultDriverWithOpts(t *testing.T) {
+	t.Setenv(buildxDriverEnv, "")
+	t.Setenv(buildxDriverOptsEnv, "image=moby/buildkit:v0.12.0\nnetwork=host")
+
+	args, err := buildxCreateArgs("trdl-builder-42")
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{
+		"buildx", "create",
+		"--name", "trdl-builder-42",
+		"--driver=docker-container",
+		"--driver-opt=image=moby/buildkit:v0.12.0",
+		"--driver-opt=network=host",
+	}, args)
+}
+
 func TestBuildxCreateArgs_UnsupportedDriverRejected(t *testing.T) {
-	// The default "docker" driver cannot export the stdout tarball, so it must
-	// be rejected up front rather than failing opaquely during the build.
 	t.Setenv(buildxDriverEnv, "docker")
 	t.Setenv(buildxDriverOptsEnv, "")
 
-	_, err := buildxCreateArgs("trdl-builder-42")
+	args, err := buildxCreateArgs("trdl-builder-42")
 
-	assert.Error(t, err)
+	require.Error(t, err)
+	assert.Nil(t, args)
+	assert.Contains(t, err.Error(), `"docker"`)
+	assert.Contains(t, err.Error(), buildxDriverEnv)
 }
 
 func TestParseDriverOpts(t *testing.T) {
