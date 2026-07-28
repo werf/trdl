@@ -77,7 +77,7 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 }
 
 func buildxCreateArgs(builderName string) ([]string, error) {
-	driver := os.Getenv(buildxDriverEnv)
+	driver := strings.TrimSpace(os.Getenv(buildxDriverEnv))
 	if driver == "" {
 		driver = defaultBuildxDriver
 	}
