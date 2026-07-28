@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.13.0](https://www.github.com/werf/trdl/compare/v0.12.3...v0.13.0) (2026-07-28)
+
+
+### Features
+
+* **client:** add support for pinning explicit versions in main commands ([#391](https://www.github.com/werf/trdl/issues/391)) ([73405cd](https://www.github.com/werf/trdl/commit/73405cd5b203745d2f83d2e34c6fc654bff652d7))
+* **server:** add ELF signing using delivery-kit-sdk ([#389](https://www.github.com/werf/trdl/issues/389)) ([12c7cd8](https://www.github.com/werf/trdl/commit/12c7cd8d0ad98c69c59abbb68f4b55aad4da2058))
+* **server:** make buildx driver configurable via env ([#398](https://www.github.com/werf/trdl/issues/398)) ([7d6d20c](https://www.github.com/werf/trdl/commit/7d6d20c093a9090ed1d1087250c72c3ca86d42db)), ([#399](https://www.github.com/werf/trdl/issues/399)) ([13581fc](https://www.github.com/werf/trdl/commit/13581fca13011ee3a716253ad2ec9345c209e704))
+
+
+### Bug Fixes
+
+* **client:** stop leaking self-update's backup path into source_script ([#396](https://www.github.com/werf/trdl/issues/396)) ([0cf7de2](https://www.github.com/werf/trdl/commit/0cf7de2c7bf41067cac9c0445ae7e40ddb086cce))
+* **server:** make large git-repo clones interruptible ([#394](https://www.github.com/werf/trdl/issues/394)) ([1e2af27](https://www.github.com/werf/trdl/commit/1e2af2741f12e430a180c6fc401caa7e834f1bac)), ([#395](https://www.github.com/werf/trdl/issues/395)) ([d340e2a](https://www.github.com/werf/trdl/commit/d340e2a5a1d0447772f3045da0ae87c6fa5239ee))
+
 ### [0.12.3](https://www.github.com/werf/trdl/compare/v0.12.2...v0.12.3) (2026-05-21)
 
 
