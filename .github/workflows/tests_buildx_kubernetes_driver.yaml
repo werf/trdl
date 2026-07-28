@@ -1,0 +1,82 @@
+name: Tests. Buildx kubernetes driver
+
+# Opt-in: the buildx kubernetes driver needs a cluster, so this is not part of
+# the required checks. It runs the flow_vault suite — the real Vault plugin,
+# a real release build and buildkit secret mounts — against in-cluster BuildKit
+# pods instead of the default docker-container builder.
+on:
+  workflow_dispatch:
+
+env:
+  TASK_X_REMOTE_TASKFILES: 1
+  KIND_VERSION: v0.32.0
+
+jobs:
+  e2e_tests_buildx_kubernetes:
+    name: End-to-end tests (buildx kubernetes driver)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      TRDL_BUILDX_DRIVER: kubernetes
+      TRDL_BUILDX_DRIVER_OPTS_NAMESPACE: namespace=default
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: e2e/go.mod
+
+      - name: Install Task
+        uses: go-task/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up prebuilt trdl test binary
+        run: |
+          task --yes client:build-with-coverage
+          echo TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/bin/coverage/trdl >> $GITHUB_ENV
+          echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/e2e >> $GITHUB_ENV
+
+      - name: Set up git config
+        run: task --yes ci:setup:git-config
+
+      - name: Prepare environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gpg
+          task --yes server:deps:install:c
+
+      - name: Install 3p-git-signatures
+        run: task --yes ci:install:3p-git-signatures
+
+      - name: Install ginkgo
+        run: task --yes -p deps:install:ginkgo
+
+      - name: Setup vault
+        run: |
+          task --yes server:setup-vault-local
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Set up kind cluster
+        run: |
+          curl -fsSLo /tmp/kind https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64
+          sudo install -m 0755 /tmp/kind /usr/local/bin/kind
+          kind create cluster --name trdl-buildx
+          kubectl cluster-info --context kind-trdl-buildx
+
+      - name: Test
+        run: task --yes e2e:test:e2e:flow-vault
+
+      - name: Collect builder diagnostics
+        if: failure()
+        run: |
+          kubectl get pods,deployments --all-namespaces || true
+          docker buildx ls || true
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e_coverage_buildx_kubernetes
+          path: tests_coverage
