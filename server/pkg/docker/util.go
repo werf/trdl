@@ -1,15 +1,11 @@
 package docker
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/distribution/reference"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 )
 
 var ErrImageNameWithoutRequiredDigest = errors.New("the image name must contain an digest \"REPO[:TAG]@DIGEST\" (e.g. \"ubuntu:18.04@sha256:538529c9d229fb55f50e6746b119e899775205d62c0fc1b7e679b30d02ecb6e8\")")
@@ -29,27 +25,6 @@ func ValidateImageNameWithDigest(imageName string) error {
 		panic(fmt.Sprintf("unexpected regexp find submatch result %v (%d)", res, len(res)))
 	} else if res[3] == "" {
 		return ErrImageNameWithoutRequiredDigest
-	}
-
-	return nil
-}
-
-func RemoveImagesByLabels(ctx context.Context, cli *client.Client, labels map[string]string) error {
-	filterSet := filters.NewArgs()
-	for key, value := range labels {
-		filterSet.Add("label", fmt.Sprintf("%s=%s", key, value))
-	}
-
-	list, err := cli.ImageList(ctx, image.ListOptions{Filters: filterSet})
-	if err != nil {
-		return fmt.Errorf("unable to list images: %w", err)
-	}
-
-	for _, img := range list {
-		options := image.RemoveOptions{PruneChildren: true, Force: true}
-		if _, err := cli.ImageRemove(ctx, img.ID, options); err != nil {
-			return fmt.Errorf("unable to remove image %q: %w", img.ID, err)
-		}
 	}
 
 	return nil

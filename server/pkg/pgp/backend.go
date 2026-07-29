@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
-	"golang.org/x/crypto/openpgp"
 
 	"github.com/werf/trdl/server/pkg/util"
 )

@@ -28,6 +28,8 @@ actions/badges/
 # Release build artifacts
 /client/dist
 /server/dist
+/release/dist
+/release/bin
 
 # Local dev
 .task

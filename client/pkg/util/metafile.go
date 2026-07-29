@@ -24,7 +24,7 @@ func (f Metafile) HasBeenModifiedWithinPeriod(locker lockgate.Locker, period tim
 		return err
 	})
 
-	return
+	return s, err
 }
 
 func (f Metafile) hasBeenModifiedWithinPeriod(period time.Duration) (bool, error) {
@@ -96,5 +96,5 @@ func (f Metafile) Exists(locker lockgate.Locker) (exists bool, err error) {
 		return err
 	})
 
-	return
+	return exists, err
 }
