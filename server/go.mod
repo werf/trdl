@@ -2,6 +2,8 @@ module github.com/werf/trdl/server
 
 go 1.25.0
 
+toolchain go1.25.12
+
 require (
 	github.com/Masterminds/goutils v1.1.1
 	github.com/Masterminds/semver v1.5.0

@@ -9,7 +9,8 @@ includes:
     vars:
       paths: "tests/**"
       golangciLintBinDir: "../bin"
-      golangciLintVersion: "v1.64.2"
+      golangciLintVersion: "v2.11.0"
+      golangciConfigPath: "../.golangci.yml"
 
 tasks:
   test:e2e:

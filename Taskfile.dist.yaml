@@ -23,7 +23,7 @@ includes:
     flatten: true
     vars:
       paths: "e2e"
-      golangciLintVersion: "v1.64.2"
+      golangciLintVersion: "v2.11.0"
   actions:
     taskfile: ./actions/Taskfile.yaml
     dir: ./actions

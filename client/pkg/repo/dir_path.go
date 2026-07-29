@@ -11,7 +11,7 @@ func (c Client) GetChannelReleaseDir(group, channel string) (dir string, err err
 		return err
 	})
 
-	return
+	return dir, err
 }
 
 func (c Client) GetReleaseDir(version string) (dir string, err error) {
@@ -20,5 +20,5 @@ func (c Client) GetReleaseDir(version string) (dir string, err error) {
 		return err
 	})
 
-	return
+	return dir, err
 }

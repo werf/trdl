@@ -11,7 +11,7 @@ func (c Client) GetChannelReleaseBinDir(group, channel string) (dir string, err 
 		return err
 	})
 
-	return
+	return dir, err
 }
 
 func (c Client) GetChannelReleaseBinPath(group, channel, optionalBinName string) (path string, err error) {
@@ -20,7 +20,7 @@ func (c Client) GetChannelReleaseBinPath(group, channel, optionalBinName string)
 		return err
 	})
 
-	return
+	return path, err
 }
 
 func (c Client) GetReleaseBinDir(version string) (dir string, err error) {
@@ -29,7 +29,7 @@ func (c Client) GetReleaseBinDir(version string) (dir string, err error) {
 		return err
 	})
 
-	return
+	return dir, err
 }
 
 func (c Client) GetReleaseBinPath(version, optionalBinName string) (path string, err error) {
@@ -50,5 +50,5 @@ func (c Client) GetReleaseBinPath(version, optionalBinName string) (path string,
 		return nil
 	})
 
-	return
+	return path, err
 }

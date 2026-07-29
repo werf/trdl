@@ -9,7 +9,8 @@ includes:
     vars:
       paths: ". cmd/** pkg/**"
       golangciLintBinDir: "../bin"
-      golangciLintVersion: "v1.64.2"
+      golangciLintVersion: "v2.11.0"
+      golangciConfigPath: "../.golangci.yml"
 vars:
   project_name: '{{.project_name | default "trdl-test-project1"}}'
   signatures_count: '{{.signatures_count | default "0"}}'

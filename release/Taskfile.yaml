@@ -9,7 +9,8 @@ includes:
     vars:
       paths: "cmd/** pkg/**"
       golangciLintBinDir: "../bin"
-      golangciLintVersion: "v1.64.2"
+      golangciLintVersion: "v2.11.0"
+      golangciConfigPath: "../.golangci.yml"
 tasks:
   build:
     desc: "Build client dev binary."
