@@ -3,15 +3,10 @@ version: "3"
 silent: true
 
 includes:
-  server:
+  ci:
     taskfile: https://raw.githubusercontent.com/werf/common-ci/refs/heads/main/Taskfile.format_lint.yml
-    flatten: true
-    vars:
-      paths: ". cmd/** pkg/**"
-      golangciLintBinDir: "../bin"
-      golangciLintVersion: "v2.11.0"
-      golangciConfigPath: "../.golangci.yml"
 vars:
+  golangciLintVersion: "v2.11.0"
   project_name: '{{.project_name | default "trdl-test-project1"}}'
   signatures_count: '{{.signatures_count | default "0"}}'
   git_repo_url: '{{.git_repo_url | default "https://github.com/werf/trdl-test-project"}}'
@@ -36,6 +31,32 @@ vars:
   cgoLDFlags: "-extldflags=-static"
 
 tasks:
+  format:
+    desc: "Run all code formatters."
+    cmds:
+      - task: _golangci-lint
+        vars:
+          fix: "true"
+      - task: ci:format:prettier
+
+  lint:
+    desc: "Run all linters."
+    cmds:
+      - task: _golangci-lint
+        vars:
+          fix: "false"
+      - task: ci:lint:prettier
+
+  _golangci-lint:
+    internal: true
+    preconditions:
+      - sh: test -f '../bin/golangci-lint-{{.golangciLintVersion}}'
+        msg: "golangci-lint not installed, run: task deps:install:golangci-lint"
+    cmds:
+      - ../bin/golangci-lint-{{.golangciLintVersion}} run {{if eq .fix "true"}}--fix{{end}} -c ../.golangci.yml {{.CLI_ARGS}} ./...
+    env:
+      CGO_ENABLED: "0"
+
   restart:
     desc: "Restart Minio and Vault."
     cmds:
