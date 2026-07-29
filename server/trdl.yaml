@@ -1,4 +1,4 @@
-dockerImage: registry.werf.io/trdl/builder:d340e2a5a1d0447772f3045da0ae87c6fa5239ee@sha256:21ef0e721c02c9777b0e6a4807d5a1b21a36048e9ae16c3af5023b8fb98eb7c3
+dockerImage: registry.werf.io/trdl/builder:0c698d20c333bae5dc96328d41805e017cd6d086@sha256:9b1a9ed35e7f378e0471659a949753f8bac9de7cedf77f62ca8e54190be23e2d
 commands:
   - TASK_X_REMOTE_TASKFILES=1 task --yes server:build:dist version={{ .Tag }}
   - TASK_X_REMOTE_TASKFILES=1 task --yes server:verify:dist:binaries version={{ .Tag }}
