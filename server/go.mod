@@ -7,6 +7,7 @@ toolchain go1.25.12
 require (
 	github.com/Masterminds/goutils v1.1.1
 	github.com/Masterminds/semver v1.5.0
+	github.com/ProtonMail/go-crypto v1.1.6
 	github.com/aws/aws-sdk-go v1.51.8
 	github.com/deckhouse/delivery-kit-sdk v1.3.0
 	github.com/distribution/reference v0.6.0
@@ -29,14 +30,12 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/theupdateframework/go-tuf v0.7.0
 	github.com/werf/logboek v0.5.5
-	golang.org/x/crypto v0.53.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/armon/go-metrics v0.3.9 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/avelino/slugify v0.0.0-20180501145920-855f152bd774 // indirect
@@ -105,6 +104,7 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
