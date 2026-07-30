@@ -4,10 +4,13 @@ All rules in this document are requirements — not suggestions. ALWAYS follow t
 
 trdl (true delivery) is an Open Source solution providing a secure channel for delivering updates from the Git repository to the end user. It uses [Vault](https://www.vaultproject.io/) to verify operations and [TUF](https://theupdateframework.io/) for secure software distribution. trdl is a multi-module Go project with three components: trdl-server (a Vault plugin), trdl-client (a CLI tool), and trdl-vault (a release CLI tool).
 
+`.agents/skills` holds mandatory agent skills: branch and commit conventions, PR format, code review, test verification. `.claude/skills` is a symlink to it, `CLAUDE.md` is a symlink to this file.
+
 ## Highest-priority rule (MANDATORY)
 
 - NEVER add comments unless they document a non-obvious public API or explain genuinely non-obvious logic. NEVER add comments that restate what the code does, repeat the field/function name, describe obvious error handling, or act as section separators. When in doubt, don't comment.
 - ALWAYS use `task` commands for build/test/lint/format — NEVER raw `go build`, `go test`, `go vet`, `go fmt`, or `golangci-lint` directly.
+- ALWAYS read the matching skill in `.agents/skills/` BEFORE the action it governs and follow it verbatim: `git-conventions/SKILL.md` before naming a branch or writing a commit message, `pull-request/SKILL.md` before creating or updating a PR (title, description, draft by default), `rigorous-review/SKILL.md` before reviewing code, `test-the-tests/SKILL.md` before considering a new or changed test done, `agent-code-review/SKILL.md` in addition to `rigorous-review/SKILL.md` when the diff's author is an agent or the diff touches tests. These files are the source of truth and are NOT duplicated here.
 - ALWAYS verify, don't assume — check the actual state before making changes.
 - ALWAYS start with the simplest possible solution. If it works, stop. Add complexity only when justified by a concrete, current requirement — NEVER for hypothetical future needs.
 - NEVER leave TODOs, stubs, or partial implementations.
@@ -57,6 +60,12 @@ Follow [Effective Go](https://go.dev/doc/effective_go) and [Go Code Review Comme
 - NEVER discard errors with `_`. Indent error flow, not happy path.
 - NEVER use dot imports.
 - NEVER use named returns or naked returns.
+
+## Code navigation (MANDATORY)
+
+- ALWAYS use LSP (`goToDefinition`, `findReferences`, `documentSymbol`, `hover`, `goToImplementation`, call hierarchy) to find definitions, usages, implementations, and callers. `grep` matches strings blindly: it hits comments and unrelated identifiers, and misses interface dispatch and aliased imports.
+- Use `grep` ONLY for literal text — config keys, error message strings, annotation names.
+- If your harness has a semantic code-search tool, prefer it over `grep` for intent-based questions ("how does X work"). If it does not, read the code: NEVER substitute keyword grepping for understanding.
 
 ## Commands (MANDATORY)
 
