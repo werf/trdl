@@ -11,6 +11,7 @@ on:
 jobs:
   converge:
     permissions:
+      actions: read
       contents: read
       id-token: write
       packages: write
