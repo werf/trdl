@@ -55,6 +55,23 @@ Notes on the `kubernetes` driver:
 * rootless BuildKit (`rootless=true`) requires the PodSecurity level `baseline`; it does not run under `restricted`;
 * see the [buildx kubernetes driver documentation](https://docs.docker.com/build/builders/drivers/kubernetes/) for the available driver options.
 
+#### Building against an external buildkitd
+
+Both buildx drivers above shell out to the `docker` CLI, so they require the binary to be present next to the plugin. When the plugin runs in an environment without the `docker` binary (for example, embedded into another process shipped in a distroless image), the build can be pointed at an already running `buildkitd` instead: the plugin then talks to it directly with the BuildKit client, and no builder is provisioned or removed per build.
+
+The buildkitd address is set per project in the plugin configuration:
+
+```shell
+vault write trdl-test-project/configure ... buildkitd_address=tcp://buildkitd.trdl-build.svc:1234
+```
+
+or, as a fallback for all projects, with the `TRDL_BUILDKITD_ADDRESS` environment variable of the Vault process. The per-project setting takes precedence. The supported address schemes are:
+
+* `unix://` and `tcp://` — direct gRPC connection to buildkitd, no external binaries required;
+* `docker-container://` and `kube-pod://` — connection through `docker exec`/`kubectl exec`, requiring the corresponding CLI.
+
+When `buildkitd_address` is not set, builds go through `docker buildx` exactly as described above. Deploying `buildkitd` itself is out of trdl's scope: on Kubernetes it is typically a Deployment or StatefulSet in a dedicated namespace whose PodSecurity labels are managed by the cluster owner, since BuildKit requires a relaxed seccomp/AppArmor profile even in rootless mode.
+
 ### Setting up the project
 
 #### Git repository

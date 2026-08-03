@@ -54,6 +54,23 @@ TRDL_BUILDX_DRIVER_OPTS_KUBE='namespace=trdl-build;rootless=true'
 * rootless BuildKit (`rootless=true`) требует уровень PodSecurity `baseline`; под `restricted` он не работает;
 * доступные опции драйвера — в [документации buildx kubernetes driver](https://docs.docker.com/build/builders/drivers/kubernetes/).
 
+#### Сборка через внешний buildkitd
+
+Оба buildx-драйвера выше запускают CLI `docker`, поэтому требуют наличия бинарника рядом с плагином. Если плагин работает в окружении без бинарника `docker` (например, встроен в другой процесс, поставляемый в distroless-образе), сборку можно направить на уже запущенный `buildkitd`: плагин обращается к нему напрямую через клиент BuildKit, и сборщик не создаётся и не удаляется на каждую сборку.
+
+Адрес buildkitd задаётся для каждого проекта в конфигурации плагина:
+
+```shell
+vault write trdl-test-project/configure ... buildkitd_address=tcp://buildkitd.trdl-build.svc:1234
+```
+
+или, как запасной вариант для всех проектов, переменной окружения `TRDL_BUILDKITD_ADDRESS` процесса Vault. Значение из конфигурации проекта имеет приоритет. Поддерживаемые схемы адреса:
+
+* `unix://` и `tcp://` — прямое gRPC-соединение с buildkitd, внешние бинарники не нужны;
+* `docker-container://` и `kube-pod://` — соединение через `docker exec`/`kubectl exec`, требуется соответствующий CLI.
+
+Если `buildkitd_address` не задан, сборка идёт через `docker buildx`, как описано выше. Развёртывание самого `buildkitd` находится вне зоны ответственности trdl: в Kubernetes это обычно Deployment или StatefulSet в отдельном namespace, метки PodSecurity которого задаёт владелец кластера, поскольку BuildKit требует ослабленный профиль seccomp/AppArmor даже в rootless-режиме.
+
 ### Подготовка проекта
 
 #### Git-репозиторий

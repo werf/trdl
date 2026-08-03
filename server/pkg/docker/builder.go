@@ -42,20 +42,37 @@ type Logger interface {
 }
 
 type Builder struct {
-	builderName string
-	buildArgs   []string
-	logger      Logger
+	builderName      string
+	buildArgs        []string
+	buildkitdAddress string
+	dockerfilePath   string
+	secretsData      map[string][]byte
+	logger           Logger
 }
 
 type NewBuilderOpts struct {
 	BuildId               string
 	ContextPath           string
+	BuildkitdAddress      string
 	Secrets               []secrets.Secret
 	MacSigningCredentials *mac_signing.Credentials
 	Logger                Logger
 }
 
 func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
+	buildkitdAddress, err := resolveBuildkitdAddress(opts.BuildkitdAddress)
+	if err != nil {
+		return nil, err
+	}
+	if buildkitdAddress != "" {
+		return &Builder{
+			buildkitdAddress: buildkitdAddress,
+			dockerfilePath:   opts.ContextPath,
+			secretsData:      buildkitSecretsData(opts.Secrets, opts.MacSigningCredentials),
+			logger:           opts.Logger,
+		}, nil
+	}
+
 	builderName := fmt.Sprintf("trdl-builder-%s", opts.BuildId)
 
 	builderArgs, err := buildxCreateArgs(builderName)
@@ -140,6 +157,10 @@ func parseDriverOpts(raw, separator string) []string {
 }
 
 func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter) error {
+	if b.buildkitdAddress != "" {
+		return buildWithBuildkit(ctx, b.buildkitdAddress, b.dockerfilePath, b.secretsData, contextReader, tarWriter, b.logger)
+	}
+
 	finalArgs := append([]string{"buildx", "build"}, b.buildArgs...)
 	cmd := exec.CommandContext(ctx, "docker", finalArgs...)
 
@@ -160,6 +181,10 @@ func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarW
 }
 
 func (b *Builder) Remove(ctx context.Context) error {
+	if b.buildkitdAddress != "" {
+		return nil
+	}
+
 	if err := runDockerCmd(ctx, []string{"buildx", "rm", b.builderName}); err != nil {
 		return fmt.Errorf("unable to cleanup: %w", err)
 	}

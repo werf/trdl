@@ -1,12 +1,15 @@
 package docker
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/werf/trdl/server/pkg/secrets"
 )
 
 // driverOptsFromEnv reads the ambient environment, so an operator-set
@@ -142,6 +145,38 @@ func TestBuildxCreateArgs_OptsOrderedByVariableName(t *testing.T) {
 		"--driver-opt=first=1",
 		"--driver-opt=second=2",
 	}, args)
+}
+
+func TestSetCliArgs_ExecPathUnchanged(t *testing.T) {
+	t.Setenv("TEST_TRDL_SECRET", "")
+
+	args, err := setCliArgs("trdl-builder-42", ".trdl/Dockerfile", []secrets.Secret{{Id: "TEST_TRDL_SECRET", Data: []byte("value")}}, nil)
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{
+		"--file", ".trdl/Dockerfile",
+		"--pull",
+		"--no-cache",
+		"--builder", "trdl-builder-42",
+		"--secret", "id=TEST_TRDL_SECRET",
+		"-o", "-", "-",
+	}, args)
+}
+
+func TestNewBuilder_BuildkitdAddressSkipsBuildxProvisioning(t *testing.T) {
+	t.Setenv(buildkitdAddressEnv, "")
+
+	builder, err := NewBuilder(context.Background(), &NewBuilderOpts{
+		BuildId:          "42",
+		ContextPath:      ".trdl/Dockerfile",
+		BuildkitdAddress: "tcp://buildkitd:1234",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "tcp://buildkitd:1234", builder.buildkitdAddress)
+	assert.Equal(t, ".trdl/Dockerfile", builder.dockerfilePath)
+	assert.Empty(t, builder.buildArgs)
+	assert.Empty(t, builder.builderName)
 }
 
 func TestParseDriverOpts(t *testing.T) {

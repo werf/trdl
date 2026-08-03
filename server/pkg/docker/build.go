@@ -25,11 +25,12 @@ const (
 )
 
 type BuildReleaseArtifactsOpts struct {
-	FromImage   string
-	RunCommands []string
-	GitRepo     *git.Repository
-	TarWriter   *nio.PipeWriter
-	Storage     logical.Storage
+	FromImage        string
+	RunCommands      []string
+	GitRepo          *git.Repository
+	TarWriter        *nio.PipeWriter
+	Storage          logical.Storage
+	BuildkitdAddress string
 }
 
 func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, logger hclog.Logger) error {
@@ -100,6 +101,7 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	builder, err := NewBuilder(ctx, &NewBuilderOpts{
 		BuildId:               buildId,
 		ContextPath:           serviceDockerfilePathInContext,
+		BuildkitdAddress:      opts.BuildkitdAddress,
 		Secrets:               secrets,
 		MacSigningCredentials: credentials,
 		Logger:                logger,
