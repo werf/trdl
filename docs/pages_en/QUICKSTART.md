@@ -52,7 +52,7 @@ Notes on the `kubernetes` driver:
 
 * the target namespace must exist, and the Vault process needs permissions to manage Deployments and Pods in it: the builder runs as a BuildKit Deployment and is removed after the build;
 * the cluster is targeted via the standard kubeconfig or in-cluster ServiceAccount resolution;
-* rootless BuildKit (`rootless=true`) requires the PodSecurity level `baseline`; it does not run under `restricted`;
+* rootless BuildKit (`rootless=true`) does not fit the `baseline` PodSecurity level either: buildx gives the builder pod `seccompProfile: Unconfined` and the `unconfined` AppArmor annotation, and both are already forbidden at `baseline`. The builder namespace has to be labelled `privileged` (or be exempt from PodSecurity admission);
 * see the [buildx kubernetes driver documentation](https://docs.docker.com/build/builders/drivers/kubernetes/) for the available driver options.
 
 #### Building against an external buildkitd

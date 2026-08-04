@@ -51,7 +51,7 @@ TRDL_BUILDX_DRIVER_OPTS_KUBE='namespace=trdl-build;rootless=true'
 
 * целевой namespace должен существовать, а процессу Vault нужны права на управление Deployment и Pod в нём: сборщик работает как BuildKit Deployment и удаляется после сборки;
 * кластер определяется стандартным способом — через kubeconfig или in-cluster ServiceAccount;
-* rootless BuildKit (`rootless=true`) требует уровень PodSecurity `baseline`; под `restricted` он не работает;
+* rootless BuildKit (`rootless=true`) не укладывается и в уровень PodSecurity `baseline`: buildx задаёт поду сборщика `seccompProfile: Unconfined` и AppArmor-аннотацию `unconfined`, а оба этих значения запрещены уже на `baseline`. Namespace сборщика должен быть помечен как `privileged` (либо исключён из PodSecurity-admission);
 * доступные опции драйвера — в [документации buildx kubernetes driver](https://docs.docker.com/build/builders/drivers/kubernetes/).
 
 #### Сборка через внешний buildkitd
