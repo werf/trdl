@@ -72,6 +72,12 @@ or, as a fallback for all projects, with the `TRDL_BUILDKITD_ADDRESS` environmen
 
 When `buildkitd_address` is not set, builds go through `docker buildx` exactly as described above. Deploying `buildkitd` itself is out of trdl's scope: on Kubernetes it is typically a Deployment or StatefulSet in a dedicated namespace whose PodSecurity labels are managed by the cluster owner, since BuildKit requires a relaxed seccomp/AppArmor profile even in rootless mode.
 
+Securing the connection and isolating the daemon is the administrator's responsibility. The plugin sends the entire build context and every build secret over this connection — the project build secrets and, when mac signing is configured, the signing certificate, its password and the notary key. What that requires:
+
+* **`tcp://` is plaintext and unauthenticated.** The plugin neither encrypts the traffic nor verifies the identity of the daemon it connects to, so anyone able to intercept the connection or take over the endpoint's address receives those secrets. Use `tcp://` only over a channel made confidential and authenticated by other means — a network segment no other workload can reach, a service mesh with mTLS, or an equivalent tunnel. When that cannot be guaranteed, run buildkitd alongside the plugin and use `unix://` to a socket shared between them.
+* **The address is a trust boundary.** Whoever can write the project configuration, or set `TRDL_BUILDKITD_ADDRESS` for the Vault process, decides which daemon receives the release secrets. Write access to `<project>/configure` has to be restricted to the same people who are trusted with the release keys.
+* **The daemon is shared and unrestricted.** buildkitd executes the project's build instructions, and no builder is created or removed per build, so concurrent releases and every project pointed at the same address share one instance, its cache and its privileges. Dedicate an instance per trust domain, and treat access to it as access to the release artifacts it produces.
+
 ### Setting up the project
 
 #### Git repository
