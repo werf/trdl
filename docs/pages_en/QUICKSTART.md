@@ -48,6 +48,20 @@ TRDL_BUILDX_DRIVER_OPTS_SEPARATOR=;
 TRDL_BUILDX_DRIVER_OPTS_KUBE='namespace=trdl-build;rootless=true'
 ```
 
+The same two settings are also available per project in the plugin configuration, which is the only way to reach them when the plugin is compiled into a host process whose environment the administrator cannot set:
+
+* `buildx_driver` — the same values as `TRDL_BUILDX_DRIVER`;
+* `buildx_driver_opts` — a list of `--driver-opt` values, one per element, each passed through as is.
+
+```json
+{
+  "buildx_driver": "kubernetes",
+  "buildx_driver_opts": ["namespace=trdl-build", "rootless=true"]
+}
+```
+
+Each of the two settings is resolved on its own: the plugin configuration takes precedence over the environment, and the environment takes precedence over the default `docker-container` driver with no options.
+
 Notes on the `kubernetes` driver:
 
 * the target namespace must exist, and the Vault process needs permissions to manage Deployments and Pods in it: the builder runs as a BuildKit Deployment and is removed after the build;

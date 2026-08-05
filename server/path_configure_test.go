@@ -124,6 +124,8 @@ func dataCompleteConfiguration() map[string]interface{} {
 		fieldNameS3AccessKeyID:                              cfg.S3AccessKeyID,
 		fieldNameS3SecretAccessKey:                          cfg.S3SecretAccessKey,
 		fieldNameS3BucketName:                               cfg.S3BucketName,
+		fieldNameBuildxDriver:                               cfg.BuildxDriver,
+		fieldNameBuildxDriverOpts:                           cfg.BuildxDriverOpts,
 	}
 }
 
@@ -138,5 +140,7 @@ func completeConfiguration() *configuration {
 		S3AccessKeyID:                              "AKIAIOSFODNN7EXAMPLE",
 		S3SecretAccessKey:                          "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		S3BucketName:                               "trdl",
+		BuildxDriver:                               "kubernetes",
+		BuildxDriverOpts:                           []string{"namespace=trdl-build", "nodeselector=disktype=ssd,zone=a"},
 	}
 }
