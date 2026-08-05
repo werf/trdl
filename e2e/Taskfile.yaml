@@ -52,7 +52,7 @@ tasks:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
 
   test:e2e:flow-vault:
-    desc: "Run the Vault plugin e2e test. Honours TRDL_BUILDX_DRIVER, so it doubles as the buildx driver check."
+    desc: "Run the Vault plugin e2e test. Honours TRDL_BUILDX_DRIVER and TRDL_TEST_BUILDKITD_ADDRESS, so it doubles as the buildx driver and BuildKit client check."
     cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./tests/flow_vault
     vars:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
