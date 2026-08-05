@@ -47,6 +47,20 @@ TRDL_BUILDX_DRIVER_OPTS_SEPARATOR=;
 TRDL_BUILDX_DRIVER_OPTS_KUBE='namespace=trdl-build;rootless=true'
 ```
 
+Те же две настройки доступны и в конфигурации плагина, отдельно для каждого проекта. Это единственный способ задать их, когда плагин вкомпилен в хост-процесс, окружением которого администратор не управляет:
+
+* `buildx_driver` — те же значения, что и у `TRDL_BUILDX_DRIVER`;
+* `buildx_driver_opts` — список значений `--driver-opt`, по одному в элементе, каждое передаётся без изменений.
+
+```json
+{
+  "buildx_driver": "kubernetes",
+  "buildx_driver_opts": ["namespace=trdl-build", "rootless=true"]
+}
+```
+
+Каждая из двух настроек разрешается независимо: конфигурация плагина имеет приоритет над переменными окружения, а переменные окружения — над умолчанием, то есть драйвером `docker-container` без опций.
+
 Особенности драйвера `kubernetes`:
 
 * целевой namespace должен существовать, а процессу Vault нужны права на управление Deployment и Pod в нём: сборщик работает как BuildKit Deployment и удаляется после сборки;

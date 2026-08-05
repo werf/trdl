@@ -171,6 +171,8 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					RunCommands:      trdlCfg.Commands,
 					Storage:          req.Storage,
 					BuildkitdAddress: cfg.BuildkitdAddress,
+					BuildxDriver:     cfg.BuildxDriver,
+					BuildxDriverOpts: cfg.BuildxDriverOpts,
 				}, b.Logger())
 			if err != nil {
 				errCh <- err

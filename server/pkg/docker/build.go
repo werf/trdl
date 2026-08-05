@@ -31,6 +31,8 @@ type BuildReleaseArtifactsOpts struct {
 	TarWriter        *nio.PipeWriter
 	Storage          logical.Storage
 	BuildkitdAddress string
+	BuildxDriver     string
+	BuildxDriverOpts []string
 }
 
 func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, logger hclog.Logger) error {
@@ -102,6 +104,8 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 		BuildId:                 buildId,
 		DockerfilePathInContext: serviceDockerfilePathInContext,
 		BuildkitdAddress:        opts.BuildkitdAddress,
+		BuildxDriver:            opts.BuildxDriver,
+		BuildxDriverOpts:        opts.BuildxDriverOpts,
 		Secrets:                 secrets,
 		MacSigningCredentials:   credentials,
 		Logger:                  logger,
