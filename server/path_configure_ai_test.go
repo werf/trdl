@@ -7,6 +7,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_BuildxFieldsOmitted() {
+	reqData := dataCompleteConfiguration()
+	delete(reqData, fieldNameBuildxDriver)
+	delete(reqData, fieldNameBuildxDriverOpts)
+
+	suite.req.Operation = logical.CreateOperation
+	suite.req.Data = reqData
+
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), resp)
+
+	cfg, err := getConfiguration(suite.ctx, suite.storage)
+	assert.Nil(suite.T(), err)
+	if assert.NotNil(suite.T(), cfg) {
+		assert.Empty(suite.T(), cfg.BuildxDriver)
+		assert.Empty(suite.T(), cfg.BuildxDriverOpts)
+	}
+}
+
 func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_UnsupportedBuildxDriver() {
 	reqData := dataCompleteConfiguration()
 	reqData[fieldNameBuildxDriver] = "docker"
