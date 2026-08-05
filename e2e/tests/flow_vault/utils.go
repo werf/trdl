@@ -207,6 +207,17 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 		}
 		return ""
 	}()
+
+	// Set TRDL_TEST_BUILDKITD_ADDRESS to run the same release cycle against an
+	// external buildkitd instead of the docker CLI, the way TRDL_BUILDX_DRIVER
+	// switches the buildx driver.
+	buildkitdAddress := func() string {
+		if address := os.Getenv("TRDL_TEST_BUILDKITD_ADDRESS"); address != "" {
+			return fmt.Sprintf("buildkitd_address=%s", address)
+		}
+		return ""
+	}()
+
 	testutil.RunSucceedCommand(
 		testDir,
 		"vault", "write",
@@ -221,6 +232,7 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 		fmt.Sprintf("s3_secret_access_key=%s", opts.S3SecretAccessKey),
 		fmt.Sprintf("s3_bucket_name=%s", opts.S3BucketName),
 		lastPubCommit,
+		buildkitdAddress,
 	)
 }
 

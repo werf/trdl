@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 
+	"github.com/werf/trdl/server/pkg/docker"
 	"github.com/werf/trdl/server/pkg/elf_signing"
 	"github.com/werf/trdl/server/pkg/git"
 	"github.com/werf/trdl/server/pkg/mac_signing"
@@ -30,6 +31,7 @@ const (
 	fieldNameS3AccessKeyID                              = "s3_access_key_id"
 	fieldNameS3SecretAccessKey                          = "s3_secret_access_key"
 	fieldNameS3BucketName                               = "s3_bucket_name"
+	fieldNameBuildkitdAddress                           = "buildkitd_address"
 
 	storageKeyConfiguration = "configuration"
 )
@@ -110,6 +112,11 @@ func configurePath(b *Backend) *framework.Path {
 				Description: "The S3 storage secret access key",
 				Required:    true,
 			},
+			fieldNameBuildkitdAddress: {
+				Type:        framework.TypeString,
+				Description: "An address of a running buildkitd (unix://, tcp://, docker-container:// or kube-pod:// scheme) to build release artifacts with the BuildKit client; the docker CLI is used if not set. Build secrets are sent to that daemon, and tcp:// is neither encrypted nor authenticated, so securing the channel and isolating the daemon is the administrator's responsibility",
+				Required:    false,
+			},
 		},
 		Operations: map[logical.Operation]framework.OperationHandler{
 			logical.CreateOperation: &framework.PathOperation{
@@ -137,6 +144,10 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		return errResp, nil
 	}
 
+	if err := docker.ValidateBuildkitdAddress(ctx, fields.Get(fieldNameBuildkitdAddress).(string)); err != nil {
+		return logical.ErrorResponse("%s validation failed: %s", fieldNameBuildkitdAddress, err), nil
+	}
+
 	cfg := &configuration{
 		GitRepoUrl:                    fields.Get(fieldNameGitRepoUrl).(string),
 		GitTrdlPath:                   fields.Get(fieldNameGitTrdlPath).(string),
@@ -149,6 +160,7 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		S3AccessKeyID:     fields.Get(fieldNameS3AccessKeyID).(string),
 		S3SecretAccessKey: fields.Get(fieldNameS3SecretAccessKey).(string),
 		S3BucketName:      fields.Get(fieldNameS3BucketName).(string),
+		BuildkitdAddress:  fields.Get(fieldNameBuildkitdAddress).(string),
 	}
 
 	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
@@ -191,6 +203,7 @@ type configuration struct {
 	S3AccessKeyID                              string `structs:"s3_access_key_id" json:"s3_access_key_id"`
 	S3SecretAccessKey                          string `structs:"s3_secret_access_key" json:"s3_secret_access_key"`
 	S3BucketName                               string `structs:"s3_bucket_name" json:"s3_bucket_name"`
+	BuildkitdAddress                           string `structs:"buildkitd_address" json:"buildkitd_address"`
 }
 
 func (cfg *configuration) RepositoryOptions() publisher.RepositoryOptions {

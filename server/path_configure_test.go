@@ -59,6 +59,36 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_RequiredFields() {
 	}
 }
 
+func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildkitdAddress() {
+	reqData := dataCompleteConfiguration()
+	reqData[fieldNameBuildkitdAddress] = "tcp://buildkitd:1234"
+
+	suite.req.Operation = logical.CreateOperation
+	suite.req.Data = reqData
+
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), resp)
+
+	cfg, err := getConfiguration(suite.ctx, suite.storage)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), "tcp://buildkitd:1234", cfg.BuildkitdAddress)
+}
+
+func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_InvalidBuildkitdAddress() {
+	reqData := dataCompleteConfiguration()
+	reqData[fieldNameBuildkitdAddress] = "ssh://buildhost"
+
+	suite.req.Operation = logical.CreateOperation
+	suite.req.Data = reqData
+
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	if assert.NotNil(suite.T(), resp) {
+		assert.Contains(suite.T(), resp.Error().Error(), fieldNameBuildkitdAddress)
+	}
+}
+
 func (suite *PathConfigureCallbacksSuite) TestRead() {
 	err := putConfiguration(suite.ctx, suite.storage, completeConfiguration())
 	assert.Nil(suite.T(), err)
@@ -124,6 +154,7 @@ func dataCompleteConfiguration() map[string]interface{} {
 		fieldNameS3AccessKeyID:                              cfg.S3AccessKeyID,
 		fieldNameS3SecretAccessKey:                          cfg.S3SecretAccessKey,
 		fieldNameS3BucketName:                               cfg.S3BucketName,
+		fieldNameBuildkitdAddress:                           cfg.BuildkitdAddress,
 	}
 }
 
@@ -138,5 +169,6 @@ func completeConfiguration() *configuration {
 		S3AccessKeyID:                              "AKIAIOSFODNN7EXAMPLE",
 		S3SecretAccessKey:                          "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		S3BucketName:                               "trdl",
+		BuildkitdAddress:                           "unix:///run/buildkit/buildkitd.sock",
 	}
 }

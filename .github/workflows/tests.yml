@@ -61,6 +61,50 @@ jobs:
           name: unit_coverage
           path: tests_coverage
 
+  ai_tests_server:
+    name: AI-authored tests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+
+      - name: Install Task
+        uses: go-task/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gpg
+          task --yes server:deps:install:c
+
+      - name: Set up git config
+        run: task --yes ci:setup:git-config
+
+      - name: Install 3p-git-signatures
+        run: task --yes ci:install:3p-git-signatures
+
+      - name: Install ginkgo
+        run: task --yes deps:install:ginkgo
+
+      - name: Start buildkitd
+        run: |
+          docker run --detach --name trdl-buildkitd --privileged \
+            --publish 1234:1234 moby/buildkit:v0.31.2 --addr tcp://0.0.0.0:1234
+          timeout 120 bash -c 'until docker exec trdl-buildkitd \
+            buildctl --addr tcp://127.0.0.1:1234 debug workers >/dev/null 2>&1; do sleep 2; done'
+
+      - name: Test
+        env:
+          TRDL_SMOKE_BUILDKITD_ADDRESS: tcp://127.0.0.1:1234
+        run: task --yes server:test:ai
+
   unit_client:
     name: Client unit tests
     runs-on: ubuntu-22.04
@@ -133,11 +177,78 @@ jobs:
           name: e2e_coverage
           path: tests_coverage
 
+  e2e_buildkit:
+    name: End-to-end tests (BuildKit client)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: e2e/go.mod
+
+      - name: Install Task
+        uses: go-task/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up prebuilt trdl test binary
+        run: |
+          task --yes client:build-with-coverage
+          echo TRDL_TEST_BINARY_PATH=$GITHUB_WORKSPACE/bin/coverage/trdl >> $GITHUB_ENV
+          echo TRDL_TEST_COVERAGE_DIR=$GITHUB_WORKSPACE/tests_coverage/e2e >> $GITHUB_ENV
+
+      - name: Set up git config
+        run: task --yes ci:setup:git-config
+
+      - name: Prepare environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gpg
+          task --yes server:deps:install:c
+
+      - name: Install 3p-git-signatures
+        run: task --yes ci:install:3p-git-signatures
+
+      - name: Install ginkgo
+        run: task --yes -p deps:install:ginkgo
+
+      - name: Setup vault
+        run: |
+          task --yes server:setup-vault-local
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Start buildkitd
+        run: |
+          docker run --detach --name trdl-buildkitd --privileged \
+            --publish 1234:1234 moby/buildkit:v0.31.2 --addr tcp://0.0.0.0:1234
+          timeout 120 bash -c 'until docker exec trdl-buildkitd \
+            buildctl --addr tcp://127.0.0.1:1234 debug workers >/dev/null 2>&1; do sleep 2; done'
+
+      - name: Test
+        env:
+          TRDL_TEST_BUILDKITD_ADDRESS: tcp://127.0.0.1:1234
+        run: task --yes e2e:test:e2e:flow-vault
+
+      - name: Collect buildkitd diagnostics
+        if: failure()
+        run: docker logs trdl-buildkitd || true
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e_coverage_buildkit
+          path: tests_coverage
+
   upload_coverage:
     name: Upload coverage
     needs:
       - unit_server
       - e2e_tests
+      - e2e_buildkit
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -158,8 +269,10 @@ jobs:
     if: always()
     needs:
       - unit_server
+      - ai_tests_server
       - unit_client
       - e2e_tests
+      - e2e_buildkit
       - upload_coverage
     uses: werf/common-ci/.github/workflows/notification.yml@main
     secrets:
