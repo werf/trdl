@@ -12,9 +12,9 @@ func GetMacSigningCommandMounts(creds *mac_signing.Credentials) []string {
 	if creds != nil {
 		identityName := mac_signing.MacSigningCertificateName
 		args = append(args, "--secret", fmt.Sprintf("id=%s_cert", identityName))
-		if creds.Password != "" {
-			args = append(args, "--secret", fmt.Sprintf("id=%s_password", identityName))
-		}
+		// The signer stage reads the password unconditionally, so a passwordless
+		// certificate has to be served as an empty secret rather than as none.
+		args = append(args, "--secret", fmt.Sprintf("id=%s_password", identityName))
 		args = append(args, "--secret", fmt.Sprintf("id=%s_notary_key_id", identityName))
 		args = append(args, "--secret", fmt.Sprintf("id=%s_notary_key", identityName))
 		args = append(args, "--secret", fmt.Sprintf("id=%s_notary_issuer", identityName))
@@ -32,10 +32,8 @@ func SetMacSigningTempEnvVars(creds *mac_signing.Credentials) error {
 		return fmt.Errorf("unable to set certificate env var: %w", err)
 	}
 
-	if creds.Password != "" {
-		if err := os.Setenv(identityName+"_password", creds.Password); err != nil {
-			return fmt.Errorf("unable to set password env var: %w", err)
-		}
+	if err := os.Setenv(identityName+"_password", creds.Password); err != nil {
+		return fmt.Errorf("unable to set password env var: %w", err)
 	}
 
 	if err := os.Setenv(identityName+"_notary_key_id", creds.NotaryKeyID); err != nil {

@@ -93,16 +93,7 @@ func TestBuildkitSecretsData(t *testing.T) {
 	}, data)
 }
 
-func TestBuildkitSecretsData_NoPasswordNoCredentials(t *testing.T) {
+func TestBuildkitSecretsData_NoCredentials(t *testing.T) {
 	data := buildkitSecretsData([]secrets.Secret{{Id: "MY_TOKEN", Data: []byte("token-value")}}, nil)
 	assert.Equal(t, map[string][]byte{"MY_TOKEN": []byte("token-value")}, data)
-
-	data = buildkitSecretsData(nil, &mac_signing.Credentials{
-		Certificate:  "cert-data",
-		NotaryKeyID:  "key-id",
-		NotaryKey:    "key-data",
-		NotaryIssuer: "issuer-id",
-	})
-	identityName := mac_signing.MacSigningCertificateName
-	assert.NotContains(t, data, identityName+"_password")
 }

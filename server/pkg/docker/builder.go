@@ -197,6 +197,8 @@ func (b *Builder) Remove(ctx context.Context) error {
 	return nil
 }
 
+const maxLogLineSize = 1024 * 1024
+
 // The returned wait function closes the writer and returns once every buffered
 // line has reached the logger, so the tail of a build log is not lost when the
 // build finishes.
@@ -205,8 +207,13 @@ func logWriter(logger Logger) (*io.PipeWriter, func()) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
+		// The build writes into this pipe, so the moment line parsing stops the
+		// build itself blocks on the next write. Whatever happens above, keep
+		// draining until the writer is closed.
+		defer func() { _, _ = io.Copy(io.Discard, pr) }()
 
 		scanner := bufio.NewScanner(pr)
+		scanner.Buffer(make([]byte, 0, bufio.MaxScanTokenSize), maxLogLineSize)
 		for scanner.Scan() {
 			line := scanner.Text()
 			logger.Info(line)
@@ -216,7 +223,7 @@ func logWriter(logger Logger) (*io.PipeWriter, func()) {
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			logger.Error("error reading stderr", "err", err)
+			logger.Error("unable to read build output, the rest of it is not logged", "err", err)
 		}
 	}()
 

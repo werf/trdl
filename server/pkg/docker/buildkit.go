@@ -67,9 +67,7 @@ func buildkitSecretsData(buildSecrets []secrets.Secret, macSigningCredentials *m
 	if macSigningCredentials != nil {
 		identityName := mac_signing.MacSigningCertificateName
 		data[identityName+"_cert"] = []byte(macSigningCredentials.Certificate)
-		if macSigningCredentials.Password != "" {
-			data[identityName+"_password"] = []byte(macSigningCredentials.Password)
-		}
+		data[identityName+"_password"] = []byte(macSigningCredentials.Password)
 		data[identityName+"_notary_key_id"] = []byte(macSigningCredentials.NotaryKeyID)
 		data[identityName+"_notary_key"] = []byte(macSigningCredentials.NotaryKey)
 		data[identityName+"_notary_issuer"] = []byte(macSigningCredentials.NotaryIssuer)
