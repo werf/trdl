@@ -1,5 +1,14 @@
 # Changelog
 
+### [0.13.1](https://www.github.com/werf/trdl/compare/v0.13.0...v0.13.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* bump dependencies to clear all known CVEs ([#402](https://www.github.com/werf/trdl/issues/402)) ([31430e1](https://www.github.com/werf/trdl/commit/31430e1a3826ad04c1ec1a871aa2c6d8b4215c29))
+* **ci:** grant actions: read to website converge workflows ([#406](https://www.github.com/werf/trdl/issues/406)) ([f567b92](https://www.github.com/werf/trdl/commit/f567b92a3b2f51729ef3609077efe5f350d084c3))
+* point trdl.yaml at the builder image rebuilt on Go 1.25.12 ([#404](https://www.github.com/werf/trdl/issues/404)) ([da5f59e](https://www.github.com/werf/trdl/commit/da5f59e32c4dd8132ecddcc6e3176273f18fa75d))
+
 ## [0.13.0](https://www.github.com/werf/trdl/compare/v0.12.3...v0.13.0) (2026-07-28)
 
 
