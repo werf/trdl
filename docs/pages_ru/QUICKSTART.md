@@ -69,7 +69,7 @@ vault write trdl-test-project/configure ... buildkitd_address=tcp://buildkitd.tr
 * `unix://` и `tcp://` — прямое gRPC-соединение с buildkitd, внешние бинарники не нужны;
 * `docker-container://` и `kube-pod://` — соединение через `docker exec`/`kubectl exec`, требуется соответствующий CLI.
 
-Если `buildkitd_address` не задан, сборка идёт через `docker buildx`, как описано выше. Развёртывание самого `buildkitd` находится вне зоны ответственности trdl: в Kubernetes это обычно Deployment или StatefulSet в отдельном namespace, метки PodSecurity которого задаёт владелец кластера, поскольку BuildKit требует ослабленный профиль seccomp/AppArmor даже в rootless-режиме.
+Если адрес задан, buildx-сборщик не создаётся, поэтому настройки `TRDL_BUILDX_DRIVER` и `TRDL_BUILDX_DRIVER_OPTS_*` выше на сборку не влияют. Если `buildkitd_address` не задан, сборка идёт через `docker buildx`, как описано выше. Развёртывание самого `buildkitd` находится вне зоны ответственности trdl: в Kubernetes это обычно Deployment или StatefulSet в отдельном namespace, метки PodSecurity которого задаёт владелец кластера, поскольку BuildKit требует ослабленный профиль seccomp/AppArmor даже в rootless-режиме.
 
 Защита канала и изоляция демона — ответственность администратора. Через это соединение плагин передаёт весь контекст сборки и все секреты сборки: секреты проекта, а если настроена подпись для macOS — сертификат подписи, его пароль и notary-ключ. Что из этого следует:
 

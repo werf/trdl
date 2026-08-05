@@ -70,7 +70,7 @@ or, as a fallback for all projects, with the `TRDL_BUILDKITD_ADDRESS` environmen
 * `unix://` and `tcp://` — direct gRPC connection to buildkitd, no external binaries required;
 * `docker-container://` and `kube-pod://` — connection through `docker exec`/`kubectl exec`, requiring the corresponding CLI.
 
-When `buildkitd_address` is not set, builds go through `docker buildx` exactly as described above. Deploying `buildkitd` itself is out of trdl's scope: on Kubernetes it is typically a Deployment or StatefulSet in a dedicated namespace whose PodSecurity labels are managed by the cluster owner, since BuildKit requires a relaxed seccomp/AppArmor profile even in rootless mode.
+With an address set, no buildx builder is created, so the `TRDL_BUILDX_DRIVER` and `TRDL_BUILDX_DRIVER_OPTS_*` settings above have no effect on the build. When `buildkitd_address` is not set, builds go through `docker buildx` exactly as described above. Deploying `buildkitd` itself is out of trdl's scope: on Kubernetes it is typically a Deployment or StatefulSet in a dedicated namespace whose PodSecurity labels are managed by the cluster owner, since BuildKit requires a relaxed seccomp/AppArmor profile even in rootless mode.
 
 Securing the connection and isolating the daemon is the administrator's responsibility. The plugin sends the entire build context and every build secret over this connection — the project build secrets and, when mac signing is configured, the signing certificate, its password and the notary key. What that requires:
 
