@@ -69,7 +69,7 @@ Follow [Effective Go](https://go.dev/doc/effective_go) and [Go Code Review Comme
 
 ## Commands (MANDATORY)
 
-ALWAYS use these `task` commands. NEVER use raw `go build`, `go test`, `go fmt`, `go vet`, or `golangci-lint` directly. trdl is a multi-module project — most commands are namespaced by module.
+ALWAYS use these `task` commands. NEVER use raw `go build`, `go test`, `go fmt`, `go vet`, or `golangci-lint` directly. trdl is a multi-module project — most commands are namespaced by module, and those namespaces exist only in the root Taskfile: ALWAYS run `task` from the repository root, never from inside `server/`, `client/`, `e2e/` or `release/`.
 
 ### Building
 - NEVER `go build` → ALWAYS use the appropriate build task:
@@ -96,6 +96,7 @@ ALWAYS use these `task` commands. NEVER use raw `go build`, `go test`, `go fmt`,
 
 ## Testing (MANDATORY)
 
+- `logboek.Context(ctx)` returns the default logger ONLY for exactly `context.Background()`; any derived context without a bound logger panics with `context is not bound with logboek logger`. In a test that reaches code logging through logboek, pass `context.Background()` unchanged or wrap it: `logboek.NewContext(ctx, logboek.DefaultLogger())`.
 - Server tests use Ginkgo/Gomega. `testify` (`assert`, `require`) is also available in the `server/` module.
 - E2E tests use Ginkgo/Gomega exclusively.
 - When writing tests as an AI agent → ALWAYS name the file `*_ai_test.go`, add `//go:build ai_tests` build tag, prefix test functions with `TestAI_`.
