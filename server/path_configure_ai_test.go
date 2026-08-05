@@ -27,6 +27,34 @@ func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_BuildxFieldsOmit
 	}
 }
 
+func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_BuildxFieldsRejectedWithBuildkitdAddress() {
+	for field, value := range map[string]interface{}{
+		fieldNameBuildxDriver:     "kubernetes",
+		fieldNameBuildxDriverOpts: []string{"namespace=trdl-build"},
+	} {
+		conflictingField := field
+		suite.Run(conflictingField, func() {
+			reqData := dataCompleteConfigurationWithoutBuildxFields()
+			reqData[fieldNameBuildkitdAddress] = "tcp://buildkitd:1234"
+			reqData[conflictingField] = value
+
+			suite.req.Operation = logical.CreateOperation
+			suite.req.Data = reqData
+
+			resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+			assert.Nil(suite.T(), err)
+			if assert.NotNil(suite.T(), resp) {
+				assert.Contains(suite.T(), resp.Error().Error(), conflictingField)
+				assert.Contains(suite.T(), resp.Error().Error(), fieldNameBuildkitdAddress)
+			}
+
+			cfg, err := getConfiguration(suite.ctx, suite.storage)
+			assert.Nil(suite.T(), err)
+			assert.Nil(suite.T(), cfg, "a rejected configuration must not be stored")
+		})
+	}
+}
+
 func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_UnsupportedBuildxDriver() {
 	reqData := dataCompleteConfiguration()
 	reqData[fieldNameBuildxDriver] = "docker"

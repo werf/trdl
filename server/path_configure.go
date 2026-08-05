@@ -121,12 +121,12 @@ func configurePath(b *Backend) *framework.Path {
 			},
 			fieldNameBuildxDriver: {
 				Type:        framework.TypeString,
-				Description: "The buildx driver to build release artifacts with: docker-container (used by default) or kubernetes. Takes precedence over the TRDL_BUILDX_DRIVER environment variable",
+				Description: "The buildx driver to build release artifacts with: docker-container (used by default) or kubernetes. Takes precedence over the TRDL_BUILDX_DRIVER environment variable, and cannot be combined with buildkitd_address",
 				Required:    false,
 			},
 			fieldNameBuildxDriverOpts: {
 				Type:        framework.TypeStringSlice,
-				Description: "The buildx driver options, one --driver-opt per element (e.g. namespace=trdl-build), passed through as is. Take precedence over the TRDL_BUILDX_DRIVER_OPTS_* environment variables",
+				Description: "The buildx driver options, one --driver-opt per element (e.g. namespace=trdl-build), passed through as is. Take precedence over the TRDL_BUILDX_DRIVER_OPTS_* environment variables, and cannot be combined with buildkitd_address",
 				Required:    false,
 			},
 		},
@@ -160,8 +160,22 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		return logical.ErrorResponse("%s validation failed: %s", fieldNameBuildkitdAddress, err), nil
 	}
 
-	if err := docker.ValidateBuildxDriver(fields.Get(fieldNameBuildxDriver).(string)); err != nil {
+	if err := docker.ValidateBuildxDriver(ctx, fields.Get(fieldNameBuildxDriver).(string)); err != nil {
 		return logical.ErrorResponse("%s validation failed: %s", fieldNameBuildxDriver, err), nil
+	}
+
+	// A buildkitd address replaces the whole buildx path, so no builder is
+	// created and the driver settings would silently do nothing.
+	if fields.Get(fieldNameBuildkitdAddress).(string) != "" {
+		conflictingField := ""
+		if fields.Get(fieldNameBuildxDriver).(string) != "" {
+			conflictingField = fieldNameBuildxDriver
+		} else if len(fields.Get(fieldNameBuildxDriverOpts).([]string)) > 0 {
+			conflictingField = fieldNameBuildxDriverOpts
+		}
+		if conflictingField != "" {
+			return logical.ErrorResponse("%s cannot be combined with %s: the buildx driver is not used when building against a buildkitd address", conflictingField, fieldNameBuildkitdAddress), nil
+		}
 	}
 
 	cfg := &configuration{

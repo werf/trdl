@@ -15,7 +15,7 @@ func TestAI_BuildxCreateArgs_ConfigurationOverridesEnv(t *testing.T) {
 	t.Setenv(buildxDriverEnv, "docker-container")
 	t.Setenv(buildxDriverOptsEnvPrefix+"IMAGE", "image=moby/buildkit:v0.12.0")
 
-	args, err := buildxCreateArgs("trdl-builder-42", "kubernetes", []string{"namespace=trdl-build", "rootless=true"})
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "kubernetes", []string{"namespace=trdl-build", "rootless=true"})
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -32,7 +32,7 @@ func TestAI_BuildxCreateArgs_EnvUsedWhenConfigurationEmpty(t *testing.T) {
 	t.Setenv(buildxDriverEnv, "kubernetes")
 	t.Setenv(buildxDriverOptsEnvPrefix+"NAMESPACE", "namespace=trdl-build")
 
-	args, err := buildxCreateArgs("trdl-builder-42", "", nil)
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -48,7 +48,7 @@ func TestAI_BuildxCreateArgs_ConfiguredDriverKeepsEnvOpts(t *testing.T) {
 	t.Setenv(buildxDriverEnv, "")
 	t.Setenv(buildxDriverOptsEnvPrefix+"NAMESPACE", "namespace=trdl-build")
 
-	args, err := buildxCreateArgs("trdl-builder-42", "kubernetes", nil)
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "kubernetes", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -63,7 +63,7 @@ func TestAI_BuildxCreateArgs_ConfiguredOptsPassedThroughAndTrimmed(t *testing.T)
 	clearDriverOptsEnv(t)
 	t.Setenv(buildxDriverEnv, "")
 
-	args, err := buildxCreateArgs("trdl-builder-42", "  kubernetes  ", []string{"  nodeselector=disktype=ssd,zone=a  ", "   "})
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "  kubernetes  ", []string{"  nodeselector=disktype=ssd,zone=a  ", "   "})
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -78,7 +78,7 @@ func TestAI_BuildxCreateArgs_UnsupportedConfiguredDriverRejected(t *testing.T) {
 	clearDriverOptsEnv(t)
 	t.Setenv(buildxDriverEnv, "kubernetes")
 
-	args, err := buildxCreateArgs("trdl-builder-42", "docker", nil)
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "docker", nil)
 
 	require.Error(t, err)
 	assert.Nil(t, args)
@@ -102,10 +102,10 @@ func TestAI_NewBuilder_UsesConfiguredDriver(t *testing.T) {
 }
 
 func TestAI_ValidateBuildxDriver(t *testing.T) {
-	assert.NoError(t, ValidateBuildxDriver(""))
-	assert.NoError(t, ValidateBuildxDriver("  "))
-	assert.NoError(t, ValidateBuildxDriver("  kubernetes  "))
-	assert.NoError(t, ValidateBuildxDriver("docker-container"))
-	assert.Error(t, ValidateBuildxDriver("docker"))
-	assert.Error(t, ValidateBuildxDriver("remote"))
+	assert.NoError(t, ValidateBuildxDriver(context.Background(), ""))
+	assert.NoError(t, ValidateBuildxDriver(context.Background(), "  "))
+	assert.NoError(t, ValidateBuildxDriver(context.Background(), "  kubernetes  "))
+	assert.NoError(t, ValidateBuildxDriver(context.Background(), "docker-container"))
+	assert.Error(t, ValidateBuildxDriver(context.Background(), "docker"))
+	assert.Error(t, ValidateBuildxDriver(context.Background(), "remote"))
 }

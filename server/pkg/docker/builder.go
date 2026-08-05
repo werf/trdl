@@ -79,7 +79,7 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 
 	builderName := fmt.Sprintf("trdl-builder-%s", opts.BuildId)
 
-	builderArgs, err := buildxCreateArgs(builderName, opts.BuildxDriver, opts.BuildxDriverOpts)
+	builderArgs, err := buildxCreateArgs(ctx, builderName, opts.BuildxDriver, opts.BuildxDriverOpts)
 	if err != nil {
 		return nil, fmt.Errorf("unable to construct buildx create args: %w", err)
 	}
@@ -100,9 +100,9 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 	}, nil
 }
 
-func buildxCreateArgs(builderName, configuredDriver string, configuredDriverOpts []string) ([]string, error) {
+func buildxCreateArgs(ctx context.Context, builderName, configuredDriver string, configuredDriverOpts []string) ([]string, error) {
 	driver, driverSource := resolveBuildxDriver(configuredDriver)
-	if err := ValidateBuildxDriver(driver); err != nil {
+	if err := ValidateBuildxDriver(ctx, driver); err != nil {
 		return nil, fmt.Errorf("buildx driver from %s: %w", driverSource, err)
 	}
 
@@ -123,7 +123,7 @@ func buildxCreateArgs(builderName, configuredDriver string, configuredDriverOpts
 // use. The build streams a tarball to stdout (`-o - -`), which the default
 // "docker" driver cannot export, so an unsupported driver is rejected here
 // instead of failing opaquely mid-build.
-func ValidateBuildxDriver(driver string) error {
+func ValidateBuildxDriver(ctx context.Context, driver string) error {
 	driver = strings.TrimSpace(driver)
 	if driver == "" || lo.Contains(supportedBuildxDrivers, driver) {
 		return nil
