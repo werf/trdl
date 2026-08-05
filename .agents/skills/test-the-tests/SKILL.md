@@ -38,6 +38,13 @@ seen fail.
 
 ## Common ways a test looks strong but isn't
 
+- **A real daemon, cluster or network is one mutation away.** A test that reaches the code
+  under test through a validation error — "the driver is rejected, so `docker buildx create`
+  is never called" — has its only barrier inside the thing being mutated. Invert that
+  validation and the test provisions real infrastructure, leaves it behind, and hangs instead
+  of failing when nothing drains what the code writes. Neutralize the escape before relying
+  on it (an empty `PATH`, an unroutable address) and drain every pipe the code writes to, so
+  the fault fails the test rather than the machine running it.
 - **The assertion holds under the bug too.** A chain assertion like
   `index(a) < index(b) < index(c)` can pass under both the fix and the regression it's
   meant to catch if the scenario doesn't force them to disagree. Reshape the scenario (add
