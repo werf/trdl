@@ -55,6 +55,27 @@ func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_BuildxFieldsReje
 	}
 }
 
+func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_RejectedCombinationKeepsConfiguration() {
+	stored := completeConfiguration()
+	err := putConfiguration(suite.ctx, suite.storage, stored)
+	assert.Nil(suite.T(), err)
+
+	reqData := dataCompleteConfigurationWithoutBuildxFields()
+	reqData[fieldNameBuildkitdAddress] = "tcp://buildkitd:1234"
+	reqData[fieldNameBuildxDriver] = "kubernetes"
+
+	suite.req.Operation = logical.UpdateOperation
+	suite.req.Data = reqData
+
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+
+	cfg, err := getConfiguration(suite.ctx, suite.storage)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), stored, cfg, "a rejected update must leave the stored configuration untouched")
+}
+
 func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_UnsupportedBuildxDriver() {
 	reqData := dataCompleteConfiguration()
 	reqData[fieldNameBuildxDriver] = "docker"
