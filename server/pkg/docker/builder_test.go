@@ -26,7 +26,7 @@ func TestBuildxCreateArgs_DefaultDriverUnchanged(t *testing.T) {
 	clearDriverOptsEnv(t)
 	t.Setenv(buildxDriverEnv, "")
 
-	args, err := buildxCreateArgs("trdl-builder-42")
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -42,7 +42,7 @@ func TestBuildxCreateArgs_KubernetesDriverWithOpts(t *testing.T) {
 	t.Setenv(buildxDriverOptsEnvPrefix+"NAMESPACE", "namespace=trdl-build")
 	t.Setenv(buildxDriverOptsEnvPrefix+"ROOTLESS", "rootless=true")
 
-	args, err := buildxCreateArgs("trdl-builder-42")
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -60,7 +60,7 @@ func TestBuildxCreateArgs_DefaultDriverWithOpts(t *testing.T) {
 	t.Setenv(buildxDriverOptsEnvPrefix+"IMAGE", "image=moby/buildkit:v0.12.0")
 	t.Setenv(buildxDriverOptsEnvPrefix+"NETWORK", "network=host")
 
-	args, err := buildxCreateArgs("trdl-builder-42")
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -76,7 +76,7 @@ func TestBuildxCreateArgs_DriverValueTrimmed(t *testing.T) {
 	clearDriverOptsEnv(t)
 	t.Setenv(buildxDriverEnv, "  kubernetes  ")
 
-	args, err := buildxCreateArgs("trdl-builder-42")
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "", nil)
 
 	require.NoError(t, err)
 	assert.Contains(t, args, "--driver=kubernetes")
@@ -86,7 +86,7 @@ func TestBuildxCreateArgs_UnsupportedDriverRejected(t *testing.T) {
 	clearDriverOptsEnv(t)
 	t.Setenv(buildxDriverEnv, "docker")
 
-	args, err := buildxCreateArgs("trdl-builder-42")
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "", nil)
 
 	require.Error(t, err)
 	assert.Nil(t, args)
@@ -99,7 +99,7 @@ func TestBuildxCreateArgs_CommaValuePassedThroughWithoutSeparator(t *testing.T) 
 	t.Setenv(buildxDriverEnv, "kubernetes")
 	t.Setenv(buildxDriverOptsEnvPrefix+"NODESELECTOR", "nodeselector=disktype=ssd,zone=a")
 
-	args, err := buildxCreateArgs("trdl-builder-42")
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -116,7 +116,7 @@ func TestBuildxCreateArgs_CustomOptsSeparator(t *testing.T) {
 	t.Setenv(buildxDriverOptsSeparatorEnv, ";")
 	t.Setenv(buildxDriverOptsEnvPrefix+"KUBE", "namespace=trdl-build;nodeselector=disktype=ssd,zone=a")
 
-	args, err := buildxCreateArgs("trdl-builder-42")
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -135,7 +135,7 @@ func TestBuildxCreateArgs_OptsOrderedByVariableName(t *testing.T) {
 	t.Setenv(buildxDriverOptsEnvPrefix+"A", "first=1")
 	t.Setenv(buildxDriverOptsEnvPrefix+"EMPTY", "  ")
 
-	args, err := buildxCreateArgs("trdl-builder-42")
+	args, err := buildxCreateArgs(context.Background(), "trdl-builder-42", "", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{
@@ -163,6 +163,11 @@ func TestSetCliArgs_ExecPathUnchanged(t *testing.T) {
 	}, args)
 }
 
+type discardLogger struct{}
+
+func (discardLogger) Info(string, ...interface{})  {}
+func (discardLogger) Error(string, ...interface{}) {}
+
 func TestNewBuilder_BuildkitdAddressSkipsBuildxProvisioning(t *testing.T) {
 	t.Setenv(buildkitdAddressEnv, "")
 
@@ -170,6 +175,7 @@ func TestNewBuilder_BuildkitdAddressSkipsBuildxProvisioning(t *testing.T) {
 		BuildId:                 "42",
 		DockerfilePathInContext: ".trdl/Dockerfile",
 		BuildkitdAddress:        "tcp://buildkitd:1234",
+		Logger:                  discardLogger{},
 	})
 
 	require.NoError(t, err)

@@ -60,7 +60,7 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_RequiredFields() {
 }
 
 func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildkitdAddress() {
-	reqData := dataCompleteConfiguration()
+	reqData := dataCompleteConfigurationWithoutBuildxFields()
 	reqData[fieldNameBuildkitdAddress] = "tcp://buildkitd:1234"
 
 	suite.req.Operation = logical.CreateOperation
@@ -76,7 +76,7 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildkitdAddress() 
 }
 
 func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_InvalidBuildkitdAddress() {
-	reqData := dataCompleteConfiguration()
+	reqData := dataCompleteConfigurationWithoutBuildxFields()
 	reqData[fieldNameBuildkitdAddress] = "ssh://buildhost"
 
 	suite.req.Operation = logical.CreateOperation
@@ -155,7 +155,19 @@ func dataCompleteConfiguration() map[string]interface{} {
 		fieldNameS3SecretAccessKey:                          cfg.S3SecretAccessKey,
 		fieldNameS3BucketName:                               cfg.S3BucketName,
 		fieldNameBuildkitdAddress:                           cfg.BuildkitdAddress,
+		fieldNameBuildxDriver:                               cfg.BuildxDriver,
+		fieldNameBuildxDriverOpts:                           cfg.BuildxDriverOpts,
 	}
+}
+
+// The buildx settings and buildkitd_address are mutually exclusive, so a request
+// exercising the address has to drop the buildx pair the fixture carries.
+func dataCompleteConfigurationWithoutBuildxFields() map[string]interface{} {
+	reqData := dataCompleteConfiguration()
+	delete(reqData, fieldNameBuildxDriver)
+	delete(reqData, fieldNameBuildxDriverOpts)
+
+	return reqData
 }
 
 func completeConfiguration() *configuration {
@@ -169,6 +181,7 @@ func completeConfiguration() *configuration {
 		S3AccessKeyID:                              "AKIAIOSFODNN7EXAMPLE",
 		S3SecretAccessKey:                          "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		S3BucketName:                               "trdl",
-		BuildkitdAddress:                           "unix:///run/buildkit/buildkitd.sock",
+		BuildxDriver:                               "kubernetes",
+		BuildxDriverOpts:                           []string{"namespace=trdl-build", "nodeselector=disktype=ssd,zone=a"},
 	}
 }

@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/fatih/structs"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/samber/lo"
 
 	"github.com/werf/trdl/server/pkg/docker"
 	"github.com/werf/trdl/server/pkg/elf_signing"
@@ -32,6 +34,8 @@ const (
 	fieldNameS3SecretAccessKey                          = "s3_secret_access_key"
 	fieldNameS3BucketName                               = "s3_bucket_name"
 	fieldNameBuildkitdAddress                           = "buildkitd_address"
+	fieldNameBuildxDriver                               = "buildx_driver"
+	fieldNameBuildxDriverOpts                           = "buildx_driver_opts"
 
 	storageKeyConfiguration = "configuration"
 )
@@ -117,6 +121,16 @@ func configurePath(b *Backend) *framework.Path {
 				Description: "An address of a running buildkitd (unix://, tcp://, docker-container:// or kube-pod:// scheme) to build release artifacts with the BuildKit client; the docker CLI is used if not set. Build secrets are sent to that daemon, and tcp:// is neither encrypted nor authenticated, so securing the channel and isolating the daemon is the administrator's responsibility",
 				Required:    false,
 			},
+			fieldNameBuildxDriver: {
+				Type:        framework.TypeString,
+				Description: "The buildx driver to build release artifacts with: docker-container (used by default) or kubernetes. Takes precedence over the TRDL_BUILDX_DRIVER environment variable, and cannot be combined with buildkitd_address",
+				Required:    false,
+			},
+			fieldNameBuildxDriverOpts: {
+				Type:        framework.TypeStringSlice,
+				Description: "The buildx driver options, one --driver-opt per element (e.g. namespace=trdl-build), passed through as is. Take precedence over the TRDL_BUILDX_DRIVER_OPTS_* environment variables, and cannot be combined with buildkitd_address",
+				Required:    false,
+			},
 		},
 		Operations: map[logical.Operation]framework.OperationHandler{
 			logical.CreateOperation: &framework.PathOperation{
@@ -148,6 +162,27 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		return logical.ErrorResponse("%s validation failed: %s", fieldNameBuildkitdAddress, err), nil
 	}
 
+	if err := docker.ValidateBuildxDriver(ctx, fields.Get(fieldNameBuildxDriver).(string)); err != nil {
+		return logical.ErrorResponse("%s validation failed: %s", fieldNameBuildxDriver, err), nil
+	}
+
+	// A buildkitd address replaces the whole buildx path, so no builder is
+	// created and the driver settings would silently do nothing. Blank values
+	// mean "not set" here, exactly as they do when the settings are resolved.
+	if strings.TrimSpace(fields.Get(fieldNameBuildkitdAddress).(string)) != "" {
+		conflictingField := ""
+		if strings.TrimSpace(fields.Get(fieldNameBuildxDriver).(string)) != "" {
+			conflictingField = fieldNameBuildxDriver
+		} else if lo.SomeBy(fields.Get(fieldNameBuildxDriverOpts).([]string), func(opt string) bool {
+			return strings.TrimSpace(opt) != ""
+		}) {
+			conflictingField = fieldNameBuildxDriverOpts
+		}
+		if conflictingField != "" {
+			return logical.ErrorResponse("%s cannot be combined with %s: the buildx driver is not used when building against a buildkitd address", conflictingField, fieldNameBuildkitdAddress), nil
+		}
+	}
+
 	cfg := &configuration{
 		GitRepoUrl:                    fields.Get(fieldNameGitRepoUrl).(string),
 		GitTrdlPath:                   fields.Get(fieldNameGitTrdlPath).(string),
@@ -161,6 +196,8 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		S3SecretAccessKey: fields.Get(fieldNameS3SecretAccessKey).(string),
 		S3BucketName:      fields.Get(fieldNameS3BucketName).(string),
 		BuildkitdAddress:  fields.Get(fieldNameBuildkitdAddress).(string),
+		BuildxDriver:      fields.Get(fieldNameBuildxDriver).(string),
+		BuildxDriverOpts:  fields.Get(fieldNameBuildxDriverOpts).([]string),
 	}
 
 	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
@@ -192,18 +229,20 @@ func (b *Backend) pathConfigureDelete(ctx context.Context, req *logical.Request,
 }
 
 type configuration struct {
-	GitRepoUrl                                 string `structs:"git_repo_url" json:"git_repo_url"`
-	GitTrdlPath                                string `structs:"git_trdl_path" json:"git_trdl_path"`
-	GitTrdlChannelsPath                        string `structs:"git_trdl_channels_path" json:"git_trdl_channels_path"`
-	GitTrdlChannelsBranch                      string `structs:"git_trdl_channels_branch" json:"git_trdl_channels_branch"`
-	InitialLastPublishedGitCommit              string `structs:"initial_last_published_git_commit" json:"initial_last_published_git_commit"`
-	RequiredNumberOfVerifiedSignaturesOnCommit int    `structs:"required_number_of_verified_signatures_on_commit" json:"required_number_of_verified_signatures_on_commit"`
-	S3Endpoint                                 string `structs:"s3_endpoint" json:"s3_endpoint"`
-	S3Region                                   string `structs:"s3_region" json:"s3_region"`
-	S3AccessKeyID                              string `structs:"s3_access_key_id" json:"s3_access_key_id"`
-	S3SecretAccessKey                          string `structs:"s3_secret_access_key" json:"s3_secret_access_key"`
-	S3BucketName                               string `structs:"s3_bucket_name" json:"s3_bucket_name"`
-	BuildkitdAddress                           string `structs:"buildkitd_address" json:"buildkitd_address"`
+	GitRepoUrl                                 string   `structs:"git_repo_url" json:"git_repo_url"`
+	GitTrdlPath                                string   `structs:"git_trdl_path" json:"git_trdl_path"`
+	GitTrdlChannelsPath                        string   `structs:"git_trdl_channels_path" json:"git_trdl_channels_path"`
+	GitTrdlChannelsBranch                      string   `structs:"git_trdl_channels_branch" json:"git_trdl_channels_branch"`
+	InitialLastPublishedGitCommit              string   `structs:"initial_last_published_git_commit" json:"initial_last_published_git_commit"`
+	RequiredNumberOfVerifiedSignaturesOnCommit int      `structs:"required_number_of_verified_signatures_on_commit" json:"required_number_of_verified_signatures_on_commit"`
+	S3Endpoint                                 string   `structs:"s3_endpoint" json:"s3_endpoint"`
+	S3Region                                   string   `structs:"s3_region" json:"s3_region"`
+	S3AccessKeyID                              string   `structs:"s3_access_key_id" json:"s3_access_key_id"`
+	S3SecretAccessKey                          string   `structs:"s3_secret_access_key" json:"s3_secret_access_key"`
+	S3BucketName                               string   `structs:"s3_bucket_name" json:"s3_bucket_name"`
+	BuildkitdAddress                           string   `structs:"buildkitd_address" json:"buildkitd_address"`
+	BuildxDriver                               string   `structs:"buildx_driver" json:"buildx_driver"`
+	BuildxDriverOpts                           []string `structs:"buildx_driver_opts" json:"buildx_driver_opts"`
 }
 
 func (cfg *configuration) RepositoryOptions() publisher.RepositoryOptions {
