@@ -1,25 +1,15 @@
 ---
 name: test-the-tests
-description: >
-  Verify that a test actually falsifies the behavior it claims to cover, via real mutation
-  (not just reading the assertions). Use right after writing or changing tests — before
-  considering that work done — when auditing an existing suite's real coverage, as a step
-  inside a broader code review, or when invoked as /test-the-tests. Passing and high
-  coverage are not evidence; a test that survives a plausible fault is weak regardless of
-  whether it currently passes.
+description: Verify a test actually falsifies the behavior it claims to cover, via real mutation. Use right after writing or changing a test, when auditing an existing suite's real coverage, or as a step inside a code review.
 ---
 
 # Test the Tests
 
-A test's value is what it would catch, not what it currently asserts. Don't stop at "does
-this read as correct" — ask:
+Passing and high coverage are not evidence, whoever wrote the test — including you, just
+now. A test proves it runs; it does not prove it discriminates correct from incorrect
+behavior. Ask:
 
 > What fault would this test fail to catch?
-
-This applies to your own tests as much as anyone else's. Writing a test and watching it
-pass proves the test *runs*; it does not prove the test *discriminates* correct from
-incorrect behavior. Treat "I just wrote this test" as no more trustworthy than "someone
-else wrote this test."
 
 ## The mutation loop
 
@@ -27,44 +17,50 @@ For each test that carries real weight (guards a fix, a regression, an invariant
 trivial getter):
 
 1. Pick the smallest plausible fault: invert a condition, change `<` to `<=`, remove a
-   validation, suppress an error, skip a side effect, hardcode/return a constant, revert to
-   the prior (buggy) implementation.
-2. Apply it directly to the implementation.
-3. Run the test. It must fail, with a message that points at the actual broken behavior —
-   not a crash unrelated to the property under test.
-4. Revert the fault immediately, confirm the tree is clean (`git diff`/`git status`), and
-   confirm the suite passes again.
+   validation, suppress an error, skip a side effect, hardcode a return value, revert to
+   the prior (buggy) behavior.
+2. Apply it to the implementation, run the test, confirm it fails for the right reason —
+   not an unrelated crash.
+3. Revert immediately, confirm the tree is clean (`git status`/`git diff`), confirm the
+   suite passes again. NEVER leave mutated code in the repository between steps.
 
-If running the mutation isn't practical (expensive integration setup, no easy revert),
-name the smallest mutation that should be tried instead of skipping the exercise — that
-name is itself the finding when no one can say what it is.
+Copy the file before mutating it (`cp f f.bak`) and restore from the copy. NEVER restore with
+`git checkout`/`git restore` while the work under test is still uncommitted — those discard the
+work along with the mutation. Commit first, or use the copy.
 
-Do not leave mutated code in the repository, even temporarily between steps — always
-restore from a real diff/backup and re-verify a clean tree before moving on.
+If running the mutation isn't practical, name the smallest mutation that should be tried
+instead of skipping the exercise — that name is itself the finding.
+
+"Not practical" is a conclusion, not an assumption — establish it as `AGENTS.md` requires
+(is the runtime actually missing, is a Linux host available) before falling back to naming
+the mutation. A "can't run it here" that turns out to be wrong ships tests nobody has ever
+seen fail.
 
 ## Common ways a test looks strong but isn't
 
-- **The assertion is satisfied by more than the fix.** A chain assertion like
-  `index(a) < index(b) < index(c)` can hold under both the correct implementation and the
-  bug it's meant to catch, if the specific scenario doesn't force them to disagree. Reshape
-  the scenario (add a case whose correct answer differs from what the bug would produce)
-  rather than trusting that "the numbers came out right" once.
-- **It re-asserts a second recording of the same event instead of the event itself.**
-  Comparing two independently-recorded orderings (e.g. two separate mutex-protected
-  append lists) is often racier and weaker than asserting a property that's true by
-  construction (a monotonic counter, a guaranteed dependency order).
-- **It only exercises the unit in isolation**, never the real wiring that a regression
-  would actually break (e.g. calling a scheduler's internal methods directly instead of
-  going through the real caller that's supposed to invoke them). Prefer driving the actual
-  entry point end-to-end when the risk is in the wiring, not just the unit.
-- **It asserts implementation trivia** (a mock was called N times, an internal helper ran)
-  instead of externally observable behavior a user or caller would notice.
+- **The assertion holds under the bug too.** A chain assertion like
+  `index(a) < index(b) < index(c)` can pass under both the fix and the regression it's
+  meant to catch if the scenario doesn't force them to disagree. Reshape the scenario (add
+  a case whose correct answer differs from what the bug would produce) instead of trusting
+  a single run.
+- **It re-asserts a second recording of the same event** instead of a property true by
+  construction — comparing two independently-recorded orderings is racier and weaker than
+  asserting a monotonic counter or a guaranteed dependency order.
+- **It exercises the unit in isolation**, never the real wiring a regression would actually
+  break. Prefer driving the real entry point end-to-end when the risk is in the wiring.
+- **It asserts implementation trivia** (mock called N times, internal helper ran) instead
+  of externally observable behavior.
 - **Coverage number, not falsifiability.** A line being executed says nothing about whether
   a wrong value on that line would be caught.
+- **An extended test quietly drops what the old one proved.** Adding cases to a fixture can
+  remove the conflict that made an earlier property observable. After editing an existing
+  test, re-run the mutations the previous version caught, not only the new ones.
+- **Ordered behavior tested without conflicts.** For precedence lists and fallback chains,
+  a fixture with one candidate per level survives swapping adjacent candidates. Give every
+  level two candidates whose effects differ.
 
 ## Output
 
-For each test you verified this way, state: the fault you tried, whether it failed as
-expected, and if not, the smallest concrete change to the test that would make it
-discriminate. For tests you didn't (couldn't) mutate, name the smallest fault that should
-be tried next, rather than asserting confidence without it.
+For each test verified this way: the fault tried, whether it failed as expected, and if
+not, the smallest change that would make it discriminate. For tests not mutated, name the
+smallest fault that should be tried next — don't assert confidence without it.
