@@ -61,6 +61,50 @@ jobs:
           name: unit_coverage
           path: tests_coverage
 
+  ai_server:
+    name: AI-authored tests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+
+      - name: Install Task
+        uses: go-task/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gpg
+          task --yes server:deps:install:c
+
+      - name: Set up git config
+        run: task --yes ci:setup:git-config
+
+      - name: Install 3p-git-signatures
+        run: task --yes ci:install:3p-git-signatures
+
+      - name: Install ginkgo
+        run: task --yes deps:install:ginkgo
+
+      - name: Start buildkitd
+        run: |
+          docker run --detach --name trdl-buildkitd --privileged \
+            --publish 1234:1234 moby/buildkit:v0.31.2 --addr tcp://0.0.0.0:1234
+          timeout 120 bash -c 'until docker exec trdl-buildkitd \
+            buildctl --addr tcp://127.0.0.1:1234 debug workers >/dev/null 2>&1; do sleep 2; done'
+
+      - name: Test
+        env:
+          TRDL_SMOKE_BUILDKITD_ADDRESS: tcp://127.0.0.1:1234
+        run: task --yes server:test:ai
+
   unit_client:
     name: Client unit tests
     runs-on: ubuntu-22.04
@@ -158,6 +202,7 @@ jobs:
     if: always()
     needs:
       - unit_server
+      - ai_server
       - unit_client
       - e2e_tests
       - upload_coverage
