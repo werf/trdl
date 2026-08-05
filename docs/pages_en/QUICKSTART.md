@@ -62,7 +62,7 @@ The same two settings are also available per project in the plugin configuration
 
 Each of the two settings is resolved on its own: the plugin configuration takes precedence over the environment, and the environment takes precedence over the default `docker-container` driver with no options. A field left out of `configure`, or set to an empty value, means "not configured" and falls back to the environment — it does not override it with an empty value. To build with no driver options at all while the environment defines some, unset those variables.
 
-Neither field can be combined with `buildkitd_address` (see below): that setting replaces the buildx path entirely, no builder is created, and the driver settings would have no effect — so `configure` rejects the combination instead of ignoring them.
+Neither field can be combined with `buildkitd_address` (see below): that setting replaces the buildx path entirely, no builder is created, and the driver settings would have no effect — so `configure` rejects the combination instead of ignoring them. The check covers one `configure` call only. A `TRDL_BUILDKITD_ADDRESS` set on the Vault process also wins over these settings, and since it is process-wide and can be changed after a project is configured, it cannot be rejected at that point: the build reports the settings as unused in the plugin log instead.
 
 Notes on the `kubernetes` driver:
 

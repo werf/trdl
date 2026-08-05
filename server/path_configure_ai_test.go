@@ -55,6 +55,35 @@ func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_BuildxFieldsReje
 	}
 }
 
+func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_BlankValuesAreNotACombination() {
+	// Resolution treats blank values as "not set", so the conflict check has to
+	// agree with it instead of rejecting on the raw field value.
+	for name, reqData := range map[string]map[string]interface{}{
+		"blank address": func() map[string]interface{} {
+			data := dataCompleteConfiguration()
+			data[fieldNameBuildkitdAddress] = "   "
+
+			return data
+		}(),
+		"blank driver opts": func() map[string]interface{} {
+			data := dataCompleteConfigurationWithoutBuildxFields()
+			data[fieldNameBuildkitdAddress] = "tcp://buildkitd:1234"
+			data[fieldNameBuildxDriverOpts] = []string{"   "}
+
+			return data
+		}(),
+	} {
+		suite.Run(name, func() {
+			suite.req.Operation = logical.CreateOperation
+			suite.req.Data = reqData
+
+			resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+			assert.Nil(suite.T(), err)
+			assert.Nil(suite.T(), resp)
+		})
+	}
+}
+
 func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_RejectedCombinationKeepsConfiguration() {
 	stored := completeConfiguration()
 	err := putConfiguration(suite.ctx, suite.storage, stored)

@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/fatih/structs"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/samber/lo"
 
 	"github.com/werf/trdl/server/pkg/docker"
 	"github.com/werf/trdl/server/pkg/elf_signing"
@@ -165,12 +167,15 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 	}
 
 	// A buildkitd address replaces the whole buildx path, so no builder is
-	// created and the driver settings would silently do nothing.
-	if fields.Get(fieldNameBuildkitdAddress).(string) != "" {
+	// created and the driver settings would silently do nothing. Blank values
+	// mean "not set" here, exactly as they do when the settings are resolved.
+	if strings.TrimSpace(fields.Get(fieldNameBuildkitdAddress).(string)) != "" {
 		conflictingField := ""
-		if fields.Get(fieldNameBuildxDriver).(string) != "" {
+		if strings.TrimSpace(fields.Get(fieldNameBuildxDriver).(string)) != "" {
 			conflictingField = fieldNameBuildxDriver
-		} else if len(fields.Get(fieldNameBuildxDriverOpts).([]string)) > 0 {
+		} else if lo.SomeBy(fields.Get(fieldNameBuildxDriverOpts).([]string), func(opt string) bool {
+			return strings.TrimSpace(opt) != ""
+		}) {
 			conflictingField = fieldNameBuildxDriverOpts
 		}
 		if conflictingField != "" {

@@ -140,6 +140,27 @@ func TestAI_MacSigningSecrets_PasswordlessCertificateIsStillServed(t *testing.T)
 	assert.Contains(t, GetMacSigningCommandMounts(credentials), "id="+passwordId)
 }
 
+func TestAI_NewBuilder_ReportsUnusedBuildxSettingsInBuildkitMode(t *testing.T) {
+	t.Setenv(buildkitdAddressEnv, "tcp://buildkitd:1234")
+	logger := &recordingLogger{}
+
+	// The address from the environment cannot be rejected at configure time, so
+	// the operator has to learn from the build log why the driver is unused.
+	builder, err := NewBuilder(context.Background(), &NewBuilderOpts{
+		BuildId:                 "42",
+		DockerfilePathInContext: ".trdl/Dockerfile",
+		BuildxDriver:            "kubernetes",
+		Logger:                  logger,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "tcp://buildkitd:1234", builder.buildkitdAddress)
+
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+	assert.Contains(t, strings.Join(logger.lines, "\n"), "buildx driver settings are not used")
+}
+
 func TestAI_Build_UnblocksContextProducerWhenBuildFails(t *testing.T) {
 	// A one-byte pipe buffer puts the producer in the state a real context reaches
 	// once it outgrows the buffer: blocked on write until the build drains it.

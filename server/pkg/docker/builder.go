@@ -69,6 +69,13 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 		return nil, err
 	}
 	if buildkitdAddress != "" {
+		// configure rejects both settings written together, but the address can
+		// also come from the environment, and then the driver settings are
+		// unreachable rather than rejected.
+		if opts.BuildxDriver != "" || len(opts.BuildxDriverOpts) > 0 {
+			opts.Logger.Info(fmt.Sprintf("Building against buildkitd at %q, the configured buildx driver settings are not used", buildkitdAddress))
+		}
+
 		return &Builder{
 			buildkitdAddress: buildkitdAddress,
 			dockerfilePath:   opts.DockerfilePathInContext,
