@@ -12,8 +12,7 @@ trdl use REPO GROUP [CHANNEL] | REPO VERSION [options]
   # Source script in a shell
   $ . $(trdl use repo_name 1.2 ea)
 
-  # Pin an explicit version instead of a group/channel
-  # (an exact version must be prefixed with "v", otherwise it is treated as a group)
+  # Pin an exact version (prefix it with "v"; a plain number like "1.2" is a GROUP)
   $ . $(trdl use repo_name v1.2.3)
 
   # Pin a semver constraint (resolves to the greatest matching release)
