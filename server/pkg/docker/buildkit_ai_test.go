@@ -3,8 +3,10 @@
 package docker
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -19,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/werf/logboek"
+	"github.com/werf/trdl/server/pkg/mac_signing"
 )
 
 func TestAI_BuildkitSessionAttachables_ServeContextSecretsAndRegistryAuth(t *testing.T) {
@@ -88,6 +91,53 @@ func TestAI_LogWriter_WaitReturnsOnlyAfterEveryLineIsLogged(t *testing.T) {
 	logger.mu.Lock()
 	defer logger.mu.Unlock()
 	assert.Equal(t, []string{"first", "second", "third"}, logger.lines)
+}
+
+func TestAI_LogWriter_OversizedLineDoesNotBlockTheBuild(t *testing.T) {
+	logger := &recordingLogger{}
+	writer, waitForLogs := logWriter(logger)
+
+	writeErr := make(chan error, 1)
+	go func() {
+		if _, err := writer.Write(append(bytes.Repeat([]byte("x"), maxLogLineSize+1), '\n')); err != nil {
+			writeErr <- err
+			return
+		}
+		_, err := io.WriteString(writer, "line after the oversized one\n")
+		writeErr <- err
+	}()
+
+	select {
+	case err := <-writeErr:
+		require.NoError(t, err)
+	case <-time.After(30 * time.Second):
+		t.Fatal("the build is blocked writing its output after an oversized log line")
+	}
+	waitForLogs()
+
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+	assert.Contains(t, strings.Join(logger.lines, "\n"), "unable to read build output",
+		"dropping the rest of the build output has to be reported")
+}
+
+func TestAI_MacSigningSecrets_PasswordlessCertificateIsStillServed(t *testing.T) {
+	credentials := &mac_signing.Credentials{
+		Certificate:  "cert-data",
+		NotaryKeyID:  "key-id",
+		NotaryKey:    "key-data",
+		NotaryIssuer: "issuer-id",
+	}
+	passwordId := mac_signing.MacSigningCertificateName + "_password"
+
+	// The generated Dockerfile mounts the password unconditionally and reads it
+	// under `set -e`, so both build paths have to serve it even when it is empty.
+	data := buildkitSecretsData(nil, credentials)
+	if assert.Contains(t, data, passwordId) {
+		assert.Empty(t, data[passwordId])
+	}
+
+	assert.Contains(t, GetMacSigningCommandMounts(credentials), "id="+passwordId)
 }
 
 func TestAI_Build_UnblocksContextProducerWhenBuildFails(t *testing.T) {
