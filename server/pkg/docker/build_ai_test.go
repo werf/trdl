@@ -4,6 +4,7 @@ package docker
 
 import (
 	"context"
+	"io"
 	"testing"
 
 	"github.com/djherbis/buffer"
@@ -17,17 +18,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The build stops at builder creation, before any docker invocation, so the
-// error proves that the configured driver traveled from the release options
-// all the way into the buildx arguments.
+// The error proves that the configured driver traveled from the release options
+// all the way into the buildx arguments, beating the environment on the way.
+// The build is expected to stop at driver validation, before any docker
+// invocation, but nothing in the production code guarantees that, so an empty
+// PATH keeps a regression from provisioning a real builder and the artifacts
+// pipe is drained so it cannot deadlock the test binary either.
 func TestAI_BuildReleaseArtifacts_ForwardsConfiguredDriver(t *testing.T) {
 	clearDriverOptsEnv(t)
 	t.Setenv(buildxDriverEnv, "kubernetes")
+	t.Setenv("PATH", t.TempDir())
 
 	gitRepo, err := git.Init(memory.NewStorage(), memfs.New())
 	require.NoError(t, err)
 
-	_, tarWriter := nio.Pipe(buffer.New(1024))
+	tarReader, tarWriter := nio.Pipe(buffer.New(1024))
+	go func() { _, _ = io.Copy(io.Discard, tarReader) }()
 
 	err = BuildReleaseArtifacts(context.Background(), BuildReleaseArtifactsOpts{
 		FromImage:    "alpine",

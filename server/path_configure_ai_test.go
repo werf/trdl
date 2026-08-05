@@ -55,6 +55,29 @@ func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_BuildxFieldsReje
 	}
 }
 
+func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_OmittedBuildxFieldsWipeStoredOnes() {
+	err := putConfiguration(suite.ctx, suite.storage, completeConfiguration())
+	assert.Nil(suite.T(), err)
+
+	// configure replaces the whole document, so omitting a field clears it: the
+	// only way back to the buildx defaults is a write without these fields.
+	reqData := dataCompleteConfigurationWithoutBuildxFields()
+
+	suite.req.Operation = logical.UpdateOperation
+	suite.req.Data = reqData
+
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), resp)
+
+	cfg, err := getConfiguration(suite.ctx, suite.storage)
+	assert.Nil(suite.T(), err)
+	if assert.NotNil(suite.T(), cfg) {
+		assert.Empty(suite.T(), cfg.BuildxDriver)
+		assert.Empty(suite.T(), cfg.BuildxDriverOpts)
+	}
+}
+
 func (suite *PathConfigureCallbacksSuite) TestAI_CreateOrUpdate_BlankValuesAreNotACombination() {
 	// Resolution treats blank values as "not set", so the conflict check has to
 	// agree with it instead of rejecting on the raw field value.

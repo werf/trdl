@@ -90,6 +90,10 @@ func TestAI_BuildxCreateArgs_UnsupportedConfiguredDriverRejected(t *testing.T) {
 func TestAI_NewBuilder_UsesConfiguredDriver(t *testing.T) {
 	clearDriverOptsEnv(t)
 	t.Setenv(buildxDriverEnv, "kubernetes")
+	// Validation is expected to reject the driver before docker is invoked; an
+	// empty PATH makes sure a regression fails the test instead of provisioning
+	// a real builder on the machine running it.
+	t.Setenv("PATH", t.TempDir())
 
 	builder, err := NewBuilder(context.Background(), &NewBuilderOpts{
 		BuildId:      "42",

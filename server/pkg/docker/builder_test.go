@@ -163,6 +163,11 @@ func TestSetCliArgs_ExecPathUnchanged(t *testing.T) {
 	}, args)
 }
 
+type discardLogger struct{}
+
+func (discardLogger) Info(string, ...interface{})  {}
+func (discardLogger) Error(string, ...interface{}) {}
+
 func TestNewBuilder_BuildkitdAddressSkipsBuildxProvisioning(t *testing.T) {
 	t.Setenv(buildkitdAddressEnv, "")
 
@@ -170,6 +175,7 @@ func TestNewBuilder_BuildkitdAddressSkipsBuildxProvisioning(t *testing.T) {
 		BuildId:                 "42",
 		DockerfilePathInContext: ".trdl/Dockerfile",
 		BuildkitdAddress:        "tcp://buildkitd:1234",
+		Logger:                  discardLogger{},
 	})
 
 	require.NoError(t, err)
