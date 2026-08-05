@@ -146,6 +146,9 @@ func resolveBuildxDriver(configuredDriver string) (string, string) {
 	return defaultBuildxDriver, "the default"
 }
 
+// An empty configured list means the setting is not in use, not "run with no
+// options": `configure` cannot tell an omitted field from an explicitly empty
+// one, so both fall back to the environment.
 func resolveBuildxDriverOpts(configuredDriverOpts []string) []string {
 	var opts []string
 	for _, configuredOpt := range configuredDriverOpts {

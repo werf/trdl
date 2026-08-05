@@ -60,7 +60,7 @@ The same two settings are also available per project in the plugin configuration
 }
 ```
 
-Each of the two settings is resolved on its own: the plugin configuration takes precedence over the environment, and the environment takes precedence over the default `docker-container` driver with no options.
+Each of the two settings is resolved on its own: the plugin configuration takes precedence over the environment, and the environment takes precedence over the default `docker-container` driver with no options. A field left out of `configure`, or set to an empty value, means "not configured" and falls back to the environment — it does not override it with an empty value. To build with no driver options at all while the environment defines some, unset those variables.
 
 Notes on the `kubernetes` driver:
 
