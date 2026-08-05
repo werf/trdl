@@ -51,23 +51,23 @@ type Builder struct {
 }
 
 type NewBuilderOpts struct {
-	BuildId               string
-	ContextPath           string
-	BuildkitdAddress      string
-	Secrets               []secrets.Secret
-	MacSigningCredentials *mac_signing.Credentials
-	Logger                Logger
+	BuildId                 string
+	DockerfilePathInContext string
+	BuildkitdAddress        string
+	Secrets                 []secrets.Secret
+	MacSigningCredentials   *mac_signing.Credentials
+	Logger                  Logger
 }
 
 func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
-	buildkitdAddress, err := resolveBuildkitdAddress(opts.BuildkitdAddress)
+	buildkitdAddress, err := resolveBuildkitdAddress(ctx, opts.BuildkitdAddress)
 	if err != nil {
 		return nil, err
 	}
 	if buildkitdAddress != "" {
 		return &Builder{
 			buildkitdAddress: buildkitdAddress,
-			dockerfilePath:   opts.ContextPath,
+			dockerfilePath:   opts.DockerfilePathInContext,
 			secretsData:      buildkitSecretsData(opts.Secrets, opts.MacSigningCredentials),
 			logger:           opts.Logger,
 		}, nil
@@ -84,7 +84,7 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 		return nil, fmt.Errorf("builder setup failed: %w", err)
 	}
 
-	args, err := setCliArgs(builderName, opts.ContextPath, opts.Secrets, opts.MacSigningCredentials)
+	args, err := setCliArgs(builderName, opts.DockerfilePathInContext, opts.Secrets, opts.MacSigningCredentials)
 	if err != nil {
 		return nil, fmt.Errorf("unable to set cli args: %w", err)
 	}
@@ -157,6 +157,10 @@ func parseDriverOpts(raw, separator string) []string {
 }
 
 func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter) error {
+	// A build that fails before draining the context leaves the goroutine filling
+	// it blocked on write forever; closing the reader here fails those writes.
+	defer contextReader.Close()
+
 	if b.buildkitdAddress != "" {
 		return buildWithBuildkit(ctx, b.buildkitdAddress, b.dockerfilePath, b.secretsData, contextReader, tarWriter, b.logger)
 	}
@@ -167,8 +171,10 @@ func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarW
 	cmd.Stdout = tarWriter
 	cmd.Stdin = contextReader
 
-	multiWriter := io.MultiWriter(logboek.Context(ctx).OutStream(), logWriter(b.logger))
-	cmd.Stderr = multiWriter
+	logPipe, waitForLogs := logWriter(b.logger)
+	defer waitForLogs()
+
+	cmd.Stderr = io.MultiWriter(logboek.Context(ctx).OutStream(), logPipe)
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("build failed: %w", err)
@@ -191,9 +197,15 @@ func (b *Builder) Remove(ctx context.Context) error {
 	return nil
 }
 
-func logWriter(logger Logger) *io.PipeWriter {
+// The returned wait function closes the writer and returns once every buffered
+// line has reached the logger, so the tail of a build log is not lost when the
+// build finishes.
+func logWriter(logger Logger) (*io.PipeWriter, func()) {
 	pr, pw := io.Pipe()
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
+
 		scanner := bufio.NewScanner(pr)
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -208,7 +220,10 @@ func logWriter(logger Logger) *io.PipeWriter {
 		}
 	}()
 
-	return pw
+	return pw, func() {
+		pw.Close()
+		<-done
+	}
 }
 
 func setCliArgs(builder, serviceDockerfilePathInContext string, secrets []secrets.Secret, macSigningCredentials *mac_signing.Credentials) ([]string, error) {

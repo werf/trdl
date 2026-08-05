@@ -167,9 +167,9 @@ func TestNewBuilder_BuildkitdAddressSkipsBuildxProvisioning(t *testing.T) {
 	t.Setenv(buildkitdAddressEnv, "")
 
 	builder, err := NewBuilder(context.Background(), &NewBuilderOpts{
-		BuildId:          "42",
-		ContextPath:      ".trdl/Dockerfile",
-		BuildkitdAddress: "tcp://buildkitd:1234",
+		BuildId:                 "42",
+		DockerfilePathInContext: ".trdl/Dockerfile",
+		BuildkitdAddress:        "tcp://buildkitd:1234",
 	})
 
 	require.NoError(t, err)

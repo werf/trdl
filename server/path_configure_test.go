@@ -169,5 +169,6 @@ func completeConfiguration() *configuration {
 		S3AccessKeyID:                              "AKIAIOSFODNN7EXAMPLE",
 		S3SecretAccessKey:                          "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		S3BucketName:                               "trdl",
+		BuildkitdAddress:                           "unix:///run/buildkit/buildkitd.sock",
 	}
 }

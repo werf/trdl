@@ -7,12 +7,14 @@ import (
 	"os"
 	"strings"
 
+	"github.com/docker/cli/cli/config"
 	bkclient "github.com/moby/buildkit/client"
 	// Blank imports register the docker-container:// and kube-pod:// transports
 	// in the BuildKit client; unix:// and tcp:// are handled natively.
 	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
 	_ "github.com/moby/buildkit/client/connhelper/kubepod"
 	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/session/auth/authprovider"
 	"github.com/moby/buildkit/session/secrets/secretsprovider"
 	"github.com/moby/buildkit/session/upload/uploadprovider"
 	"github.com/moby/buildkit/util/progress/progressui"
@@ -28,26 +30,29 @@ const buildkitdAddressEnv = "TRDL_BUILDKITD_ADDRESS"
 
 var supportedBuildkitdAddressSchemes = []string{"unix", "tcp", "docker-container", "kube-pod"}
 
-func resolveBuildkitdAddress(configuredAddress string) (string, error) {
+func resolveBuildkitdAddress(ctx context.Context, configuredAddress string) (string, error) {
 	address := strings.TrimSpace(configuredAddress)
 	if address == "" {
 		address = strings.TrimSpace(os.Getenv(buildkitdAddressEnv))
 	}
-	if err := ValidateBuildkitdAddress(address); err != nil {
+	if err := ValidateBuildkitdAddress(ctx, address); err != nil {
 		return "", err
 	}
 	return address, nil
 }
 
-func ValidateBuildkitdAddress(address string) error {
+func ValidateBuildkitdAddress(ctx context.Context, address string) error {
 	address = strings.TrimSpace(address)
 	if address == "" {
 		return nil
 	}
 
-	scheme, _, found := strings.Cut(address, "://")
+	scheme, endpoint, found := strings.Cut(address, "://")
 	if !found || !lo.Contains(supportedBuildkitdAddressSchemes, scheme) {
 		return fmt.Errorf("unsupported buildkitd address %q: expected scheme to be one of %s", address, strings.Join(supportedBuildkitdAddressSchemes, ", "))
+	}
+	if strings.TrimSpace(endpoint) == "" {
+		return fmt.Errorf("invalid buildkitd address %q: no endpoint after the %s:// scheme", address, scheme)
 	}
 
 	return nil
@@ -73,6 +78,21 @@ func buildkitSecretsData(buildSecrets []secrets.Secret, macSigningCredentials *m
 	return data
 }
 
+// The docker CLI path gets registry credentials from the docker config through
+// buildx; the BuildKit client has to attach the same provider itself, otherwise
+// image-resolve-mode=pull can only reach public registries.
+func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprovider.Uploader, secretsData map[string][]byte) []session.Attachable {
+	dockerConfig := config.LoadDefaultConfigFile(logboek.Context(ctx).OutStream())
+
+	return []session.Attachable{
+		contextUploader,
+		secretsprovider.FromMap(secretsData),
+		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
+			AuthConfigProvider: authprovider.LoadAuthConfig(dockerConfig),
+		}),
+	}
+}
+
 func buildkitFrontendAttrs(dockerfilePath, contextStreamURL string) map[string]string {
 	return map[string]string{
 		"filename":           dockerfilePath,
@@ -93,7 +113,7 @@ func buildWithBuildkit(ctx context.Context, address, dockerfilePath string, secr
 	solveOpt := bkclient.SolveOpt{
 		Frontend:      "dockerfile.v0",
 		FrontendAttrs: buildkitFrontendAttrs(dockerfilePath, contextUploader.Add(contextReader)),
-		Session:       []session.Attachable{contextUploader, secretsprovider.FromMap(secretsData)},
+		Session:       buildkitSessionAttachables(ctx, contextUploader, secretsData),
 		Exports: []bkclient.ExportEntry{
 			{
 				Type: bkclient.ExporterTar,
@@ -104,8 +124,8 @@ func buildWithBuildkit(ctx context.Context, address, dockerfilePath string, secr
 		},
 	}
 
-	progressWriter := logWriter(logger)
-	defer progressWriter.Close()
+	progressWriter, waitForLogs := logWriter(logger)
+	defer waitForLogs()
 
 	display, err := progressui.NewDisplay(io.MultiWriter(logboek.Context(ctx).OutStream(), progressWriter), progressui.PlainMode)
 	if err != nil {
@@ -132,6 +152,8 @@ func buildWithBuildkit(ctx context.Context, address, dockerfilePath string, secr
 		return err
 	}
 
+	// The tar exporter closes the writer it was handed as soon as the export
+	// stream ends, so this only guarantees EOF for the reader if it did not.
 	if err := tarWriter.Close(); err != nil {
 		return fmt.Errorf("unable to close tar writer: %w", err)
 	}

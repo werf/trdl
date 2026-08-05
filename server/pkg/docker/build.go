@@ -99,12 +99,12 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 	logger.Info("Building docker image with artifacts")
 
 	builder, err := NewBuilder(ctx, &NewBuilderOpts{
-		BuildId:               buildId,
-		ContextPath:           serviceDockerfilePathInContext,
-		BuildkitdAddress:      opts.BuildkitdAddress,
-		Secrets:               secrets,
-		MacSigningCredentials: credentials,
-		Logger:                logger,
+		BuildId:                 buildId,
+		DockerfilePathInContext: serviceDockerfilePathInContext,
+		BuildkitdAddress:        opts.BuildkitdAddress,
+		Secrets:                 secrets,
+		MacSigningCredentials:   credentials,
+		Logger:                  logger,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to create docker builder: %w", err)

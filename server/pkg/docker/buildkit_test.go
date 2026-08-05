@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +14,7 @@ import (
 func TestResolveBuildkitdAddress_EmptyKeepsExecPath(t *testing.T) {
 	t.Setenv(buildkitdAddressEnv, "")
 
-	address, err := resolveBuildkitdAddress("")
+	address, err := resolveBuildkitdAddress(context.Background(), "")
 
 	require.NoError(t, err)
 	assert.Empty(t, address)
@@ -22,7 +23,7 @@ func TestResolveBuildkitdAddress_EmptyKeepsExecPath(t *testing.T) {
 func TestResolveBuildkitdAddress_ConfiguredWinsOverEnv(t *testing.T) {
 	t.Setenv(buildkitdAddressEnv, "tcp://from-env:1234")
 
-	address, err := resolveBuildkitdAddress("  unix:///run/buildkit/buildkitd.sock  ")
+	address, err := resolveBuildkitdAddress(context.Background(), "  unix:///run/buildkit/buildkitd.sock  ")
 
 	require.NoError(t, err)
 	assert.Equal(t, "unix:///run/buildkit/buildkitd.sock", address)
@@ -31,7 +32,7 @@ func TestResolveBuildkitdAddress_ConfiguredWinsOverEnv(t *testing.T) {
 func TestResolveBuildkitdAddress_EnvFallback(t *testing.T) {
 	t.Setenv(buildkitdAddressEnv, "tcp://from-env:1234")
 
-	address, err := resolveBuildkitdAddress("")
+	address, err := resolveBuildkitdAddress(context.Background(), "")
 
 	require.NoError(t, err)
 	assert.Equal(t, "tcp://from-env:1234", address)
@@ -40,23 +41,23 @@ func TestResolveBuildkitdAddress_EnvFallback(t *testing.T) {
 func TestResolveBuildkitdAddress_UnsupportedSchemeRejected(t *testing.T) {
 	t.Setenv(buildkitdAddressEnv, "")
 
-	address, err := resolveBuildkitdAddress("ssh://buildhost")
+	address, err := resolveBuildkitdAddress(context.Background(), "ssh://buildhost")
 
 	require.Error(t, err)
 	assert.Empty(t, address)
 }
 
 func TestValidateBuildkitdAddress(t *testing.T) {
-	require.NoError(t, ValidateBuildkitdAddress(""))
-	require.NoError(t, ValidateBuildkitdAddress("   "))
-	require.NoError(t, ValidateBuildkitdAddress("unix:///run/buildkit/buildkitd.sock"))
-	require.NoError(t, ValidateBuildkitdAddress("tcp://buildkitd:1234"))
-	require.NoError(t, ValidateBuildkitdAddress("docker-container://buildkitd"))
-	require.NoError(t, ValidateBuildkitdAddress("kube-pod://buildkitd-0?namespace=trdl-build"))
+	require.NoError(t, ValidateBuildkitdAddress(context.Background(), ""))
+	require.NoError(t, ValidateBuildkitdAddress(context.Background(), "   "))
+	require.NoError(t, ValidateBuildkitdAddress(context.Background(), "unix:///run/buildkit/buildkitd.sock"))
+	require.NoError(t, ValidateBuildkitdAddress(context.Background(), "tcp://buildkitd:1234"))
+	require.NoError(t, ValidateBuildkitdAddress(context.Background(), "docker-container://buildkitd"))
+	require.NoError(t, ValidateBuildkitdAddress(context.Background(), "kube-pod://buildkitd-0?namespace=trdl-build"))
 
-	require.Error(t, ValidateBuildkitdAddress("buildkitd:1234"))
-	require.Error(t, ValidateBuildkitdAddress("ssh://buildhost"))
-	require.Error(t, ValidateBuildkitdAddress("podman-container://buildkitd"))
+	require.Error(t, ValidateBuildkitdAddress(context.Background(), "buildkitd:1234"))
+	require.Error(t, ValidateBuildkitdAddress(context.Background(), "ssh://buildhost"))
+	require.Error(t, ValidateBuildkitdAddress(context.Background(), "podman-container://buildkitd"))
 }
 
 func TestBuildkitFrontendAttrs(t *testing.T) {
