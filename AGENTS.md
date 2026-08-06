@@ -99,9 +99,8 @@ ALWAYS use these `task` commands. NEVER use raw `go build`, `go test`, `go fmt`,
 - `logboek.Context(ctx)` returns the default logger ONLY for exactly `context.Background()`; any derived context without a bound logger panics with `context is not bound with logboek logger`. In a test that reaches code logging through logboek, pass `context.Background()` unchanged or wrap it: `logboek.NewContext(ctx, logboek.DefaultLogger())`.
 - Server tests use Ginkgo/Gomega. `testify` (`assert`, `require`) is also available in the `server/` module.
 - E2E tests use Ginkgo/Gomega exclusively.
-- When writing tests as an AI agent → ALWAYS name the file `*_ai_test.go`, add `//go:build ai_tests` build tag, prefix test functions with `TestAI_`.
 - ALWAYS place tests alongside source files, not in a separate directory.
-- Test helpers go in `helpers_test.go` (or `helpers_ai_test.go` for AI-written helpers).
+- Test helpers go in `helpers_test.go`.
 - Test fixtures go in `testdata/` subdirectory next to the tests.
 
 ## PR review guidelines (MANDATORY)

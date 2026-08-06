@@ -61,7 +61,7 @@ Classify each risk as Technical, Security, UX/Product, or Operational, and repor
 - Persisted formats (TUF metadata and keys, release bundles, S3/MinIO storage layout) need backward compatibility.
 - `*_linux.go` / `*_others.go` pairs and the Linux-only server plugin must stay consistent; a reviewer on macOS cannot compile the CGO server side at all.
 - Use `samber/lo` helpers only in `server/` — they are not available in `client/` or `release/`.
-- Build and test only via `task` commands, never raw Go tools. AI-authored tests must be `*_ai_test.go`, tagged `//go:build ai_tests`, with `TestAI_`-prefixed functions.
+- Build and test only via `task` commands, never raw Go tools.
 
 ## Output
 
