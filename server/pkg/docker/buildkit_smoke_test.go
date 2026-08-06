@@ -17,6 +17,7 @@ type smokeLogger struct{ t *testing.T }
 func (l smokeLogger) Info(msg string, args ...interface{}) {
 	l.t.Log(append([]interface{}{msg}, args...)...)
 }
+
 func (l smokeLogger) Error(msg string, args ...interface{}) {
 	l.t.Log(append([]interface{}{msg}, args...)...)
 }
