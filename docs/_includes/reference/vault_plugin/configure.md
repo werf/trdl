@@ -9,6 +9,9 @@ Configure the plugin.
 
 ### Parameters
 
+* `buildkitd_address` (string, optional) — An address of a running buildkitd (unix://, tcp://, docker-container:// or kube-pod:// scheme) to build release artifacts with the BuildKit client; the docker CLI is used if not set. Build secrets are sent to that daemon, and tcp:// is neither encrypted nor authenticated, so securing the channel and isolating the daemon is the administrator's responsibility.
+* `buildx_driver` (string, optional) — The buildx driver to build release artifacts with: docker-container (used by default) or kubernetes. Takes precedence over the TRDL_BUILDX_DRIVER environment variable, and cannot be combined with buildkitd_address.
+* `buildx_driver_opts` (array, optional) — The buildx driver options, one --driver-opt per element (e.g. namespace=trdl-build), passed through as is. Take precedence over the TRDL_BUILDX_DRIVER_OPTS_* environment variables, and cannot be combined with buildkitd_address.
 * `git_repo_url` (string, required) — URL of the Git repository.
 * `git_trdl_channels_branch` (string, optional) — A special Git branch to store the trdl channels configuration file.
 * `git_trdl_channels_path` (string, optional) — A path in the Git repository to the trdl channels configuration file (trdl_channels.yaml is used by default).

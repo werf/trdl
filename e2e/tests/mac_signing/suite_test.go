@@ -1,6 +1,3 @@
-//go:build ai_tests
-// +build ai_tests
-
 package mac_signing
 
 import (
@@ -14,7 +11,7 @@ import (
 	"github.com/werf/trdl/server/pkg/testutil"
 )
 
-func TestAI_MacSigning(t *testing.T) {
+func TestMacSigning(t *testing.T) {
 	testutil.MeetsRequirementTools([]string{"docker", "git", "git-signatures", "gpg"})
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Mac Signing Suite")

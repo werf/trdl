@@ -14,7 +14,7 @@ import (
 
 const legacyKeyFingerprint = "207775ba4caa06b36933254ac70f7f22be8fb479"
 
-func TestAI_LegacyOpenPGPArtifactsRemainUsable(t *testing.T) {
+func TestLegacyOpenPGPArtifactsRemainUsable(t *testing.T) {
 	privateKey, err := os.ReadFile("testdata/legacy_private_key.asc")
 	require.NoError(t, err)
 	publicKey, err := os.ReadFile("testdata/legacy_public_key.asc")

@@ -207,6 +207,26 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 		}
 		return ""
 	}()
+
+	// Set TRDL_TEST_BUILDKITD_ADDRESS to run the same release cycle against an
+	// external buildkitd instead of the docker CLI, the way TRDL_BUILDX_DRIVER
+	// switches the buildx driver.
+	buildkitdAddress := func() string {
+		if address := os.Getenv("TRDL_TEST_BUILDKITD_ADDRESS"); address != "" {
+			return fmt.Sprintf("buildkitd_address=%s", address)
+		}
+		return ""
+	}()
+
+	// Set TRDL_TEST_BUILDX_DRIVER to select the driver through the project
+	// configuration rather than through the environment of the Vault process.
+	buildxDriver := func() string {
+		if driver := os.Getenv("TRDL_TEST_BUILDX_DRIVER"); driver != "" {
+			return fmt.Sprintf("buildx_driver=%s", driver)
+		}
+		return ""
+	}()
+
 	testutil.RunSucceedCommand(
 		testDir,
 		"vault", "write",
@@ -221,6 +241,8 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 		fmt.Sprintf("s3_secret_access_key=%s", opts.S3SecretAccessKey),
 		fmt.Sprintf("s3_bucket_name=%s", opts.S3BucketName),
 		lastPubCommit,
+		buildkitdAddress,
+		buildxDriver,
 	)
 }
 

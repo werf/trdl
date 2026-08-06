@@ -48,12 +48,51 @@ TRDL_BUILDX_DRIVER_OPTS_SEPARATOR=;
 TRDL_BUILDX_DRIVER_OPTS_KUBE='namespace=trdl-build;rootless=true'
 ```
 
+The same two settings are also available per project in the plugin configuration, which is the only way to reach them when the plugin is compiled into a host process whose environment the administrator cannot set:
+
+* `buildx_driver` — the same values as `TRDL_BUILDX_DRIVER`;
+* `buildx_driver_opts` — a list of `--driver-opt` values, one per element, each passed through as is.
+
+```json
+{
+  "buildx_driver": "kubernetes",
+  "buildx_driver_opts": ["namespace=trdl-build", "rootless=true"]
+}
+```
+
+Each of the two settings is resolved on its own: the plugin configuration takes precedence over the environment, and the environment takes precedence over the default `docker-container` driver with no options. A field left out of `configure`, or set to an empty value, means "not configured" and falls back to the environment — it does not override it with an empty value. To build with no driver options at all while the environment defines some, unset those variables.
+
+Neither field can be combined with `buildkitd_address` (see below): that setting replaces the buildx path entirely, no builder is created, and the driver settings would have no effect — so `configure` rejects the combination instead of ignoring them. The check covers one `configure` call only. A `TRDL_BUILDKITD_ADDRESS` set on the Vault process also wins over these settings, and since it is process-wide and can be changed after a project is configured, it cannot be rejected at that point: the build reports the settings as unused in the plugin log instead.
+
 Notes on the `kubernetes` driver:
 
 * the target namespace must exist, and the Vault process needs permissions to manage Deployments and Pods in it: the builder runs as a BuildKit Deployment and is removed after the build;
 * the cluster is targeted via the standard kubeconfig or in-cluster ServiceAccount resolution;
-* rootless BuildKit (`rootless=true`) requires the PodSecurity level `baseline`; it does not run under `restricted`;
+* rootless BuildKit (`rootless=true`) does not fit the `baseline` PodSecurity level either: buildx gives the builder pod `seccompProfile: Unconfined` and the `unconfined` AppArmor annotation, and both are already forbidden at `baseline`. The builder namespace has to be labelled `privileged` (or be exempt from PodSecurity admission);
 * see the [buildx kubernetes driver documentation](https://docs.docker.com/build/builders/drivers/kubernetes/) for the available driver options.
+
+#### Building against an external buildkitd
+
+Both buildx drivers above shell out to the `docker` CLI, so they require the binary to be present next to the plugin. When the plugin runs in an environment without the `docker` binary (for example, embedded into another process shipped in a distroless image), the build can be pointed at an already running `buildkitd` instead: the plugin then talks to it directly with the BuildKit client, and no builder is provisioned or removed per build.
+
+The buildkitd address is set per project in the plugin configuration:
+
+```shell
+vault write trdl-test-project/configure ... buildkitd_address=tcp://buildkitd.trdl-build.svc:1234
+```
+
+or, as a fallback for all projects, with the `TRDL_BUILDKITD_ADDRESS` environment variable of the Vault process. The per-project setting takes precedence. The supported address schemes are:
+
+* `unix://` and `tcp://` — direct gRPC connection to buildkitd, no external binaries required;
+* `docker-container://` and `kube-pod://` — connection through `docker exec`/`kubectl exec`, requiring the corresponding CLI.
+
+When `buildkitd_address` is not set, builds go through `docker buildx` exactly as described above. Deploying `buildkitd` itself is out of trdl's scope: on Kubernetes it is typically a Deployment or StatefulSet in a dedicated namespace whose PodSecurity labels are managed by the cluster owner, since BuildKit requires a relaxed seccomp/AppArmor profile even in rootless mode.
+
+Securing the connection and isolating the daemon is the administrator's responsibility. The plugin sends the entire build context and every build secret over this connection — the project build secrets and, when mac signing is configured, the signing certificate, its password and the notary key. What that requires:
+
+* **`tcp://` is plaintext and unauthenticated.** The plugin neither encrypts the traffic nor verifies the identity of the daemon it connects to, so anyone able to intercept the connection or take over the endpoint's address receives those secrets. Use `tcp://` only over a channel made confidential and authenticated by other means — a network segment no other workload can reach, a service mesh with mTLS, or an equivalent tunnel. When that cannot be guaranteed, run buildkitd alongside the plugin and use `unix://` to a socket shared between them.
+* **The address is a trust boundary.** Whoever can write the project configuration, or set `TRDL_BUILDKITD_ADDRESS` for the Vault process, decides which daemon receives the release secrets. Write access to `<project>/configure` has to be restricted to the same people who are trusted with the release keys.
+* **The daemon is shared and unrestricted.** buildkitd executes the project's build instructions, and no builder is created or removed per build, so concurrent releases and every project pointed at the same address share one instance, its cache and its privileges. Dedicate an instance per trust domain, and treat access to it as access to the release artifacts it produces.
 
 ### Setting up the project
 

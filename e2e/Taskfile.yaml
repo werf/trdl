@@ -41,6 +41,7 @@ tasks:
     cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./...
     vars:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
+      paths: '{{.paths | default "./..."}}'
 
   test:e2e:elf-signing:
     desc: "Run ELF signing e2e test."
@@ -49,13 +50,13 @@ tasks:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
 
   test:e2e:flow-vault:
-    desc: "Run the Vault plugin e2e test. Honours TRDL_BUILDX_DRIVER, so it doubles as the buildx driver check."
+    desc: "Run the Vault plugin e2e test. Honours TRDL_BUILDX_DRIVER and TRDL_TEST_BUILDKITD_ADDRESS, so it doubles as the buildx driver and BuildKit client check."
     cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./tests/flow_vault
     vars:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
 
   test:e2e:mac-signing:
-    desc: "Run mac signing e2e test against a stub quill (ai_tests tag, excluded from the default run)."
-    cmd: ginkgo --vv --keep-going --tags=ai_tests --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./tests/mac_signing
+    desc: "Run mac signing e2e test against a stub quill."
+    cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./tests/mac_signing
     vars:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'

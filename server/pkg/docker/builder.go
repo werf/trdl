@@ -27,6 +27,8 @@ const (
 	buildxDriverOptsEnvPrefix    = "TRDL_BUILDX_DRIVER_OPTS_"
 	buildxDriverOptsSeparatorEnv = "TRDL_BUILDX_DRIVER_OPTS_SEPARATOR"
 
+	buildxDriverConfigurationSource = "the buildx_driver plugin configuration"
+
 	defaultBuildxDriver = "docker-container"
 )
 
@@ -42,23 +44,54 @@ type Logger interface {
 }
 
 type Builder struct {
-	builderName string
-	buildArgs   []string
-	logger      Logger
+	builderName      string
+	buildArgs        []string
+	buildkitdAddress string
+	dockerfilePath   string
+	secretsData      map[string][]byte
+	logger           Logger
 }
 
 type NewBuilderOpts struct {
-	BuildId               string
-	ContextPath           string
-	Secrets               []secrets.Secret
-	MacSigningCredentials *mac_signing.Credentials
-	Logger                Logger
+	BuildId                 string
+	DockerfilePathInContext string
+	BuildkitdAddress        string
+	BuildxDriver            string
+	BuildxDriverOpts        []string
+	Secrets                 []secrets.Secret
+	MacSigningCredentials   *mac_signing.Credentials
+	Logger                  Logger
 }
 
 func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
+	buildkitdAddress, err := resolveBuildkitdAddress(ctx, opts.BuildkitdAddress)
+	if err != nil {
+		return nil, err
+	}
+	if buildkitdAddress != "" {
+		// configure rejects both settings written together, but the address can
+		// also come from the environment, and then the driver settings are
+		// unreachable rather than rejected. Blank values mean "not set", as they
+		// do everywhere the settings are resolved.
+		if strings.TrimSpace(opts.BuildxDriver) != "" || lo.SomeBy(opts.BuildxDriverOpts, func(opt string) bool {
+			return strings.TrimSpace(opt) != ""
+		}) {
+			msg := fmt.Sprintf("Building against buildkitd at %q, the configured buildx driver settings are not used", buildkitdAddress)
+			logboek.Context(ctx).Default().LogLn(msg)
+			opts.Logger.Info(msg)
+		}
+
+		return &Builder{
+			buildkitdAddress: buildkitdAddress,
+			dockerfilePath:   opts.DockerfilePathInContext,
+			secretsData:      buildkitSecretsData(opts.Secrets, opts.MacSigningCredentials),
+			logger:           opts.Logger,
+		}, nil
+	}
+
 	builderName := fmt.Sprintf("trdl-builder-%s", opts.BuildId)
 
-	builderArgs, err := buildxCreateArgs(builderName)
+	builderArgs, err := buildxCreateArgs(ctx, builderName, opts.BuildxDriver, opts.BuildxDriverOpts)
 	if err != nil {
 		return nil, fmt.Errorf("unable to construct buildx create args: %w", err)
 	}
@@ -67,7 +100,7 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 		return nil, fmt.Errorf("builder setup failed: %w", err)
 	}
 
-	args, err := setCliArgs(builderName, opts.ContextPath, opts.Secrets, opts.MacSigningCredentials)
+	args, err := setCliArgs(builderName, opts.DockerfilePathInContext, opts.Secrets, opts.MacSigningCredentials)
 	if err != nil {
 		return nil, fmt.Errorf("unable to set cli args: %w", err)
 	}
@@ -79,13 +112,10 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 	}, nil
 }
 
-func buildxCreateArgs(builderName string) ([]string, error) {
-	driver := strings.TrimSpace(os.Getenv(buildxDriverEnv))
-	if driver == "" {
-		driver = defaultBuildxDriver
-	}
-	if !lo.Contains(supportedBuildxDrivers, driver) {
-		return nil, fmt.Errorf("unsupported buildx driver %q from %s (supported: %s)", driver, buildxDriverEnv, strings.Join(supportedBuildxDrivers, ", "))
+func buildxCreateArgs(ctx context.Context, builderName, configuredDriver string, configuredDriverOpts []string) ([]string, error) {
+	driver, driverSource := resolveBuildxDriver(configuredDriver)
+	if err := ValidateBuildxDriver(ctx, driver); err != nil {
+		return nil, fmt.Errorf("buildx driver from %s: %w", driverSource, err)
 	}
 
 	args := []string{
@@ -94,11 +124,53 @@ func buildxCreateArgs(builderName string) ([]string, error) {
 		"--name", builderName,
 		"--driver=" + driver,
 	}
-	for _, opt := range driverOptsFromEnv() {
+	for _, opt := range resolveBuildxDriverOpts(configuredDriverOpts) {
 		args = append(args, "--driver-opt="+opt)
 	}
 
 	return args, nil
+}
+
+// ValidateBuildxDriver accepts an empty driver, meaning the setting is not in
+// use. The build streams a tarball to stdout (`-o - -`), which the default
+// "docker" driver cannot export, so an unsupported driver is rejected here
+// instead of failing opaquely mid-build.
+func ValidateBuildxDriver(ctx context.Context, driver string) error {
+	driver = strings.TrimSpace(driver)
+	if driver == "" || lo.Contains(supportedBuildxDrivers, driver) {
+		return nil
+	}
+
+	return fmt.Errorf("unsupported driver %q (supported: %s)", driver, strings.Join(supportedBuildxDrivers, ", "))
+}
+
+// resolveBuildxDriver returns the driver to create the builder with and the
+// name of the setting it came from, so that a rejection points at the knob the
+// operator has to fix.
+func resolveBuildxDriver(configuredDriver string) (string, string) {
+	if driver := strings.TrimSpace(configuredDriver); driver != "" {
+		return driver, buildxDriverConfigurationSource
+	}
+	if driver := strings.TrimSpace(os.Getenv(buildxDriverEnv)); driver != "" {
+		return driver, buildxDriverEnv
+	}
+
+	return defaultBuildxDriver, "the default"
+}
+
+// An empty configured list means the setting is not in use, not "run with no
+// options": `configure` cannot tell an omitted field from an explicitly empty
+// one, so both fall back to the environment.
+func resolveBuildxDriverOpts(configuredDriverOpts []string) []string {
+	var opts []string
+	for _, configuredOpt := range configuredDriverOpts {
+		opts = append(opts, parseDriverOpts(configuredOpt, "")...)
+	}
+	if len(opts) > 0 {
+		return opts
+	}
+
+	return driverOptsFromEnv()
 }
 
 func driverOptsFromEnv() []string {
@@ -140,14 +212,24 @@ func parseDriverOpts(raw, separator string) []string {
 }
 
 func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarWriter *nio.PipeWriter) error {
+	// A build that fails before draining the context leaves the goroutine filling
+	// it blocked on write forever; closing the reader here fails those writes.
+	defer contextReader.Close()
+
+	if b.buildkitdAddress != "" {
+		return buildWithBuildkit(ctx, b.buildkitdAddress, b.dockerfilePath, b.secretsData, contextReader, tarWriter, b.logger)
+	}
+
 	finalArgs := append([]string{"buildx", "build"}, b.buildArgs...)
 	cmd := exec.CommandContext(ctx, "docker", finalArgs...)
 
 	cmd.Stdout = tarWriter
 	cmd.Stdin = contextReader
 
-	multiWriter := io.MultiWriter(logboek.Context(ctx).OutStream(), logWriter(b.logger))
-	cmd.Stderr = multiWriter
+	logPipe, waitForLogs := logWriter(b.logger)
+	defer waitForLogs()
+
+	cmd.Stderr = io.MultiWriter(logboek.Context(ctx).OutStream(), logPipe)
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("build failed: %w", err)
@@ -160,16 +242,33 @@ func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarW
 }
 
 func (b *Builder) Remove(ctx context.Context) error {
+	if b.buildkitdAddress != "" {
+		return nil
+	}
+
 	if err := runDockerCmd(ctx, []string{"buildx", "rm", b.builderName}); err != nil {
 		return fmt.Errorf("unable to cleanup: %w", err)
 	}
 	return nil
 }
 
-func logWriter(logger Logger) *io.PipeWriter {
+const maxLogLineSize = 1024 * 1024
+
+// The returned wait function closes the writer and returns once every buffered
+// line has reached the logger, so the tail of a build log is not lost when the
+// build finishes.
+func logWriter(logger Logger) (*io.PipeWriter, func()) {
 	pr, pw := io.Pipe()
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
+		// The build writes into this pipe, so the moment line parsing stops the
+		// build itself blocks on the next write. Whatever happens above, keep
+		// draining until the writer is closed.
+		defer func() { _, _ = io.Copy(io.Discard, pr) }()
+
 		scanner := bufio.NewScanner(pr)
+		scanner.Buffer(make([]byte, 0, bufio.MaxScanTokenSize), maxLogLineSize)
 		for scanner.Scan() {
 			line := scanner.Text()
 			logger.Info(line)
@@ -179,11 +278,14 @@ func logWriter(logger Logger) *io.PipeWriter {
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			logger.Error("error reading stderr", "err", err)
+			logger.Error("unable to read build output, the rest of it is not logged", "err", err)
 		}
 	}()
 
-	return pw
+	return pw, func() {
+		pw.Close()
+		<-done
+	}
 }
 
 func setCliArgs(builder, serviceDockerfilePathInContext string, secrets []secrets.Secret, macSigningCredentials *mac_signing.Credentials) ([]string, error) {
