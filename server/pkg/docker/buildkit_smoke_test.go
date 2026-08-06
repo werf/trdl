@@ -1,5 +1,3 @@
-//go:build ai_tests
-
 package docker
 
 import (
@@ -28,7 +26,7 @@ type nopCloseBuffer struct{ bytes.Buffer }
 func (b *nopCloseBuffer) Close() error { return nil }
 
 // Requires a running buildkitd reachable at TRDL_SMOKE_BUILDKITD_ADDRESS.
-func TestAI_BuildkitSmoke(t *testing.T) {
+func TestBuildkitSmoke(t *testing.T) {
 	address := os.Getenv("TRDL_SMOKE_BUILDKITD_ADDRESS")
 	if address == "" {
 		t.Skip("TRDL_SMOKE_BUILDKITD_ADDRESS is not set")

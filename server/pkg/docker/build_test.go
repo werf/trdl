@@ -1,5 +1,3 @@
-//go:build ai_tests
-
 package docker
 
 import (
@@ -24,7 +22,7 @@ import (
 // invocation, but nothing in the production code guarantees that, so an empty
 // PATH keeps a regression from provisioning a real builder and the artifacts
 // pipe is drained so it cannot deadlock the test binary either.
-func TestAI_BuildReleaseArtifacts_ForwardsConfiguredDriver(t *testing.T) {
+func TestBuildReleaseArtifacts_ForwardsConfiguredDriver(t *testing.T) {
 	clearDriverOptsEnv(t)
 	t.Setenv(buildxDriverEnv, "kubernetes")
 	t.Setenv("PATH", t.TempDir())

@@ -329,12 +329,6 @@ tasks:
       outputDir: '{{.outputDir | default "../tests_coverage/unit"}}'
       paths: '{{.paths | default "./..."}}'
 
-  test:ai:
-    desc: 'Run server tests written by AI agents (ai_tests build tag). Set TRDL_SMOKE_BUILDKITD_ADDRESS to include the buildkitd smoke test. Important vars: "paths".'
-    cmd: ginkgo --vet=off --race --keep-going --tags=ai_tests {{.paths}}
-    vars:
-      paths: '{{.paths | default "./..."}}'
-
   verify:dist:binaries:
     desc: "Verify that the distributable binaries are built and have correct platform/arch."
     cmds:
