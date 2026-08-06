@@ -1,5 +1,3 @@
-//go:build linux && amd64 && cgo
-
 package elf_signing
 
 import (
@@ -8,12 +6,12 @@ import (
 	goelf "debug/elf"
 	"io"
 	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/deckhouse/delivery-kit-sdk/pkg/signature/elf/inhouse"
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
+
+	"github.com/werf/trdl/server/pkg/elf_signing/inhouse"
 )
 
 func TestTrySignELFReturnedReaderVerifies(t *testing.T) {
@@ -41,8 +39,5 @@ func TestTrySignELFReturnedReaderVerifies(t *testing.T) {
 	_, err = goelf.NewFile(bytes.NewReader(got))
 	require.NoError(t, err)
 
-	verifyPath := filepath.Join(t.TempDir(), "signed.elf")
-	require.NoError(t, os.WriteFile(verifyPath, got, 0o644))
-
-	require.NoError(t, inhouse.Verify(context.Background(), []string{certs.RootRef}, verifyPath))
+	require.NoError(t, inhouse.Verify(context.Background(), []string{certs.RootRef}, got))
 }

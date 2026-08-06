@@ -27,7 +27,7 @@ func Paths() []*framework.Path {
 		{
 			Pattern:         "configure/delivery_kit_elf_signing",
 			HelpSynopsis:    "Configure ELF binary signing via Delivery Kit",
-			HelpDescription: "Configure ELF binary signing via Delivery Kit. Requires `objcopy` with multi-architecture support on the Vault server host (`binutils-multiarch` on Debian/Ubuntu). Signing buffers each artifact to temporary disk space, so ensure the host or container has enough free space for the largest release artifact.",
+			HelpDescription: "Configure ELF binary signing via Delivery Kit. Signing buffers each ELF artifact in memory up to 512 MiB.",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameELFSigningKey: {
 					Type:        framework.TypeString,

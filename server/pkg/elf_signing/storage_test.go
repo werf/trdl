@@ -1,5 +1,3 @@
-//go:build linux && amd64 && cgo
-
 package elf_signing
 
 import (

@@ -1,5 +1,3 @@
-//go:build linux && amd64 && cgo
-
 package elf_signing
 
 import (
@@ -11,9 +9,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/deckhouse/delivery-kit-sdk/pkg/signature/elf/inhouse"
 	"github.com/deckhouse/delivery-kit-sdk/test/pkg/cert_utils"
 	. "github.com/onsi/gomega"
+	"github.com/werf/trdl/server/pkg/elf_signing/inhouse"
 
 	"github.com/werf/trdl/server/pkg/testutil"
 )
