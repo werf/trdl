@@ -22,7 +22,7 @@ import (
 // credentials. It builds _fixtures/quill_stub and serves it from a throwaway
 // registry; that quill validates the five QUILL_* env vars and appends a marker
 // with the received cert and notary key id to the artifact. Asserting the marker
-// in the published artifact proves the Vault-stored credential values travelled
+// in the published artifact proves the Vault-stored credential values traveled
 // through the buildkit secret mounts into the signer stage, the Mach-O detection
 // loop ran, and the "signed" artifact was re-exported through the final scratch
 // stage.
