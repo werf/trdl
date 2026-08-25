@@ -227,8 +227,25 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 		return ""
 	}()
 
-	testutil.RunSucceedCommand(
-		testDir,
+	// Set TRDL_TEST_BUILDKITD_DRIVER to have the plugin provision the builder
+	// itself, with no docker binary involved. Its options are comma-separated in
+	// TRDL_TEST_BUILDKITD_DRIVER_OPTS and passed one per element, because the
+	// field is a list.
+	buildkitdDriver := func() string {
+		if driver := os.Getenv("TRDL_TEST_BUILDKITD_DRIVER"); driver != "" {
+			return fmt.Sprintf("buildkitd_driver=%s", driver)
+		}
+		return ""
+	}()
+
+	var buildkitdDriverOpts []string
+	if opts := os.Getenv("TRDL_TEST_BUILDKITD_DRIVER_OPTS"); opts != "" {
+		for _, driverOpt := range strings.Split(opts, ",") {
+			buildkitdDriverOpts = append(buildkitdDriverOpts, fmt.Sprintf("buildkitd_driver_opts=%s", driverOpt))
+		}
+	}
+
+	args := []string{
 		"vault", "write",
 		vaultAddress,
 		fmt.Sprintf("%s/configure", opts.ProjectName),
@@ -243,7 +260,11 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 		lastPubCommit,
 		buildkitdAddress,
 		buildxDriver,
-	)
+		buildkitdDriver,
+	}
+	args = append(args, buildkitdDriverOpts...)
+
+	testutil.RunSucceedCommand(testDir, args[0], args[1:]...)
 }
 
 func serverAddBuildSecrets(testDir, projectName string, secrets map[string]string) {
