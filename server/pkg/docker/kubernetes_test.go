@@ -1,0 +1,348 @@
+package docker
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/rest"
+
+	"github.com/werf/logboek"
+)
+
+// fakeAPIServer answers the three pod calls the builder makes. Tests drive a
+// builder against it instead of a cluster, so a mutation that removes a guard
+// reaches this server and fails the assertion rather than provisioning anything.
+type fakeAPIServer struct {
+	*httptest.Server
+
+	mu       sync.Mutex
+	calls    []string
+	created  *corev1.Pod
+	deleted  bool
+	readyPod bool
+	phase    corev1.PodPhase
+}
+
+func newFakeAPIServer(t *testing.T) *fakeAPIServer {
+	f := &fakeAPIServer{}
+	f.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+
+		f.calls = append(f.calls, r.Method+" "+r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+
+		switch r.Method {
+		case http.MethodPost:
+			pod := &corev1.Pod{}
+			require.NoError(t, json.NewDecoder(r.Body).Decode(pod))
+			f.created = pod
+			w.WriteHeader(http.StatusCreated)
+			require.NoError(t, json.NewEncoder(w).Encode(pod))
+		case http.MethodGet:
+			if f.created == nil || f.deleted {
+				writeNotFound(t, w)
+
+				return
+			}
+			require.NoError(t, json.NewEncoder(w).Encode(podWithStatus(f.created, f.readyPod, f.phase)))
+		case http.MethodDelete:
+			if f.created == nil || f.deleted {
+				writeNotFound(t, w)
+
+				return
+			}
+			f.deleted = true
+			require.NoError(t, json.NewEncoder(w).Encode(&metav1.Status{Status: metav1.StatusSuccess}))
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+	t.Cleanup(f.Close)
+
+	return f
+}
+
+func writeNotFound(t *testing.T, w http.ResponseWriter) {
+	t.Helper()
+
+	w.WriteHeader(http.StatusNotFound)
+	require.NoError(t, json.NewEncoder(w).Encode(&metav1.Status{
+		Status: metav1.StatusFailure,
+		Code:   http.StatusNotFound,
+		Reason: metav1.StatusReasonNotFound,
+	}))
+}
+
+func podWithStatus(pod *corev1.Pod, ready bool, phase corev1.PodPhase) *corev1.Pod {
+	result := pod.DeepCopy()
+	result.Status.Phase = corev1.PodPending
+	if phase != "" {
+		result.Status.Phase = phase
+
+		return result
+	}
+	if ready {
+		result.Status.Phase = corev1.PodRunning
+		result.Status.Conditions = []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionTrue}}
+	}
+
+	return result
+}
+
+func (f *fakeAPIServer) methods() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	methods := make([]string, 0, len(f.calls))
+	for _, call := range f.calls {
+		methods = append(methods, strings.Fields(call)[0])
+	}
+
+	return methods
+}
+
+func (f *fakeAPIServer) podDeleted() bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	return f.deleted
+}
+
+func newTestBuilder(t *testing.T, f *fakeAPIServer, readyTimeout time.Duration) *kubernetesBuilder {
+	t.Helper()
+
+	// This path provisions the builder itself and must never reach for a binary.
+	// An empty PATH keeps a mutation that reintroduces one from finding a real
+	// docker or kubectl on the machine running the tests.
+	t.Setenv("PATH", "")
+
+	config := &rest.Config{Host: f.URL}
+	config.APIPath = "/api"
+	config.GroupVersion = &corev1.SchemeGroupVersion
+	config.NegotiatedSerializer = serializer.NewCodecFactory(coreScheme)
+
+	restClient, err := rest.RESTClientFor(config)
+	require.NoError(t, err)
+
+	return &kubernetesBuilder{
+		restClient:   restClient,
+		restConfig:   config,
+		namespace:    "trdl-build",
+		podName:      "trdl-builder-42",
+		readyTimeout: readyTimeout,
+		logger:       smokeLogger{t},
+	}
+}
+
+func testContext() context.Context {
+	return logboek.NewContext(context.Background(), logboek.DefaultLogger())
+}
+
+func testBuilderOpts() kubernetesBuilderOpts {
+	opts, err := parseKubernetesDriverOpts([]string{"namespace=trdl-build"})
+	if err != nil {
+		panic(err)
+	}
+
+	return opts
+}
+
+func TestKubernetesBuilderBootstrapReady(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.readyPod = true
+
+	b := newTestBuilder(t, f, time.Minute)
+
+	require.NoError(t, b.bootstrap(testContext(), testBuilderOpts()))
+	assert.False(t, f.podDeleted(), "a builder that came up must not be removed by bootstrap")
+	assert.Equal(t, []string{"POST", "GET"}, f.methods())
+}
+
+// The pod must not outlive a bootstrap that failed: the caller gets no builder
+// back, so nothing else is in a position to remove it.
+func TestKubernetesBuilderBootstrapRemovesPodThatNeverBecomesReady(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.readyPod = false
+
+	b := newTestBuilder(t, f, 100*time.Millisecond)
+
+	err := b.bootstrap(testContext(), testBuilderOpts())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not ready")
+	assert.True(t, f.podDeleted(), "the builder pod must be removed when it never becomes ready")
+}
+
+// Canceling the release is the case the cleanup exists for, and the case where
+// reusing the build context would silently skip the delete.
+func TestKubernetesBuilderBootstrapRemovesPodOnCancelledContext(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.readyPod = false
+
+	b := newTestBuilder(t, f, time.Minute)
+
+	ctx, cancel := context.WithCancel(testContext())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+
+	err := b.bootstrap(ctx, testBuilderOpts())
+
+	require.Error(t, err)
+	assert.True(t, f.podDeleted(), "the builder pod must be removed after the build context is canceled")
+}
+
+// A Running pod is not a serving one: buildkitd reports itself through the
+// readiness probe, and connecting before it passes reaches a daemon that is not
+// yet accepting builds.
+func TestKubernetesBuilderBootstrapWaitsForReadinessNotJustRunning(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.phase = corev1.PodRunning
+
+	b := newTestBuilder(t, f, 100*time.Millisecond)
+
+	err := b.bootstrap(testContext(), testBuilderOpts())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not ready")
+	assert.True(t, f.podDeleted(), "the builder pod must be removed when readiness never arrives")
+}
+
+func TestKubernetesBuilderRemoveToleratesMissingPod(t *testing.T) {
+	f := newFakeAPIServer(t)
+	b := newTestBuilder(t, f, time.Minute)
+
+	assert.NoError(t, b.remove(testContext()), "removing a pod that is already gone is not a failure")
+}
+
+func TestKubernetesBuilderBootstrapRemovesTerminatedPod(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.phase = corev1.PodFailed
+
+	b := newTestBuilder(t, f, time.Minute)
+
+	err := b.bootstrap(testContext(), testBuilderOpts())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "terminated")
+	assert.True(t, f.podDeleted(), "a builder pod that died must be removed, not left for an operator")
+}
+
+func TestBuildkitPodDefaults(t *testing.T) {
+	pod := buildkitPod("trdl-builder-42", testBuilderOpts())
+
+	require.Len(t, pod.Spec.Containers, 1)
+	container := pod.Spec.Containers[0]
+
+	assert.Equal(t, corev1.RestartPolicyNever, pod.Spec.RestartPolicy)
+	assert.Equal(t, defaultBuildkitImage, container.Image)
+	assert.True(t, *container.SecurityContext.Privileged)
+	assert.Equal(t, []string{"buildctl", "debug", "workers"}, container.ReadinessProbe.Exec.Command)
+	assert.Nil(t, pod.Spec.ActiveDeadlineSeconds, "no deadline is set unless one is configured")
+	assert.Equal(t, map[string]string{"app": "trdl-builder-42"}, pod.Labels)
+}
+
+func TestBuildkitPodRootless(t *testing.T) {
+	opts, err := parseKubernetesDriverOpts([]string{"rootless=true"})
+	require.NoError(t, err)
+
+	pod := buildkitPod("trdl-builder-42", opts)
+	container := pod.Spec.Containers[0]
+
+	assert.Equal(t, defaultRootlessBuildkitImage, container.Image)
+	assert.Contains(t, container.Args, "--oci-worker-no-process-sandbox")
+	assert.Nil(t, container.SecurityContext.Privileged, "rootless must not ask for a privileged container")
+	assert.Equal(t, corev1.SeccompProfileTypeUnconfined, container.SecurityContext.SeccompProfile.Type)
+	assert.Equal(t, "unconfined", pod.Annotations["container.apparmor.security.beta.kubernetes.io/buildkitd"])
+	assert.Len(t, pod.Spec.Volumes, 1)
+	assert.Len(t, container.VolumeMounts, 1)
+}
+
+func TestBuildkitPodRootlessKeepsConfiguredImage(t *testing.T) {
+	opts, err := parseKubernetesDriverOpts([]string{"rootless=true", "image=registry.example.com/buildkit:v0.31.2-rootless"})
+	require.NoError(t, err)
+
+	assert.Equal(t, "registry.example.com/buildkit:v0.31.2-rootless", buildkitPod("trdl-builder-42", opts).Spec.Containers[0].Image)
+}
+
+func TestBuildkitPodAppliesResourcesAndScheduling(t *testing.T) {
+	opts, err := parseKubernetesDriverOpts([]string{
+		"requests.cpu=500m",
+		"limits.memory=4Gi",
+		"nodeselector=disktype=ssd,zone=a",
+		"serviceaccount=trdl-buildkit",
+		"deadline=90m",
+		"labels=team=delivery",
+		"annotations=example.com/owner=trdl",
+	})
+	require.NoError(t, err)
+
+	pod := buildkitPod("trdl-builder-42", opts)
+	container := pod.Spec.Containers[0]
+
+	assert.Equal(t, "500m", container.Resources.Requests.Cpu().String())
+	assert.Equal(t, "4Gi", container.Resources.Limits.Memory().String())
+	assert.Equal(t, map[string]string{"disktype": "ssd", "zone": "a"}, pod.Spec.NodeSelector)
+	assert.Equal(t, "trdl-buildkit", pod.Spec.ServiceAccountName)
+	assert.Equal(t, int64(5400), *pod.Spec.ActiveDeadlineSeconds)
+	assert.Equal(t, "delivery", pod.Labels["team"])
+	assert.Equal(t, "trdl", pod.Annotations["example.com/owner"])
+}
+
+func TestParseKubernetesDriverOptsRejections(t *testing.T) {
+	for name, driverOpts := range map[string][]string{
+		"unsupported option":   {"tolerations=key=node,operator=Exists"},
+		"not a pair":           {"namespace"},
+		"bad boolean":          {"rootless=yes-please"},
+		"bad duration":         {"deadline=90"},
+		"bad quantity":         {"limits.memory=4 gigabytes"},
+		"negative deadline":    {"deadline=-1m"},
+		"non-positive timeout": {"timeout=0s"},
+	} {
+		rejected := driverOpts
+		t.Run(name, func(t *testing.T) {
+			_, err := parseKubernetesDriverOpts(rejected)
+			assert.Error(t, err)
+		})
+	}
+}
+
+func TestParseKubernetesDriverOptsTimeoutDefaults(t *testing.T) {
+	opts, err := parseKubernetesDriverOpts(nil)
+
+	require.NoError(t, err)
+	assert.Equal(t, defaultBuildkitPodTimeout, opts.timeout)
+
+	opts, err = parseKubernetesDriverOpts([]string{"timeout=10s"})
+
+	require.NoError(t, err)
+	assert.Equal(t, 10*time.Second, opts.timeout)
+}
+
+func TestValidateBuildkitdDriverOpts(t *testing.T) {
+	assert.NoError(t, ValidateBuildkitdDriverOpts(context.Background(), "", nil))
+	assert.NoError(t, ValidateBuildkitdDriverOpts(context.Background(), "", []string{"   "}))
+	assert.Error(t, ValidateBuildkitdDriverOpts(context.Background(), "", []string{"namespace=trdl-build"}),
+		"options without a driver would never be applied")
+	assert.NoError(t, ValidateBuildkitdDriverOpts(context.Background(), "kubernetes", []string{"namespace=trdl-build"}))
+	assert.Error(t, ValidateBuildkitdDriverOpts(context.Background(), "kubernetes", []string{"replicas=3"}))
+}
+
+func TestValidateBuildkitdDriver(t *testing.T) {
+	assert.NoError(t, ValidateBuildkitdDriver(context.Background(), ""))
+	assert.NoError(t, ValidateBuildkitdDriver(context.Background(), "kubernetes"))
+	assert.Error(t, ValidateBuildkitdDriver(context.Background(), "docker-container"))
+}

@@ -25,14 +25,16 @@ const (
 )
 
 type BuildReleaseArtifactsOpts struct {
-	FromImage        string
-	RunCommands      []string
-	GitRepo          *git.Repository
-	TarWriter        *nio.PipeWriter
-	Storage          logical.Storage
-	BuildkitdAddress string
-	BuildxDriver     string
-	BuildxDriverOpts []string
+	FromImage           string
+	RunCommands         []string
+	GitRepo             *git.Repository
+	TarWriter           *nio.PipeWriter
+	Storage             logical.Storage
+	BuildkitdAddress    string
+	BuildxDriver        string
+	BuildxDriverOpts    []string
+	BuildkitdDriver     string
+	BuildkitdDriverOpts []string
 }
 
 func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, logger hclog.Logger) error {
@@ -106,6 +108,8 @@ func BuildReleaseArtifacts(ctx context.Context, opts BuildReleaseArtifactsOpts, 
 		BuildkitdAddress:        opts.BuildkitdAddress,
 		BuildxDriver:            opts.BuildxDriver,
 		BuildxDriverOpts:        opts.BuildxDriverOpts,
+		BuildkitdDriver:         opts.BuildkitdDriver,
+		BuildkitdDriverOpts:     opts.BuildkitdDriverOpts,
 		Secrets:                 secrets,
 		MacSigningCredentials:   credentials,
 		Logger:                  logger,

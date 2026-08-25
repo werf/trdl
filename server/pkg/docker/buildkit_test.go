@@ -247,6 +247,27 @@ func TestNewBuilder_ReportsUnusedBuildxSettingsInBuildkitMode(t *testing.T) {
 	assert.Contains(t, strings.Join(logger.lines, "\n"), "buildx driver settings are not used")
 }
 
+func TestNewBuilder_ReportsUnusedBuildkitdDriverInBuildkitMode(t *testing.T) {
+	t.Setenv(buildkitdAddressEnv, "tcp://buildkitd:1234")
+	logger := &recordingLogger{}
+
+	builder, err := NewBuilder(context.Background(), &NewBuilderOpts{
+		BuildId:                 "42",
+		DockerfilePathInContext: ".trdl/Dockerfile",
+		BuildkitdDriver:         "kubernetes",
+		BuildkitdDriverOpts:     []string{"namespace=trdl-build"},
+		Logger:                  logger,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "tcp://buildkitd:1234", builder.buildkitdAddress)
+	assert.Nil(t, builder.kubernetesBuilder, "no builder is provisioned when an address is set")
+
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+	assert.Contains(t, strings.Join(logger.lines, "\n"), "buildkitd driver settings are not used")
+}
+
 func TestBuild_UnblocksContextProducerWhenBuildFails(t *testing.T) {
 	// A one-byte pipe buffer puts the producer in the state a real context reaches
 	// once it outgrows the buffer: blocked on write until the build drains it.
