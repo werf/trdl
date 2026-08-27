@@ -151,10 +151,15 @@ jobs:
       - name: Assert no builder pod was left behind
         if: always()
         run: |
-          leftover=$(kubectl get pods -n default -l app --no-headers 2>/dev/null | grep '^trdl-builder-' || true)
-          if [ -n "$leftover" ]; then
-            echo "the release left a builder pod behind:"
-            echo "$leftover"
+          # An empty pod list only means "nothing left behind" if the query itself
+          # ran. Probe the API first, so an unreachable cluster fails this step
+          # instead of passing it silently.
+          kubectl get namespace default > /dev/null
+          kubectl get pods -n default --no-headers > /tmp/pods-after.txt
+          echo "pods still in the namespace: $(wc -l < /tmp/pods-after.txt)"
+
+          if grep '^trdl-builder-' /tmp/pods-after.txt; then
+            echo "the release left a builder pod behind"
             exit 1
           fi
 

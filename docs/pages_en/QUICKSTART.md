@@ -71,14 +71,14 @@ Notes on the `kubernetes` driver:
 * rootless BuildKit (`rootless=true`) does not fit the `baseline` PodSecurity level either: buildx gives the builder pod `seccompProfile: Unconfined` and the `unconfined` AppArmor annotation, and both are already forbidden at `baseline`. The builder namespace has to be labelled `privileged` (or be exempt from PodSecurity admission);
 * see the [buildx kubernetes driver documentation](https://docs.docker.com/build/builders/drivers/kubernetes/) for the available driver options.
 
-#### Building without the docker CLI
+#### Building without the buildx drivers
 
-Both buildx drivers above shell out to the `docker` CLI, so they require the binary to be present next to the plugin. When the plugin runs in an environment without the `docker` binary — for example, embedded into another process shipped in a distroless image — there are two ways to build anyway:
+Both buildx drivers above shell out to the `docker` CLI, so they require the binary to be present next to the plugin. Two settings replace that path, and both talk to BuildKit with the Go client:
 
-* `buildkitd_driver` — the plugin provisions an ephemeral `buildkitd` itself, one per build, and removes it afterwards;
-* `buildkitd_address` — the plugin connects to a `buildkitd` somebody else runs, and provisions nothing.
+* `buildkitd_driver` — the plugin provisions an ephemeral `buildkitd` itself, one per build, and removes it afterwards. It executes no external binary at all, which is what makes it usable where no `docker` exists — for example when the plugin is embedded into another process shipped in a distroless image;
+* `buildkitd_address` — the plugin connects to a `buildkitd` somebody else runs, and provisions nothing. Whether it needs a binary depends on the scheme: `unix://` and `tcp://` do not, while `docker-container://` and `kube-pod://` still shell out to `docker` and `kubectl` respectively (see below).
 
-Both talk to BuildKit with the Go client and invoke no external binary. Only one of them can be set, and neither can be combined with the buildx settings above.
+Only one of them can be set, and neither can be combined with the buildx settings above.
 
 ##### Provisioning an ephemeral buildkitd
 
@@ -104,7 +104,7 @@ The options are `name=value` pairs, one per list element and passed through as i
 
 | Option | Meaning |
 |---|---|
-| `namespace` | the namespace to run the builder in; defaults to the namespace of the plugin's own ServiceAccount, or of the current kubeconfig context |
+| `namespace` | the namespace to run the builder in; defaults to the namespace of the plugin's own ServiceAccount, or of the current kubeconfig context, and to `default` when neither names one |
 | `image` | the buildkitd image; defaults to `moby/buildkit:buildx-stable-1`, or its `-rootless` variant when `rootless=true` |
 | `rootless` | run rootless BuildKit |
 | `serviceaccount` | the ServiceAccount for the builder pod |
@@ -112,7 +112,7 @@ The options are `name=value` pairs, one per list element and passed through as i
 | `requests.cpu`, `requests.memory`, `requests.ephemeral-storage` | pod resource requests |
 | `limits.cpu`, `limits.memory`, `limits.ephemeral-storage` | pod resource limits |
 | `timeout` | how long to wait for the builder to become ready, e.g. `5m`; `2m` by default |
-| `deadline` | a lifetime cap for the builder pod, e.g. `2h`; unset by default |
+| `deadline` | a hard lifetime cap for the builder pod (`activeDeadlineSeconds`), e.g. `2h`; unset by default. It is not a grace period: a build still running when it expires is killed too, so set it above the longest release this project takes |
 
 The option names are the buildx kubernetes driver's own wherever the two overlap, but the vocabulary is this driver's, not buildx's: options buildx accepts and this driver does not — `replicas`, `loadbalance`, `tolerations`, `schedulername`, `qemu.*`, the persistent-volume options — are rejected, and `deadline` has no buildx counterpart.
 
@@ -120,8 +120,8 @@ What the plugin needs in the target namespace is `create`, `get` and `delete` on
 
 Notes on the pod:
 
-* the namespace must exist, and — as with the buildx `kubernetes` driver — BuildKit needs a relaxed seccomp/AppArmor profile, so the namespace has to be labelled `privileged` or be exempt from PodSecurity admission. Unlike the buildx path, the rejection is reported directly by the `create` call rather than as a readiness timeout;
-* the pod is removed when the build ends, including when it fails or is cancelled, and when the builder never becomes ready. It is not removed if the plugin's own process dies outright — set `deadline` to cap how long an abandoned builder can keep running;
+* the namespace must exist and must admit the builder pod. By default the container runs `privileged`; with `rootless=true` it runs unprivileged but needs seccomp `Unconfined` and the `unconfined` AppArmor annotation instead. Either way the `baseline` PodSecurity level forbids it, so the namespace has to be labelled `privileged` or be exempt from PodSecurity admission — the same requirement the buildx `kubernetes` driver has. Unlike the buildx path, the rejection arrives directly from the `create` call rather than as a readiness timeout;
+* the pod is removed when the build ends, including when it fails or is canceled, and when the builder never becomes ready. It is not removed if the plugin's own process dies outright — `deadline` caps how long an abandoned builder can keep running, at the cost of also capping a legitimate build;
 * the builder is a bare Pod with `restartPolicy: Never`, deliberately: nothing may replace it mid-build, because the replacement would be a builder the release is not connected to.
 
 ##### Connecting to an existing buildkitd
