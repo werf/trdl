@@ -112,7 +112,7 @@ The options are `name=value` pairs, one per list element and passed through as i
 | `requests.cpu`, `requests.memory`, `requests.ephemeral-storage` | pod resource requests |
 | `limits.cpu`, `limits.memory`, `limits.ephemeral-storage` | pod resource limits |
 | `timeout` | how long to wait for the builder to become ready, e.g. `5m`; `2m` by default |
-| `deadline` | a hard lifetime cap for the builder pod (`activeDeadlineSeconds`), e.g. `2h`; unset by default. It is not a grace period: a build still running when it expires is killed too, so set it above the longest release this project takes |
+| `deadline` | a hard lifetime cap for the builder pod (`activeDeadlineSeconds`), e.g. `2h`; unset by default, and a whole number of seconds of at least `1s`. It is not a grace period: a build still running when it expires is killed too, so set it above the longest release this project takes |
 
 The option names are the buildx kubernetes driver's own wherever the two overlap, but the vocabulary is this driver's, not buildx's: options buildx accepts and this driver does not — `replicas`, `loadbalance`, `tolerations`, `schedulername`, `qemu.*`, the persistent-volume options — are rejected, and `deadline` has no buildx counterpart.
 

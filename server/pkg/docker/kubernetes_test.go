@@ -26,12 +26,13 @@ import (
 type fakeAPIServer struct {
 	*httptest.Server
 
-	mu       sync.Mutex
-	calls    []string
-	created  *corev1.Pod
-	deleted  bool
-	readyPod bool
-	phase    corev1.PodPhase
+	mu         sync.Mutex
+	calls      []string
+	created    *corev1.Pod
+	deleted    bool
+	readyPod   bool
+	phase      corev1.PodPhase
+	failCreate bool
 }
 
 func newFakeAPIServer(t *testing.T) *fakeAPIServer {
@@ -43,11 +44,29 @@ func newFakeAPIServer(t *testing.T) *fakeAPIServer {
 		f.calls = append(f.calls, r.Method+" "+r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
 
+		// The exec subresource is a POST with no JSON body and a SPDY upgrade this
+		// server does not speak; it is recorded and refused, which is enough to
+		// show the request was issued at all.
+		if strings.HasSuffix(r.URL.Path, "/exec") {
+			w.WriteHeader(http.StatusBadRequest)
+
+			return
+		}
+
 		switch r.Method {
 		case http.MethodPost:
 			pod := &corev1.Pod{}
 			require.NoError(t, json.NewDecoder(r.Body).Decode(pod))
+			// The pod is recorded before the status is written, so failCreate
+			// reproduces the case where the API server persisted it and the
+			// client saw only an error.
 			f.created = pod
+			if f.failCreate {
+				w.WriteHeader(http.StatusInternalServerError)
+				require.NoError(t, json.NewEncoder(w).Encode(&metav1.Status{Status: metav1.StatusFailure, Code: http.StatusInternalServerError}))
+
+				return
+			}
 			w.WriteHeader(http.StatusCreated)
 			require.NoError(t, json.NewEncoder(w).Encode(pod))
 		case http.MethodGet:
@@ -111,6 +130,13 @@ func (f *fakeAPIServer) methods() []string {
 	}
 
 	return methods
+}
+
+func (f *fakeAPIServer) recordedCalls() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	return append([]string(nil), f.calls...)
 }
 
 func (f *fakeAPIServer) podDeleted() bool {
@@ -221,6 +247,50 @@ func TestKubernetesBuilderBootstrapWaitsForReadinessNotJustRunning(t *testing.T)
 	assert.True(t, f.podDeleted(), "the builder pod must be removed when readiness never arrives")
 }
 
+// A pod the API server persisted while the client saw a failure is invisible to
+// the caller — no builder is returned, so nothing else can clean it up.
+func TestKubernetesBuilderBootstrapRemovesPodAfterFailedCreate(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.failCreate = true
+
+	b := newTestBuilder(t, f, time.Minute)
+
+	err := b.bootstrap(testContext(), testBuilderOpts())
+
+	require.Error(t, err)
+	assert.True(t, f.podDeleted(), "a pod that may have been created must be deleted when create reports failure")
+}
+
+// gRPC cancels the context it hands a dialer as soon as the transport is up. If
+// the exec stream were scoped to that context it would be torn down immediately,
+// which is what made the first cluster run fail with "context canceled". The
+// stream must follow the build's context instead: with a dead dialer context the
+// request still has to reach the API server.
+func TestKubernetesBuilderClientIgnoresDialerContext(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.readyPod = true
+
+	b := newTestBuilder(t, f, time.Minute)
+
+	dead, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	conn, err := b.dialerFor(testContext())(dead, "")
+	if err == nil {
+		t.Cleanup(func() { _ = conn.Close() })
+	}
+
+	assert.Eventually(t, func() bool {
+		for _, call := range f.recordedCalls() {
+			if strings.Contains(call, "/exec") {
+				return true
+			}
+		}
+
+		return false
+	}, 5*time.Second, 20*time.Millisecond, "the exec request must be issued even when the dialer context is already canceled")
+}
+
 func TestKubernetesBuilderRemoveToleratesMissingPod(t *testing.T) {
 	f := newFakeAPIServer(t)
 	b := newTestBuilder(t, f, time.Minute)
@@ -304,13 +374,17 @@ func TestBuildkitPodAppliesResourcesAndScheduling(t *testing.T) {
 
 func TestParseKubernetesDriverOptsRejections(t *testing.T) {
 	for name, driverOpts := range map[string][]string{
-		"unsupported option":   {"tolerations=key=node,operator=Exists"},
-		"not a pair":           {"namespace"},
-		"bad boolean":          {"rootless=yes-please"},
-		"bad duration":         {"deadline=90"},
-		"bad quantity":         {"limits.memory=4 gigabytes"},
-		"negative deadline":    {"deadline=-1m"},
-		"non-positive timeout": {"timeout=0s"},
+		"unsupported option":    {"tolerations=key=node,operator=Exists"},
+		"not a pair":            {"namespace"},
+		"bad boolean":           {"rootless=yes-please"},
+		"bad duration":          {"deadline=90"},
+		"bad quantity":          {"limits.memory=4 gigabytes"},
+		"negative deadline":     {"deadline=-1m"},
+		"sub-second deadline":   {"deadline=500ms"},
+		"truncating deadline":   {"deadline=1500ms"},
+		"negative cpu request":  {"requests.cpu=-1"},
+		"negative memory limit": {"limits.memory=-500Mi"},
+		"non-positive timeout":  {"timeout=0s"},
 	} {
 		rejected := driverOpts
 		t.Run(name, func(t *testing.T) {

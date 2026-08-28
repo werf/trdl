@@ -17,9 +17,8 @@ var execParameterCodec = runtime.NewParameterCodec(coreScheme)
 
 // dial reaches buildkitd through the API server's pods/exec channel rather than
 // over the network, so the plugin needs no route to the builder pod itself. The
-// address is ignored: the BuildKit client is constructed with an empty one and
-// every connection comes from here.
-func (b *kubernetesBuilder) dial(ctx context.Context, _ string) (net.Conn, error) {
+// context has to be the build's, not the one gRPC hands its dialer — see client.
+func (b *kubernetesBuilder) dial(ctx context.Context) (net.Conn, error) {
 	request := b.restClient.
 		Post().
 		Namespace(b.namespace).

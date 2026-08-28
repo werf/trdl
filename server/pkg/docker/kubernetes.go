@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -125,19 +126,19 @@ func (b *kubernetesBuilder) bootstrap(ctx context.Context, opts kubernetesBuilde
 	pod := buildkitPod(b.podName, opts)
 
 	if err := b.createPod(ctx, pod); err != nil {
+		// The API server may have persisted the pod before the response was lost,
+		// and the caller gets no builder back to clean up with, so the delete is
+		// attempted here too. It is best effort: the usual case is that nothing
+		// was created and this is a no-op.
+		b.removeAfterFailure(ctx)
+
 		return fmt.Errorf("unable to create builder pod %s/%s: %w", b.namespace, b.podName, err)
 	}
 
 	b.log(ctx, fmt.Sprintf("Waiting for builder pod %s/%s", b.namespace, b.podName))
 
 	if err := b.waitForPod(ctx); err != nil {
-		// The pod outlives a failed bootstrap unless it is deleted here: the caller
-		// gets no builder back, so nothing else can run the cleanup. A canceled
-		// build context is exactly when this runs, so the delete gets its own.
-		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), buildkitPodCleanupTimeout)
-		defer cancel()
-
-		if removeErr := b.remove(cleanupCtx); removeErr != nil {
+		if removeErr := b.removeAfterFailure(ctx); removeErr != nil {
 			return fmt.Errorf("%w (the builder pod was left behind: %w)", err, removeErr)
 		}
 
@@ -145,6 +146,16 @@ func (b *kubernetesBuilder) bootstrap(ctx context.Context, opts kubernetesBuilde
 	}
 
 	return nil
+}
+
+// removeAfterFailure deletes the pod on a path where the caller never receives a
+// builder and so cannot run the cleanup itself. A canceled build context is
+// exactly when this runs, so the delete is given one of its own.
+func (b *kubernetesBuilder) removeAfterFailure(ctx context.Context) error {
+	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), buildkitPodCleanupTimeout)
+	defer cancel()
+
+	return b.remove(cleanupCtx)
 }
 
 // The pod's own readiness probe runs `buildctl debug workers`, so a ready pod is
@@ -183,12 +194,22 @@ func (b *kubernetesBuilder) waitForPod(ctx context.Context) error {
 }
 
 func (b *kubernetesBuilder) client(ctx context.Context) (*bkclient.Client, error) {
-	client, err := bkclient.New(ctx, "", bkclient.WithContextDialer(b.dial))
+	client, err := bkclient.New(ctx, "", bkclient.WithContextDialer(b.dialerFor(ctx)))
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to the builder pod %s/%s: %w", b.namespace, b.podName, err)
 	}
 
 	return client, nil
+}
+
+// dialerFor drops the context gRPC hands the dialer, deliberately: gRPC scopes
+// it to one connection attempt and cancels it as soon as the transport is up,
+// which would tear down the exec stream the connection is made of. The stream
+// has to live as long as the build, so it follows the build's context.
+func (b *kubernetesBuilder) dialerFor(ctx context.Context) func(context.Context, string) (net.Conn, error) {
+	return func(context.Context, string) (net.Conn, error) {
+		return b.dial(ctx)
+	}
 }
 
 func (b *kubernetesBuilder) remove(ctx context.Context) error {
@@ -351,8 +372,11 @@ func parseKubernetesDriverOpts(driverOpts []string) (kubernetesBuilderOpts, erro
 	if !timeoutSet {
 		opts.timeout = defaultBuildkitPodTimeout
 	}
-	if opts.deadline < 0 {
-		return opts, fmt.Errorf("driver option %q: must not be negative", "deadline")
+	// activeDeadlineSeconds is whole seconds and must be at least one, so a
+	// sub-second deadline would truncate to zero and a fractional one would
+	// silently lose its remainder.
+	if opts.deadline != 0 && (opts.deadline < time.Second || opts.deadline%time.Second != 0) {
+		return opts, fmt.Errorf("driver option %q: must be a whole number of seconds, at least 1s", "deadline")
 	}
 	if opts.timeout <= 0 {
 		return opts, fmt.Errorf("driver option %q: must be positive", "timeout")
@@ -365,6 +389,11 @@ func setResourceQuantity(list corev1.ResourceList, name, value string) error {
 	quantity, err := resource.ParseQuantity(strings.TrimSpace(value))
 	if err != nil {
 		return err
+	}
+	// ParseQuantity accepts a signed quantity, and a negative one is only rejected
+	// by the API server when the build finally tries to create the pod.
+	if quantity.Sign() < 0 {
+		return fmt.Errorf("must not be negative")
 	}
 	list[corev1.ResourceName(name)] = quantity
 
