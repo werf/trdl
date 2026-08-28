@@ -205,7 +205,8 @@ jobs:
         run: |
           # The specs skip themselves outside this job, so a green run proves
           # nothing until it names the spec it executed.
-          grep -qE '^Ran [1-9][0-9]* of ' /tmp/guard.log
+          # No anchor: ginkgo colours this line, so it does not start with "Ran".
+          grep -qE 'Ran [1-9][0-9]* of [0-9]+ Specs' /tmp/guard.log
           grep -q 'kubernetes buildkitd driver forwarding' /tmp/guard.log
 
       - name: Upload coverage artifact
