@@ -346,7 +346,7 @@ func parseKubernetesDriverOpts(driverOpts []string) (kubernetesBuilderOpts, erro
 		case "deadline":
 			opts.deadline, err = time.ParseDuration(value)
 		case "timeout":
-			opts.timeout, timeoutSet = time.Duration(0), true
+			timeoutSet = true
 			opts.timeout, err = time.ParseDuration(value)
 		case "nodeselector":
 			opts.nodeSelector, err = splitKeyValues(value)

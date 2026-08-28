@@ -354,6 +354,53 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildkitdDriverOpts
 	assert.Nil(suite.T(), cfg, "a rejected configuration must not be stored")
 }
 
+// Rejection has to happen before the storage write on the update path too:
+// exercising it through create only would keep the suite green if the check
+// moved below putConfiguration.
+func (suite *PathConfigureCallbacksSuite) TestUpdate_RejectedBuildkitdDriverKeepsConfiguration() {
+	stored := completeConfiguration()
+	err := putConfiguration(suite.ctx, suite.storage, stored)
+	assert.Nil(suite.T(), err)
+
+	for name, mutate := range map[string]func(map[string]interface{}){
+		"unsupported driver": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdDriver] = "nomad"
+		},
+		"unsupported driver option": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdDriver] = "kubernetes"
+			data[fieldNameBuildkitdDriverOpts] = []string{"replicas=3"}
+		},
+		"driver options without a driver": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdDriverOpts] = []string{"namespace=trdl-build"}
+		},
+		"driver next to the buildx pair": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdDriver] = "kubernetes"
+			data[fieldNameBuildxDriver] = "kubernetes"
+		},
+		"driver next to an address": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdAddress] = "tcp://buildkitd:1234"
+			data[fieldNameBuildkitdDriver] = "kubernetes"
+		},
+	} {
+		rejected := mutate
+		suite.Run(name, func() {
+			reqData := dataCompleteConfigurationWithoutBuildxFields()
+			rejected(reqData)
+
+			suite.req.Operation = logical.UpdateOperation
+			suite.req.Data = reqData
+
+			resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+			assert.Nil(suite.T(), err)
+			assert.NotNil(suite.T(), resp, "the update must be rejected")
+
+			cfg, err := getConfiguration(suite.ctx, suite.storage)
+			assert.Nil(suite.T(), err)
+			assert.Equal(suite.T(), stored, cfg, "a rejected update must leave the stored configuration untouched")
+		})
+	}
+}
+
 func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildxFieldsRejectedWithBuildkitdDriver() {
 	for field, value := range map[string]interface{}{
 		fieldNameBuildxDriver:     "kubernetes",

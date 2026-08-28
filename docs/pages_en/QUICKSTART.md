@@ -124,6 +124,11 @@ Notes on the pod:
 * the pod is removed when the build ends, including when it fails or is canceled, and when the builder never becomes ready. It is not removed if the plugin's own process dies outright — `deadline` caps how long an abandoned builder can keep running, at the cost of also capping a legitimate build;
 * the builder is a bare Pod with `restartPolicy: Never`, deliberately: nothing may replace it mid-build, because the replacement would be a builder the release is not connected to.
 
+Two things follow from the plugin creating the pod with its own credentials, and both are the administrator's to weigh:
+
+* **`configure` write access becomes pod-create access.** Whoever can write a project's configuration chooses the `namespace` the builder runs in, the `serviceaccount` it runs as and the `image` it runs — anywhere the plugin's own Role reaches. Restrict `<project>/configure` to the same people who are trusted with the release keys, and keep the plugin's Role to namespaces that hold nothing else worth taking. A namespace containing exactly one ServiceAccount, with no RoleBinding of its own, is what keeps `pods` `create` from turning into somebody else's permissions.
+* **The builder container is privileged by default.** BuildKit needs it; `rootless=true` trades it for seccomp `Unconfined` and the `unconfined` AppArmor annotation. Either way the build executes project-supplied instructions in a container the `baseline` PodSecurity level would refuse, so give it a namespace and nodes you are willing to lose, not the ones the signing keys live on.
+
 ##### Connecting to an existing buildkitd
 
 The build can instead be pointed at an already running `buildkitd`: the plugin then talks to it directly with the BuildKit client, and no builder is provisioned or removed per build.

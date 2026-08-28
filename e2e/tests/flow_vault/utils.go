@@ -307,6 +307,20 @@ func serverAddGPGKeys(testDir, projectName string, keys map[string]string) {
 	}
 }
 
+// serverReleaseExpectingFailure runs the same release and returns its output
+// instead of asserting success, so a test can state which failure it expects.
+func serverReleaseExpectingFailure(bin, projectName, tagName string) string {
+	output, err := testutil.RunCommandWithOptions(
+		"",
+		bin,
+		[]string{"release", projectName, tagName, "--token", "root", "--max-attempts", "1"},
+		testutil.RunCommandOptions{ShouldSucceed: false},
+	)
+	Expect(err).Should(HaveOccurred(), "the release was expected to fail")
+
+	return string(output)
+}
+
 func serverRelease(bin, projectName, tagName string) {
 	testutil.RunSucceedCommand(
 		"",
