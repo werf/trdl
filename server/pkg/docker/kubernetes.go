@@ -128,9 +128,12 @@ func (b *kubernetesBuilder) bootstrap(ctx context.Context, opts kubernetesBuilde
 	if err := b.createPod(ctx, pod); err != nil {
 		// The API server may have persisted the pod before the response was lost,
 		// and the caller gets no builder back to clean up with, so the delete is
-		// attempted here too. It is best effort: the usual case is that nothing
-		// was created and this is a no-op.
-		b.removeAfterFailure(ctx)
+		// attempted here too. Usually nothing was created and it is a no-op, but
+		// when both calls fail the operator has a privileged pod to find by hand
+		// and has to be told so, the same way the readiness path tells them.
+		if removeErr := b.removeAfterFailure(ctx); removeErr != nil {
+			return fmt.Errorf("unable to create builder pod %s/%s: %w (a pod may have been created and was not removed: %w)", b.namespace, b.podName, err, removeErr)
+		}
 
 		return fmt.Errorf("unable to create builder pod %s/%s: %w", b.namespace, b.podName, err)
 	}

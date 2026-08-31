@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
 	. "github.com/onsi/gomega"
@@ -228,9 +229,11 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 	}()
 
 	// Set TRDL_TEST_BUILDKITD_DRIVER to have the plugin provision the builder
-	// itself, with no docker binary involved. Its options are comma-separated in
-	// TRDL_TEST_BUILDKITD_DRIVER_OPTS and passed one per element, because the
-	// field is a list.
+	// itself, with no docker binary involved. Its options come one per
+	// TRDL_TEST_BUILDKITD_DRIVER_OPTS_<SUFFIX> variable, the way the plugin's own
+	// TRDL_BUILDX_DRIVER_OPTS_* work: a documented option value can contain
+	// commas, as `nodeselector=disktype=ssd,zone=a` does, so nothing may split
+	// them.
 	buildkitdDriver := func() string {
 		if driver := os.Getenv("TRDL_TEST_BUILDKITD_DRIVER"); driver != "" {
 			return fmt.Sprintf("buildkitd_driver=%s", driver)
@@ -239,8 +242,16 @@ func serverConfigureProject(testDir string, opts serverConfigureOptions) {
 	}()
 
 	var buildkitdDriverOpts []string
-	if opts := os.Getenv("TRDL_TEST_BUILDKITD_DRIVER_OPTS"); opts != "" {
-		for _, driverOpt := range strings.Split(opts, ",") {
+	var driverOptNames []string
+	for _, keyValue := range os.Environ() {
+		if name, _, _ := strings.Cut(keyValue, "="); strings.HasPrefix(name, "TRDL_TEST_BUILDKITD_DRIVER_OPTS_") {
+			driverOptNames = append(driverOptNames, name)
+		}
+	}
+	sort.Strings(driverOptNames)
+
+	for _, name := range driverOptNames {
+		if driverOpt := os.Getenv(name); driverOpt != "" {
 			buildkitdDriverOpts = append(buildkitdDriverOpts, fmt.Sprintf("buildkitd_driver_opts=%s", driverOpt))
 		}
 	}

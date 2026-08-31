@@ -33,6 +33,7 @@ type fakeAPIServer struct {
 	readyPod   bool
 	phase      corev1.PodPhase
 	failCreate bool
+	failDelete bool
 }
 
 func newFakeAPIServer(t *testing.T) *fakeAPIServer {
@@ -77,6 +78,12 @@ func newFakeAPIServer(t *testing.T) *fakeAPIServer {
 			}
 			require.NoError(t, json.NewEncoder(w).Encode(podWithStatus(f.created, f.readyPod, f.phase)))
 		case http.MethodDelete:
+			if f.failDelete {
+				w.WriteHeader(http.StatusInternalServerError)
+				require.NoError(t, json.NewEncoder(w).Encode(&metav1.Status{Status: metav1.StatusFailure, Code: http.StatusInternalServerError}))
+
+				return
+			}
 			if f.created == nil || f.deleted {
 				writeNotFound(t, w)
 
@@ -259,6 +266,26 @@ func TestKubernetesBuilderBootstrapRemovesPodAfterFailedCreate(t *testing.T) {
 
 	require.Error(t, err)
 	assert.True(t, f.podDeleted(), "a pod that may have been created must be deleted when create reports failure")
+	// The forwarding guard in CI greps this message for the namespace the driver
+	// options carried, so the namespace has to be in it.
+	assert.Contains(t, err.Error(), "builder pod trdl-build/", "the error must name the namespace the builder was configured with")
+}
+
+// When the create fails and the cleanup fails too, the operator has a privileged
+// pod nobody can see and has to be told: the create error alone does not say a
+// pod may exist.
+func TestKubernetesBuilderBootstrapReportsAPodItCouldNotRemove(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.failCreate = true
+	f.failDelete = true
+
+	b := newTestBuilder(t, f, time.Minute)
+
+	err := b.bootstrap(testContext(), testBuilderOpts())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unable to create builder pod")
+	assert.Contains(t, err.Error(), "was not removed", "a pod that may exist and could not be deleted has to be named")
 }
 
 // gRPC cancels the context it hands a dialer as soon as the transport is up. If

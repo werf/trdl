@@ -147,15 +147,19 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     # The mirror image of e2e_buildx_config, for a driver that cannot succeed
-    # without a cluster. The configuration names the kubernetes buildkitd driver,
-    # which has no cluster here, while the environment names a buildx driver that
-    # works. The release therefore has to FAIL, and with the driver's own error:
-    # if the configured value stops being forwarded, the build falls back to the
-    # docker CLI and succeeds, which is what this job refuses.
+    # without a cluster. The configuration names the kubernetes buildkitd driver
+    # and a namespace, while the environment names a buildx driver that works.
+    # The release therefore has to FAIL, and with the driver's own error naming
+    # that namespace: if the driver stops being forwarded the build falls back to
+    # the docker CLI and succeeds, and if the OPTIONS stop being forwarded the
+    # namespace is the kubeconfig's instead. The kubeconfig below points at a
+    # closed port precisely so the driver gets past client configuration and
+    # reaches pod creation, which is where the namespace becomes observable.
     env:
       TRDL_BUILDX_DRIVER: docker-container
       TRDL_TEST_BUILDKITD_DRIVER: kubernetes
-      TRDL_TEST_BUILDKITD_DRIVER_OPTS: namespace=default
+      TRDL_TEST_BUILDKITD_DRIVER_OPTS_NAMESPACE: namespace=trdl-forwarding-guard
+      KUBECONFIG: /tmp/guard-kubeconfig.yaml
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -190,6 +194,30 @@ jobs:
 
       - name: Install ginkgo
         run: task --yes -p deps:install:ginkgo
+
+      - name: Write a kubeconfig pointing at a closed port
+        run: |
+          # Its namespace is deliberately NOT the configured one: the driver must
+          # take the namespace from buildkitd_driver_opts, and this is what makes
+          # the difference observable in the error.
+          cat > /tmp/guard-kubeconfig.yaml <<'EOF'
+          apiVersion: v1
+          kind: Config
+          clusters:
+            - name: unreachable
+              cluster:
+                server: https://127.0.0.1:1
+          contexts:
+            - name: unreachable
+              context:
+                cluster: unreachable
+                user: none
+                namespace: kubeconfig-namespace
+          current-context: unreachable
+          users:
+            - name: none
+              user: {}
+          EOF
 
       - name: Setup vault
         run: |

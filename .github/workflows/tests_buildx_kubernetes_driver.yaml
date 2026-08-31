@@ -142,7 +142,11 @@ jobs:
           kubectl cluster-info --context kind-trdl-buildkitd
 
       - name: Test
-        run: task --yes e2e:test:e2e:flow-vault
+        # Only the complete-cycle spec: this job sets TRDL_TEST_BUILDKITD_DRIVER,
+        # which also registers the negative forwarding guard, and the suite's
+        # AfterEach removes the plugin binary BeforeSuite built once, so a second
+        # spec would find nothing to enable.
+        run: task --yes e2e:test:e2e paths='./tests/flow_vault' labelFilter='flow'
 
       - name: Collect builder diagnostics
         if: failure()

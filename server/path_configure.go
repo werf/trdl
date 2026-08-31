@@ -120,7 +120,7 @@ func configurePath(b *Backend) *framework.Path {
 			},
 			fieldNameBuildkitdAddress: {
 				Type:        framework.TypeString,
-				Description: "An address of a running buildkitd (unix://, tcp://, docker-container:// or kube-pod:// scheme) to build release artifacts with the BuildKit client; the docker CLI is used if not set. Build secrets are sent to that daemon, and tcp:// is neither encrypted nor authenticated, so securing the channel and isolating the daemon is the administrator's responsibility",
+				Description: "An address of a running buildkitd (unix://, tcp://, docker-container:// or kube-pod:// scheme) to build release artifacts with the BuildKit client; the docker CLI is used only when neither this nor buildkitd_driver is set. Build secrets are sent to that daemon, and tcp:// is neither encrypted nor authenticated, so securing the channel and isolating the daemon is the administrator's responsibility",
 				Required:    false,
 			},
 			fieldNameBuildxDriver: {

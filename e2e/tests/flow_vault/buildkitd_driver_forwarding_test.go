@@ -23,6 +23,11 @@ import (
 // exists and skips still runs that AfterEach, which leaves the next spec unable
 // to enable the plugin at all. So this suite tolerates exactly one live spec,
 // and the label filter in the job is what keeps it to one.
+// guardNamespace is the namespace the job passes through
+// buildkitd_driver_opts. It must differ from the kubeconfig's namespace, or the
+// assertion below would hold even with the options dropped.
+const guardNamespace = "trdl-forwarding-guard"
+
 func init() {
 	if os.Getenv("TRDL_TEST_BUILDKITD_DRIVER") != "kubernetes" {
 		return
@@ -78,12 +83,13 @@ func init() {
 
 				output := serverReleaseExpectingFailure(SuiteData.TrdlVaultClientBinPath, projectName, "v1.0.0")
 
-				// Which error the driver reports depends on how far it gets: with no
-				// kubeconfig at all it stops at client configuration, and with one
-				// naming an unreachable cluster it stops at the pod. Either proves
-				// the configured driver was reached; the docker CLI path produces
-				// neither, and would in fact have succeeded here.
-				Expect(output).Should(MatchRegexp("unable to configure the kubernetes client|builder pod"))
+				// Two things have to be true, and the namespace is what makes the
+				// second one observable. The error has to come from the driver at
+				// all — the docker CLI path would have succeeded here — and it has
+				// to name the namespace the OPTIONS carried, not the one the
+				// kubeconfig names. Dropping buildkitd_driver_opts anywhere along
+				// the way leaves the kubeconfig's namespace in this message.
+				Expect(output).Should(ContainSubstring("builder pod " + guardNamespace + "/"))
 			}
 		})
 	})
