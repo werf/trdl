@@ -135,12 +135,12 @@ func configurePath(b *Backend) *framework.Path {
 			},
 			fieldNameBuildkitdDriver: {
 				Type:        framework.TypeString,
-				Description: "Provision an ephemeral buildkitd per build instead of using the docker CLI: kubernetes runs it as a pod and needs no docker binary next to the plugin. Cannot be combined with buildkitd_address, buildx_driver or buildx_driver_opts",
+				Description: "Provision an ephemeral buildkitd per build instead of using the docker CLI: kubernetes runs it as a pod and needs no docker binary next to the plugin. Cannot be combined with buildkitd_address, buildx_driver or buildx_driver_opts. A TRDL_BUILDKITD_ADDRESS set on the process wins over a stored driver, and the build reports the driver as unused",
 				Required:    false,
 			},
 			fieldNameBuildkitdDriverOpts: {
 				Type:        framework.TypeStringSlice,
-				Description: "The buildkitd driver options, one name=value pair per element (e.g. namespace=trdl-build). The kubernetes driver accepts annotations, deadline, image, labels, limits.cpu, limits.ephemeral-storage, limits.memory, namespace, nodeselector, requests.cpu, requests.ephemeral-storage, requests.memory, rootless, serviceaccount and timeout; anything else is rejected",
+				Description: "The buildkitd driver options, one name=value pair per element (e.g. namespace=trdl-build); they require buildkitd_driver to be set. The kubernetes driver accepts annotations, deadline, image, labels, limits.cpu, limits.ephemeral-storage, limits.memory, namespace, nodeselector, requests.cpu, requests.ephemeral-storage, requests.memory, rootless, serviceaccount and timeout; anything else is rejected",
 				Required:    false,
 			},
 		},

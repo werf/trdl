@@ -363,6 +363,9 @@ func TestBuildkitPodRootless(t *testing.T) {
 	assert.Contains(t, container.Args, "--oci-worker-no-process-sandbox")
 	assert.Nil(t, container.SecurityContext.Privileged, "rootless must not ask for a privileged container")
 	assert.Equal(t, corev1.SeccompProfileTypeUnconfined, container.SecurityContext.SeccompProfile.Type)
+	// The annotation alone is not enough on a cluster that no longer converts it
+	// into the field, so both have to be present.
+	assert.Equal(t, corev1.AppArmorProfileTypeUnconfined, container.SecurityContext.AppArmorProfile.Type)
 	assert.Equal(t, "unconfined", pod.Annotations["container.apparmor.security.beta.kubernetes.io/buildkitd"])
 	assert.Len(t, pod.Spec.Volumes, 1)
 	assert.Len(t, container.VolumeMounts, 1)

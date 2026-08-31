@@ -8,9 +8,15 @@ name: Tests. In-cluster Kubernetes builders
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   TASK_X_REMOTE_TASKFILES: 1
   KIND_VERSION: v0.32.0
+  # Pinned so a mutable release asset cannot become whatever it likes before it is
+  # installed as root; from the release's own kind-linux-amd64.sha256sum.
+  KIND_SHA256: 50030de23cf40a18505f20426f6a8506bedf13c6e509244bd1fa9463721b0f54
 
 jobs:
   e2e_tests_buildx_kubernetes:
@@ -23,6 +29,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -63,6 +71,7 @@ jobs:
       - name: Set up kind cluster
         run: |
           curl -fsSLo /tmp/kind https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64
+          echo "${KIND_SHA256}  /tmp/kind" | sha256sum --check --strict
           sudo install -m 0755 /tmp/kind /usr/local/bin/kind
           kind create cluster --name trdl-buildx
           kubectl cluster-info --context kind-trdl-buildx
@@ -93,10 +102,12 @@ jobs:
       # unused: a regression routing back to it fails on this value.
       TRDL_BUILDX_DRIVER: this-driver-does-not-exist
       TRDL_TEST_BUILDKITD_DRIVER: kubernetes
-      TRDL_TEST_BUILDKITD_DRIVER_OPTS: namespace=default
+      TRDL_TEST_BUILDKITD_DRIVER_OPTS_NAMESPACE: namespace=default
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -137,6 +148,7 @@ jobs:
       - name: Set up kind cluster
         run: |
           curl -fsSLo /tmp/kind https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64
+          echo "${KIND_SHA256}  /tmp/kind" | sha256sum --check --strict
           sudo install -m 0755 /tmp/kind /usr/local/bin/kind
           kind create cluster --name trdl-buildkitd
           kubectl cluster-info --context kind-trdl-buildkitd

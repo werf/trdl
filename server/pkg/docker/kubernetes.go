@@ -483,6 +483,10 @@ func toRootless(pod *corev1.Pod) {
 	container.Args = append(container.Args, "--oci-worker-no-process-sandbox")
 	container.SecurityContext = &corev1.SecurityContext{
 		SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeUnconfined},
+		// The field is the supported API; the annotation below is deprecated since
+		// Kubernetes 1.30 and carried only so that clusters older than that still
+		// see the profile.
+		AppArmorProfile: &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeUnconfined},
 	}
 	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 		Name: buildkitContainerName,

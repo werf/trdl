@@ -78,7 +78,7 @@ Both buildx drivers above shell out to the `docker` CLI, so they require the bin
 * `buildkitd_driver` — the plugin provisions an ephemeral `buildkitd` itself, one per build, and removes it afterwards. It executes no external binary at all, which is what makes it usable where no `docker` exists — for example when the plugin is embedded into another process shipped in a distroless image;
 * `buildkitd_address` — the plugin connects to a `buildkitd` somebody else runs, and provisions nothing. Whether it needs a binary depends on the scheme: `unix://` and `tcp://` do not, while `docker-container://` and `kube-pod://` still shell out to `docker` and `kubectl` respectively (see below).
 
-Only one of them can be set, and neither can be combined with the buildx settings above.
+Only one of them can be set, and `configure` refuses either of them next to the buildx *fields*. The buildx *environment* variables are a different matter: `TRDL_BUILDX_DRIVER` and `TRDL_BUILDX_DRIVER_OPTS_*` are a fallback for the fields, and a configured `buildkitd_driver` or `buildkitd_address` simply wins over them, because a process-wide variable cannot be rejected when a project is configured.
 
 ##### Provisioning an ephemeral buildkitd
 
