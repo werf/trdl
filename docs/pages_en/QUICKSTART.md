@@ -219,7 +219,7 @@ XaOlJrPDM5E9zw==
 ```
 {% endofftopic %}
 
-Please refer to the [gpg documentation](https://www.gnupg.org/gph/en/manual/x56.html#AEN64) for more information about exporting.
+Please refer to the [gpg documentation](https://www.gnupg.org/gph/en/manual.html#AEN65) for more information about exporting.
 
 **Getting a list of keys**
 
