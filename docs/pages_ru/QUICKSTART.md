@@ -218,7 +218,7 @@ XaOlJrPDM5E9zw==
 ```
 {% endofftopic %}
 
-Подробнее про экспорт с gpg можно почитать [в документации утилиты](https://www.gnupg.org/gph/en/manual/x56.html#AEN64).
+Подробнее про экспорт с gpg можно почитать [в документации утилиты](https://www.gnupg.org/gph/en/manual.html#AEN65).
 
 **Листинг ключей**
 
