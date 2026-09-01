@@ -341,7 +341,7 @@ func parseKubernetesDriverOpts(driverOpts []string) (kubernetesBuilderOpts, erro
 		limits:       corev1.ResourceList{},
 	}
 
-	imageSet, timeoutSet := false, false
+	imageSet, timeoutSet, deadlineSet := false, false, false
 	for _, driverOpt := range driverOpts {
 		name, value, found := strings.Cut(driverOpt, "=")
 		if !found {
@@ -357,14 +357,14 @@ func parseKubernetesDriverOpts(driverOpts []string) (kubernetesBuilderOpts, erro
 			// A blank value means "not set" here as everywhere else, so it must not
 			// suppress the rootless default and store an image the API server will
 			// refuse.
-			if opts.image = strings.TrimSpace(value); opts.image != "" {
-				imageSet = true
-			}
+			opts.image = strings.TrimSpace(value)
+			imageSet = opts.image != ""
 		case "serviceaccount":
 			opts.serviceAccountName = strings.TrimSpace(value)
 		case "rootless":
 			opts.rootless, err = strconv.ParseBool(value)
 		case "deadline":
+			deadlineSet = true
 			opts.deadline, err = time.ParseDuration(value)
 		case "timeout":
 			timeoutSet = true
@@ -396,11 +396,17 @@ func parseKubernetesDriverOpts(driverOpts []string) (kubernetesBuilderOpts, erro
 	// activeDeadlineSeconds is whole seconds and must be at least one, so a
 	// sub-second deadline would truncate to zero and a fractional one would
 	// silently lose its remainder.
-	if opts.deadline != 0 && (opts.deadline < time.Second || opts.deadline%time.Second != 0) {
+	if deadlineSet && (opts.deadline < time.Second || opts.deadline%time.Second != 0) {
 		return opts, fmt.Errorf("driver option %q: must be a whole number of seconds, at least 1s", "deadline")
 	}
 	if opts.timeout <= 0 {
 		return opts, fmt.Errorf("driver option %q: must be positive", "timeout")
+	}
+	for name, request := range opts.requests {
+		limit, ok := opts.limits[name]
+		if ok && request.Cmp(limit) > 0 {
+			return opts, fmt.Errorf("driver option %q: %s exceeds the %s limit of %s", "requests."+string(name), request.String(), name, limit.String())
+		}
 	}
 
 	return opts, nil

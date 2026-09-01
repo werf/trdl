@@ -121,7 +121,7 @@ What the plugin needs in the target namespace is `create`, `get` and `delete` on
 Notes on the pod:
 
 * the namespace must exist and must admit the builder pod. By default the container runs `privileged`; with `rootless=true` it runs unprivileged but needs seccomp `Unconfined` and the `unconfined` AppArmor annotation instead. Either way the `baseline` PodSecurity level forbids it, so the namespace has to be labelled `privileged` or be exempt from PodSecurity admission — the same requirement the buildx `kubernetes` driver has. Unlike the buildx path, the rejection arrives directly from the `create` call rather than as a readiness timeout;
-* the pod is removed when the build ends, including when it fails or is canceled, and when the builder never becomes ready. It is not removed if the plugin's own process dies outright — `deadline` caps how long an abandoned builder can keep running, at the cost of also capping a legitimate build;
+* the pod is removed when the build ends, including when it fails or is canceled, and when the builder never becomes ready. It is not removed if the plugin's own process dies outright, and not if the delete itself fails — a lost API connection, a withdrawn `delete` permission. That failure is reported in the release log and the plugin log, but it does not fail the release, so a privileged pod can outlive a build that reported success. `deadline` is what bounds both cases, at the cost of also capping a legitimate build;
 * the builder is a bare Pod with `restartPolicy: Never`, deliberately: nothing may replace it mid-build, because the replacement would be a builder the release is not connected to.
 
 Two things follow from the plugin creating the pod with its own credentials, and both are the administrator's to weigh:

@@ -42,7 +42,7 @@ func newFakeAPIServer(t *testing.T) *fakeAPIServer {
 		f.mu.Lock()
 		defer f.mu.Unlock()
 
-		f.calls = append(f.calls, r.Method+" "+r.URL.Path)
+		f.calls = append(f.calls, r.Method+" "+r.URL.RequestURI())
 		w.Header().Set("Content-Type", "application/json")
 
 		// The exec subresource is a POST with no JSON body and a SPDY upgrade this
@@ -336,6 +336,48 @@ func TestKubernetesBuilderBootstrapRemovesTerminatedPod(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "terminated")
 	assert.True(t, f.podDeleted(), "a builder pod that died must be removed, not left for an operator")
+}
+
+// The exec command is the whole transport: changing it to anything else breaks
+// every build, and nothing in the required suite would notice if it were not
+// asserted here.
+func TestKubernetesBuilderDialsBuildctlDialStdio(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.readyPod = true
+
+	b := newTestBuilder(t, f, time.Minute)
+
+	conn, err := b.dialerFor(testContext())(testContext(), "")
+	if err == nil {
+		t.Cleanup(func() { _ = conn.Close() })
+	}
+
+	assert.Eventually(t, func() bool {
+		for _, call := range f.recordedCalls() {
+			if strings.Contains(call, "command=buildctl") && strings.Contains(call, "command=dial-stdio") {
+				return true
+			}
+		}
+
+		return false
+	}, 5*time.Second, 20*time.Millisecond, "the exec request must run buildctl dial-stdio in the builder container")
+}
+
+// Remove on the happy path — a builder that came up and is torn down after a
+// successful build — is what the required suite never reaches, so it is asserted
+// here rather than left to the opt-in cluster job.
+func TestBuilderRemoveDeletesTheProvisionedPod(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.readyPod = true
+
+	kb := newTestBuilder(t, f, time.Minute)
+	require.NoError(t, kb.bootstrap(testContext(), testBuilderOpts()))
+	require.False(t, f.podDeleted())
+
+	builder := &Builder{builderName: kb.podName, kubernetesBuilder: kb, logger: smokeLogger{t}}
+
+	require.NoError(t, builder.Remove(testContext()))
+	assert.True(t, f.podDeleted(), "removing the builder must delete the pod it provisioned")
 }
 
 func TestBuildkitPodDefaults(t *testing.T) {
