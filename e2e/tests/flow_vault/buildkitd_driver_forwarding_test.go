@@ -89,7 +89,10 @@ func init() {
 				// to name the namespace the OPTIONS carried, not the one the
 				// kubeconfig names. Dropping buildkitd_driver_opts anywhere along
 				// the way leaves the kubeconfig's namespace in this message.
-				Expect(output).Should(ContainSubstring("builder pod " + guardNamespace + "/"))
+				// "unable to create", not just "builder pod": the readiness log line
+				// carries the same namespace, so a bare match would also be satisfied
+				// by a pod that came up, should this job ever gain a cluster.
+				Expect(output).Should(ContainSubstring("unable to create builder pod " + guardNamespace + "/"))
 			}
 		})
 	})

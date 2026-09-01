@@ -148,7 +148,8 @@ jobs:
     timeout-minutes: 30
     # The mirror image of e2e_buildx_config, for a driver that cannot succeed
     # without a cluster. The configuration names the kubernetes buildkitd driver
-    # and a namespace, while the environment names a buildx driver that works.
+    # and a namespace; TRDL_BUILDX_DRIVER only spells out the fallback the code
+    # would take anyway, so that the path this job forbids is written down.
     # The release therefore has to FAIL, and with the driver's own error naming
     # that namespace: if the driver stops being forwarded the build falls back to
     # the docker CLI and succeeds, and if the OPTIONS stop being forwarded the
@@ -240,7 +241,7 @@ jobs:
           grep -qE 'Ran [1-9][0-9]* of [0-9]+ Specs' /tmp/guard.log
           # Only the guard itself can put this in the log — it is the release
           # output the spec asserts on, and no other spec produces it.
-          grep -q 'builder pod trdl-forwarding-guard/' /tmp/guard.log
+          grep -q 'unable to create builder pod trdl-forwarding-guard/' /tmp/guard.log
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7
