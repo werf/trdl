@@ -100,6 +100,15 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 	builderName := fmt.Sprintf("trdl-builder-%s", opts.BuildId)
 
 	if strings.TrimSpace(opts.BuildkitdDriver) != "" {
+		// configure rejects the buildx fields written next to a buildkitd driver,
+		// but the environment has no such gate, so say what is being ignored
+		// instead of leaving it to be discovered from a builder that never appears.
+		if driver, source := resolveBuildxDriver(""); source != "the default" {
+			msg := fmt.Sprintf("Provisioning buildkitd with the %s driver, the buildx driver %q from %s is not used", opts.BuildkitdDriver, driver, source)
+			logboek.Context(ctx).Default().LogLn(msg)
+			opts.Logger.Info(msg)
+		}
+
 		kubernetesBuilder, err := newKubernetesBuilder(ctx, builderName, opts.BuildkitdDriver, opts.BuildkitdDriverOpts, opts.Logger)
 		if err != nil {
 			return nil, err

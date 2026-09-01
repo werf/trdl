@@ -173,11 +173,24 @@ func (b *kubernetesBuilder) waitForPod(ctx context.Context) error {
 	lastState := ""
 	for {
 		pod, err := b.getPod(ctx)
-		switch {
-		case err != nil && ctx.Err() == nil:
-			return fmt.Errorf("unable to read builder pod %s/%s: %w", b.namespace, b.podName, err)
-		case err != nil:
-			return fmt.Errorf("builder pod %s/%s is not ready: %w (last state: %s)", b.namespace, b.podName, ctx.Err(), lo.Ternary(lastState == "", "unknown", lastState))
+		if err != nil {
+			if ctx.Err() != nil {
+				return fmt.Errorf("builder pod %s/%s is not ready: %w (last state: %s, last error: %v)", b.namespace, b.podName, ctx.Err(), lo.Ternary(lastState == "", "unknown", lastState), err)
+			}
+
+			// A single failed read is not a failed build: an API server rolling a
+			// replica, a 429 from a fairness queue or a token rotation all produce
+			// one, and the wait exists to ride them out. Keep polling until the
+			// deadline, and report the last error with it.
+			lastState = fmt.Sprintf("unreadable (%v)", err)
+
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("builder pod %s/%s is not ready: %w (last state: %s)", b.namespace, b.podName, ctx.Err(), lastState)
+			case <-ticker.C:
+			}
+
+			continue
 		}
 
 		if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodSucceeded {
@@ -341,7 +354,12 @@ func parseKubernetesDriverOpts(driverOpts []string) (kubernetesBuilderOpts, erro
 		case "namespace":
 			opts.namespace = strings.TrimSpace(value)
 		case "image":
-			opts.image, imageSet = strings.TrimSpace(value), true
+			// A blank value means "not set" here as everywhere else, so it must not
+			// suppress the rootless default and store an image the API server will
+			// refuse.
+			if opts.image = strings.TrimSpace(value); opts.image != "" {
+				imageSet = true
+			}
 		case "serviceaccount":
 			opts.serviceAccountName = strings.TrimSpace(value)
 		case "rootless":
@@ -352,11 +370,11 @@ func parseKubernetesDriverOpts(driverOpts []string) (kubernetesBuilderOpts, erro
 			timeoutSet = true
 			opts.timeout, err = time.ParseDuration(value)
 		case "nodeselector":
-			opts.nodeSelector, err = splitKeyValues(value)
+			err = mergeKeyValues(opts.nodeSelector, value)
 		case "labels":
-			opts.labels, err = splitKeyValues(value)
+			err = mergeKeyValues(opts.labels, value)
 		case "annotations":
-			opts.annotations, err = splitKeyValues(value)
+			err = mergeKeyValues(opts.annotations, value)
 		case "requests.cpu", "requests.memory", "requests.ephemeral-storage":
 			err = setResourceQuantity(opts.requests, strings.TrimPrefix(name, "requests."), value)
 		case "limits.cpu", "limits.memory", "limits.ephemeral-storage":
@@ -399,6 +417,21 @@ func setResourceQuantity(list corev1.ResourceList, name, value string) error {
 		return fmt.Errorf("must not be negative")
 	}
 	list[corev1.ResourceName(name)] = quantity
+
+	return nil
+}
+
+// mergeKeyValues adds into the map rather than replacing it: the options are one
+// name=value pair per element, so an operator naturally writes the same option
+// twice, and replacing would drop the earlier pairs without an error anywhere.
+func mergeKeyValues(into map[string]string, value string) error {
+	parsed, err := splitKeyValues(value)
+	if err != nil {
+		return err
+	}
+	for k, v := range parsed {
+		into[k] = v
+	}
 
 	return nil
 }

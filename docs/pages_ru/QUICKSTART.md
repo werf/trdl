@@ -103,7 +103,7 @@ vault write trdl-test-project/configure ... \
 
 | Опция | Значение |
 |---|---|
-| `namespace` | namespace для сборщика; по умолчанию — namespace собственного ServiceAccount плагина либо текущего контекста kubeconfig, а если не задан ни там ни там — `default` |
+| `namespace` | namespace для сборщика; по умолчанию — namespace текущего контекста kubeconfig, затем namespace собственного ServiceAccount плагина, а если не задан ни там ни там — `default` |
 | `image` | образ buildkitd; по умолчанию `moby/buildkit:buildx-stable-1`, а при `rootless=true` — его вариант `-rootless` |
 | `rootless` | запускать rootless BuildKit |
 | `serviceaccount` | ServiceAccount для пода сборщика |

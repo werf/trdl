@@ -104,7 +104,7 @@ The options are `name=value` pairs, one per list element and passed through as i
 
 | Option | Meaning |
 |---|---|
-| `namespace` | the namespace to run the builder in; defaults to the namespace of the plugin's own ServiceAccount, or of the current kubeconfig context, and to `default` when neither names one |
+| `namespace` | the namespace to run the builder in; defaults to the namespace named by the current kubeconfig context, then to the namespace of the plugin's own ServiceAccount, and to `default` when neither names one |
 | `image` | the buildkitd image; defaults to `moby/buildkit:buildx-stable-1`, or its `-rootless` variant when `rootless=true` |
 | `rootless` | run rootless BuildKit |
 | `serviceaccount` | the ServiceAccount for the builder pod |

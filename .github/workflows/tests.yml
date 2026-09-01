@@ -231,11 +231,16 @@ jobs:
 
       - name: Assert the guard actually ran
         run: |
-          # The specs skip themselves outside this job, so a green run proves
-          # nothing until it names the spec it executed.
-          # No anchor: ginkgo colours this line, so it does not start with "Ran".
+          # A green ginkgo run proves nothing on its own: it exits 0 when the
+          # label filter selects no spec at all, and at --vv it prints a skipped
+          # spec's name too, so neither the exit code nor the spec's name shows
+          # that this guard executed.
+          # No anchor on the first: ginkgo colours that line, so it does not
+          # start with "Ran".
           grep -qE 'Ran [1-9][0-9]* of [0-9]+ Specs' /tmp/guard.log
-          grep -q 'kubernetes buildkitd driver forwarding' /tmp/guard.log
+          # Only the guard itself can put this in the log — it is the release
+          # output the spec asserts on, and no other spec produces it.
+          grep -q 'builder pod trdl-forwarding-guard/' /tmp/guard.log
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v7

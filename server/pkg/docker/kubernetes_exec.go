@@ -62,9 +62,12 @@ func (b *kubernetesBuilder) dial(ctx context.Context) (net.Conn, error) {
 
 var _ net.Conn = (*execConn)(nil)
 
-// execConn adapts one exec stream to net.Conn. The BuildKit client half-closes
-// the connection when it finishes sending, so CloseWrite and CloseRead have to
-// be real: without them the gRPC transport waits for an EOF that never comes.
+// execConn adapts one exec stream to net.Conn. CloseWrite and CloseRead are real
+// rather than decorative so that a half-close reaches the stream, but note what
+// does NOT depend on them: gRPC never calls either — it closes the connection
+// outright — and buildkit's own half-closes happen inside the pod, on buildctl's
+// stdio. Deadlines are no-ops, which costs the shutdown guard in gRPC's
+// http2Client.Close a few seconds of its own fallback timer on a stalled stream.
 type execConn struct {
 	stdin  *io.PipeWriter
 	stdout *io.PipeReader

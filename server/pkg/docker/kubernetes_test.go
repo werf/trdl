@@ -402,6 +402,31 @@ func TestBuildkitPodAppliesResourcesAndScheduling(t *testing.T) {
 	assert.Equal(t, "trdl", pod.Annotations["example.com/owner"])
 }
 
+// One name=value pair per element is what the field's own description asks for,
+// so the same option written twice is a natural shape — and replacing instead of
+// merging would drop the earlier pairs with no error anywhere.
+func TestParseKubernetesDriverOptsMergesRepeatedMapOptions(t *testing.T) {
+	opts, err := parseKubernetesDriverOpts([]string{
+		"nodeselector=kubernetes.io/arch=amd64",
+		"nodeselector=workload=build",
+		"labels=team=delivery",
+		"labels=cost-center=42",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"kubernetes.io/arch": "amd64", "workload": "build"}, opts.nodeSelector)
+	assert.Equal(t, map[string]string{"team": "delivery", "cost-center": "42"}, opts.labels)
+}
+
+// A blank image must mean "not set", or it silently suppresses the rootless
+// default and stores a pod spec the API server refuses at release time.
+func TestParseKubernetesDriverOptsBlankImageKeepsDefault(t *testing.T) {
+	opts, err := parseKubernetesDriverOpts([]string{"rootless=true", "image=   "})
+
+	require.NoError(t, err)
+	assert.Equal(t, defaultRootlessBuildkitImage, opts.image)
+}
+
 func TestParseKubernetesDriverOptsRejections(t *testing.T) {
 	for name, driverOpts := range map[string][]string{
 		"unsupported option":    {"tolerations=key=node,operator=Exists"},
