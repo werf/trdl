@@ -32,6 +32,15 @@ const (
 	defaultBuildkitPodTimeout = 2 * time.Minute
 	buildkitPodPollInterval   = time.Second
 	buildkitPodCleanupTimeout = 30 * time.Second
+
+	// Clock-skew and pod-termination margin. The build context expires at
+	// bootstrap plus the same remaining time the deadline is derived from, while
+	// the deadline is anchored at the pod's later StartTime, so the context always
+	// fires first and this only reaps a pod the plugin has already abandoned.
+	buildkitPodDeadlineSlack = 5 * time.Minute
+	// Fallback for a context carrying no deadline. The release task always sets
+	// one, so this is what keeps the guarantee for any other caller.
+	defaultBuildkitPodDeadline = time.Hour
 )
 
 // supportedKubernetesDriverOpts is this driver's own vocabulary. The names match
@@ -123,6 +132,8 @@ func newKubernetesBuilder(ctx context.Context, builderName, driver string, drive
 // bootstrap removes whatever it created before returning an error, so a failure
 // between creating the pod and it becoming ready cannot leave a builder running.
 func (b *kubernetesBuilder) bootstrap(ctx context.Context, opts kubernetesBuilderOpts) error {
+	opts.deadline = resolvePodDeadline(ctx, opts.deadline)
+
 	pod := buildkitPod(b.podName, opts)
 
 	if err := b.createPod(ctx, pod); err != nil {
@@ -362,13 +373,13 @@ func parseKubernetesDriverOpts(driverOpts []string) (kubernetesBuilderOpts, erro
 		case "serviceaccount":
 			opts.serviceAccountName = strings.TrimSpace(value)
 		case "rootless":
-			opts.rootless, err = strconv.ParseBool(value)
+			opts.rootless, err = strconv.ParseBool(strings.TrimSpace(value))
 		case "deadline":
 			deadlineSet = true
-			opts.deadline, err = time.ParseDuration(value)
+			opts.deadline, err = time.ParseDuration(strings.TrimSpace(value))
 		case "timeout":
 			timeoutSet = true
-			opts.timeout, err = time.ParseDuration(value)
+			opts.timeout, err = time.ParseDuration(strings.TrimSpace(value))
 		case "nodeselector":
 			err = mergeKeyValues(opts.nodeSelector, value)
 		case "labels":
@@ -459,6 +470,24 @@ func splitKeyValues(value string) (map[string]string, error) {
 	return result, nil
 }
 
+// resolvePodDeadline bounds the pod's lifetime by the build's own, because
+// nothing outside the plugin process deletes the builder: a crash between
+// creating the pod and removing it would otherwise leave it running forever.
+// The result stays positive whatever the context has left, so buildkitPod can
+// never silently omit activeDeadlineSeconds.
+func resolvePodDeadline(ctx context.Context, configured time.Duration) time.Duration {
+	if configured > 0 {
+		return configured
+	}
+
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		return defaultBuildkitPodDeadline
+	}
+
+	return max(time.Until(deadline).Round(time.Second), 0) + buildkitPodDeadlineSlack
+}
+
 func buildkitPod(name string, opts kubernetesBuilderOpts) *corev1.Pod {
 	labels := map[string]string{"app": name}
 	for k, v := range opts.labels {
@@ -478,9 +507,10 @@ func buildkitPod(name string, opts kubernetesBuilderOpts) *corev1.Pod {
 			Annotations: annotations,
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy:      corev1.RestartPolicyNever,
-			ServiceAccountName: opts.serviceAccountName,
-			NodeSelector:       opts.nodeSelector,
+			RestartPolicy:                corev1.RestartPolicyNever,
+			ServiceAccountName:           opts.serviceAccountName,
+			AutomountServiceAccountToken: lo.ToPtr(false),
+			NodeSelector:                 opts.nodeSelector,
 			Containers: []corev1.Container{
 				{
 					Name:  buildkitContainerName,

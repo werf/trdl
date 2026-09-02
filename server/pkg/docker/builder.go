@@ -145,8 +145,7 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 }
 
 // unusedBuilderSettings names the settings a buildkitd address makes unreachable,
-// so the build log says which knob is being ignored rather than leaving it to be
-// discovered from a builder that never appears.
+// so the build log says which knob is being ignored.
 func unusedBuilderSettings(opts *NewBuilderOpts) []string {
 	var unused []string
 	if strings.TrimSpace(opts.BuildxDriver) != "" || len(trimDriverOpts(opts.BuildxDriverOpts)) > 0 {
