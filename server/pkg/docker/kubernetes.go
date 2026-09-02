@@ -33,8 +33,10 @@ const (
 	buildkitPodPollInterval   = time.Second
 	buildkitPodCleanupTimeout = 30 * time.Second
 
-	// Long enough for the build to finish and the plugin to delete the pod itself,
-	// so the deadline only ever fires when the plugin is no longer around to.
+	// Clock-skew and pod-termination margin. The build context expires at
+	// bootstrap plus the same remaining time the deadline is derived from, while
+	// the deadline is anchored at the pod's later StartTime, so the context always
+	// fires first and this only reaps a pod the plugin has already abandoned.
 	buildkitPodDeadlineSlack = 5 * time.Minute
 	// Fallback for a context carrying no deadline. The release task always sets
 	// one, so this is what keeps the guarantee for any other caller.
