@@ -415,9 +415,9 @@ func TestResolvePodDeadline(t *testing.T) {
 			ctx:      contextWithDeadlineIn(t, context.Background(), 30*time.Minute),
 			expected: 30*time.Minute + buildkitPodDeadlineSlack,
 		},
-		"an expired context still yields a usable deadline": {
+		"an expired context cannot produce a negative deadline": {
 			ctx:      contextWithDeadlineIn(t, context.Background(), -time.Hour),
-			expected: time.Minute + buildkitPodDeadlineSlack,
+			expected: buildkitPodDeadlineSlack,
 		},
 		"a context without a deadline falls back": {
 			ctx:      context.Background(),

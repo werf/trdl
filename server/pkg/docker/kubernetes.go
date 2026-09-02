@@ -473,9 +473,8 @@ func splitKeyValues(value string) (map[string]string, error) {
 // resolvePodDeadline bounds the pod's lifetime by the build's own, because
 // nothing outside the plugin process deletes the builder: a crash between
 // creating the pod and removing it would otherwise leave it running forever.
-// The floor keeps an already-expired context from producing a deadline the API
-// server rejects, and the whole-second rounding matches what the option itself
-// is validated against.
+// The result stays positive whatever the context has left, so buildkitPod can
+// never silently omit activeDeadlineSeconds.
 func resolvePodDeadline(ctx context.Context, configured time.Duration) time.Duration {
 	if configured > 0 {
 		return configured
@@ -486,7 +485,7 @@ func resolvePodDeadline(ctx context.Context, configured time.Duration) time.Dura
 		return defaultBuildkitPodDeadline
 	}
 
-	return max(time.Until(deadline).Round(time.Second), time.Minute) + buildkitPodDeadlineSlack
+	return max(time.Until(deadline).Round(time.Second), 0) + buildkitPodDeadlineSlack
 }
 
 func buildkitPod(name string, opts kubernetesBuilderOpts) *corev1.Pod {
