@@ -147,6 +147,13 @@ func (f *fakeAPIServer) recordedCalls() []string {
 	return append([]string(nil), f.calls...)
 }
 
+func (f *fakeAPIServer) createdPod() *corev1.Pod {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	return f.created.DeepCopy()
+}
+
 func (f *fakeAPIServer) podDeleted() bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -182,6 +189,15 @@ func newTestBuilder(t *testing.T, f *fakeAPIServer, readyTimeout time.Duration) 
 
 func testContext() context.Context {
 	return logboek.NewContext(context.Background(), logboek.DefaultLogger())
+}
+
+func contextWithDeadlineIn(t *testing.T, parent context.Context, d time.Duration) context.Context {
+	t.Helper()
+
+	ctx, cancel := context.WithDeadline(parent, time.Now().Add(d))
+	t.Cleanup(cancel)
+
+	return ctx
 }
 
 func testBuilderOpts() kubernetesBuilderOpts {
@@ -379,6 +395,64 @@ func TestBuilderRemoveDeletesTheProvisionedPod(t *testing.T) {
 
 	require.NoError(t, builder.Remove(testContext()))
 	assert.True(t, f.podDeleted(), "removing the builder must delete the pod it provisioned")
+}
+
+// A pod outliving the plugin process is the case this covers: nothing deletes
+// the builder if the plugin is killed mid-build, so every pod must carry a
+// deadline even when the operator configured none.
+func TestResolvePodDeadline(t *testing.T) {
+	for name, tc := range map[string]struct {
+		ctx        context.Context
+		configured time.Duration
+		expected   time.Duration
+	}{
+		"a configured deadline wins over the context": {
+			ctx:        contextWithDeadlineIn(t, context.Background(), 10*time.Minute),
+			configured: 90 * time.Minute,
+			expected:   90 * time.Minute,
+		},
+		"the remaining task time plus the slack": {
+			ctx:      contextWithDeadlineIn(t, context.Background(), 30*time.Minute),
+			expected: 30*time.Minute + buildkitPodDeadlineSlack,
+		},
+		"an expired context still yields a usable deadline": {
+			ctx:      contextWithDeadlineIn(t, context.Background(), -time.Hour),
+			expected: time.Minute + buildkitPodDeadlineSlack,
+		},
+		"a context without a deadline falls back": {
+			ctx:      context.Background(),
+			expected: defaultBuildkitPodDeadline,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			resolved := resolvePodDeadline(tc.ctx, tc.configured)
+
+			// A deadline derived from the clock loses up to a second to rounding
+			// between the context being built and this call, so the tolerance is the
+			// rounding, not the property: the whole-second assertion below is what
+			// catches a value that skipped rounding altogether.
+			assert.InDelta(t, tc.expected, resolved, float64(2*time.Second))
+			assert.Zero(t, resolved%time.Second, "activeDeadlineSeconds is whole seconds")
+			assert.GreaterOrEqual(t, resolved, time.Second, "activeDeadlineSeconds must be at least 1s")
+		})
+	}
+}
+
+// The manifest is read back from the fake API server rather than from
+// buildkitPod, because buildkitPod has no context and only serializes the
+// deadline it is handed: dropping the resolve call would leave it nil here.
+func TestKubernetesBuilderBootstrapAlwaysSetsAPodDeadline(t *testing.T) {
+	f := newFakeAPIServer(t)
+	f.readyPod = true
+
+	b := newTestBuilder(t, f, time.Minute)
+	ctx := contextWithDeadlineIn(t, testContext(), 30*time.Minute)
+
+	require.NoError(t, b.bootstrap(ctx, testBuilderOpts()))
+
+	deadline := f.createdPod().Spec.ActiveDeadlineSeconds
+	require.NotNil(t, deadline, "bootstrap must give every builder pod a deadline")
+	assert.InDelta(t, int64((30*time.Minute + buildkitPodDeadlineSlack).Seconds()), *deadline, 5)
 }
 
 func TestBuildkitPodDefaults(t *testing.T) {

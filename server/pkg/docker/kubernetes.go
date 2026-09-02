@@ -32,6 +32,13 @@ const (
 	defaultBuildkitPodTimeout = 2 * time.Minute
 	buildkitPodPollInterval   = time.Second
 	buildkitPodCleanupTimeout = 30 * time.Second
+
+	// Long enough for the build to finish and the plugin to delete the pod itself,
+	// so the deadline only ever fires when the plugin is no longer around to.
+	buildkitPodDeadlineSlack = 5 * time.Minute
+	// Fallback for a context carrying no deadline. The release task always sets
+	// one, so this is what keeps the guarantee for any other caller.
+	defaultBuildkitPodDeadline = time.Hour
 )
 
 // supportedKubernetesDriverOpts is this driver's own vocabulary. The names match
@@ -123,6 +130,8 @@ func newKubernetesBuilder(ctx context.Context, builderName, driver string, drive
 // bootstrap removes whatever it created before returning an error, so a failure
 // between creating the pod and it becoming ready cannot leave a builder running.
 func (b *kubernetesBuilder) bootstrap(ctx context.Context, opts kubernetesBuilderOpts) error {
+	opts.deadline = resolvePodDeadline(ctx, opts.deadline)
+
 	pod := buildkitPod(b.podName, opts)
 
 	if err := b.createPod(ctx, pod); err != nil {
@@ -457,6 +466,25 @@ func splitKeyValues(value string) (map[string]string, error) {
 	}
 
 	return result, nil
+}
+
+// resolvePodDeadline bounds the pod's lifetime by the build's own, because
+// nothing outside the plugin process deletes the builder: a crash between
+// creating the pod and removing it would otherwise leave it running forever.
+// The floor keeps an already-expired context from producing a deadline the API
+// server rejects, and the whole-second rounding matches what the option itself
+// is validated against.
+func resolvePodDeadline(ctx context.Context, configured time.Duration) time.Duration {
+	if configured > 0 {
+		return configured
+	}
+
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		return defaultBuildkitPodDeadline
+	}
+
+	return max(time.Until(deadline).Round(time.Second), time.Minute) + buildkitPodDeadlineSlack
 }
 
 func buildkitPod(name string, opts kubernetesBuilderOpts) *corev1.Pod {
