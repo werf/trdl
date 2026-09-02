@@ -39,7 +39,8 @@ const (
 	// fires first and this only reaps a pod the plugin has already abandoned.
 	buildkitPodDeadlineSlack = 5 * time.Minute
 	// Fallback for a context carrying no deadline. The release task always sets
-	// one, so this is what keeps the guarantee for any other caller.
+	// one, so this is what keeps the guarantee for any other caller — and why the
+	// user-facing description names only the derived default, not this one.
 	defaultBuildkitPodDeadline = time.Hour
 )
 
