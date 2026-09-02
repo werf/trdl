@@ -506,9 +506,10 @@ func buildkitPod(name string, opts kubernetesBuilderOpts) *corev1.Pod {
 			Annotations: annotations,
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy:      corev1.RestartPolicyNever,
-			ServiceAccountName: opts.serviceAccountName,
-			NodeSelector:       opts.nodeSelector,
+			RestartPolicy:                corev1.RestartPolicyNever,
+			ServiceAccountName:           opts.serviceAccountName,
+			AutomountServiceAccountToken: lo.ToPtr(false),
+			NodeSelector:                 opts.nodeSelector,
 			Containers: []corev1.Container{
 				{
 					Name:  buildkitContainerName,
@@ -532,13 +533,6 @@ func buildkitPod(name string, opts kubernetesBuilderOpts) *corev1.Pod {
 		},
 	}
 
-	// Without a ServiceAccount of its own the pod would still get the namespace
-	// default one mounted, handing project-supplied build instructions a token in
-	// a privileged container. A configured ServiceAccount keeps the cluster
-	// default, because that is how IRSA and workload identity deliver credentials.
-	if opts.serviceAccountName == "" {
-		pod.Spec.AutomountServiceAccountToken = lo.ToPtr(false)
-	}
 	if opts.deadline > 0 {
 		pod.Spec.ActiveDeadlineSeconds = lo.ToPtr(int64(opts.deadline.Seconds()))
 	}

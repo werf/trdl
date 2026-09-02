@@ -515,7 +515,7 @@ func TestBuildkitPodAppliesResourcesAndScheduling(t *testing.T) {
 	assert.Equal(t, "4Gi", container.Resources.Limits.Memory().String())
 	assert.Equal(t, map[string]string{"disktype": "ssd", "zone": "a"}, pod.Spec.NodeSelector)
 	assert.Equal(t, "trdl-buildkit", pod.Spec.ServiceAccountName)
-	assert.Nil(t, pod.Spec.AutomountServiceAccountToken, "a configured ServiceAccount keeps the cluster default, or IRSA and workload identity lose their token")
+	assert.Equal(t, lo.ToPtr(false), pod.Spec.AutomountServiceAccountToken, "a configured ServiceAccount must not hand its token to a privileged build container")
 	assert.Equal(t, int64(5400), *pod.Spec.ActiveDeadlineSeconds)
 	assert.Equal(t, "delivery", pod.Labels["team"])
 	assert.Equal(t, "trdl", pod.Annotations["example.com/owner"])
