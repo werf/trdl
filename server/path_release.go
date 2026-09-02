@@ -165,14 +165,16 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		go func() {
 			err := docker.BuildReleaseArtifacts(ctx,
 				docker.BuildReleaseArtifactsOpts{
-					TarWriter:        tarWriter,
-					GitRepo:          gitRepo,
-					FromImage:        trdlCfg.GetDockerImage(),
-					RunCommands:      trdlCfg.Commands,
-					Storage:          req.Storage,
-					BuildkitdAddress: cfg.BuildkitdAddress,
-					BuildxDriver:     cfg.BuildxDriver,
-					BuildxDriverOpts: cfg.BuildxDriverOpts,
+					TarWriter:           tarWriter,
+					GitRepo:             gitRepo,
+					FromImage:           trdlCfg.GetDockerImage(),
+					RunCommands:         trdlCfg.Commands,
+					Storage:             req.Storage,
+					BuildkitdAddress:    cfg.BuildkitdAddress,
+					BuildxDriver:        cfg.BuildxDriver,
+					BuildxDriverOpts:    cfg.BuildxDriverOpts,
+					BuildkitdDriver:     cfg.BuildkitdDriver,
+					BuildkitdDriverOpts: cfg.BuildkitdDriverOpts,
 				}, b.Logger())
 			if err != nil {
 				errCh <- err
