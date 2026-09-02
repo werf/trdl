@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.14.0](https://www.github.com/werf/trdl/compare/v0.13.0...v0.14.0) (2026-09-02)
+
+
+### Features
+
+* **server:** build releases in kubernetes without the docker binary ([#422](https://www.github.com/werf/trdl/issues/422)) ([a7e7aa8](https://www.github.com/werf/trdl/commit/a7e7aa81894bc12ac1bfaa4a06aa56b7fc1fbe49))
+* **server:** build via BuildKit client when buildkitd address is set ([#409](https://www.github.com/werf/trdl/issues/409)) ([43912ab](https://www.github.com/werf/trdl/commit/43912ab9e02611985540806e6a519d9c6084ab40))
+* **server:** configure buildx driver via plugin configuration ([a805601](https://www.github.com/werf/trdl/commit/a805601eb76fe51e8156021e07f80e91cad6594b))
+* **server:** configure buildx driver via plugin configuration ([#419](https://www.github.com/werf/trdl/issues/419)) ([c68e805](https://www.github.com/werf/trdl/commit/c68e8059444237104ab4dd7dc5a2891fdca43fd6))
+
+
+### Bug Fixes
+
+* bump dependencies to clear all known CVEs ([#402](https://www.github.com/werf/trdl/issues/402)) ([31430e1](https://www.github.com/werf/trdl/commit/31430e1a3826ad04c1ec1a871aa2c6d8b4215c29))
+* **ci:** grant actions: read to website converge workflows ([#406](https://www.github.com/werf/trdl/issues/406)) ([f567b92](https://www.github.com/werf/trdl/commit/f567b92a3b2f51729ef3609077efe5f350d084c3))
+* point trdl.yaml at the builder image rebuilt on Go 1.25.12 ([#404](https://www.github.com/werf/trdl/issues/404)) ([da5f59e](https://www.github.com/werf/trdl/commit/da5f59e32c4dd8132ecddcc6e3176273f18fa75d))
+* **server:** harden the kubernetes builder pod ([#425](https://www.github.com/werf/trdl/issues/425)) ([a10e3b9](https://www.github.com/werf/trdl/commit/a10e3b9a173c1a0d893dd1dd8c662f068c237d0f))
+* **server:** make the driver tests hermetic and guard the release forwarding ([c1bc889](https://www.github.com/werf/trdl/commit/c1bc889d74f63bbc8dc6703d6a57788ca49e9cec))
+* **server:** reject the buildx settings when a buildkitd address is set ([ff76158](https://www.github.com/werf/trdl/commit/ff76158c57966e246013554af8627616ac59b151))
+* **server:** treat blank build backend settings as unset and report unused ones ([17edc75](https://www.github.com/werf/trdl/commit/17edc75a9b8765c84ec9eb949dc5305bbad23fea))
+* **server:** unhang the release on a long log line and a passwordless certificate ([#416](https://www.github.com/werf/trdl/issues/416)) ([82fcfa0](https://www.github.com/werf/trdl/commit/82fcfa0d38efeac1b7ff42ead6c428841a64ed9c))
+
 ## [0.13.0](https://www.github.com/werf/trdl/compare/v0.12.3...v0.13.0) (2026-07-28)
 
 
