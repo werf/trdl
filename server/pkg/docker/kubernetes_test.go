@@ -556,6 +556,7 @@ func TestParseKubernetesDriverOptsRejections(t *testing.T) {
 		"negative deadline":     {"deadline=-1m"},
 		"sub-second deadline":   {"deadline=500ms"},
 		"truncating deadline":   {"deadline=1500ms"},
+		"padded bad duration":   {"deadline= 90"},
 		"negative cpu request":  {"requests.cpu=-1"},
 		"negative memory limit": {"limits.memory=-500Mi"},
 		"non-positive timeout":  {"timeout=0s"},
@@ -566,6 +567,18 @@ func TestParseKubernetesDriverOptsRejections(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
+}
+
+// The sibling arms of the same switch trim their values, so a padded pair is a
+// shape the parser already accepts elsewhere — rejecting it here only for these
+// three options would be an error the operator cannot see in their own config.
+func TestParseKubernetesDriverOptsTrimsPaddedValues(t *testing.T) {
+	opts, err := parseKubernetesDriverOpts([]string{"rootless= true", "deadline= 90m", "timeout= 10s"})
+
+	require.NoError(t, err)
+	assert.True(t, opts.rootless)
+	assert.Equal(t, 90*time.Minute, opts.deadline)
+	assert.Equal(t, 10*time.Second, opts.timeout)
 }
 
 func TestParseKubernetesDriverOptsTimeoutDefaults(t *testing.T) {

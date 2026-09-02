@@ -371,13 +371,13 @@ func parseKubernetesDriverOpts(driverOpts []string) (kubernetesBuilderOpts, erro
 		case "serviceaccount":
 			opts.serviceAccountName = strings.TrimSpace(value)
 		case "rootless":
-			opts.rootless, err = strconv.ParseBool(value)
+			opts.rootless, err = strconv.ParseBool(strings.TrimSpace(value))
 		case "deadline":
 			deadlineSet = true
-			opts.deadline, err = time.ParseDuration(value)
+			opts.deadline, err = time.ParseDuration(strings.TrimSpace(value))
 		case "timeout":
 			timeoutSet = true
-			opts.timeout, err = time.ParseDuration(value)
+			opts.timeout, err = time.ParseDuration(strings.TrimSpace(value))
 		case "nodeselector":
 			err = mergeKeyValues(opts.nodeSelector, value)
 		case "labels":
