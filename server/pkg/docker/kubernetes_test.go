@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -390,7 +391,8 @@ func TestBuildkitPodDefaults(t *testing.T) {
 	assert.Equal(t, defaultBuildkitImage, container.Image)
 	assert.True(t, *container.SecurityContext.Privileged)
 	assert.Equal(t, []string{"buildctl", "debug", "workers"}, container.ReadinessProbe.Exec.Command)
-	assert.Nil(t, pod.Spec.ActiveDeadlineSeconds, "no deadline is set unless one is configured")
+	assert.Nil(t, pod.Spec.ActiveDeadlineSeconds, "buildkitPod only serializes a deadline it is given; bootstrap is what defaults it")
+	assert.Equal(t, lo.ToPtr(false), pod.Spec.AutomountServiceAccountToken, "a privileged pod running project instructions must not get the namespace's default token")
 	assert.Equal(t, map[string]string{"app": "trdl-builder-42"}, pod.Labels)
 }
 
@@ -439,6 +441,7 @@ func TestBuildkitPodAppliesResourcesAndScheduling(t *testing.T) {
 	assert.Equal(t, "4Gi", container.Resources.Limits.Memory().String())
 	assert.Equal(t, map[string]string{"disktype": "ssd", "zone": "a"}, pod.Spec.NodeSelector)
 	assert.Equal(t, "trdl-buildkit", pod.Spec.ServiceAccountName)
+	assert.Nil(t, pod.Spec.AutomountServiceAccountToken, "a configured ServiceAccount keeps the cluster default, or IRSA and workload identity lose their token")
 	assert.Equal(t, int64(5400), *pod.Spec.ActiveDeadlineSeconds)
 	assert.Equal(t, "delivery", pod.Labels["team"])
 	assert.Equal(t, "trdl", pod.Annotations["example.com/owner"])
