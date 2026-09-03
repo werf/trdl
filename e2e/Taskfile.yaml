@@ -37,17 +37,14 @@ tasks:
       CGO_ENABLED: "0"
 
   test:e2e:
-    desc: 'Run client e2e test. Important vars: "paths", "focusFilter", "labelFilter".'
-    # On linux/amd64 the elf_signing suite links the delivery-kit-sdk CGO ELF
-    # signer via the server import, so it needs the C libs from
-    # server:deps:install:c. On other platforms that suite is skipped.
-    cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} {{if .focusFilter}}--focus="{{.focusFilter}}" {{end}}{{if .labelFilter}}--label-filter="{{.labelFilter}}" {{end}}{{.paths}}
+    desc: "Run client e2e test."
+    cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./...
     vars:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'
       paths: '{{.paths | default "./..."}}'
 
   test:e2e:elf-signing:
-    desc: "Run ELF signing e2e test (linux/amd64 with CGO; requires server:deps:install:c)."
+    desc: "Run ELF signing e2e test."
     cmd: ginkgo --vv --keep-going --cover --covermode=atomic --coverpkg=github.com/werf/trdl/client/...,github.com/werf/trdl/server/... --output-dir={{.outputDir}} ./tests/elf_signing
     vars:
       outputDir: '{{.outputDir | default "../tests_coverage/e2e" }}'

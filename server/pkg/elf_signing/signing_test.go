@@ -1,5 +1,3 @@
-//go:build linux && amd64 && cgo
-
 package elf_signing
 
 import (
@@ -9,9 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/deckhouse/delivery-kit-sdk/pkg/signature/elf/inhouse"
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
+
+	"github.com/werf/trdl/server/pkg/elf_signing/inhouse"
 )
 
 func TestTrySignELFEmbedsVerifiableSignature(t *testing.T) {
@@ -32,11 +31,9 @@ func TestTrySignELFEmbedsVerifiableSignature(t *testing.T) {
 		require.NoError(t, signed.Close())
 	}()
 
-	signedFile, ok := signed.(*tempFileCloser)
-	require.True(t, ok)
+	got, err := io.ReadAll(signed)
+	require.NoError(t, err)
+	require.NotEmpty(t, got)
 
-	require.NoError(t, inhouse.Verify(context.Background(), []string{certs.RootRef}, signedFile.Name()))
-
-	_, err = signed.Read(make([]byte, 1))
-	require.True(t, err == nil || err == io.EOF)
+	require.NoError(t, inhouse.Verify(context.Background(), []string{certs.RootRef}, got))
 }
