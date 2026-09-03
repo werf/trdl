@@ -36,6 +36,8 @@ const (
 	fieldNameBuildkitdAddress                           = "buildkitd_address"
 	fieldNameBuildxDriver                               = "buildx_driver"
 	fieldNameBuildxDriverOpts                           = "buildx_driver_opts"
+	fieldNameBuildkitdDriver                            = "buildkitd_driver"
+	fieldNameBuildkitdDriverOpts                        = "buildkitd_driver_opts"
 
 	storageKeyConfiguration = "configuration"
 )
@@ -118,17 +120,27 @@ func configurePath(b *Backend) *framework.Path {
 			},
 			fieldNameBuildkitdAddress: {
 				Type:        framework.TypeString,
-				Description: "An address of a running buildkitd (unix://, tcp://, docker-container:// or kube-pod:// scheme) to build release artifacts with the BuildKit client; the docker CLI is used if not set. Build secrets are sent to that daemon, and tcp:// is neither encrypted nor authenticated, so securing the channel and isolating the daemon is the administrator's responsibility",
+				Description: "An address of a running buildkitd (unix://, tcp://, docker-container:// or kube-pod:// scheme) to build release artifacts with the BuildKit client; the docker CLI is used only when neither this nor buildkitd_driver is set. Build secrets are sent to that daemon, and tcp:// is neither encrypted nor authenticated, so securing the channel and isolating the daemon is the administrator's responsibility",
 				Required:    false,
 			},
 			fieldNameBuildxDriver: {
 				Type:        framework.TypeString,
-				Description: "The buildx driver to build release artifacts with: docker-container (used by default) or kubernetes. Takes precedence over the TRDL_BUILDX_DRIVER environment variable, and cannot be combined with buildkitd_address",
+				Description: "The buildx driver to build release artifacts with: docker-container (used by default) or kubernetes. Takes precedence over the TRDL_BUILDX_DRIVER environment variable, and cannot be combined with buildkitd_address or buildkitd_driver",
 				Required:    false,
 			},
 			fieldNameBuildxDriverOpts: {
 				Type:        framework.TypeStringSlice,
-				Description: "The buildx driver options, one --driver-opt per element (e.g. namespace=trdl-build), passed through as is. Take precedence over the TRDL_BUILDX_DRIVER_OPTS_* environment variables, and cannot be combined with buildkitd_address",
+				Description: "The buildx driver options, one --driver-opt per element (e.g. namespace=trdl-build), passed through as is. Take precedence over the TRDL_BUILDX_DRIVER_OPTS_* environment variables, and cannot be combined with buildkitd_address or buildkitd_driver",
+				Required:    false,
+			},
+			fieldNameBuildkitdDriver: {
+				Type:        framework.TypeString,
+				Description: "Provision an ephemeral buildkitd per build instead of using the docker CLI: kubernetes runs it as a pod and needs no docker binary next to the plugin. Cannot be combined with buildkitd_address, buildx_driver or buildx_driver_opts. A TRDL_BUILDKITD_ADDRESS set on the process wins over a stored driver, and the build reports the driver as unused",
+				Required:    false,
+			},
+			fieldNameBuildkitdDriverOpts: {
+				Type:        framework.TypeStringSlice,
+				Description: "The buildkitd driver options, one name=value pair per element (e.g. namespace=trdl-build); they require buildkitd_driver to be set. The kubernetes driver accepts annotations, deadline, image, labels, limits.cpu, limits.ephemeral-storage, limits.memory, namespace, nodeselector, requests.cpu, requests.ephemeral-storage, requests.memory, rootless, serviceaccount and timeout; anything else is rejected. When deadline is not set, it defaults to the release task's remaining time at pod creation plus a five-minute margin, so a plugin crash cannot leave the builder pod running indefinitely",
 				Required:    false,
 			},
 		},
@@ -153,6 +165,23 @@ func configurePath(b *Backend) *framework.Path {
 	}
 }
 
+func isConfigurationFieldSet(fields *framework.FieldData, name string) bool {
+	switch value := fields.Get(name).(type) {
+	case string:
+		return strings.TrimSpace(value) != ""
+	case []string:
+		return lo.SomeBy(value, func(item string) bool { return strings.TrimSpace(item) != "" })
+	default:
+		panic(fmt.Sprintf("field %q has no emptiness rule", name))
+	}
+}
+
+func firstSetConfigurationField(fields *framework.FieldData, names ...string) string {
+	name, _ := lo.Find(names, func(name string) bool { return isConfigurationFieldSet(fields, name) })
+
+	return name
+}
+
 func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.Request, fields *framework.FieldData) (*logical.Response, error) {
 	if errResp := util.CheckRequiredFields(req, fields); errResp != nil {
 		return errResp, nil
@@ -166,21 +195,27 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		return logical.ErrorResponse("%s validation failed: %s", fieldNameBuildxDriver, err), nil
 	}
 
-	// A buildkitd address replaces the whole buildx path, so no builder is
-	// created and the driver settings would silently do nothing. Blank values
-	// mean "not set" here, exactly as they do when the settings are resolved.
-	if strings.TrimSpace(fields.Get(fieldNameBuildkitdAddress).(string)) != "" {
-		conflictingField := ""
-		if strings.TrimSpace(fields.Get(fieldNameBuildxDriver).(string)) != "" {
-			conflictingField = fieldNameBuildxDriver
-		} else if lo.SomeBy(fields.Get(fieldNameBuildxDriverOpts).([]string), func(opt string) bool {
-			return strings.TrimSpace(opt) != ""
-		}) {
-			conflictingField = fieldNameBuildxDriverOpts
+	if err := docker.ValidateBuildkitdDriver(ctx, fields.Get(fieldNameBuildkitdDriver).(string)); err != nil {
+		return logical.ErrorResponse("%s validation failed: %s", fieldNameBuildkitdDriver, err), nil
+	}
+
+	// Each of the three build backends replaces the others entirely, so a setting
+	// belonging to one of the others would silently do nothing. Blank values mean
+	// "not set" here, exactly as they do when the settings are resolved.
+	if isConfigurationFieldSet(fields, fieldNameBuildkitdAddress) {
+		if conflictingField := firstSetConfigurationField(fields, fieldNameBuildxDriver, fieldNameBuildxDriverOpts, fieldNameBuildkitdDriver, fieldNameBuildkitdDriverOpts); conflictingField != "" {
+			return logical.ErrorResponse("%s cannot be combined with %s: no builder is provisioned when building against a buildkitd address", conflictingField, fieldNameBuildkitdAddress), nil
 		}
-		if conflictingField != "" {
-			return logical.ErrorResponse("%s cannot be combined with %s: the buildx driver is not used when building against a buildkitd address", conflictingField, fieldNameBuildkitdAddress), nil
+	}
+
+	if isConfigurationFieldSet(fields, fieldNameBuildkitdDriver) {
+		if conflictingField := firstSetConfigurationField(fields, fieldNameBuildxDriver, fieldNameBuildxDriverOpts); conflictingField != "" {
+			return logical.ErrorResponse("%s cannot be combined with %s: the docker CLI is not used when the plugin provisions buildkitd itself", conflictingField, fieldNameBuildkitdDriver), nil
 		}
+	}
+
+	if err := docker.ValidateBuildkitdDriverOpts(ctx, fields.Get(fieldNameBuildkitdDriver).(string), fields.Get(fieldNameBuildkitdDriverOpts).([]string)); err != nil {
+		return logical.ErrorResponse("%s validation failed: %s", fieldNameBuildkitdDriverOpts, err), nil
 	}
 
 	cfg := &configuration{
@@ -190,14 +225,16 @@ func (b *Backend) pathConfigureCreateOrUpdate(ctx context.Context, req *logical.
 		GitTrdlChannelsBranch:         fields.Get(fieldNameGitTrdlChannelsBranch).(string),
 		InitialLastPublishedGitCommit: fields.Get(fieldNameInitialLastPublishedGitCommit).(string),
 		RequiredNumberOfVerifiedSignaturesOnCommit: fields.Get(fieldNameRequiredNumberOfVerifiedSignaturesOnCommit).(int),
-		S3Endpoint:        fields.Get(fieldNameS3Endpoint).(string),
-		S3Region:          fields.Get(fieldNameS3Region).(string),
-		S3AccessKeyID:     fields.Get(fieldNameS3AccessKeyID).(string),
-		S3SecretAccessKey: fields.Get(fieldNameS3SecretAccessKey).(string),
-		S3BucketName:      fields.Get(fieldNameS3BucketName).(string),
-		BuildkitdAddress:  fields.Get(fieldNameBuildkitdAddress).(string),
-		BuildxDriver:      fields.Get(fieldNameBuildxDriver).(string),
-		BuildxDriverOpts:  fields.Get(fieldNameBuildxDriverOpts).([]string),
+		S3Endpoint:          fields.Get(fieldNameS3Endpoint).(string),
+		S3Region:            fields.Get(fieldNameS3Region).(string),
+		S3AccessKeyID:       fields.Get(fieldNameS3AccessKeyID).(string),
+		S3SecretAccessKey:   fields.Get(fieldNameS3SecretAccessKey).(string),
+		S3BucketName:        fields.Get(fieldNameS3BucketName).(string),
+		BuildkitdAddress:    fields.Get(fieldNameBuildkitdAddress).(string),
+		BuildxDriver:        fields.Get(fieldNameBuildxDriver).(string),
+		BuildxDriverOpts:    fields.Get(fieldNameBuildxDriverOpts).([]string),
+		BuildkitdDriver:     fields.Get(fieldNameBuildkitdDriver).(string),
+		BuildkitdDriverOpts: fields.Get(fieldNameBuildkitdDriverOpts).([]string),
 	}
 
 	if err := putConfiguration(ctx, req.Storage, cfg); err != nil {
@@ -243,6 +280,8 @@ type configuration struct {
 	BuildkitdAddress                           string   `structs:"buildkitd_address" json:"buildkitd_address"`
 	BuildxDriver                               string   `structs:"buildx_driver" json:"buildx_driver"`
 	BuildxDriverOpts                           []string `structs:"buildx_driver_opts" json:"buildx_driver_opts"`
+	BuildkitdDriver                            string   `structs:"buildkitd_driver" json:"buildkitd_driver"`
+	BuildkitdDriverOpts                        []string `structs:"buildkitd_driver_opts" json:"buildkitd_driver_opts"`
 }
 
 func (cfg *configuration) RepositoryOptions() publisher.RepositoryOptions {

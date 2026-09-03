@@ -62,7 +62,7 @@ The same two settings are also available per project in the plugin configuration
 
 Each of the two settings is resolved on its own: the plugin configuration takes precedence over the environment, and the environment takes precedence over the default `docker-container` driver with no options. A field left out of `configure`, or set to an empty value, means "not configured" and falls back to the environment — it does not override it with an empty value. To build with no driver options at all while the environment defines some, unset those variables.
 
-Neither field can be combined with `buildkitd_address` (see below): that setting replaces the buildx path entirely, no builder is created, and the driver settings would have no effect — so `configure` rejects the combination instead of ignoring them. The check covers one `configure` call only. A `TRDL_BUILDKITD_ADDRESS` set on the Vault process also wins over these settings, and since it is process-wide and can be changed after a project is configured, it cannot be rejected at that point: the build reports the settings as unused in the plugin log instead.
+Neither field can be combined with `buildkitd_address` or `buildkitd_driver` (see below): those settings replace the buildx path entirely, no builder is created through the docker CLI, and the driver settings would have no effect — so `configure` rejects the combination instead of ignoring them. The check covers one `configure` call only. A `TRDL_BUILDKITD_ADDRESS` set on the Vault process also wins over these settings, and since it is process-wide and can be changed after a project is configured, it cannot be rejected at that point: the build reports the settings as unused in the plugin log instead.
 
 Notes on the `kubernetes` driver:
 
@@ -71,9 +71,67 @@ Notes on the `kubernetes` driver:
 * rootless BuildKit (`rootless=true`) does not fit the `baseline` PodSecurity level either: buildx gives the builder pod `seccompProfile: Unconfined` and the `unconfined` AppArmor annotation, and both are already forbidden at `baseline`. The builder namespace has to be labelled `privileged` (or be exempt from PodSecurity admission);
 * see the [buildx kubernetes driver documentation](https://docs.docker.com/build/builders/drivers/kubernetes/) for the available driver options.
 
-#### Building against an external buildkitd
+#### Building without the buildx drivers
 
-Both buildx drivers above shell out to the `docker` CLI, so they require the binary to be present next to the plugin. When the plugin runs in an environment without the `docker` binary (for example, embedded into another process shipped in a distroless image), the build can be pointed at an already running `buildkitd` instead: the plugin then talks to it directly with the BuildKit client, and no builder is provisioned or removed per build.
+Both buildx drivers above shell out to the `docker` CLI, so they require the binary to be present next to the plugin. Two settings replace that path, and both talk to BuildKit with the Go client:
+
+* `buildkitd_driver` — the plugin provisions an ephemeral `buildkitd` itself, one per build, and removes it afterwards. It executes no external binary at all, which is what makes it usable where no `docker` exists — for example when the plugin is embedded into another process shipped in a distroless image;
+* `buildkitd_address` — the plugin connects to a `buildkitd` somebody else runs, and provisions nothing. Whether it needs a binary depends on the scheme: `unix://` and `tcp://` do not, while `docker-container://` and `kube-pod://` still shell out to `docker` and `kubectl` respectively (see below).
+
+Only one of them can be set, and `configure` refuses either of them next to the buildx *fields*. The buildx *environment* variables are a different matter: `TRDL_BUILDX_DRIVER` and `TRDL_BUILDX_DRIVER_OPTS_*` are a fallback for the fields, and a configured `buildkitd_driver` or `buildkitd_address` simply wins over them, because a process-wide variable cannot be rejected when a project is configured.
+
+##### Provisioning an ephemeral buildkitd
+
+`buildkitd_driver=kubernetes` runs the builder as a Pod for the duration of one build:
+
+```shell
+vault write trdl-test-project/configure ... \
+  buildkitd_driver=kubernetes \
+  buildkitd_driver_opts=namespace=trdl-build \
+  buildkitd_driver_opts=serviceaccount=trdl-buildkit
+```
+
+or, as a JSON payload:
+
+```json
+{
+  "buildkitd_driver": "kubernetes",
+  "buildkitd_driver_opts": ["namespace=trdl-build", "serviceaccount=trdl-buildkit"]
+}
+```
+
+The options are `name=value` pairs, one per list element and passed through as is, so a value containing commas such as `nodeselector=disktype=ssd,zone=a` needs no escaping. They are validated when the configuration is written — an option the driver cannot honor is rejected there rather than by a release that fails later. The kubernetes driver accepts:
+
+| Option | Meaning |
+|---|---|
+| `namespace` | the namespace to run the builder in; defaults to the namespace named by the current kubeconfig context, then to the namespace of the plugin's own ServiceAccount, and to `default` when neither names one |
+| `image` | the buildkitd image; defaults to `moby/buildkit:buildx-stable-1`, or its `-rootless` variant when `rootless=true` |
+| `rootless` | run rootless BuildKit |
+| `serviceaccount` | the ServiceAccount for the builder pod |
+| `nodeselector`, `labels`, `annotations` | comma-separated `name=value` pairs |
+| `requests.cpu`, `requests.memory`, `requests.ephemeral-storage` | pod resource requests |
+| `limits.cpu`, `limits.memory`, `limits.ephemeral-storage` | pod resource limits |
+| `timeout` | how long to wait for the builder to become ready, e.g. `5m`; `2m` by default |
+| `deadline` | a hard lifetime cap for the builder pod (`activeDeadlineSeconds`), e.g. `2h`; defaults to the release task's remaining time at pod creation ([`task_timeout`](/reference/vault_plugin/task/configure.html), `30m` unless configured, minus whatever the release has already spent) plus a five-minute margin; a whole number of seconds of at least `1s`. It is not a grace period: a build still running when it expires is killed too, so set it above the longest release this project takes |
+
+The option names are the buildx kubernetes driver's own wherever the two overlap, but the vocabulary is this driver's, not buildx's: options buildx accepts and this driver does not — `replicas`, `loadbalance`, `tolerations`, `schedulername`, `qemu.*`, the persistent-volume options — are rejected, and `deadline` has no buildx counterpart.
+
+What the plugin needs in the target namespace is `create`, `get` and `delete` on `pods`, plus `create` on `pods/exec`; a namespaced Role is enough. No `apps` API group is used. The build stream rides the API server's exec channel, so the plugin needs no network route to the builder pod. The cluster is targeted via the standard kubeconfig or in-cluster ServiceAccount resolution.
+
+Notes on the pod:
+
+* the namespace must exist and must admit the builder pod. By default the container runs `privileged`; with `rootless=true` it runs unprivileged but needs seccomp `Unconfined` and the `unconfined` AppArmor annotation instead. Either way the `baseline` PodSecurity level forbids it, so the namespace has to be labelled `privileged` or be exempt from PodSecurity admission — the same requirement the buildx `kubernetes` driver has. Unlike the buildx path, the rejection arrives directly from the `create` call rather than as a readiness timeout;
+* the pod is removed when the build ends, including when it fails or is canceled, and when the builder never becomes ready. It is not removed if the plugin's own process dies outright, and not if the delete itself fails — a lost API connection, a withdrawn `delete` permission. That failure is reported in the release log and the plugin log, but it does not fail the release, so a privileged pod can outlive a build that reported success. Both cases are bounded by `activeDeadlineSeconds`, which is always set — `deadline` overrides the default. Note it terminates the pod but does not delete the object: a Failed pod remains visible until removed by hand or by the cluster's pod garbage collection. It is also counted from the moment the pod starts running, so a pod that was never scheduled — no node, a quota rejection — is not capped by it;
+* the builder is a bare Pod with `restartPolicy: Never`, deliberately: nothing may replace it mid-build, because the replacement would be a builder the release is not connected to.
+
+Two things follow from the plugin creating the pod with its own credentials, and both are the administrator's to weigh:
+
+* **`configure` write access becomes pod-create access.** Whoever can write a project's configuration chooses the `namespace` the builder runs in, the `serviceaccount` it runs as and the `image` it runs — anywhere the plugin's own Role reaches. Restrict `<project>/configure` to the same people who are trusted with the release keys, and keep the plugin's Role to namespaces that hold nothing else worth taking. Give the builder a ServiceAccount whose privileges you have audited in full: creating a workload lets it run as any ServiceAccount of that namespace. The builder pod never gets the automatically mounted ServiceAccount API-token volume (`automountServiceAccountToken: false`), whether or not a `serviceaccount` is configured. The build is therefore not handed a token for that ServiceAccount and cannot act as it against the API — not through a namespaced RoleBinding, not through a ClusterRoleBinding, not through a group binding such as `system:serviceaccounts`. That is a withheld credential, not isolation: the privileged container described below still reaches node-level credentials. What the ServiceAccount still confers is cloud workload identity, `imagePullSecrets` and any admission policy keyed on it — none of which the suppressed mount covers, so the build reaches whatever cloud role is bound to the ServiceAccount you pick.
+* **The builder container is privileged by default.** BuildKit needs it; `rootless=true` trades it for seccomp `Unconfined` and the `unconfined` AppArmor annotation. Either way the build executes project-supplied instructions in a container the `baseline` PodSecurity level would refuse, so give it a namespace and nodes you are willing to lose, not the ones the signing keys live on.
+
+##### Connecting to an existing buildkitd
+
+The build can instead be pointed at an already running `buildkitd`: the plugin then talks to it directly with the BuildKit client, and no builder is provisioned or removed per build.
 
 The buildkitd address is set per project in the plugin configuration:
 
@@ -86,7 +144,7 @@ or, as a fallback for all projects, with the `TRDL_BUILDKITD_ADDRESS` environmen
 * `unix://` and `tcp://` — direct gRPC connection to buildkitd, no external binaries required;
 * `docker-container://` and `kube-pod://` — connection through `docker exec`/`kubectl exec`, requiring the corresponding CLI.
 
-When `buildkitd_address` is not set, builds go through `docker buildx` exactly as described above. Deploying `buildkitd` itself is out of trdl's scope: on Kubernetes it is typically a Deployment or StatefulSet in a dedicated namespace whose PodSecurity labels are managed by the cluster owner, since BuildKit requires a relaxed seccomp/AppArmor profile even in rootless mode.
+When neither `buildkitd_address` nor `buildkitd_driver` is set, builds go through `docker buildx` exactly as described above. Deploying `buildkitd` itself is out of trdl's scope: on Kubernetes it is typically a Deployment or StatefulSet in a dedicated namespace whose PodSecurity labels are managed by the cluster owner, since BuildKit requires a relaxed seccomp/AppArmor profile even in rootless mode.
 
 Securing the connection and isolating the daemon is the administrator's responsibility. The plugin sends the entire build context and every build secret over this connection — the project build secrets and, when mac signing is configured, the signing certificate, its password and the notary key. What that requires:
 
@@ -219,7 +277,7 @@ XaOlJrPDM5E9zw==
 ```
 {% endofftopic %}
 
-Please refer to the [gpg documentation](https://www.gnupg.org/gph/en/manual/x56.html#AEN64) for more information about exporting.
+Please refer to the [gpg documentation](https://www.gnupg.org/gph/en/manual.html#AEN65) for more information about exporting.
 
 **Getting a list of keys**
 

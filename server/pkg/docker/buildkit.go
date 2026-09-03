@@ -107,6 +107,10 @@ func buildWithBuildkit(ctx context.Context, address, dockerfilePath string, secr
 	}
 	defer bkClient.Close()
 
+	return buildWithBuildkitClient(ctx, bkClient, dockerfilePath, secretsData, contextReader, tarWriter, logger)
+}
+
+func buildWithBuildkitClient(ctx context.Context, bkClient *bkclient.Client, dockerfilePath string, secretsData map[string][]byte, contextReader io.ReadCloser, tarWriter io.WriteCloser, logger Logger) error {
 	contextUploader := uploadprovider.New()
 	solveOpt := bkclient.SolveOpt{
 		Frontend:      "dockerfile.v0",

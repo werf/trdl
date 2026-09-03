@@ -157,6 +157,8 @@ func dataCompleteConfiguration() map[string]interface{} {
 		fieldNameBuildkitdAddress:                           cfg.BuildkitdAddress,
 		fieldNameBuildxDriver:                               cfg.BuildxDriver,
 		fieldNameBuildxDriverOpts:                           cfg.BuildxDriverOpts,
+		fieldNameBuildkitdDriver:                            cfg.BuildkitdDriver,
+		fieldNameBuildkitdDriverOpts:                        cfg.BuildkitdDriverOpts,
 	}
 }
 
@@ -166,6 +168,16 @@ func dataCompleteConfigurationWithoutBuildxFields() map[string]interface{} {
 	reqData := dataCompleteConfiguration()
 	delete(reqData, fieldNameBuildxDriver)
 	delete(reqData, fieldNameBuildxDriverOpts)
+
+	return reqData
+}
+
+// The buildkitd driver is mutually exclusive with the buildx pair too, so a
+// request exercising it starts from the same reduced fixture.
+func dataCompleteConfigurationWithBuildkitdDriver() map[string]interface{} {
+	reqData := dataCompleteConfigurationWithoutBuildxFields()
+	reqData[fieldNameBuildkitdDriver] = "kubernetes"
+	reqData[fieldNameBuildkitdDriverOpts] = []string{"namespace=trdl-build", "rootless=true"}
 
 	return reqData
 }
@@ -183,6 +195,7 @@ func completeConfiguration() *configuration {
 		S3BucketName:                               "trdl",
 		BuildxDriver:                               "kubernetes",
 		BuildxDriverOpts:                           []string{"namespace=trdl-build", "nodeselector=disktype=ssd,zone=a"},
+		BuildkitdDriverOpts:                        []string{},
 	}
 }
 
@@ -203,13 +216,16 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildxFieldsOmitted
 	if assert.NotNil(suite.T(), cfg) {
 		assert.Empty(suite.T(), cfg.BuildxDriver)
 		assert.Empty(suite.T(), cfg.BuildxDriverOpts)
+		assert.Empty(suite.T(), cfg.BuildkitdDriver)
 	}
 }
 
 func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildxFieldsRejectedWithBuildkitdAddress() {
 	for field, value := range map[string]interface{}{
-		fieldNameBuildxDriver:     "kubernetes",
-		fieldNameBuildxDriverOpts: []string{"namespace=trdl-build"},
+		fieldNameBuildxDriver:        "kubernetes",
+		fieldNameBuildxDriverOpts:    []string{"namespace=trdl-build"},
+		fieldNameBuildkitdDriver:     "kubernetes",
+		fieldNameBuildkitdDriverOpts: []string{"namespace=trdl-build"},
 	} {
 		conflictingField := field
 		suite.Run(conflictingField, func() {
@@ -254,6 +270,161 @@ func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_OmittedBuildxFields
 	if assert.NotNil(suite.T(), cfg) {
 		assert.Empty(suite.T(), cfg.BuildxDriver)
 		assert.Empty(suite.T(), cfg.BuildxDriverOpts)
+		assert.Empty(suite.T(), cfg.BuildkitdDriver)
+		assert.Empty(suite.T(), cfg.BuildkitdDriverOpts)
+	}
+}
+
+func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildkitdDriverStored() {
+	suite.req.Operation = logical.CreateOperation
+	suite.req.Data = dataCompleteConfigurationWithBuildkitdDriver()
+
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), resp)
+
+	cfg, err := getConfiguration(suite.ctx, suite.storage)
+	assert.Nil(suite.T(), err)
+	if assert.NotNil(suite.T(), cfg) {
+		assert.Equal(suite.T(), "kubernetes", cfg.BuildkitdDriver)
+		assert.Equal(suite.T(), []string{"namespace=trdl-build", "rootless=true"}, cfg.BuildkitdDriverOpts)
+	}
+}
+
+func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_UnsupportedBuildkitdDriverRejected() {
+	reqData := dataCompleteConfigurationWithBuildkitdDriver()
+	reqData[fieldNameBuildkitdDriver] = "nomad"
+
+	suite.req.Operation = logical.CreateOperation
+	suite.req.Data = reqData
+
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	if assert.NotNil(suite.T(), resp) {
+		assert.Contains(suite.T(), resp.Error().Error(), fieldNameBuildkitdDriver)
+		assert.Contains(suite.T(), resp.Error().Error(), "nomad")
+	}
+
+	cfg, err := getConfiguration(suite.ctx, suite.storage)
+	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), cfg, "a rejected configuration must not be stored")
+}
+
+// The whole point of a separate option vocabulary: an option the driver cannot
+// honor is refused when the configuration is written, not by a release that
+// fails hours later.
+func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_UnsupportedBuildkitdDriverOptRejected() {
+	for _, driverOpt := range []string{"tolerations=key=node,operator=Exists", "replicas=3", "namespace"} {
+		rejectedOpt := driverOpt
+		suite.Run(rejectedOpt, func() {
+			reqData := dataCompleteConfigurationWithBuildkitdDriver()
+			reqData[fieldNameBuildkitdDriverOpts] = []string{rejectedOpt}
+
+			suite.req.Operation = logical.CreateOperation
+			suite.req.Data = reqData
+
+			resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+			assert.Nil(suite.T(), err)
+			if assert.NotNil(suite.T(), resp) {
+				assert.Contains(suite.T(), resp.Error().Error(), fieldNameBuildkitdDriverOpts)
+			}
+
+			cfg, err := getConfiguration(suite.ctx, suite.storage)
+			assert.Nil(suite.T(), err)
+			assert.Nil(suite.T(), cfg, "a rejected configuration must not be stored")
+		})
+	}
+}
+
+func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildkitdDriverOptsRejectedWithoutDriver() {
+	reqData := dataCompleteConfigurationWithoutBuildxFields()
+	reqData[fieldNameBuildkitdDriverOpts] = []string{"namespace=trdl-build"}
+
+	suite.req.Operation = logical.CreateOperation
+	suite.req.Data = reqData
+
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	if assert.NotNil(suite.T(), resp) {
+		assert.Contains(suite.T(), resp.Error().Error(), fieldNameBuildkitdDriverOpts)
+	}
+
+	cfg, err := getConfiguration(suite.ctx, suite.storage)
+	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), cfg, "a rejected configuration must not be stored")
+}
+
+// Rejection has to happen before the storage write on the update path too:
+// exercising it through create only would keep the suite green if the check
+// moved below putConfiguration.
+func (suite *PathConfigureCallbacksSuite) TestUpdate_RejectedBuildkitdDriverKeepsConfiguration() {
+	stored := completeConfiguration()
+	err := putConfiguration(suite.ctx, suite.storage, stored)
+	assert.Nil(suite.T(), err)
+
+	for name, mutate := range map[string]func(map[string]interface{}){
+		"unsupported driver": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdDriver] = "nomad"
+		},
+		"unsupported driver option": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdDriver] = "kubernetes"
+			data[fieldNameBuildkitdDriverOpts] = []string{"replicas=3"}
+		},
+		"driver options without a driver": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdDriverOpts] = []string{"namespace=trdl-build"}
+		},
+		"driver next to the buildx pair": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdDriver] = "kubernetes"
+			data[fieldNameBuildxDriver] = "kubernetes"
+		},
+		"driver next to an address": func(data map[string]interface{}) {
+			data[fieldNameBuildkitdAddress] = "tcp://buildkitd:1234"
+			data[fieldNameBuildkitdDriver] = "kubernetes"
+		},
+	} {
+		rejected := mutate
+		suite.Run(name, func() {
+			reqData := dataCompleteConfigurationWithoutBuildxFields()
+			rejected(reqData)
+
+			suite.req.Operation = logical.UpdateOperation
+			suite.req.Data = reqData
+
+			resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+			assert.Nil(suite.T(), err)
+			assert.NotNil(suite.T(), resp, "the update must be rejected")
+
+			cfg, err := getConfiguration(suite.ctx, suite.storage)
+			assert.Nil(suite.T(), err)
+			assert.Equal(suite.T(), stored, cfg, "a rejected update must leave the stored configuration untouched")
+		})
+	}
+}
+
+func (suite *PathConfigureCallbacksSuite) TestCreateOrUpdate_BuildxFieldsRejectedWithBuildkitdDriver() {
+	for field, value := range map[string]interface{}{
+		fieldNameBuildxDriver:     "kubernetes",
+		fieldNameBuildxDriverOpts: []string{"namespace=trdl-build"},
+	} {
+		conflictingField := field
+		suite.Run(conflictingField, func() {
+			reqData := dataCompleteConfigurationWithBuildkitdDriver()
+			reqData[conflictingField] = value
+
+			suite.req.Operation = logical.CreateOperation
+			suite.req.Data = reqData
+
+			resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+			assert.Nil(suite.T(), err)
+			if assert.NotNil(suite.T(), resp) {
+				assert.Contains(suite.T(), resp.Error().Error(), conflictingField)
+				assert.Contains(suite.T(), resp.Error().Error(), fieldNameBuildkitdDriver)
+			}
+
+			cfg, err := getConfiguration(suite.ctx, suite.storage)
+			assert.Nil(suite.T(), err)
+			assert.Nil(suite.T(), cfg, "a rejected configuration must not be stored")
+		})
 	}
 }
 

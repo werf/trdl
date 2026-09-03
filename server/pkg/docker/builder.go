@@ -30,6 +30,8 @@ const (
 	buildxDriverConfigurationSource = "the buildx_driver plugin configuration"
 
 	defaultBuildxDriver = "docker-container"
+
+	buildkitdDriverKubernetes = "kubernetes"
 )
 
 // supportedBuildxDrivers are the drivers trdl has verified. The build streams a
@@ -38,18 +40,24 @@ const (
 // later with an opaque build failure.
 var supportedBuildxDrivers = []string{"docker-container", "kubernetes"}
 
+// supportedBuildkitdDrivers are the ways trdl provisions a buildkitd of its own,
+// needing no docker binary. Unset means it provisions none: the build either
+// connects to buildkitd_address or goes through the docker CLI.
+var supportedBuildkitdDrivers = []string{buildkitdDriverKubernetes}
+
 type Logger interface {
 	Info(msg string, args ...interface{})
 	Error(msg string, args ...interface{})
 }
 
 type Builder struct {
-	builderName      string
-	buildArgs        []string
-	buildkitdAddress string
-	dockerfilePath   string
-	secretsData      map[string][]byte
-	logger           Logger
+	builderName       string
+	buildArgs         []string
+	buildkitdAddress  string
+	kubernetesBuilder *kubernetesBuilder
+	dockerfilePath    string
+	secretsData       map[string][]byte
+	logger            Logger
 }
 
 type NewBuilderOpts struct {
@@ -58,6 +66,8 @@ type NewBuilderOpts struct {
 	BuildkitdAddress        string
 	BuildxDriver            string
 	BuildxDriverOpts        []string
+	BuildkitdDriver         string
+	BuildkitdDriverOpts     []string
 	Secrets                 []secrets.Secret
 	MacSigningCredentials   *mac_signing.Credentials
 	Logger                  Logger
@@ -69,14 +79,12 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 		return nil, err
 	}
 	if buildkitdAddress != "" {
-		// configure rejects both settings written together, but the address can
-		// also come from the environment, and then the driver settings are
-		// unreachable rather than rejected. Blank values mean "not set", as they
-		// do everywhere the settings are resolved.
-		if strings.TrimSpace(opts.BuildxDriver) != "" || lo.SomeBy(opts.BuildxDriverOpts, func(opt string) bool {
-			return strings.TrimSpace(opt) != ""
-		}) {
-			msg := fmt.Sprintf("Building against buildkitd at %q, the configured buildx driver settings are not used", buildkitdAddress)
+		// configure rejects these settings written together, but the address can
+		// also come from the environment, and then they are unreachable rather
+		// than rejected. Blank values mean "not set", as they do everywhere the
+		// settings are resolved.
+		if unused := unusedBuilderSettings(opts); len(unused) > 0 {
+			msg := fmt.Sprintf("Building against buildkitd at %q, the configured %s settings are not used", buildkitdAddress, strings.Join(unused, " and "))
 			logboek.Context(ctx).Default().LogLn(msg)
 			opts.Logger.Info(msg)
 		}
@@ -90,6 +98,30 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 	}
 
 	builderName := fmt.Sprintf("trdl-builder-%s", opts.BuildId)
+
+	if strings.TrimSpace(opts.BuildkitdDriver) != "" {
+		// configure rejects the buildx fields written next to a buildkitd driver,
+		// but the environment has no such gate, so say what is being ignored
+		// instead of leaving it to be discovered from a builder that never appears.
+		if driver, source := resolveBuildxDriver(""); source != "the default" {
+			msg := fmt.Sprintf("Provisioning buildkitd with the %s driver, the buildx driver %q from %s is not used", opts.BuildkitdDriver, driver, source)
+			logboek.Context(ctx).Default().LogLn(msg)
+			opts.Logger.Info(msg)
+		}
+
+		kubernetesBuilder, err := newKubernetesBuilder(ctx, builderName, opts.BuildkitdDriver, opts.BuildkitdDriverOpts, opts.Logger)
+		if err != nil {
+			return nil, err
+		}
+
+		return &Builder{
+			builderName:       builderName,
+			kubernetesBuilder: kubernetesBuilder,
+			dockerfilePath:    opts.DockerfilePathInContext,
+			secretsData:       buildkitSecretsData(opts.Secrets, opts.MacSigningCredentials),
+			logger:            opts.Logger,
+		}, nil
+	}
 
 	builderArgs, err := buildxCreateArgs(ctx, builderName, opts.BuildxDriver, opts.BuildxDriverOpts)
 	if err != nil {
@@ -110,6 +142,20 @@ func NewBuilder(ctx context.Context, opts *NewBuilderOpts) (*Builder, error) {
 		buildArgs:   args,
 		logger:      opts.Logger,
 	}, nil
+}
+
+// unusedBuilderSettings names the settings a buildkitd address makes unreachable,
+// so the build log says which knob is being ignored.
+func unusedBuilderSettings(opts *NewBuilderOpts) []string {
+	var unused []string
+	if strings.TrimSpace(opts.BuildxDriver) != "" || len(trimDriverOpts(opts.BuildxDriverOpts)) > 0 {
+		unused = append(unused, "buildx driver")
+	}
+	if strings.TrimSpace(opts.BuildkitdDriver) != "" || len(trimDriverOpts(opts.BuildkitdDriverOpts)) > 0 {
+		unused = append(unused, "buildkitd driver")
+	}
+
+	return unused
 }
 
 func buildxCreateArgs(ctx context.Context, builderName, configuredDriver string, configuredDriverOpts []string) ([]string, error) {
@@ -142,6 +188,46 @@ func ValidateBuildxDriver(ctx context.Context, driver string) error {
 	}
 
 	return fmt.Errorf("unsupported driver %q (supported: %s)", driver, strings.Join(supportedBuildxDrivers, ", "))
+}
+
+// ValidateBuildkitdDriver accepts an empty driver, meaning trdl provisions no
+// buildkitd of its own.
+func ValidateBuildkitdDriver(ctx context.Context, driver string) error {
+	driver = strings.TrimSpace(driver)
+	if driver == "" || lo.Contains(supportedBuildkitdDrivers, driver) {
+		return nil
+	}
+
+	return fmt.Errorf("unsupported buildkitd driver %q (supported: %s)", driver, strings.Join(supportedBuildkitdDrivers, ", "))
+}
+
+// ValidateBuildkitdDriverOpts rejects an option the driver cannot honor while
+// the configuration is being written, rather than at release time. The options
+// have no environment counterpart, so this check is reachable for every value
+// that can ever arrive.
+func ValidateBuildkitdDriverOpts(ctx context.Context, driver string, driverOpts []string) error {
+	driverOpts = trimDriverOpts(driverOpts)
+	if strings.TrimSpace(driver) == "" {
+		if len(driverOpts) > 0 {
+			return fmt.Errorf("buildkitd driver options are set without a buildkitd driver")
+		}
+
+		return nil
+	}
+
+	if _, err := parseKubernetesDriverOpts(driverOpts); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func trimDriverOpts(driverOpts []string) []string {
+	return lo.FilterMap(driverOpts, func(driverOpt string, _ int) (string, bool) {
+		trimmed := strings.TrimSpace(driverOpt)
+
+		return trimmed, trimmed != ""
+	})
 }
 
 // resolveBuildxDriver returns the driver to create the builder with and the
@@ -220,6 +306,16 @@ func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarW
 		return buildWithBuildkit(ctx, b.buildkitdAddress, b.dockerfilePath, b.secretsData, contextReader, tarWriter, b.logger)
 	}
 
+	if b.kubernetesBuilder != nil {
+		bkClient, err := b.kubernetesBuilder.client(ctx)
+		if err != nil {
+			return err
+		}
+		defer bkClient.Close()
+
+		return buildWithBuildkitClient(ctx, bkClient, b.dockerfilePath, b.secretsData, contextReader, tarWriter, b.logger)
+	}
+
 	finalArgs := append([]string{"buildx", "build"}, b.buildArgs...)
 	cmd := exec.CommandContext(ctx, "docker", finalArgs...)
 
@@ -244,6 +340,10 @@ func (b *Builder) Build(ctx context.Context, contextReader *nio.PipeReader, tarW
 func (b *Builder) Remove(ctx context.Context) error {
 	if b.buildkitdAddress != "" {
 		return nil
+	}
+
+	if b.kubernetesBuilder != nil {
+		return b.kubernetesBuilder.remove(ctx)
 	}
 
 	if err := runDockerCmd(ctx, []string{"buildx", "rm", b.builderName}); err != nil {
