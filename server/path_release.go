@@ -130,7 +130,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Verifying tag PGP signatures of the git tag %q\n", gitTag)
 		b.Logger().Debug(fmt.Sprintf("Verifying tag PGP signatures of the git tag %q", gitTag))
 
-		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
+		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, storage)
 		if err != nil {
 			return fmt.Errorf("unable to get trusted PGP public keys: %w", err)
 		}
@@ -152,7 +152,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 		b.Logger().Debug("Starting release artifacts tar archive build")
 
 		var elfSigner *elf_signing.ELFSigner
-		if elfSettings, err := elf_signing.GetSettings(ctx, req.Storage); err != nil {
+		if elfSettings, err := elf_signing.GetSettings(ctx, storage); err != nil {
 			return fmt.Errorf("get elf signing settings: %w", err)
 		} else if elfSettings != nil {
 			elfSigner = elf_signing.NewELFSigner(b.Logger(), elfSettings)
@@ -169,7 +169,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 					GitRepo:             gitRepo,
 					FromImage:           trdlCfg.GetDockerImage(),
 					RunCommands:         trdlCfg.Commands,
-					Storage:             req.Storage,
+					Storage:             storage,
 					BuildkitdAddress:    cfg.BuildkitdAddress,
 					BuildxDriver:        cfg.BuildxDriver,
 					BuildxDriverOpts:    cfg.BuildxDriverOpts,
