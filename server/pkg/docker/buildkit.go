@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/cli/cli/config"
@@ -81,6 +82,7 @@ func buildkitSecretsData(buildSecrets []secrets.Secret, macSigningCredentials *m
 // image-resolve-mode=pull can only reach public registries.
 func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprovider.Uploader, secretsData map[string][]byte) []session.Attachable {
 	dockerConfig := config.LoadDefaultConfigFile(logboek.Context(ctx).OutStream())
+	dockerConfigDirForTokenSeeds(ctx)
 
 	return []session.Attachable{
 		contextUploader,
@@ -89,6 +91,25 @@ func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprov
 			AuthConfigProvider: authprovider.LoadAuthConfig(dockerConfig),
 		}),
 	}
+}
+
+// The auth provider keeps registry token seeds under config.Dir() and creates
+// that directory on the first token request, so a process without a writable
+// home (a builtin backend on a read-only root) fails every pull, anonymous ones
+// included. The config file has already been read from the default location by
+// the time this runs; only the seeds move.
+func dockerConfigDirForTokenSeeds(ctx context.Context) string {
+	dir := config.Dir()
+	if err := os.MkdirAll(dir, 0o755); err == nil {
+		return dir
+	}
+
+	fallback := filepath.Join(os.TempDir(), "trdl-docker-config")
+	config.SetDir(fallback)
+
+	msg := fmt.Sprintf("Docker config dir %q is not writable, keeping BuildKit registry token seeds in %q", dir, fallback)
+	logboek.Context(ctx).Default().LogLn(msg)
+	return fallback
 }
 
 func buildkitFrontendAttrs(dockerfilePath, contextStreamURL string) map[string]string {
