@@ -98,11 +98,18 @@ func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprov
 	}
 
 	return attachables, func() {
-		if seedDir != "" {
-			os.RemoveAll(seedDir)
+		if seedDir == "" {
+			return
+		}
+		if err := os.RemoveAll(seedDir); err != nil {
+			logboek.Context(ctx).Default().LogLn(fmt.Sprintf("Unable to remove the BuildKit registry token seed dir %q: %s", seedDir, err))
 		}
 	}
 }
+
+// dockerConfigDirMu serializes the config.Dir() redirect below; docker/cli
+// keeps that directory in an unsynchronised package global.
+var dockerConfigDirMu sync.Mutex
 
 // The auth provider never hands registry credentials to buildkitd: on a bearer
 // challenge the daemon asks the client for an ed25519 public key and the client
@@ -113,17 +120,11 @@ func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprov
 // os.MkdirAll(config.Dir()) on every bearer challenge, anonymous pulls
 // included, and that is the one step upstream does not tolerate on a read-only
 // filesystem, so a process without a writable home (a builtin backend on a
-// read-only root) fails every pull.
-//
-// NewDockerAuthProvider captures config.Dir() when it is constructed, so the
-// redirect only has to hold across that call: config.json is read from the
-// default location before, the directory is restored after, and the mutex
-// keeps two builds from seeing each other's redirect. The seed directory is
-// private to one build, so mounts sharing a process share nothing through it,
-// and lives in memory-backed /dev/shm where that exists so the seed never
-// reaches a disk.
-var dockerConfigDirMu sync.Mutex
-
+// read-only root) fails every pull. NewDockerAuthProvider captures config.Dir()
+// when it is constructed, which is why the redirect only has to hold across
+// that call. The directory is private to one build, so mounts sharing a
+// process share nothing through it, and lives in memory-backed /dev/shm where
+// that exists so the seed never reaches a disk.
 func useWritableDockerConfigDirForTokenSeeds(ctx context.Context) (string, func()) {
 	dir := config.Dir()
 	if err := os.MkdirAll(dir, 0o755); err == nil {
