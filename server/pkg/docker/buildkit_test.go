@@ -111,11 +111,12 @@ func TestBuildkitSecretsData_NoCredentials(t *testing.T) {
 }
 
 func TestBuildkitSessionAttachables_ServeContextSecretsAndRegistryAuth(t *testing.T) {
-	attachables := buildkitSessionAttachables(
+	attachables, removeTokenSeeds := buildkitSessionAttachables(
 		context.Background(),
 		uploadprovider.New(),
 		map[string][]byte{"MY_TOKEN": []byte("token-value")},
 	)
+	defer removeTokenSeeds()
 
 	var servesContext, servesSecrets, servesRegistryAuth bool
 	for _, attachable := range attachables {
