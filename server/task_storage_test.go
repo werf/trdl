@@ -4,9 +4,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/docker/cli/cli/config"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -45,6 +47,10 @@ func (suite *TaskStorageSuite) SetupTest() {
 }
 
 func (suite *TaskStorageSuite) TestReleaseTaskDoesNotUseRequestStorage() {
+	originalDockerConfigDir := config.Dir()
+	config.SetDir(filepath.Join(suite.T().TempDir(), ".docker"))
+	suite.T().Cleanup(func() { config.SetDir(originalDockerConfigDir) })
+
 	trdlYaml := "dockerImage: alpine@sha256:0000000000000000000000000000000000000000000000000000000000000000\ncommands:\n  - true\n"
 	cfg := completeConfiguration()
 	cfg.GitRepoUrl = initGitRepository(suite.T(), map[string]string{"trdl.yaml": trdlYaml}, fieldGitTagValidValue)
@@ -84,11 +90,28 @@ func (suite *TaskStorageSuite) runCapturedTask() error {
 	ctx, cancel := context.WithTimeout(logboek.NewContext(suite.ctx, logboek.DefaultLogger()), 2*time.Minute)
 	defer cancel()
 
+	taskStorage := &countingStorage{Storage: suite.storage}
 	var taskErr error
 	require.NotPanics(suite.T(), func() {
-		taskErr = suite.tasksManager.task(ctx, suite.storage)
+		taskErr = suite.tasksManager.task(ctx, taskStorage)
 	})
+	require.Positive(suite.T(), taskStorage.reads.Load(), "the task must read through the storage it was given")
 	return taskErr
+}
+
+type countingStorage struct {
+	logical.Storage
+	reads atomic.Int64
+}
+
+func (s *countingStorage) List(ctx context.Context, prefix string) ([]string, error) {
+	s.reads.Add(1)
+	return s.Storage.List(ctx, prefix)
+}
+
+func (s *countingStorage) Get(ctx context.Context, key string) (*logical.StorageEntry, error) {
+	s.reads.Add(1)
+	return s.Storage.Get(ctx, key)
 }
 
 func initGitRepository(t *testing.T, files map[string]string, tag string) string {
