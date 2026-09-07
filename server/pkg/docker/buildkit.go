@@ -93,11 +93,17 @@ func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprov
 	}
 }
 
-// The auth provider keeps registry token seeds under config.Dir() and creates
-// that directory on the first token request, so a process without a writable
-// home (a builtin backend on a read-only root) fails every pull, anonymous ones
-// included. The config file has already been read from the default location by
-// the time this runs; only the seeds move.
+// The auth provider never hands registry credentials to buildkitd: on a bearer
+// challenge the daemon asks the client for an ed25519 public key and the client
+// fetches tokens itself. The key is derived from the daemon's salt and a
+// per-host client seed, 16 random bytes generated locally and never sent
+// anywhere, which the provider persists as <config.Dir()>/.token_seed. Nothing
+// in that file is a token or a credential. Persisting it runs
+// os.MkdirAll(config.Dir()) on every bearer challenge, anonymous pulls
+// included, and that is the one step upstream does not tolerate on a read-only
+// filesystem, so a process without a writable home (a builtin backend on a
+// read-only root) fails every pull. config.json has already been read from the
+// default location by the time this runs; only the seed file moves.
 func dockerConfigDirForTokenSeeds(ctx context.Context) string {
 	dir := config.Dir()
 	if err := os.MkdirAll(dir, 0o755); err == nil {
