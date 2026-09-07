@@ -150,7 +150,7 @@ func (b *Backend) pathPublish(ctx context.Context, req *logical.Request, fields 
 		logboek.Context(ctx).Default().LogF("Verifying tag PGP signatures of the commit %q\n", headCommit)
 		b.Logger().Debug(fmt.Sprintf("Verifying tag PGP signatures of the commit %q", headCommit))
 
-		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, req.Storage)
+		trustedPGPPublicKeys, err := pgp.GetTrustedPGPPublicKeys(ctx, storage)
 		if err != nil {
 			return fmt.Errorf("unable to get trusted PGP public keys: %w", err)
 		}
