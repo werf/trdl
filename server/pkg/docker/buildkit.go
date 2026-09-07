@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/docker/cli/cli/config"
 	bkclient "github.com/moby/buildkit/client"
@@ -81,8 +81,11 @@ func buildkitSecretsData(buildSecrets []secrets.Secret, macSigningCredentials *m
 // buildx; the BuildKit client has to attach the same provider itself, otherwise
 // image-resolve-mode=pull can only reach public registries.
 func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprovider.Uploader, secretsData map[string][]byte) []session.Attachable {
+	dockerConfigDirMu.Lock()
+	defer dockerConfigDirMu.Unlock()
+
 	dockerConfig := config.LoadDefaultConfigFile(logboek.Context(ctx).OutStream())
-	dockerConfigDirForTokenSeeds(ctx)
+	defer useWritableDockerConfigDirForTokenSeeds(ctx)()
 
 	return []session.Attachable{
 		contextUploader,
@@ -102,20 +105,39 @@ func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprov
 // os.MkdirAll(config.Dir()) on every bearer challenge, anonymous pulls
 // included, and that is the one step upstream does not tolerate on a read-only
 // filesystem, so a process without a writable home (a builtin backend on a
-// read-only root) fails every pull. config.json has already been read from the
-// default location by the time this runs; only the seed file moves.
-func dockerConfigDirForTokenSeeds(ctx context.Context) string {
+// read-only root) fails every pull.
+//
+// NewDockerAuthProvider captures config.Dir() when it is constructed, so the
+// redirect only has to hold across that call: config.json is read from the
+// default location before, the directory is restored after, and the mutex
+// keeps two builds from seeing each other's redirect. The seed directory is
+// created once per process with a private mode, not at a guessable path.
+var (
+	dockerConfigDirMu sync.Mutex
+	tokenSeedDirOnce  sync.Once
+	tokenSeedDir      string
+	errTokenSeedDir   error
+)
+
+func useWritableDockerConfigDirForTokenSeeds(ctx context.Context) func() {
 	dir := config.Dir()
 	if err := os.MkdirAll(dir, 0o755); err == nil {
-		return dir
+		return func() {}
 	}
 
-	fallback := filepath.Join(os.TempDir(), "trdl-docker-config")
-	config.SetDir(fallback)
+	tokenSeedDirOnce.Do(func() {
+		tokenSeedDir, errTokenSeedDir = os.MkdirTemp("", "trdl-docker-config-")
+	})
+	if errTokenSeedDir != nil {
+		msg := fmt.Sprintf("Docker config dir %q is not writable and no temp dir for BuildKit registry token seeds could be created: %s", dir, errTokenSeedDir)
+		logboek.Context(ctx).Default().LogLn(msg)
+		return func() {}
+	}
 
-	msg := fmt.Sprintf("Docker config dir %q is not writable, keeping BuildKit registry token seeds in %q", dir, fallback)
+	msg := fmt.Sprintf("Docker config dir %q is not writable, keeping BuildKit registry token seeds in %q", dir, tokenSeedDir)
 	logboek.Context(ctx).Default().LogLn(msg)
-	return fallback
+	config.SetDir(tokenSeedDir)
+	return func() { config.SetDir(dir) }
 }
 
 func buildkitFrontendAttrs(dockerfilePath, contextStreamURL string) map[string]string {
