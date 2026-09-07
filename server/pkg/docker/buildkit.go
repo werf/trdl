@@ -111,7 +111,8 @@ func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprov
 // redirect only has to hold across that call: config.json is read from the
 // default location before, the directory is restored after, and the mutex
 // keeps two builds from seeing each other's redirect. The seed directory is
-// created once per process with a private mode, not at a guessable path.
+// created once per process with a private mode, not at a guessable path, in
+// memory-backed /dev/shm where it exists so the seeds never reach a disk.
 var (
 	dockerConfigDirMu sync.Mutex
 	tokenSeedDirOnce  sync.Once
@@ -126,7 +127,12 @@ func useWritableDockerConfigDirForTokenSeeds(ctx context.Context) func() {
 	}
 
 	tokenSeedDirOnce.Do(func() {
-		tokenSeedDir, errTokenSeedDir = os.MkdirTemp("", "trdl-docker-config-")
+		for _, base := range []string{"/dev/shm", os.TempDir()} {
+			tokenSeedDir, errTokenSeedDir = os.MkdirTemp(base, "trdl-docker-config-")
+			if errTokenSeedDir == nil {
+				return
+			}
+		}
 	})
 	if errTokenSeedDir != nil {
 		msg := fmt.Sprintf("Docker config dir %q is not writable and no temp dir for BuildKit registry token seeds could be created: %s", dir, errTokenSeedDir)

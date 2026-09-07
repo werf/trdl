@@ -45,7 +45,7 @@ func TestBuildkitSessionAttachables_SeedsGoToPrivateTempDirWhenConfigDirUnwritab
 
 	seedDir := tokenSeedDir
 	require.True(t, strings.HasPrefix(filepath.Base(seedDir), "trdl-docker-config-"), seedDir)
-	require.Equal(t, filepath.Dir(seedDir), filepath.Clean(os.TempDir()))
+	require.Contains(t, []string{"/dev/shm", filepath.Clean(os.TempDir())}, filepath.Dir(seedDir))
 	info, err := os.Stat(seedDir)
 	require.NoError(t, err)
 	require.Equal(t, os.FileMode(0o700), info.Mode().Perm())
