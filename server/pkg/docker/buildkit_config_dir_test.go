@@ -4,25 +4,32 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 
 	"github.com/docker/cli/cli/config"
+	"github.com/hashicorp/go-hclog"
+	bkclient "github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/session"
 	"github.com/moby/buildkit/session/auth"
 	"github.com/stretchr/testify/require"
+
+	"github.com/werf/logboek"
 )
 
 func TestBuildkitSessionAttachables_KeepsWritableConfigDir(t *testing.T) {
-	restoreDockerConfigDir(t)
+	isolateTokenSeedTest(t)
 
 	dir := filepath.Join(t.TempDir(), ".docker")
 	config.SetDir(dir)
 	before := tokenSeedDirs(t)
 
 	attachables, cleanup := buildkitSessionAttachables(context.Background(), nil, nil)
+	t.Cleanup(cleanup)
 	require.NoError(t, tokenAuthority(attachables))
 	cleanup()
 
@@ -32,13 +39,14 @@ func TestBuildkitSessionAttachables_KeepsWritableConfigDir(t *testing.T) {
 }
 
 func TestBuildkitSessionAttachables_SeedsGoToPrivateDirWhenConfigDirUnwritable(t *testing.T) {
-	restoreDockerConfigDir(t)
+	isolateTokenSeedTest(t)
 
 	unwritable := unwritableDockerConfigDir(t)
 	config.SetDir(unwritable)
 	before := tokenSeedDirs(t)
 
 	attachables, cleanup := buildkitSessionAttachables(context.Background(), nil, nil)
+	t.Cleanup(cleanup)
 	require.NoError(t, tokenAuthority(attachables))
 
 	require.Equal(t, unwritable, config.Dir())
@@ -56,7 +64,7 @@ func TestBuildkitSessionAttachables_SeedsGoToPrivateDirWhenConfigDirUnwritable(t
 }
 
 func TestBuildkitSessionAttachables_EveryBuildGetsItsOwnSeedDir(t *testing.T) {
-	restoreDockerConfigDir(t)
+	isolateTokenSeedTest(t)
 
 	config.SetDir(unwritableDockerConfigDir(t))
 	before := tokenSeedDirs(t)
@@ -75,6 +83,9 @@ func TestBuildkitSessionAttachables_EveryBuildGetsItsOwnSeedDir(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+	for _, cleanup := range cleanups {
+		t.Cleanup(cleanup)
+	}
 
 	for _, err := range errs {
 		require.NoError(t, err)
@@ -85,6 +96,41 @@ func TestBuildkitSessionAttachables_EveryBuildGetsItsOwnSeedDir(t *testing.T) {
 		cleanup()
 	}
 	require.Equal(t, before, tokenSeedDirs(t))
+}
+
+func TestBuildWithBuildkitClient_RemovesTokenSeedsAfterTheBuild(t *testing.T) {
+	isolateTokenSeedTest(t)
+
+	config.SetDir(unwritableDockerConfigDir(t))
+	before := tokenSeedDirs(t)
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	address := listener.Addr().String()
+	require.NoError(t, listener.Close())
+
+	ctx := logboek.NewContext(context.Background(), logboek.DefaultLogger())
+	bkClient, err := bkclient.New(ctx, "tcp://"+address)
+	require.NoError(t, err)
+	defer bkClient.Close()
+
+	err = buildWithBuildkitClient(ctx, bkClient, ".trdl/Dockerfile", nil, io.NopCloser(bytes.NewReader(nil)), nopWriteCloser{io.Discard}, hclog.NewNullLogger())
+	require.Error(t, err)
+	require.Equal(t, before, tokenSeedDirs(t))
+}
+
+type nopWriteCloser struct{ io.Writer }
+
+func (nopWriteCloser) Close() error { return nil }
+
+// isolateTokenSeedTest keeps the test off the developer's docker config,
+// credential helpers and shared temp dir, and restores config.Dir() afterwards.
+func isolateTokenSeedTest(t *testing.T) {
+	t.Setenv("TMPDIR", t.TempDir())
+	t.Setenv("PATH", "")
+	t.Setenv("DOCKER_AUTH_CONFIG", "")
+	original := config.Dir()
+	t.Cleanup(func() { config.SetDir(original) })
 }
 
 // tokenAuthority drives the auth provider the way buildkitd does on a bearer
@@ -131,9 +177,4 @@ func newTokenSeedDirs(before, after map[string]bool) []string {
 		}
 	}
 	return created
-}
-
-func restoreDockerConfigDir(t *testing.T) {
-	original := config.Dir()
-	t.Cleanup(func() { config.SetDir(original) })
 }

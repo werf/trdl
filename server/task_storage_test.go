@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync/atomic"
 	"testing"
@@ -23,6 +24,8 @@ type capturingTasksManager struct {
 	tasks_manager.ActionsInterface
 	task func(ctx context.Context, storage logical.Storage) error
 }
+
+var _ tasks_manager.ActionsInterface = (*capturingTasksManager)(nil)
 
 func (m *capturingTasksManager) RunTask(_ context.Context, _ logical.Storage, taskFunc func(ctx context.Context, storage logical.Storage) error) (string, error) {
 	m.task = taskFunc
@@ -104,6 +107,8 @@ type countingStorage struct {
 	reads atomic.Int64
 }
 
+var _ logical.Storage = (*countingStorage)(nil)
+
 func (s *countingStorage) List(ctx context.Context, prefix string) ([]string, error) {
 	s.reads.Add(1)
 	return s.Storage.List(ctx, prefix)
@@ -115,6 +120,9 @@ func (s *countingStorage) Get(ctx context.Context, key string) (*logical.Storage
 }
 
 func initGitRepository(t *testing.T, files map[string]string, tag string) string {
+	_, err := exec.LookPath("git")
+	require.NoError(t, err, "go-git clones a local path through git-upload-pack, so git must be on PATH")
+
 	dir := t.TempDir()
 	repo, err := git.PlainInit(dir, false)
 	require.NoError(t, err)
