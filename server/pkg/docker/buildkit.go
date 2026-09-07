@@ -79,20 +79,28 @@ func buildkitSecretsData(buildSecrets []secrets.Secret, macSigningCredentials *m
 
 // The docker CLI path gets registry credentials from the docker config through
 // buildx; the BuildKit client has to attach the same provider itself, otherwise
-// image-resolve-mode=pull can only reach public registries.
-func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprovider.Uploader, secretsData map[string][]byte) []session.Attachable {
+// image-resolve-mode=pull can only reach public registries. The returned
+// function removes the token seed directory once the build is over.
+func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprovider.Uploader, secretsData map[string][]byte) ([]session.Attachable, func()) {
 	dockerConfigDirMu.Lock()
 	defer dockerConfigDirMu.Unlock()
 
 	dockerConfig := config.LoadDefaultConfigFile(logboek.Context(ctx).OutStream())
-	defer useWritableDockerConfigDirForTokenSeeds(ctx)()
+	seedDir, restoreDockerConfigDir := useWritableDockerConfigDirForTokenSeeds(ctx)
+	defer restoreDockerConfigDir()
 
-	return []session.Attachable{
+	attachables := []session.Attachable{
 		contextUploader,
 		secretsprovider.FromMap(secretsData),
 		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
 			AuthConfigProvider: authprovider.LoadAuthConfig(dockerConfig),
 		}),
+	}
+
+	return attachables, func() {
+		if seedDir != "" {
+			os.RemoveAll(seedDir)
+		}
 	}
 }
 
@@ -111,39 +119,34 @@ func buildkitSessionAttachables(ctx context.Context, contextUploader *uploadprov
 // redirect only has to hold across that call: config.json is read from the
 // default location before, the directory is restored after, and the mutex
 // keeps two builds from seeing each other's redirect. The seed directory is
-// created once per process with a private mode, not at a guessable path, in
-// memory-backed /dev/shm where it exists so the seeds never reach a disk.
-var (
-	dockerConfigDirMu sync.Mutex
-	tokenSeedDirOnce  sync.Once
-	tokenSeedDir      string
-	errTokenSeedDir   error
-)
+// private to one build, so mounts sharing a process share nothing through it,
+// and lives in memory-backed /dev/shm where that exists so the seed never
+// reaches a disk.
+var dockerConfigDirMu sync.Mutex
 
-func useWritableDockerConfigDirForTokenSeeds(ctx context.Context) func() {
+func useWritableDockerConfigDirForTokenSeeds(ctx context.Context) (string, func()) {
 	dir := config.Dir()
 	if err := os.MkdirAll(dir, 0o755); err == nil {
-		return func() {}
+		return "", func() {}
 	}
 
-	tokenSeedDirOnce.Do(func() {
-		for _, base := range []string{"/dev/shm", os.TempDir()} {
-			tokenSeedDir, errTokenSeedDir = os.MkdirTemp(base, "trdl-docker-config-")
-			if errTokenSeedDir == nil {
-				return
-			}
+	var seedDir string
+	var err error
+	for _, base := range []string{"/dev/shm", os.TempDir()} {
+		if seedDir, err = os.MkdirTemp(base, "trdl-docker-config-"); err == nil {
+			break
 		}
-	})
-	if errTokenSeedDir != nil {
-		msg := fmt.Sprintf("Docker config dir %q is not writable and no temp dir for BuildKit registry token seeds could be created: %s", dir, errTokenSeedDir)
+	}
+	if err != nil {
+		msg := fmt.Sprintf("Docker config dir %q is not writable and no private dir for BuildKit registry token seeds could be created: %s", dir, err)
 		logboek.Context(ctx).Default().LogLn(msg)
-		return func() {}
+		return "", func() {}
 	}
 
-	msg := fmt.Sprintf("Docker config dir %q is not writable, keeping BuildKit registry token seeds in %q", dir, tokenSeedDir)
+	msg := fmt.Sprintf("Docker config dir %q is not writable, keeping BuildKit registry token seeds in %q for this build", dir, seedDir)
 	logboek.Context(ctx).Default().LogLn(msg)
-	config.SetDir(tokenSeedDir)
-	return func() { config.SetDir(dir) }
+	config.SetDir(seedDir)
+	return seedDir, func() { config.SetDir(dir) }
 }
 
 func buildkitFrontendAttrs(dockerfilePath, contextStreamURL string) map[string]string {
@@ -167,10 +170,12 @@ func buildWithBuildkit(ctx context.Context, address, dockerfilePath string, secr
 
 func buildWithBuildkitClient(ctx context.Context, bkClient *bkclient.Client, dockerfilePath string, secretsData map[string][]byte, contextReader io.ReadCloser, tarWriter io.WriteCloser, logger Logger) error {
 	contextUploader := uploadprovider.New()
+	attachables, removeTokenSeeds := buildkitSessionAttachables(ctx, contextUploader, secretsData)
+	defer removeTokenSeeds()
 	solveOpt := bkclient.SolveOpt{
 		Frontend:      "dockerfile.v0",
 		FrontendAttrs: buildkitFrontendAttrs(dockerfilePath, contextUploader.Add(contextReader)),
-		Session:       buildkitSessionAttachables(ctx, contextUploader, secretsData),
+		Session:       attachables,
 		Exports: []bkclient.ExportEntry{
 			{
 				Type: bkclient.ExporterTar,
