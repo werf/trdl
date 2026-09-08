@@ -30,6 +30,12 @@ type ELFSigner struct {
 }
 
 func NewELFSigner(logger hclog.Logger, opts *SignerSettings) *ELFSigner {
+	if opts.MaxArtifactSize == "" {
+		settings := *opts
+		settings.MaxArtifactSize = defaultMaxArtifactSize
+		opts = &settings
+	}
+
 	return &ELFSigner{logger: logger, settings: opts}
 }
 
