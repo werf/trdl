@@ -160,6 +160,7 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 
 		tarBuf := buffer.New(64 * 1024 * 1024)
 		tarReader, tarWriter := nio.Pipe(tarBuf)
+		defer tarReader.Close()
 
 		errCh := make(chan error, 1)
 		go func() {

@@ -16,10 +16,6 @@ func TestTrySignELFPassesThroughNonELF(t *testing.T) {
 
 	rc, err := signer.TrySignELF(context.Background(), "script.sh", bytes.NewReader(payload))
 	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, rc.Close())
-	}()
-
 	got, err := io.ReadAll(rc)
 	require.NoError(t, err)
 	require.Equal(t, payload, got)

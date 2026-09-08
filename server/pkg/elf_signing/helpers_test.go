@@ -16,8 +16,9 @@ func newTestSigner(t *testing.T) *ELFSigner {
 	certs := generateCerts(t, "")
 
 	signer := NewELFSigner(hclog.NewNullLogger(), &SignerSettings{
-		KeyRef:  certs.PrivRef,
-		CertRef: certs.LeafRef,
+		KeyRef:          certs.PrivRef,
+		CertRef:         certs.LeafRef,
+		MaxArtifactSize: defaultMaxArtifactSize,
 	})
 
 	return signer

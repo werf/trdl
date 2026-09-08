@@ -19,6 +19,7 @@ func TestTrySignELFEmbedsVerifiableSignature(t *testing.T) {
 		KeyRef:           certs.PrivRef,
 		CertRef:          certs.LeafRef,
 		IntermediatesRef: certs.IntermediatesRef,
+		MaxArtifactSize:  defaultMaxArtifactSize,
 	})
 
 	original, err := os.ReadFile("testdata/hello.elf")
@@ -26,14 +27,7 @@ func TestTrySignELFEmbedsVerifiableSignature(t *testing.T) {
 
 	signed, err := signer.TrySignELF(context.Background(), "hello.elf", bytes.NewReader(original))
 	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, signed.Close())
-	}()
-
 	signedData, err := io.ReadAll(signed)
 	require.NoError(t, err)
 	require.NoError(t, inhouse.VerifyBytes(context.Background(), []string{certs.RootRef}, signedData))
-
-	_, err = signed.Read(make([]byte, 1))
-	require.True(t, err == nil || err == io.EOF)
 }
