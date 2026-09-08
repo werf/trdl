@@ -3,7 +3,6 @@ package elf_signing
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/hashicorp/vault/sdk/logical"
@@ -16,10 +15,6 @@ func storageKey() string {
 }
 
 func PutSettings(ctx context.Context, req *logical.Request, settings SignerSettings) error {
-	if !supported {
-		return errors.New("ELF signing requires a linux/amd64 build with CGO enabled")
-	}
-
 	if err := validateSettings(settings); err != nil {
 		return fmt.Errorf("validate elf signing settings: %w", err)
 	}
@@ -36,10 +31,6 @@ func PutSettings(ctx context.Context, req *logical.Request, settings SignerSetti
 }
 
 func GetSettings(ctx context.Context, storage logical.Storage) (*SignerSettings, error) {
-	if !supported {
-		return nil, nil
-	}
-
 	entry, err := storage.Get(ctx, storageKey())
 	if err != nil {
 		return nil, fmt.Errorf("get ELF settings: %w", err)
