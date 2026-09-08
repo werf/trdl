@@ -89,12 +89,8 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/deckhouse/delivery-kit-sdk v1.3.0 h1:Fn0QLw4qZe60nufDSE+s/IQTbww7C2fkn25/+q8gAE4=
-github.com/deckhouse/delivery-kit-sdk v1.3.0/go.mod h1:HgPk8RNOxcy1FZ37pB9RMQRdYHa13pGYAmKnLJh0I9A=
-github.com/deckhouse/delivery-kit-sdk v1.3.1-0.20260908085634-3d01d7bfecd8 h1:dxvbaG4XAJaplLaNz2rG+9cDFuo9cCCkYakZ2Gjmylg=
-github.com/deckhouse/delivery-kit-sdk v1.3.1-0.20260908085634-3d01d7bfecd8/go.mod h1:ppXlSNBjtaUPhBwRIUshDs7NPbi1sfZwU4k8g8cpL8I=
-github.com/deckhouse/delivery-kit-sdk v1.3.1-0.20260908103020-380aecc82a60 h1:LhnBRBUGF9RhJbTEaUWauF3sYSiBERZ2AVUuHjm1DW0=
-github.com/deckhouse/delivery-kit-sdk v1.3.1-0.20260908103020-380aecc82a60/go.mod h1:ppXlSNBjtaUPhBwRIUshDs7NPbi1sfZwU4k8g8cpL8I=
+github.com/deckhouse/delivery-kit-sdk v1.4.0 h1:KLyczgHBjEr4hUo+VoRx98XUn5JZqqYFLsPCG0iF8H8=
+github.com/deckhouse/delivery-kit-sdk v1.4.0/go.mod h1:ppXlSNBjtaUPhBwRIUshDs7NPbi1sfZwU4k8g8cpL8I=
 github.com/deckhouse/elfedit v0.0.0-20260907205808-d969ba637ddd h1:+w8geIwnxbyZlR/CefwtvNHk4hXA4kkqyW0Ej0El/jA=
 github.com/deckhouse/elfedit v0.0.0-20260907205808-d969ba637ddd/go.mod h1:Qdsqyxx1eur+519iAS4slYEf5m4QMZDERZ5WMaeqQWg=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=

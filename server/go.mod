@@ -9,7 +9,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/ProtonMail/go-crypto v1.3.0
 	github.com/aws/aws-sdk-go v1.55.5
-	github.com/deckhouse/delivery-kit-sdk v1.3.1-0.20260908103020-380aecc82a60
+	github.com/deckhouse/delivery-kit-sdk v1.4.0
 	github.com/distribution/reference v0.6.0
 	github.com/djherbis/buffer v1.2.0
 	github.com/djherbis/nio/v3 v3.0.1
