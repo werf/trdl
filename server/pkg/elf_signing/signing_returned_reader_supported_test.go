@@ -83,7 +83,6 @@ func TestTrySignELFRejectsCorruptedELF(t *testing.T) {
 	corrupted[4] = 0
 
 	signed, err := signer.TrySignELF(context.Background(), "hello.elf", bytes.NewReader(corrupted))
-	// AI_COMMENT: this bare require.Error passes for the wrong reason — signing currently fails on the empty MaxArtifactSize before the corrupted ELF header is ever parsed, so nothing about corrupted-ELF handling is proven. Assert the specific error, e.g. require.ErrorContains(t, err, "read ELF header").
-	require.Error(t, err)
+	require.ErrorContains(t, err, "read ELF header")
 	require.Nil(t, signed)
 }

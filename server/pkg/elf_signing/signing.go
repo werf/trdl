@@ -29,7 +29,6 @@ type ELFSigner struct {
 	svErr  error
 }
 
-// AI_COMMENT: this constructor no longer defaults MaxArtifactSize, so a signer built from a SignerSettings literal without that field fails every ELF artifact in TrySignELF with `parse maximum artifact size: invalid IEC size ""` — four tests in this package fail this way. Either default the field here or set it at every construction site.
 func NewELFSigner(logger hclog.Logger, opts *SignerSettings) *ELFSigner {
 	return &ELFSigner{logger: logger, settings: opts}
 }
