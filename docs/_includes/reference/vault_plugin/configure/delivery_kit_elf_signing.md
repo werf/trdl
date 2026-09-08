@@ -1,4 +1,4 @@
-Configure ELF binary signing via Delivery Kit. Signing buffers each artifact to temporary disk space, so ensure the host or container has enough free space for the largest release artifact.
+Configure ELF binary signing via Delivery Kit. Signing buffers recognized ELF artifacts in memory before GPG signing and publishing.
 
 ## Configure ELF signing
 
@@ -12,6 +12,7 @@ Configure ELF binary signing via Delivery Kit. Signing buffers each artifact to 
 * `certificate` (string, required) — Certificate data base64 encoded.
 * `intermediates` (string, optional) — Certificate chain (intermediates and root) base64 encoded, as a single PEM bundle.
 * `key` (string, required) — Private key data base64 encoded or a Vault key reference in the form hashivault://<key>. When a hashivault:// reference is used, configure the vault_* parameters.
+* `max_artifact_size` (string, optional, default: `512MiB`) — Maximum recognized ELF artifact size buffered for signing, as an IEC size such as 512MiB or 1GiB.
 * `password` (string, optional) — Private key password. Must not be set when key is a hashivault:// reference.
 * `vault_addr` (string, optional) — Vault server address. Applies only when key is a hashivault:// reference.
 * `vault_auth_path` (string, optional, default: `ar`) — Mount path of Vault auth method. Applies only when key is a hashivault:// reference.

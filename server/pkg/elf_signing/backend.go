@@ -20,6 +20,7 @@ const (
 	fieldNameELFSigningVaultAuthPath     = "vault_auth_path"
 	fieldNameELFSigningVaultAuthRoleID   = "vault_auth_role_id"
 	fieldNameELFSigningVaultAuthSecretID = "vault_auth_secret_id"
+	fieldNameELFSigningMaxArtifactSize   = "max_artifact_size"
 )
 
 func Paths() []*framework.Path {
@@ -27,7 +28,7 @@ func Paths() []*framework.Path {
 		{
 			Pattern:         "configure/delivery_kit_elf_signing",
 			HelpSynopsis:    "Configure ELF binary signing via Delivery Kit",
-			HelpDescription: "Configure ELF binary signing via Delivery Kit. Signing buffers each artifact to temporary disk space, so ensure the host or container has enough free space for the largest release artifact.",
+			HelpDescription: "Configure ELF binary signing via Delivery Kit. Signing buffers recognized ELF artifacts in memory before GPG signing and publishing.",
 			Fields: map[string]*framework.FieldSchema{
 				fieldNameELFSigningKey: {
 					Type:        framework.TypeString,
@@ -68,6 +69,11 @@ func Paths() []*framework.Path {
 					Type:        framework.TypeString,
 					Description: "AppRole SecretID used to authenticate to Vault. Applies only when key is a hashivault:// reference",
 				},
+				fieldNameELFSigningMaxArtifactSize: {
+					Type:        framework.TypeString,
+					Default:     defaultMaxArtifactSize,
+					Description: "Maximum recognized ELF artifact size buffered for signing, as an IEC size such as 512MiB or 1GiB",
+				},
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.CreateOperation: &framework.PathOperation{
@@ -97,6 +103,7 @@ func pathELFSigningCreateOrUpdate(ctx context.Context, req *logical.Request, fie
 		KeyPassword:      fields.Get(fieldNameELFSigningKeyPass).(string),
 		CertRef:          fields.Get(fieldNameELFSigningCertificate).(string),
 		IntermediatesRef: fields.Get(fieldNameELFSigningIntermediates).(string),
+		MaxArtifactSize:  fields.Get(fieldNameELFSigningMaxArtifactSize).(string),
 		VaultOpts: VaultSignerOpts{
 			Address:      fields.Get(fieldNameELFSigningVaultAddr).(string),
 			TransitPath:  fields.Get(fieldNameELFSigningVaultTransitPath).(string),

@@ -30,10 +30,9 @@ func TestTrySignELFEmbedsVerifiableSignature(t *testing.T) {
 		require.NoError(t, signed.Close())
 	}()
 
-	signedFile, ok := signed.(*tempFileCloser)
-	require.True(t, ok)
-
-	require.NoError(t, inhouse.Verify(context.Background(), []string{certs.RootRef}, signedFile.Name()))
+	signedData, err := io.ReadAll(signed)
+	require.NoError(t, err)
+	require.NoError(t, inhouse.VerifyBytes(context.Background(), []string{certs.RootRef}, signedData))
 
 	_, err = signed.Read(make([]byte, 1))
 	require.True(t, err == nil || err == io.EOF)

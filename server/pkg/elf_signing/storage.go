@@ -15,6 +15,9 @@ func storageKey() string {
 }
 
 func PutSettings(ctx context.Context, req *logical.Request, settings SignerSettings) error {
+	if settings.MaxArtifactSize == "" {
+		settings.MaxArtifactSize = defaultMaxArtifactSize
+	}
 	if err := validateSettings(settings); err != nil {
 		return fmt.Errorf("validate elf signing settings: %w", err)
 	}
@@ -43,6 +46,9 @@ func GetSettings(ctx context.Context, storage logical.Storage) (*SignerSettings,
 	var settings SignerSettings
 	if err := json.Unmarshal(entry.Value, &settings); err != nil {
 		return nil, fmt.Errorf("unmarshal ELF settings: %w", err)
+	}
+	if settings.MaxArtifactSize == "" {
+		settings.MaxArtifactSize = defaultMaxArtifactSize
 	}
 
 	return &settings, nil

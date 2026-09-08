@@ -12,5 +12,6 @@ type SignerSettings struct {
 	KeyPassword      string          `json:"key_password"`
 	CertRef          string          `json:"cert_ref"`
 	IntermediatesRef string          `json:"intermediates_ref"`
+	MaxArtifactSize  string          `json:"max_artifact_size"`
 	VaultOpts        VaultSignerOpts `json:"vault_opts"`
 }

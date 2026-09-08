@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync"
 
+	"github.com/deckhouse/delivery-kit-sdk/pkg/signature/elf/inhouse"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver"
 	"github.com/deckhouse/delivery-kit-sdk/pkg/signver/hashivault"
 	"github.com/hashicorp/go-hclog"
@@ -19,20 +19,6 @@ import (
 
 	"github.com/werf/logboek"
 )
-
-type tempFileCloser struct {
-	*os.File
-	cleanup   func() error
-	closeOnce sync.Once
-	closeErr  error
-}
-
-func (t *tempFileCloser) Close() error {
-	t.closeOnce.Do(func() {
-		t.closeErr = t.cleanup()
-	})
-	return t.closeErr
-}
 
 type ELFSigner struct {
 	settings *SignerSettings
@@ -44,6 +30,11 @@ type ELFSigner struct {
 }
 
 func NewELFSigner(logger hclog.Logger, opts *SignerSettings) *ELFSigner {
+	if opts.MaxArtifactSize == "" {
+		settings := *opts
+		settings.MaxArtifactSize = defaultMaxArtifactSize
+		opts = &settings
+	}
 	return &ELFSigner{logger: logger, settings: opts}
 }
 
@@ -66,69 +57,44 @@ func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data
 		return io.NopCloser(br), nil
 	}
 
-	tmp, err := os.CreateTemp("", "trdl-release-source-*")
+	maxArtifactSize, err := parseArtifactSize(s.settings.MaxArtifactSize)
 	if err != nil {
-		return nil, fmt.Errorf("create temp file: %w", err)
+		return nil, fmt.Errorf("parse maximum artifact size: %w", err)
 	}
-
-	var deferErr error
-	cleanup := func() error {
-		_ = tmp.Close()
-		return os.Remove(tmp.Name())
+	artifact, err := io.ReadAll(io.LimitReader(br, maxArtifactSize))
+	if err != nil {
+		return nil, fmt.Errorf("buffer artifact %q: %w", releaseFilePath, err)
 	}
-
-	defer func() {
-		if deferErr != nil {
-			_ = cleanup()
+	if int64(len(artifact)) == maxArtifactSize {
+		if _, err := br.Peek(1); err == nil {
+			return nil, fmt.Errorf("ELF artifact %q exceeds maximum size %s", releaseFilePath, s.settings.MaxArtifactSize)
+		} else if !errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("check artifact size %q: %w", releaseFilePath, err)
 		}
-	}()
-	if _, deferErr = io.Copy(tmp, br); deferErr != nil {
-		return nil, fmt.Errorf("buffer artifact %q to disk: %w", releaseFilePath, deferErr)
 	}
 
-	if deferErr = tmp.Sync(); deferErr != nil {
-		return nil, fmt.Errorf("sync temp file: %w", deferErr)
-	}
-
-	s.logger.Debug("Buffered ELF artifact to disk for signing", "path", tmp.Name())
-
-	machine, deferErr := readELFMachine(tmp)
-	if deferErr != nil {
-		return nil, fmt.Errorf("read ELF header of %q: %w", releaseFilePath, deferErr)
-	}
-
-	if _, deferErr = tmp.Seek(0, io.SeekStart); deferErr != nil {
-		return nil, fmt.Errorf("seek temp file: %w", deferErr)
+	machine, err := readELFMachine(bytes.NewReader(artifact))
+	if err != nil {
+		return nil, fmt.Errorf("read ELF header of %q: %w", releaseFilePath, err)
 	}
 
 	if machine != goelf.EM_X86_64 && machine != goelf.EM_AARCH64 {
-		deferErr = fmt.Errorf("unsupported ELF machine %v for %q", machine, releaseFilePath)
-		return nil, deferErr
+		return nil, fmt.Errorf("unsupported ELF machine %v for %q", machine, releaseFilePath)
 	}
 
-	sv, deferErr := s.getSignerVerifier(ctx)
-	if deferErr != nil {
-		return nil, fmt.Errorf("get signer verifier: %w", deferErr)
+	sv, err := s.getSignerVerifier(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get signer verifier: %w", err)
 	}
 
-	if deferErr = signELF(ctx, sv, tmp.Name()); deferErr != nil {
-		return nil, fmt.Errorf("sign %q: %w", releaseFilePath, deferErr)
+	signed, err := inhouse.SignBytes(ctx, sv, artifact)
+	if err != nil {
+		return nil, fmt.Errorf("sign %q: %w", releaseFilePath, err)
 	}
 
 	logboek.Context(ctx).Default().LogF("Embedded ELF signature into %q\n", releaseFilePath)
 
-	signed, deferErr := os.Open(tmp.Name())
-	if deferErr != nil {
-		return nil, fmt.Errorf("reopen signed file %q: %w", releaseFilePath, deferErr)
-	}
-	_ = tmp.Close()
-
-	cleanup = func() error {
-		_ = signed.Close()
-		return os.Remove(signed.Name())
-	}
-
-	return &tempFileCloser{File: signed, cleanup: cleanup}, nil
+	return io.NopCloser(bytes.NewReader(signed)), nil
 }
 
 func readELFMachine(r io.ReaderAt) (goelf.Machine, error) {

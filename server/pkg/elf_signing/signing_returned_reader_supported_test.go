@@ -93,26 +93,3 @@ func TestTrySignELFRejectsCorruptedELF(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, signed)
 }
-
-func TestSignELFPreservesExecutableMode(t *testing.T) {
-	certs := generateCerts(t, "")
-	signer := NewELFSigner(hclog.NewNullLogger(), &SignerSettings{
-		KeyRef:           certs.PrivRef,
-		CertRef:          certs.LeafRef,
-		IntermediatesRef: certs.IntermediatesRef,
-	})
-	original, err := os.ReadFile("testdata/hello.elf")
-	require.NoError(t, err)
-	path := filepath.Join(t.TempDir(), "hello.elf")
-	require.NoError(t, os.WriteFile(path, original, 0o751))
-	require.NoError(t, os.Chmod(path, 0o751))
-
-	sv, err := signer.getSignerVerifier(context.Background())
-	require.NoError(t, err)
-	require.NoError(t, signELF(context.Background(), sv, path))
-
-	info, err := os.Stat(path)
-	require.NoError(t, err)
-	require.Equal(t, os.FileMode(0o751), info.Mode().Perm())
-	require.NoError(t, inhouse.Verify(context.Background(), []string{certs.RootRef}, path))
-}
