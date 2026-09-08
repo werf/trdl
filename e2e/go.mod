@@ -5,7 +5,7 @@ go 1.25.9
 toolchain go1.25.12
 
 require (
-	github.com/deckhouse/delivery-kit-sdk v1.3.1-0.20260908085634-3d01d7bfecd8
+	github.com/deckhouse/delivery-kit-sdk v1.4.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/vault/sdk v0.8.1
 	github.com/onsi/ginkgo/v2 v2.22.0

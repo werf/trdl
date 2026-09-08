@@ -16,6 +16,14 @@ import (
 )
 
 func validateSettings(settings SignerSettings) error {
+	maxArtifactSize := settings.MaxArtifactSize
+	if maxArtifactSize == "" {
+		maxArtifactSize = defaultMaxArtifactSize
+	}
+	if _, err := parseArtifactSize(maxArtifactSize); err != nil {
+		return fmt.Errorf("validate %q: %w", fieldNameELFSigningMaxArtifactSize, err)
+	}
+
 	if settings.KeyRef == "" {
 		return fmt.Errorf("%q is required", fieldNameELFSigningKey)
 	}
