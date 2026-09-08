@@ -72,6 +72,7 @@ func TestStageReleaseTargetPropagatesELFSigningErrorWithoutPanic(t *testing.T) {
 
 	require.Error(t, err)
 	require.ErrorContains(t, err, "try signing artifact")
+	require.ErrorContains(t, err, "ELF file has no section headers")
 }
 
 func minimalELFHeader(t *testing.T, machine goelf.Machine) []byte {
