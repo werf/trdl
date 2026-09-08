@@ -5,7 +5,7 @@ go 1.25.9
 toolchain go1.25.12
 
 require (
-	github.com/deckhouse/delivery-kit-sdk v1.3.0
+	github.com/deckhouse/delivery-kit-sdk v1.3.1-0.20260908085634-3d01d7bfecd8
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/vault/sdk v0.8.1
 	github.com/onsi/ginkgo/v2 v2.22.0
@@ -41,6 +41,7 @@ require (
 	github.com/containerd/typeurl/v2 v2.3.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/deckhouse/elfedit v0.0.0-20260907205808-d969ba637ddd // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/djherbis/buffer v1.2.0 // indirect
 	github.com/djherbis/nio/v3 v3.0.1 // indirect

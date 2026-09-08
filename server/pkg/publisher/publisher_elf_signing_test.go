@@ -1,5 +1,3 @@
-//go:build !linux || !amd64 || !cgo
-
 package publisher
 
 import (
@@ -74,7 +72,6 @@ func TestStageReleaseTargetPropagatesELFSigningErrorWithoutPanic(t *testing.T) {
 
 	require.Error(t, err)
 	require.ErrorContains(t, err, "try signing artifact")
-	require.ErrorContains(t, err, "ELF signing requires a linux/amd64 build with CGO enabled")
 }
 
 func minimalELFHeader(t *testing.T, machine goelf.Machine) []byte {

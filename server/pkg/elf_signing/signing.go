@@ -56,7 +56,6 @@ func (s *ELFSigner) getSignerVerifier(ctx context.Context) (*signver.SignerVerif
 }
 
 func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data io.Reader) (io.ReadCloser, error) {
-	// Peek first 4 bytes to skip disk buffering for non-ELF artifacts.
 	br := bufio.NewReader(data)
 	magic, err := br.Peek(4)
 	if err != nil && !errors.Is(err, io.EOF) {
@@ -118,8 +117,6 @@ func (s *ELFSigner) TrySignELF(ctx context.Context, releaseFilePath string, data
 
 	logboek.Context(ctx).Default().LogF("Embedded ELF signature into %q\n", releaseFilePath)
 
-	// signELF rewrites the file via an external process; reopen by path so the
-	// returned reader is not tied to how the SDK finalizes the on-disk write.
 	signed, deferErr := os.Open(tmp.Name())
 	if deferErr != nil {
 		return nil, fmt.Errorf("reopen signed file %q: %w", releaseFilePath, deferErr)

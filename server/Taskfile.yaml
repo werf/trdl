@@ -203,7 +203,7 @@ tasks:
           outputDir: vault/plugins
 
   deps:install:c:
-    desc: "Install C dependencies required by delivery-kit-sdk ELF signing."
+    desc: "Install C dependencies required by the server static build."
     cmds:
       - |
         set -eux
@@ -229,7 +229,7 @@ tasks:
         if command -v apt-get >/dev/null 2>&1; then
           export DEBIAN_FRONTEND=noninteractive
           $SUDO apt-get -y update
-          $SUDO apt-get install -y libuv1-dev libzstd-dev zlib1g-dev libssl-dev libelf-dev
+          $SUDO apt-get install -y libuv1-dev libzstd-dev zlib1g-dev libssl-dev
 
           $SUDO ln -fs "$(dpkg -L libuv1-dev | grep -F '/libuv_a.a')" /usr/lib/x86_64-linux-gnu/libuv.a
         else
