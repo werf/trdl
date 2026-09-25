@@ -85,7 +85,7 @@ var _ = Describe("Mac signing", func() {
 
 		testutil.RunSucceedCommand(testDir, "docker", "compose", "up", "--detach")
 		testutil.RunSucceedCommand(testDir, "docker", "compose", "run", "mc", "mb", "main/repo")
-		testutil.RunSucceedCommand(testDir, "docker", "compose", "run", "mc", "policy", "set", "download", "main/repo")
+		testutil.RunSucceedCommand(testDir, "docker", "compose", "run", "mc", "anonymous", "set", "download", "main/repo")
 
 		minioAddress = "http://127.0.0.1:" + composePort("minio", "9000")
 
