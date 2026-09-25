@@ -3,7 +3,7 @@ networks:
 
 services:
   minio:
-    image: minio/minio@sha256:36433a735d87bbc2fed55674b3af936b57259f5cd2c544e869b8276d4d22b590
+    image: ghcr.io/werf/trdl-dev-minio@sha256:67329a8f79e3f872525323835b9826b48c2aeae3127de083f04744a51b030bc6
     ports:
       - "9000"
     command: server /data
@@ -11,7 +11,8 @@ services:
       - minio-net
 
   mc:
-    image: minio/mc@sha256:f78c05169b54f191ab407a8e4d746a2b1f65a047936ba0e51885504912c9595e
+    image: ghcr.io/werf/trdl-dev-minio@sha256:67329a8f79e3f872525323835b9826b48c2aeae3127de083f04744a51b030bc6
+    entrypoint: ["mc"]
     depends_on:
       - minio
     environment:

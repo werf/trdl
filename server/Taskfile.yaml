@@ -16,6 +16,7 @@ vars:
   vault_dev_listen_address: '{{.vault_dev_listen_address | default "127.0.0.1:8200"}}'
   minio_data_dir: '{{.minio_data_dir | default ".minio_data"}}'
   minio_container: '{{.minio_container | default "trdl_dev_minio"}}'
+  minio_dev_image: '{{.minio_dev_image | default "ghcr.io/werf/trdl-dev-minio@sha256:67329a8f79e3f872525323835b9826b48c2aeae3127de083f04744a51b030bc6"}}'
   vault_container: '{{.vault_container | default "trdl_dev_vault"}}'
   vault_dev_image: '{{.vault_dev_image | default "ghcr.io/werf/trdl-dev-vault@sha256:3c0ac5915f1c3fd10bab0002734b2fd8575a738dff01ef5c6d0136768870890f"}}'
   s3_access_key: '{{.s3_access_key | default "minioadmin"}}'
@@ -61,7 +62,7 @@ tasks:
     desc: "Restart Minio and Vault."
     cmds:
       - docker rm -f {{.minio_container}} || true
-      - docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} -p {{.minio_console_port}}:{{.minio_console_port}} --volume ./{{.minio_data_dir}}:/data minio/minio server /data --console-address ":{{.minio_console_port}}"
+      - docker run --name {{.minio_container}} --detach --rm -p {{.minio_port}}:{{.minio_port}} -p {{.minio_console_port}}:{{.minio_console_port}} --volume ./{{.minio_data_dir}}:/data {{.minio_dev_image}} server /data --console-address ":{{.minio_console_port}}"
       - task: configure-vault
 
   setup:dev-environment:
@@ -79,7 +80,7 @@ tasks:
       - mkdir -p {{.minio_data_dir}}
       - |
         docker run --name {{.minio_container}} --detach --rm -e MC_HOST_main=http://minioadmin:minioadmin@localhost:{{.minio_port}} -p {{.minio_port}}:{{.minio_port}} \
-        -p {{.minio_console_port}}:{{.minio_console_port}} --volume ./{{.minio_data_dir}}:/data minio/minio server /data \
+        -p {{.minio_console_port}}:{{.minio_console_port}} --volume ./{{.minio_data_dir}}:/data {{.minio_dev_image}} server /data \
         --console-address ":{{.minio_console_port}}"
       - |
         while ! docker exec {{.minio_container}} mc ls main; do

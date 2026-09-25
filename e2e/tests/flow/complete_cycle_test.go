@@ -161,7 +161,7 @@ var _ = Describe("Complete cycle", func() {
 			testDir,
 			"docker",
 			"compose",
-			"run", "mc", "policy", "set", "download", "main/repo",
+			"run", "mc", "anonymous", "set", "download", "main/repo",
 		)
 
 		output := testutil.SucceedCommandOutputString(
