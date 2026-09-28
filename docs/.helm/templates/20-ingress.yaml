@@ -1,4 +1,4 @@
-{{- $env := .Values.global.env }}
+{{- $env := .Values.werf.env }}
 {{- $host := pluck $env .Values.host | first | default .Values.host._default }}
 {{- $ingressClassName := pluck $env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
 {{- $isProduction := eq $env "production" }}

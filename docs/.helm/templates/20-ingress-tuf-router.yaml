@@ -3,8 +3,8 @@
 {{- if hasPrefix "review" $env }}
 {{- $host = ( printf "%s.%s" $env (pluck "dev" .Values.host | first | default .Values.host._default ) | lower ) }}
 {{- end }}
-{{- $ingressClassName := pluck .Values.global.env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
-{{- $isProduction := eq .Values.global.env "production" }}
+{{- $ingressClassName := pluck .Values.werf.env .Values.ingressClassName | first | default .Values.ingressClassName._default | quote }}
+{{- $isProduction := eq .Values.werf.env "production" }}
 {{- $ruHost := include "ruHost" $host | trim }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -24,7 +24,7 @@ spec:
 {{- if $isProduction }}
     secretName: tls-trdl-dev
 {{- else }}
-    secretName: {{ pluck .Values.global.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
+    secretName: {{ pluck .Values.werf.env .Values.ingressSecretName | first | default .Values.ingressSecretName._default }}
 {{- end }}
   rules:
   - host: {{ $host }}
