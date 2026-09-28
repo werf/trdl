@@ -8,7 +8,7 @@ resources:
 
 {{- define "targetCluster" -}}
 {{- $targetCluster := .Values.global.targetCluster | default "eu" -}}
-{{- if and (eq .Values.global.env "production") (not (has $targetCluster (list "eu" "ru"))) -}}
+{{- if and (eq .Values.werf.env "production") (not (has $targetCluster (list "eu" "ru"))) -}}
 {{- fail (printf "unsupported global.targetCluster %q: expected ru or eu" $targetCluster) -}}
 {{- end -}}
 {{- $targetCluster -}}
