@@ -16,7 +16,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/theupdateframework/go-tuf v0.5.2
 	github.com/werf/common-go v0.0.0-20250225170837-c0fe1ae7c6a2
-	github.com/werf/lockgate v0.1.1
+	github.com/werf/lockgate v0.2.1
 	github.com/werf/logboek v0.6.1
 	gopkg.in/yaml.v3 v3.0.1
 	mvdan.cc/xurls v1.1.0
@@ -27,7 +27,7 @@ require (
 	github.com/djherbis/buffer v1.2.0 // indirect
 	github.com/djherbis/nio/v3 v3.0.1 // indirect
 	github.com/go-git/go-git/v5 v5.19.1 // indirect
-	github.com/gofrs/flock v0.8.1 // indirect
+	github.com/gofrs/flock v0.13.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
