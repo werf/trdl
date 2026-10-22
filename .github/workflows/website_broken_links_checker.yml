@@ -31,6 +31,9 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build link checker image
+        run: task --yes docs:build:trdl-docs
+
       - name: Check ru broken links
         if: matrix.lang == 'ru'
         run: task --yes docs:check-broken-links
