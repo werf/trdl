@@ -63,7 +63,7 @@ func writeBackgroundUpdateResult(t *testing.T, resultPath string, result []strin
 	}
 }
 
-func readBackgroundUpdateResult(t *testing.T, resultPath string) []string {
+func readBackgroundUpdateResult(t *testing.T, resultPath string, outputPaths ...string) []string {
 	t.Helper()
 	timeout := time.NewTimer(10 * time.Second)
 	defer timeout.Stop()
@@ -84,6 +84,14 @@ func readBackgroundUpdateResult(t *testing.T, resultPath string) []string {
 		}
 		select {
 		case <-timeout.C:
+			for _, outputPath := range outputPaths {
+				output, err := os.ReadFile(outputPath)
+				if err != nil {
+					t.Logf("read background output %q: %v", outputPath, err)
+					continue
+				}
+				t.Logf("background output %q:\n%s", outputPath, output)
+			}
 			t.Fatal("update process did not report its result")
 		case <-ticker.C:
 		}

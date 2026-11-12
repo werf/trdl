@@ -64,6 +64,8 @@ func TestUpdateCommandDoesNotRespawnRepeatedly(t *testing.T) {
 		t.Run(entry.name, func(t *testing.T) {
 			homeDir := t.TempDir()
 			resultPath := filepath.Join(homeDir, "result.json")
+			stdoutPath := filepath.Join(homeDir, "background-stdout.log")
+			stderrPath := filepath.Join(homeDir, "background-stderr.log")
 			args := append([]string{"-test.run=^TestUpdateCommandHelper$", "--", "update", "missing-background-test", "3", "alpha", "--no-self-update"}, entry.flags...)
 			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 			defer cancel()
@@ -71,8 +73,8 @@ func TestUpdateCommandDoesNotRespawnRepeatedly(t *testing.T) {
 			cmd.Env = append(os.Environ(),
 				"TRDL_HOME_DIR="+homeDir,
 				"TRDL_IN_BACKGROUND="+entry.envValue,
-				"TRDL_BACKGROUND_STDOUT_FILE=",
-				"TRDL_BACKGROUND_STDERR_FILE=",
+				"TRDL_BACKGROUND_STDOUT_FILE="+stdoutPath,
+				"TRDL_BACKGROUND_STDERR_FILE="+stderrPath,
 				"TRDL_TEST_UPDATE_GENERATION=0",
 				"TRDL_TEST_UPDATE_RESULT="+resultPath,
 			)
@@ -80,7 +82,7 @@ func TestUpdateCommandDoesNotRespawnRepeatedly(t *testing.T) {
 				t.Fatalf("run update command: %v\n%s", err, output)
 			}
 
-			result := readBackgroundUpdateResult(t, resultPath)
+			result := readBackgroundUpdateResult(t, resultPath, stdoutPath, stderrPath)
 			want := []string{strconv.Itoa(entry.generation), `repository "missing-background-test" not initialized: configure it with "trdl add" command`}
 			if !slices.Equal(result, want) {
 				t.Errorf("update [generation, error] = %q, want %q", result, want)
