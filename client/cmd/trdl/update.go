@@ -114,6 +114,7 @@ func updateCmd() *cobra.Command {
 
 func StartUpdateInBackground(name string, args []string, backgroundStdoutFile, backgroundStderrFile string) error {
 	cmd := exec.Command(name, args...)
+	cmd.Env = append(os.Environ(), "TRDL_IN_BACKGROUND=false")
 
 	if backgroundStdoutFile != "" {
 		f, err := os.Create(backgroundStdoutFile)
