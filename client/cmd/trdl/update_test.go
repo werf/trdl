@@ -1,3 +1,5 @@
+//go:build !test_coverage
+
 package main
 
 import (
