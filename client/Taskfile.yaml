@@ -183,7 +183,7 @@ tasks:
       GOOS=linux GOARCH=amd64 go test {{.extraGoBuildArgs}} -o {{.outputBin }}
     vars:
       outputBin: ../bin/coverage/trdl
-      extraGoBuildArgs: '-ldflags="-s -w" -tags "test_coverage" -cover -covermode=atomic -coverpkg=./... -c cmd/trdl/*.go'
+      extraGoBuildArgs: '-ldflags="-s -w" -tags "test_coverage" -cover -covermode=atomic -coverpkg=./... -c ./cmd/trdl'
 
   test:unit:
     desc: "Run client unit tests."
