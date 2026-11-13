@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.14.1](https://www.github.com/werf/trdl/compare/v0.14.0...v0.14.1) (2026-11-13)
+
+
+### Miscellaneous Chores
+
+* **release:** repin the builder image republished as linux/amd64 ([#436](https://www.github.com/werf/trdl/issues/436)) ([05c0fd2](https://www.github.com/werf/trdl/commit/05c0fd2600b4e22aa27bb8b84f25a33495fd584d))
+
 ## [0.14.0](https://www.github.com/werf/trdl/compare/v0.13.0...v0.14.0) (2026-11-12)
 
 
