@@ -82,7 +82,7 @@ tasks:
 
   _image:build:
     cmds:
-      - docker build {{.CLI_ARGS}} -f "{{.dfilePath}}" -t "{{.imageName}}" "{{.context | default "."}}"
+      - docker build --platform=linux/amd64 {{.CLI_ARGS}} -f "{{.dfilePath}}" -t "{{.imageName}}" "{{.context | default "."}}"
 
   image:build:builder:
     desc: 'Build main builder image. Important vars: "imageName".'
