@@ -469,6 +469,8 @@ git signatures push
 
 Для создания релиза используйте метод API [/release](/reference/vault_plugin/release.html#perform-a-release). Проверка, контроль и логирование можно организовывать с помощью методов API [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html) и [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
 
+Каждую версию можно выпустить только один раз: повторный релиз версии, которая уже есть в репозитории, завершится ошибкой, поэтому исправления выпускайте в новой версии. Неудавшийся релиз можно повторить.
+
 Упрощённая версия релизного процесса представлена в скрипте `release.sh`, который находится в каталоге [server/examples](https://github.com/werf/trdl/tree/main/server/examples) репозитория проекта.
 
 Перед запуском скрипта необходимо установить четыре переменных окружения:

@@ -65,6 +65,11 @@ func (m *MockedPublisher) GetRepository(_ context.Context, _ logical.Storage, _ 
 	return nil, nil
 }
 
+func (m *MockedPublisher) GetExistingReleases(_ context.Context, _ publisher.RepositoryInterface) ([]string, error) {
+	args := m.Called()
+	return args.Get(0).([]string), args.Error(1)
+}
+
 type MockedBackendPeriodic struct {
 	mock.Mock
 	BackendPeriodicInterface

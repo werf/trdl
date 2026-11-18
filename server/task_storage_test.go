@@ -63,6 +63,7 @@ func (suite *TaskStorageSuite) TestReleaseTaskDoesNotUseRequestStorage() {
 
 	suite.req.Path = "release"
 	suite.req.Data = map[string]interface{}{fieldNameGitTag: fieldGitTagValidValue}
+	suite.mockedPublisher.On("GetExistingReleases").Return([]string{}, nil)
 
 	err := suite.runCapturedTask()
 	require.ErrorContains(suite.T(), err, "can't build artifacts")
