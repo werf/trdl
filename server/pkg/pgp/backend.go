@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/samber/lo"
 
 	"github.com/werf/trdl/server/pkg/util"
 )
@@ -95,6 +97,12 @@ func pathConfigureTrustedPGPPublicKeyCreateOrUpdate(ctx context.Context, req *lo
 		return nil, err
 	}
 
+	if existingName, err := findTrustedPGPPublicKeyNameWithSameEntity(ctx, req.Storage, name, key); err != nil {
+		return nil, fmt.Errorf("check whether pgp public key is already trusted: %w", err)
+	} else if existingName != "" {
+		return logical.ErrorResponse("PGP public key is already trusted under the name %q", existingName), nil
+	}
+
 	if err := req.Storage.Put(ctx, &logical.StorageEntry{
 		Key:   trustedPGPPublicKeyStorageKey(name),
 		Value: []byte(key),
@@ -141,6 +149,44 @@ func pathConfigureTrustedPGPPublicKeyDelete(ctx context.Context, req *logical.Re
 	}
 
 	return nil, nil
+}
+
+func findTrustedPGPPublicKeyNameWithSameEntity(ctx context.Context, storage logical.Storage, name, key string) (string, error) {
+	keyring, err := openpgp.ReadArmoredKeyRing(strings.NewReader(key))
+	if err != nil {
+		return "", fmt.Errorf("read pgp public key: %w", err)
+	}
+
+	existingNames, err := storage.List(ctx, storageKeyPrefixTrustedPGPPublicKey)
+	if err != nil {
+		return "", fmt.Errorf("list %q in storage: %w", storageKeyPrefixTrustedPGPPublicKey, err)
+	}
+
+	for _, existingName := range existingNames {
+		if existingName == name {
+			continue
+		}
+
+		e, err := storage.Get(ctx, trustedPGPPublicKeyStorageKey(existingName))
+		if err != nil {
+			return "", fmt.Errorf("get trusted pgp public key %q from storage: %w", existingName, err)
+		}
+
+		if e == nil {
+			continue
+		}
+
+		existingKeyring, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(e.Value))
+		if err != nil {
+			return "", fmt.Errorf("read trusted pgp public key %q: %w", existingName, err)
+		}
+
+		if lo.ContainsBy(keyring, func(entity *openpgp.Entity) bool { return keyringContainsEntity(existingKeyring, entity) }) {
+			return existingName, nil
+		}
+	}
+
+	return "", nil
 }
 
 func IsValidGPGPublicKey(key string) error {
