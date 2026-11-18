@@ -60,6 +60,44 @@ func (suite *pathConfigureTrustedPGPPublicKeyCallbacksSuite) TestKeyCreateOrUpda
 	}
 }
 
+func (suite *pathConfigureTrustedPGPPublicKeyCallbacksSuite) TestKeyCreateOrUpdate_SameKeyUnderAnotherName() {
+	suite.req.Path = "configure/trusted_pgp_public_key"
+	suite.req.Operation = logical.CreateOperation
+
+	suite.req.Data = dataTrustedPGPPublicKey1()
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), resp)
+
+	data := dataTrustedPGPPublicKey1()
+	existingKeyName := data[fieldNameTrustedPGPPublicKeyName].(string)
+	data[fieldNameTrustedPGPPublicKeyName] = existingKeyName + "_copy"
+	suite.req.Data = data
+	resp, err = suite.backend.HandleRequest(suite.ctx, suite.req)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), logical.ErrorResponse("PGP public key is already trusted under the name %q", existingKeyName), resp)
+
+	keys, err := GetTrustedPGPPublicKeys(suite.ctx, suite.storage)
+	assert.Nil(suite.T(), err)
+	assert.Len(suite.T(), keys, 1)
+}
+
+func (suite *pathConfigureTrustedPGPPublicKeyCallbacksSuite) TestKeyCreateOrUpdate_SameKeyUnderSameName() {
+	suite.req.Path = "configure/trusted_pgp_public_key"
+	suite.req.Operation = logical.CreateOperation
+
+	for range 2 {
+		suite.req.Data = dataTrustedPGPPublicKey1()
+		resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+		assert.Nil(suite.T(), err)
+		assert.Nil(suite.T(), resp)
+	}
+
+	keys, err := GetTrustedPGPPublicKeys(suite.ctx, suite.storage)
+	assert.Nil(suite.T(), err)
+	assert.Len(suite.T(), keys, 1)
+}
+
 func (suite *pathConfigureTrustedPGPPublicKeyCallbacksSuite) TestKeyCreateOrUpdate_RequiredFields() {
 	suite.req.Path = "configure/trusted_pgp_public_key"
 	suite.req.Operation = logical.CreateOperation

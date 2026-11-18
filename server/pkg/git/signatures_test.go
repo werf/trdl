@@ -362,6 +362,11 @@ var _ = Describe("VerifyTagSignatures and VerifyCommitSignatures", func() {
 					requiredNumberOfVerifiedSignatures: 3,
 					expectedErrMsg:                     NewNotEnoughVerifiedPGPSignaturesError(2).Error(),
 				}),
+				Entry("with the same trustedPGPPublicKey added twice and requiredNumberOfVerifiedSignatures (2)", tableEntry{
+					trustedPGPPublicKeys:               []string{string(publicPGPKeyDataDeveloper), string(publicPGPKeyDataDeveloper)},
+					requiredNumberOfVerifiedSignatures: 2,
+					expectedErrMsg:                     NewNotEnoughVerifiedPGPSignaturesError(1).Error(),
+				}),
 			)
 		})
 	}
