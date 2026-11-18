@@ -470,6 +470,8 @@ Now that the tag has been created and signed by the necessary number of GPG keys
 
 Use the [/release](/reference/vault_plugin/release.html#perform-a-release) API method to create a release. You can also use the following API methods for checking, controlling, and logging: [/task/:uuid](/reference/vault_plugin/task/uuid.html), [/task/:uuid/cancel](/reference/vault_plugin/task/uuid/cancel.html), and [/task/:uuid/log](/reference/vault_plugin/task/uuid/log.html).
 
+Each version can be released only once: releasing a version that already exists in the repository fails, so ship fixes as a new version. A failed release can be retried.
+
 A simplified version of the release process is available in the `release.sh` script in the [server/examples](https://github.com/werf/trdl/tree/main/server/examples) directory of the project repository.
 
 Four environment variables must be set before running the script:

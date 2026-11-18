@@ -1,4 +1,4 @@
-Perform a release for the specified git tag.
+Perform a release for the specified git tag. A release that already exists cannot be performed again, while a failed one can be retried.
 
 ## Perform a release
 

@@ -1,12 +1,15 @@
 package server
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/tasks_manager"
 )
 
@@ -83,4 +86,61 @@ func (suite *PathReleaseCallbackSuite) TestBusy() {
 
 func TestBackendPathReleaseCallback(t *testing.T) {
 	suite.Run(t, new(PathReleaseCallbackSuite))
+}
+
+type PathReleaseTaskSuite struct {
+	CommonSuite
+	tasksManager *capturingTasksManager
+}
+
+func (suite *PathReleaseTaskSuite) SetupTest() {
+	suite.CommonSuite.SetupTest()
+	suite.tasksManager = &capturingTasksManager{}
+	suite.backend.TasksManager = suite.tasksManager
+	suite.mockedPublisher.On("GetRepository").Return(nil)
+	suite.req.Path = "release"
+	suite.req.Operation = logical.CreateOperation
+	suite.req.Data = map[string]interface{}{fieldNameGitTag: fieldGitTagValidValue}
+}
+
+func (suite *PathReleaseTaskSuite) TestExistingReleaseIsRejected() {
+	require.NoError(suite.T(), putConfiguration(suite.ctx, suite.storage, completeConfiguration()))
+	suite.mockedPublisher.On("GetExistingReleases").Return([]string{"1.0.0", "1.0.1"}, nil)
+
+	err := suite.runCapturedTask()
+	require.EqualError(suite.T(), err, `release "1.0.1" already exists: an existing release cannot be overwritten, release a new version instead`)
+	suite.mockedPublisher.AssertExpectations(suite.T())
+}
+
+func (suite *PathReleaseTaskSuite) TestNewReleaseProceeds() {
+	cfg := completeConfiguration()
+	cfg.GitRepoUrl = initGitRepository(suite.T(), map[string]string{"README.md": ""}, fieldGitTagValidValue)
+	require.NoError(suite.T(), putConfiguration(suite.ctx, suite.storage, cfg))
+	suite.mockedPublisher.On("GetExistingReleases").Return([]string{"1.0.0", "1.0.2"}, nil)
+
+	err := suite.runCapturedTask()
+	require.ErrorContains(suite.T(), err, "signature verification failed")
+	suite.mockedPublisher.AssertExpectations(suite.T())
+}
+
+func (suite *PathReleaseTaskSuite) TestExistingReleasesError() {
+	require.NoError(suite.T(), putConfiguration(suite.ctx, suite.storage, completeConfiguration()))
+	suite.mockedPublisher.On("GetExistingReleases").Return([]string(nil), errors.New("s3 is unavailable"))
+
+	err := suite.runCapturedTask()
+	require.EqualError(suite.T(), err, "unable to get existing releases: s3 is unavailable")
+	suite.mockedPublisher.AssertExpectations(suite.T())
+}
+
+func (suite *PathReleaseTaskSuite) runCapturedTask() error {
+	resp, err := suite.backend.HandleRequest(suite.ctx, suite.req)
+	require.NoError(suite.T(), err)
+	require.NotNil(suite.T(), resp)
+	require.NotNil(suite.T(), suite.tasksManager.task)
+
+	return suite.tasksManager.task(logboek.NewContext(suite.ctx, logboek.DefaultLogger()), suite.storage)
+}
+
+func TestBackendPathReleaseTask(t *testing.T) {
+	suite.Run(t, new(PathReleaseTaskSuite))
 }

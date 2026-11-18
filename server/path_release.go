@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/samber/lo"
 
 	"github.com/werf/logboek"
 	"github.com/werf/trdl/server/pkg/config"
@@ -118,6 +119,18 @@ func (b *Backend) pathRelease(ctx context.Context, req *logical.Request, fields 
 	taskUUID, err := b.TasksManager.RunTask(ctx, req.Storage, func(ctx context.Context, storage logical.Storage) error {
 		logboek.Context(ctx).Default().LogF("Started task\n")
 		b.Logger().Debug("Started task")
+
+		logboek.Context(ctx).Default().LogF("Checking release %q does not exist yet\n", releaseName)
+		b.Logger().Debug(fmt.Sprintf("Checking release %q does not exist yet", releaseName))
+
+		existingReleases, err := b.Publisher.GetExistingReleases(ctx, publisherRepository)
+		if err != nil {
+			return fmt.Errorf("unable to get existing releases: %w", err)
+		}
+
+		if lo.Contains(existingReleases, releaseName) {
+			return fmt.Errorf("release %q already exists: an existing release cannot be overwritten, release a new version instead", releaseName)
+		}
 
 		logboek.Context(ctx).Default().LogF("Cloning git repo\n")
 		b.Logger().Debug("Cloning git repo")
@@ -292,5 +305,5 @@ func getTrdlConfig(gitRepo *git.Repository, gitTag, trdlPath string) (*config.Tr
 
 const (
 	pathReleaseHelpSyn  = "Perform a release"
-	pathReleaseHelpDesc = "Perform a release for the specified git tag"
+	pathReleaseHelpDesc = "Perform a release for the specified git tag. A release that already exists cannot be performed again, while a failed one can be retried"
 )
